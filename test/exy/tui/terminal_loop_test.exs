@@ -6,7 +6,8 @@ defmodule Exy.TUI.TerminalLoopTest do
   test "decodes input into app/editor and renders textarea" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
 
-    assert :ok = TerminalLoop.input(loop, "hello")
+    assert :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :h, utf8: "h"})
+    assert :ok = TerminalLoop.input(loop, "ello")
 
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
     assert Enum.any?(plain, &String.contains?(&1, "hello"))

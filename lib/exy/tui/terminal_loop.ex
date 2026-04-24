@@ -20,6 +20,10 @@ defmodule Exy.TUI.TerminalLoop do
   @spec input(GenServer.server(), binary()) :: :ok
   def input(server, data), do: GenServer.call(server, {:input, data})
 
+  @spec input_key(GenServer.server(), Ghostty.KeyEvent.t()) :: :ok
+  def input_key(server, %Ghostty.KeyEvent{} = event),
+    do: GenServer.call(server, {:input_key, event})
+
   @spec resize(GenServer.server(), pos_integer(), pos_integer()) :: :ok
   def resize(server, columns, rows), do: GenServer.call(server, {:resize, columns, rows})
 
@@ -42,6 +46,15 @@ defmodule Exy.TUI.TerminalLoop do
   def handle_call({:input, data}, _from, state) do
     data
     |> KeyDecoder.decode()
+    |> Enum.each(&App.key(state.app, &1))
+
+    paint(state)
+    {:reply, :ok, state}
+  end
+
+  def handle_call({:input_key, event}, _from, state) do
+    event
+    |> KeyDecoder.decode_event()
     |> Enum.each(&App.key(state.app, &1))
 
     paint(state)

@@ -5,6 +5,23 @@ defmodule Exy.TUI.KeyDecoder do
 
   @type key :: Exy.UI.Editor.key()
 
+  @spec decode_event(Ghostty.KeyEvent.t()) :: [key()]
+  def decode_event(%Ghostty.KeyEvent{key: :arrow_left}), do: [:left]
+  def decode_event(%Ghostty.KeyEvent{key: :arrow_right}), do: [:right]
+  def decode_event(%Ghostty.KeyEvent{key: :arrow_up}), do: [:up]
+  def decode_event(%Ghostty.KeyEvent{key: :arrow_down}), do: [:down]
+  def decode_event(%Ghostty.KeyEvent{key: :home}), do: [:home]
+  def decode_event(%Ghostty.KeyEvent{key: :end}), do: [:end]
+  def decode_event(%Ghostty.KeyEvent{key: :delete}), do: [:delete]
+  def decode_event(%Ghostty.KeyEvent{key: :backspace}), do: [:backspace]
+  def decode_event(%Ghostty.KeyEvent{key: :enter}), do: [:submit]
+  def decode_event(%Ghostty.KeyEvent{key: :tab}), do: [:tab]
+  def decode_event(%Ghostty.KeyEvent{key: :escape}), do: [:cancel]
+  def decode_event(%Ghostty.KeyEvent{key: :b, mods: [:alt]}), do: [:word_left]
+  def decode_event(%Ghostty.KeyEvent{key: :f, mods: [:alt]}), do: [:word_right]
+  def decode_event(%Ghostty.KeyEvent{utf8: utf8}) when is_binary(utf8), do: [{:insert, utf8}]
+  def decode_event(%Ghostty.KeyEvent{}), do: []
+
   @spec decode(binary()) :: [key()]
   def decode("\eb"), do: [:word_left]
   def decode("\ef"), do: [:word_right]
