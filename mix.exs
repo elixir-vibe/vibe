@@ -57,7 +57,7 @@ defmodule Exy.MixProject do
       {:quickbeam, "~> 0.10.4", optional: true},
       {:jido, "~> 2.2"},
       {:jido_ai, "~> 2.1"},
-      {:ghostty, "~> 0.3.2", optional: true}
+      {:ghostty, "~> 0.4"}
     ]
   end
 

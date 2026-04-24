@@ -18,6 +18,7 @@
 - Use MDEx streaming documents for partial LLM Markdown and Lumis terminal highlighting for fenced code blocks instead of hand-rolled parsers/highlighters.
 - Storybook output is a visual regression surface; inspect it after changing TUI/Markdown rendering, not just tests.
 - Prefer `IO.ANSI` or established terminal libraries over raw ANSI escape strings. If a raw terminal control sequence is unavoidable, isolate it behind a small named adapter and document why no library API is available.
-- Use Ghostty/Ghostty.KeyEvent in TUI harness tests for keyboard input and terminal snapshots instead of hard-coding VT byte sequences wherever possible.
+- Use Ghostty.TTY for the interactive current-terminal runtime; do not add Exy-local `stty`, `/dev/tty`, or raw terminal-mode adapters.
+- Use Ghostty.Test and Ghostty.KeyEvent in TUI harness tests for keyboard input and terminal snapshots instead of hard-coding VT byte sequences wherever possible.
 - Plugins may run supervised background children and update semantic UI state through `Exy.Plugin.UI`; keep plugin UI APIs renderer-neutral so TUI and future LiveView consume the same state.
 - For Livebook-style execution and `Mix.install/2`, isolate work in a child BEAM/runtime; do not pollute Exy's long-running VM.

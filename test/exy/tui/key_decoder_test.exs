@@ -1,6 +1,8 @@
 defmodule Exy.TUI.KeyDecoderTest do
   use ExUnit.Case, async: true
 
+  import Ghostty.Test, only: [key_bytes: 1]
+
   alias Exy.TUI.KeyDecoder
 
   test "decodes Ghostty key events" do
@@ -16,24 +18,16 @@ defmodule Exy.TUI.KeyDecoderTest do
   end
 
   test "decodes Ghostty-encoded terminal bytes" do
-    assert ghostty_bytes(%Ghostty.KeyEvent{key: :arrow_left}) |> KeyDecoder.decode() == [:left]
-    assert ghostty_bytes(%Ghostty.KeyEvent{key: :arrow_right}) |> KeyDecoder.decode() == [:right]
-    assert ghostty_bytes(%Ghostty.KeyEvent{key: :enter}) |> KeyDecoder.decode() == [:submit]
+    assert :arrow_left |> key_bytes() |> KeyDecoder.decode() == [:left]
+    assert :arrow_right |> key_bytes() |> KeyDecoder.decode() == [:right]
+    assert :enter |> key_bytes() |> KeyDecoder.decode() == [:submit]
     assert KeyDecoder.decode("\e\r") == [:enter]
 
-    assert ghostty_bytes(%Ghostty.KeyEvent{key: :backspace}) |> KeyDecoder.decode() == [
-             :backspace
-           ]
+    assert :backspace |> key_bytes() |> KeyDecoder.decode() == [:backspace]
   end
 
   test "decodes printable input and paste" do
     assert KeyDecoder.decode("a") == [{:insert, "a"}]
     assert KeyDecoder.decode("hello") == [{:paste, "hello"}]
-  end
-
-  defp ghostty_bytes(event) do
-    {:ok, terminal} = Ghostty.Terminal.start_link()
-    {:ok, bytes} = Ghostty.Terminal.input_key(terminal, event)
-    bytes
   end
 end
