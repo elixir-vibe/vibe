@@ -63,7 +63,7 @@ defmodule Exy.Script do
 
   defp run_os_process(path, opts) do
     executable = Keyword.get(opts, :elixir, System.find_executable("elixir") || "elixir")
-    args = Keyword.get(opts, :args, []) ++ [path]
+    args = Exy.Lists.append(Keyword.get(opts, :args, []), path)
     cwd = Keyword.get(opts, :cwd, File.cwd!())
     env = Keyword.get(opts, :env, [])
     timeout = Keyword.get(opts, :timeout, 120_000)

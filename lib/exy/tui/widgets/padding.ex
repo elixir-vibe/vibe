@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Padding do
 
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.Widget
+  alias Exy.TUI.{Lines, Widget}
 
   @impl true
   def render(%{props: props, children: children}, width, theme) do
@@ -12,11 +12,16 @@ defmodule Exy.TUI.Widgets.Padding do
     inner_width = max(width - x * 2, 1)
     blank = String.duplicate(" ", width)
 
+    top = List.duplicate(blank, y)
+    bottom = List.duplicate(blank, y)
+
     body =
       children
       |> Enum.flat_map(&Widget.render(&1, inner_width, theme))
       |> Enum.map(&Widget.pad_line([String.duplicate(" ", x), &1], width))
 
-    List.duplicate(blank, y) ++ body ++ List.duplicate(blank, y)
+    body
+    |> Lines.join(bottom)
+    |> then(&Lines.join(top, &1))
   end
 end

@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{DSL, Theme, ToolWidget, Widget}
+  alias Exy.TUI.{DSL, Lines, Theme, ToolWidget, Widget}
 
   @impl true
   def render(tool, width, theme) do
@@ -33,13 +33,17 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
   defp append_section(lines, _label, nil, _width, _theme), do: lines
 
   defp append_section(lines, label, value, width, theme) do
-    lines ++
-      Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme) ++
+    label_lines =
+      Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
+
+    value_lines =
       Widget.render(
         DSL.padding([DSL.text(format_value(value), fg: :tool_output)], x: 2),
         width,
         theme
       )
+
+    lines |> Lines.join(label_lines) |> Lines.join(value_lines)
   end
 
   defp code_from_args(%{code: code}), do: code

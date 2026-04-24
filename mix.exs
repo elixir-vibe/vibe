@@ -13,7 +13,13 @@ defmodule Exy.MixProject do
       deps: deps(),
       description: "BEAM-native coding agent substrate for Elixir/OTP projects",
       source_url: @source_url,
-      package: package()
+      package: package(),
+      aliases: aliases(),
+      dialyzer: [
+        plt_file: {:no_warn, "_build/dev/dialyxir_plt.plt"},
+        plt_add_apps: [:mix],
+        ignore_warnings: ".dialyzer_ignore.exs"
+      ]
     ]
   end
 
@@ -44,12 +50,30 @@ defmodule Exy.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_dna, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.3", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:reach, "~> 1.7", only: [:dev, :test], runtime: false},
       {:pythonx, "~> 0.4.9", optional: true},
       {:quickbeam, "~> 0.10.4", optional: true},
       {:jido, "~> 2.2"},
       {:jido_ai, "~> 2.1"},
       {:ghostty, "~> 0.3.2", optional: true}
+    ]
+  end
+
+  def cli do
+    [preferred_envs: [ci: :test]]
+  end
+
+  defp aliases do
+    [
+      ci: [
+        "compile --warnings-as-errors",
+        "format --check-formatted",
+        "test",
+        "credo --strict",
+        "dialyzer",
+        "ex_dna"
+      ]
     ]
   end
 end

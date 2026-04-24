@@ -86,7 +86,7 @@ defmodule Exy.Plugin.Manager do
 
   defp configured_plugins do
     Exy.Plugin.Discovery.builtin()
-    |> Kernel.++(Application.get_env(:exy, :plugins, []))
+    |> Exy.Lists.join(Application.get_env(:exy, :plugins, []))
     |> Enum.uniq()
   end
 

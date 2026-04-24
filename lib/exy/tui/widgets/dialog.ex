@@ -3,37 +3,26 @@ defmodule Exy.TUI.Widgets.Dialog do
 
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.{Theme, Widget}
+  alias Exy.TUI.{Lines, Theme}
+  alias Exy.TUI.Widgets.Frame
 
   @impl true
   def render(%{props: props, children: children}, width, theme) do
     title = Map.fetch!(props, :title)
-    hint = Map.get(props, :hint)
-    inner_width = max(width - 4, 1)
-    horizontal = Theme.symbol(theme, :dialog_horizontal)
+    top = Frame.border(theme, width, :dialog_top_left, :dialog_top_right)
+    heading = Frame.line(Theme.fg(theme, :accent, title), width, theme)
+    bottom = Frame.border(theme, width, :dialog_bottom_left, :dialog_bottom_right)
 
-    top = [
-      Theme.symbol(theme, :dialog_top_left),
-      Theme.fg(theme, :border, String.duplicate(horizontal, max(width - 2, 0))),
-      Theme.symbol(theme, :dialog_top_right)
-    ]
+    children
+    |> Frame.body(width, theme)
+    |> append_hint(Map.get(props, :hint), width, theme)
+    |> Lines.append(bottom)
+    |> then(&[top, heading | &1])
+  end
 
-    heading = Widget.frame_line(Theme.fg(theme, :accent, title), width, theme)
+  defp append_hint(lines, nil, _width, _theme), do: lines
 
-    body =
-      children
-      |> Enum.flat_map(&Widget.render(&1, inner_width, theme))
-      |> Enum.map(&Widget.frame_line(&1, width, theme))
-
-    hint_lines =
-      if hint, do: [Widget.frame_line(Theme.fg(theme, :muted, hint), width, theme)], else: []
-
-    bottom = [
-      Theme.symbol(theme, :dialog_bottom_left),
-      Theme.fg(theme, :border, String.duplicate(horizontal, max(width - 2, 0))),
-      Theme.symbol(theme, :dialog_bottom_right)
-    ]
-
-    [top, heading] ++ body ++ hint_lines ++ [bottom]
+  defp append_hint(lines, hint, width, theme) do
+    Lines.append(lines, Frame.line(Theme.fg(theme, :muted, hint), width, theme))
   end
 end

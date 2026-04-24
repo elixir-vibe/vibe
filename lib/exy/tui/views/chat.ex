@@ -17,7 +17,7 @@ defmodule Exy.TUI.Views.Chat do
 
       overlays = Enum.map(assign(:overlays), &overlay/1)
 
-      body ++ [footer(assign(:footer))] ++ overlays
+      List.flatten([body, footer(assign(:footer)), overlays])
     end
   end
 end

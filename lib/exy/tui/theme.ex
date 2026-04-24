@@ -63,39 +63,41 @@ defmodule Exy.TUI.Theme do
     }
   end
 
-  @spec fg(t(), atom(), iodata()) :: String.t()
+  @spec fg(t(), atom(), iodata()) :: IO.chardata()
   def fg(%__MODULE__{} = theme, key, text), do: apply_color(Map.get(theme.fg, key), :fg, text)
 
-  @spec bg(t(), atom(), iodata()) :: String.t()
+  @spec bg(t(), atom(), iodata()) :: IO.chardata()
   def bg(%__MODULE__{} = theme, key, text), do: apply_color(Map.get(theme.bg, key), :bg, text)
 
   @spec symbol(t(), atom()) :: IO.chardata()
   def symbol(%__MODULE__{} = theme, key), do: Map.fetch!(theme.symbols, key)
 
-  @spec bold(iodata()) :: String.t()
-  def bold(text), do: IO.iodata_to_binary(["\e[1m", text, reset()])
+  @spec bold(iodata()) :: IO.chardata()
+  def bold(text), do: ansi([:bright, text])
 
-  @spec italic(iodata()) :: String.t()
-  def italic(text), do: IO.iodata_to_binary(["\e[3m", text, reset()])
+  @spec italic(iodata()) :: IO.chardata()
+  def italic(text), do: ansi([:italic, text])
 
   @spec reset() :: String.t()
   def reset, do: IO.ANSI.reset()
 
-  @spec strip(String.t()) :: String.t()
-  def strip(text) when is_binary(text) do
-    Regex.replace(~r/\e\[[0-9;]*[A-Za-z]/, text, "")
+  @spec strip(IO.chardata()) :: String.t()
+  def strip(text) do
+    text
+    |> IO.iodata_to_binary()
+    |> then(&Regex.replace(~r/\e\[[0-9;]*[A-Za-z]/, &1, ""))
   end
 
-  defp apply_color(nil, _target, text), do: IO.iodata_to_binary(text)
+  defp apply_color(nil, _target, text), do: text
 
   defp apply_color({r, g, b}, :fg, text),
-    do: IO.iodata_to_binary(["\e[38;2;#{r};#{g};#{b}m", text, reset()])
+    do: ansi([IO.ANSI.color(cube(r), cube(g), cube(b)), text, :reset])
 
   defp apply_color({r, g, b}, :bg, text),
-    do: IO.iodata_to_binary(["\e[48;2;#{r};#{g};#{b}m", text, reset()])
+    do: ansi([IO.ANSI.color_background(cube(r), cube(g), cube(b)), text, :reset])
 
   defp apply_color(color, target, text) when is_atom(color) do
-    IO.iodata_to_binary([ansi_color(color, target), text, reset()])
+    ansi([ansi_color(color, target), text, :reset])
   end
 
   defp ansi_color(:black, :fg), do: IO.ANSI.black()
@@ -125,4 +127,8 @@ defmodule Exy.TUI.Theme do
   defp ansi_bg_color(:cyan), do: IO.ANSI.cyan_background()
   defp ansi_bg_color(:white), do: IO.ANSI.white_background()
   defp ansi_bg_color(_color), do: ""
+
+  defp cube(channel), do: channel |> Kernel./(255) |> Kernel.*(5) |> round() |> min(5) |> max(0)
+
+  defp ansi(format), do: IO.ANSI.format(format, true)
 end

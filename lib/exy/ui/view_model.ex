@@ -3,6 +3,7 @@ defmodule Exy.UI.ViewModel do
   Converts `Exy.UI.State` into semantic blocks for renderers.
   """
 
+  alias Exy.Lists
   alias Exy.UI.Block.{AssistantMessage, Footer, Overlay, ToolCall, UserMessage}
 
   @type t :: %{
@@ -14,7 +15,7 @@ defmodule Exy.UI.ViewModel do
   @spec from_state(Exy.UI.State.t()) :: t()
   def from_state(state) do
     %{
-      body: message_blocks(state) ++ tool_blocks(state),
+      body: Lists.join(message_blocks(state), tool_blocks(state)),
       footer: %Footer{
         cwd: state.cwd,
         model: state.model,

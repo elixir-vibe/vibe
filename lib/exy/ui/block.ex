@@ -21,10 +21,14 @@ defmodule Exy.UI.Block do
   defmodule Footer do
     @moduledoc false
     defstruct [:cwd, :model, :session_id, :status, :usage]
+
+    @type t :: %__MODULE__{}
   end
 
   defmodule Overlay do
     @moduledoc false
     defstruct [:kind, :data]
+
+    @type t :: %__MODULE__{}
   end
 end

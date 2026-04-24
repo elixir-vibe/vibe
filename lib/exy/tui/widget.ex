@@ -33,9 +33,8 @@ defmodule Exy.TUI.Widget do
   def render(node, width, theme \\ Theme.default())
 
   def render(%Node{type: type} = node, width, theme) do
-    type
-    |> widget!()
-    |> apply(:render, [node, width, theme])
+    renderer = widget!(type)
+    renderer.render(node, width, theme)
   end
 
   def render(content, width, _theme), do: wrap(content, width)

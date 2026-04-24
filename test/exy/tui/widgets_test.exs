@@ -15,8 +15,7 @@ defmodule Exy.TUI.WidgetsTest do
     plain =
       nodes
       |> Enum.flat_map(&Widget.render(&1, 80, Theme.default()))
-      |> Enum.map(&Width.visible_text/1)
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &Width.visible_text/1)
 
     assert plain =~ "Tools"
     assert plain =~ "Expert ready"

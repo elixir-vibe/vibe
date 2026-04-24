@@ -3,13 +3,13 @@ defmodule Exy.UI.Reducer do
   Pure reducer for Exy's UI-neutral event stream.
   """
 
-  alias Exy.LLM.Usage
+  alias Exy.{Lists, LLM.Usage}
   alias Exy.UI.{Event, State}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
   def apply_event(%State{} = state, %Event{} = event) do
     state
-    |> Map.update!(:events, &(&1 ++ [event]))
+    |> Map.update!(:events, &Lists.append(&1, event))
     |> reduce(event)
   end
 
@@ -18,12 +18,12 @@ defmodule Exy.UI.Reducer do
 
   defp reduce(state, %Event{type: :user_message_added, at: at, data: data}) do
     message = %{role: :user, text: Map.fetch!(data, :text), at: at}
-    %{state | messages: state.messages ++ [message], status: :working}
+    %{state | messages: Lists.append(state.messages, message), status: :working}
   end
 
   defp reduce(state, %Event{type: :assistant_message_added, at: at, data: data}) do
     message = Map.merge(%{role: :assistant, at: at}, data)
-    %{state | messages: state.messages ++ [message], status: :idle}
+    %{state | messages: Lists.append(state.messages, message), status: :idle}
   end
 
   defp reduce(state, %Event{type: :tool_started, data: %{id: id} = data}) do
@@ -45,7 +45,7 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :overlay_opened, data: data}) do
-    %{state | overlays: state.overlays ++ [data]}
+    %{state | overlays: Lists.append(state.overlays, data)}
   end
 
   defp reduce(state, %Event{type: :overlay_closed}) do

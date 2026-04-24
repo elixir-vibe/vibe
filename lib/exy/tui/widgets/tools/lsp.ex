@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{DSL, Theme, ToolWidget, Widget}
+  alias Exy.TUI.{DSL, Lines, Theme, ToolWidget, Widget}
 
   @impl true
   def render(tool, width, theme) do
@@ -32,8 +32,7 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
     rows = diagnostics |> Enum.take(8) |> Enum.map(&diagnostic_row(&1, theme))
     more = max(length(diagnostics) - length(rows), 0)
 
-    rows =
-      if more > 0, do: rows ++ [Theme.fg(theme, :muted, "+#{more} more diagnostics")], else: rows
+    rows = Lines.append_if(rows, more > 0, Theme.fg(theme, :muted, "+#{more} more diagnostics"))
 
     Widget.render(
       DSL.padding(Enum.map(rows, &DSL.text(&1, fg: :tool_output)), x: 2),

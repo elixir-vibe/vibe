@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.AST do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{DSL, Theme, ToolWidget, Widget}
+  alias Exy.TUI.{DSL, Lines, Theme, ToolWidget, Widget}
 
   @impl true
   def render(tool, width, theme) do
@@ -29,12 +29,7 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     rows = Enum.take(matches, 8) |> Enum.map(&match_row/1)
     more = max(length(matches) - length(rows), 0)
 
-    body =
-      if more > 0 do
-        rows ++ [Theme.fg(theme, :muted, "+#{more} more matches")]
-      else
-        rows
-      end
+    body = Lines.append_if(rows, more > 0, Theme.fg(theme, :muted, "+#{more} more matches"))
 
     Widget.render(
       DSL.padding(Enum.map(body, &DSL.text(&1, fg: :tool_output)), x: 2),
