@@ -13,6 +13,19 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "hello"))
   end
 
+  test "keeps editor visible in a bounded viewport" do
+    ask = fn text, _opts -> {:ok, Enum.map_join(1..20, "\n", &"line #{&1}: #{text}")} end
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 12, ask_fun: ask)
+
+    :ok = TerminalLoop.input(loop, "hello")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+    Process.sleep(50)
+
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+    assert length(plain) <= 12
+    assert Enum.any?(plain, &String.contains?(&1, "Prompt"))
+  end
+
   test "tracks resize" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
     assert :ok = TerminalLoop.resize(loop, 100, 30)

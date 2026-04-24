@@ -107,11 +107,12 @@ defmodule Exy.UI.SessionServer do
          state
        ) do
     state = emit(state, Event.new(:slash_command_submitted, state.state.session_id, data))
+    run_slash_command(command, Map.get(data, :args, ""), state)
+  end
 
-    case slash_selector(command, state.state) do
-      nil -> state
-      selector -> emit(state, Event.new(:selector_opened, state.state.session_id, selector))
-    end
+  defp handle_command(%Command{type: :selector_confirmed, data: data}, state) do
+    state = emit(state, Event.new(:selector_confirmed, state.state.session_id, data))
+    run_selector_action(data, state)
   end
 
   defp handle_command(%Command{type: :open_overlay, data: data}, state) do
@@ -202,6 +203,74 @@ defmodule Exy.UI.SessionServer do
 
   defp normalize_command({type, data}) when is_atom(type) and is_map(data),
     do: Command.new(type, data)
+
+  defp run_slash_command("clear", _args, state) do
+    emit(state, Event.new(:messages_cleared, state.state.session_id, %{}))
+  end
+
+  defp run_slash_command("compact", _args, state) do
+    run_compaction(state)
+  end
+
+  defp run_slash_command(command, _args, state) do
+    case slash_selector(command, state.state) do
+      nil ->
+        emit(
+          state,
+          Event.new(:notification_added, state.state.session_id, %{
+            level: :warning,
+            text: "unknown command: /#{command}"
+          })
+        )
+
+      selector ->
+        emit(state, Event.new(:selector_opened, state.state.session_id, selector))
+    end
+  end
+
+  defp run_selector_action(%{selector: :model_selector, item: model}, state)
+       when is_binary(model) do
+    emit(state, Event.new(:model_selected, state.state.session_id, %{model: model}))
+  end
+
+  defp run_selector_action(%{selector: :session_selector, item: session_id}, state)
+       when is_binary(session_id) do
+    emit(state, Event.new(:session_selected, state.state.session_id, %{session_id: session_id}))
+  end
+
+  defp run_selector_action(%{selector: :skill_selector, item: skill}, state)
+       when is_binary(skill) do
+    emit(
+      state,
+      Event.new(:notification_added, state.state.session_id, %{
+        level: :info,
+        text: "selected skill: #{skill}"
+      })
+    )
+  end
+
+  defp run_selector_action(%{selector: :command_palette, item: command}, state)
+       when is_binary(command) do
+    run_slash_command(command, "", state)
+  end
+
+  defp run_selector_action(_data, state), do: state
+
+  defp run_compaction(state) do
+    session_id = state.state.session_id
+    state = emit(state, Event.new(:status_changed, session_id, %{status: :compacting}))
+
+    case Exy.Context.compact(session_id: session_id) do
+      {:ok, %{summary: summary}} ->
+        emit(state, Event.new(:context_compaction_finished, session_id, %{summary: summary}))
+
+      {:error, reason} ->
+        emit(
+          state,
+          Event.new(:notification_added, session_id, %{level: :error, text: inspect(reason)})
+        )
+    end
+  end
 
   defp slash_selector("model", ui_state) do
     %{kind: :model_selector, title: "Model", items: [ui_state.model], selected: 0, limit: 8}

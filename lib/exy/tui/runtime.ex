@@ -3,7 +3,7 @@ defmodule Exy.TUI.Runtime do
   Startable terminal runtime for Exy's interactive TUI.
   """
 
-  alias Exy.TUI.TerminalLoop
+  alias Exy.TUI.{TerminalLoop, TerminalMode}
 
   @escape_timeout 30
   @resize_interval 250
@@ -19,15 +19,20 @@ defmodule Exy.TUI.Runtime do
   end
 
   defp with_terminal(fun) do
-    original = stty(["-g"])
+    original = TerminalMode.snapshot()
 
-    try do
-      :ok = raw_mode()
-      IO.write([IO.ANSI.home(), IO.ANSI.clear()])
-      fun.()
-    after
-      IO.write(IO.ANSI.reset())
-      restore_mode(original)
+    case TerminalMode.raw() do
+      :ok ->
+        try do
+          IO.write([IO.ANSI.home(), IO.ANSI.clear()])
+          fun.()
+        after
+          IO.write(IO.ANSI.reset())
+          TerminalMode.restore(original)
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -127,22 +132,5 @@ defmodule Exy.TUI.Runtime do
       end
 
     {columns, rows}
-  end
-
-  defp raw_mode do
-    case System.cmd("stty", ["raw", "-echo"], stderr_to_stdout: true) do
-      {_output, 0} -> :ok
-      {output, _status} -> {:error, String.trim(output)}
-    end
-  end
-
-  defp restore_mode(nil), do: stty(["sane"])
-  defp restore_mode(mode), do: stty([mode])
-
-  defp stty(args) do
-    case System.cmd("stty", args, stderr_to_stdout: true) do
-      {output, 0} -> String.trim(output)
-      _ -> nil
-    end
   end
 end

@@ -90,9 +90,17 @@ defmodule Exy.TUI.TerminalLoop do
   defp render_lines(state) do
     snapshot = App.snapshot(state.app)
     view = ViewModel.from_state(snapshot.ui)
-    body = Renderer.render(view, snapshot.width, state.theme)
     editor = render_editor(snapshot, state.theme)
+
+    body =
+      view |> Renderer.render(snapshot.width, state.theme) |> fit_body(snapshot.height, editor)
+
     Exy.TUI.Lines.join(body, editor)
+  end
+
+  defp fit_body(body, height, editor) when is_integer(height) do
+    body_lines = max(height - length(editor), 1)
+    Enum.take(body, -body_lines)
   end
 
   defp render_editor(snapshot, theme) do

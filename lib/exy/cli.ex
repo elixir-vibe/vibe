@@ -61,7 +61,7 @@ defmodule Exy.CLI do
       opts[:sessions] ->
         print_result({:ok, Exy.Session.list()}, opts)
 
-      opts[:print] or args != [] ->
+      opts[:print] == true or args != [] ->
         prompt = Enum.join(args, " ")
         ask(prompt, opts)
 
@@ -115,11 +115,18 @@ defmodule Exy.CLI do
   defp tui(opts) do
     configure_api_key(opts)
 
-    Exy.TUI.Runtime.run(
-      session_id: session_id(opts),
-      model: Exy.LLM.Model.resolve(opts),
-      system: opts[:system_prompt]
-    )
+    case Exy.TUI.Runtime.run(
+           session_id: session_id(opts),
+           model: Exy.LLM.Model.resolve(opts),
+           system: opts[:system_prompt]
+         ) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Mix.shell().error("Cannot start Exy TUI: #{reason}")
+        {:error, reason}
+    end
   end
 
   defp print_result({:ok, results}, opts) when is_list(results) do

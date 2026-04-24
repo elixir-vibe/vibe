@@ -44,4 +44,41 @@ defmodule Exy.UI.SelectorTest do
     assert state.selector.kind == :model_selector
     assert state.selector.items == ["openai_codex:gpt-5.5"]
   end
+
+  test "selector confirmation updates model" do
+    {:ok, server} =
+      Exy.UI.SessionServer.start_link(
+        session_id: "selector-model-session",
+        model: "old-model",
+        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+      )
+
+    :ok =
+      Exy.UI.SessionServer.dispatch(
+        server,
+        Command.new(:selector_confirmed, %{selector: :model_selector, item: "new-model"})
+      )
+
+    assert Exy.UI.SessionServer.state(server).model == "new-model"
+  end
+
+  test "clear slash command clears visible messages" do
+    {:ok, server} =
+      Exy.UI.SessionServer.start_link(
+        session_id: "selector-clear-session",
+        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+      )
+
+    :ok = Exy.UI.SessionServer.dispatch(server, Command.new(:submit_prompt, %{text: "hello"}))
+    Process.sleep(50)
+    assert Exy.UI.SessionServer.state(server).messages != []
+
+    :ok =
+      Exy.UI.SessionServer.dispatch(
+        server,
+        Command.new(:slash_command_submitted, %{command: "clear", args: ""})
+      )
+
+    assert Exy.UI.SessionServer.state(server).messages == []
+  end
 end

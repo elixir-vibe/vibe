@@ -102,6 +102,23 @@ defmodule Exy.UI.Reducer do
     %{state | status: status}
   end
 
+  defp reduce(state, %Event{type: :model_selected, data: %{model: model}}) do
+    %{state | model: model}
+  end
+
+  defp reduce(state, %Event{type: :session_selected, data: %{session_id: session_id}}) do
+    %{state | session_id: session_id}
+  end
+
+  defp reduce(state, %Event{type: :messages_cleared}) do
+    %{state | messages: [], pending_tools: %{}, streaming_message: nil, status: :idle}
+  end
+
+  defp reduce(state, %Event{type: :context_compaction_finished, data: data}) do
+    notice = %{level: :success, text: Map.get(data, :summary, "context compacted")}
+    %{state | notifications: Lists.append(state.notifications, notice), status: :idle}
+  end
+
   defp reduce(state, %Event{type: :overlay_opened, data: data}) do
     %{state | overlays: Lists.append(state.overlays, data)}
   end
@@ -165,22 +182,17 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :selector_closed}) do
-    %{
-      state
-      | selector: nil,
-        overlays: Enum.reject(state.overlays, &(&1[:kind] == :selector || &1.kind == :selector))
-    }
+    %{state | selector: nil, overlays: Enum.reject(state.overlays, &selector_overlay?/1)}
   end
 
   defp reduce(state, %Event{type: :selector_confirmed}) do
-    %{
-      state
-      | selector: nil,
-        overlays: Enum.reject(state.overlays, &(&1[:kind] == :selector || &1.kind == :selector))
-    }
+    %{state | selector: nil, overlays: Enum.reject(state.overlays, &selector_overlay?/1)}
   end
 
   defp reduce(state, _event), do: state
+
+  defp selector_overlay?(%{kind: :selector}), do: true
+  defp selector_overlay?(_overlay), do: false
 
   defp move_selector(nil, _direction), do: nil
 
