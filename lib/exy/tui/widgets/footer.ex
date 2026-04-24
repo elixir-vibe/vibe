@@ -21,7 +21,32 @@ defmodule Exy.TUI.Widgets.Footer do
       " tok"
     ]
 
-    [Theme.fg(theme, :dim, Widget.join_sides(left, right, width))]
+    footer = Theme.fg(theme, :dim, Widget.join_sides(left, right, width))
+
+    case plugin_status_line(Map.get(props, :plugin_statuses, %{}), width, theme) do
+      nil -> [footer]
+      status_line -> [footer, status_line]
+    end
+  end
+
+  defp plugin_status_line(statuses, _width, _theme) when map_size(statuses) == 0, do: nil
+
+  defp plugin_status_line(statuses, width, theme) do
+    line =
+      statuses
+      |> Enum.sort_by(fn {key, _text} -> to_string(key) end)
+      |> Enum.map_join(" ", fn {_key, text} -> sanitize_status_text(text) end)
+      |> Widget.fit_line(width)
+
+    Theme.fg(theme, :dim, line)
+  end
+
+  defp sanitize_status_text(text) do
+    text
+    |> to_string()
+    |> String.replace(~r/[\r\n\t]/, " ")
+    |> String.replace(~r/ +/, " ")
+    |> String.trim()
   end
 
   defp short_cwd(nil), do: ""

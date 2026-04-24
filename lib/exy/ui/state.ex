@@ -12,6 +12,7 @@ defmodule Exy.UI.State do
             status: :idle,
             overlays: [],
             notifications: [],
+            plugin_statuses: %{},
             streaming_message: nil,
             editor: %{text: "", history: []},
             events: []
@@ -32,6 +33,7 @@ defmodule Exy.UI.State do
           status: atom(),
           overlays: [map()],
           notifications: [map()],
+          plugin_statuses: map(),
           streaming_message: map() | nil,
           editor: map(),
           events: [Exy.UI.Event.t()]

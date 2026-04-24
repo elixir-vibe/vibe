@@ -3,6 +3,10 @@ defmodule Exy.Plugin.Manager do
 
   use GenServer
 
+  defstruct plugins: %{}
+
+  @type plugin_entry :: %{state: term(), children: [pid()]}
+
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
@@ -24,64 +28,107 @@ defmodule Exy.Plugin.Manager do
   def init(opts) do
     modules = Keyword.get(opts, :plugins, configured_plugins())
 
-    state =
+    plugins =
       Enum.reduce(modules, %{}, fn module, acc ->
-        case module.init([]) do
-          {:ok, plugin_state} -> Map.put(acc, module, plugin_state)
+        case start_plugin(module, []) do
+          {:ok, entry} -> Map.put(acc, module, entry)
           _ -> acc
         end
       end)
 
-    {:ok, state}
+    {:ok, %__MODULE__{plugins: plugins}}
   end
 
   @impl true
   def handle_call({:load, module, opts}, _from, state) do
-    case module.init(opts) do
-      {:ok, plugin_state} -> {:reply, :ok, Map.put(state, module, plugin_state)}
+    case start_plugin(module, opts) do
+      {:ok, entry} -> {:reply, :ok, put_plugin(state, module, entry)}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:unload, module}, _from, state) do
-    state =
-      case Map.pop(state, module) do
-        {nil, state} ->
-          state
-
-        {plugin_state, state} ->
-          safe_shutdown(module, plugin_state)
-          state
-      end
-
+    state = unload_plugin(state, module)
     {:reply, :ok, state}
   end
 
-  def handle_call(:plugins, _from, state), do: {:reply, Map.keys(state), state}
+  def handle_call(:plugins, _from, state), do: {:reply, Map.keys(state.plugins), state}
 
   def handle_call({:dispatch, event, context}, _from, state) do
-    {result, state} = do_dispatch(Map.to_list(state), event, context, state, [])
+    {result, state} = do_dispatch(Map.to_list(state.plugins), event, context, state, [])
     {:reply, result, state}
   end
+
+  defp start_plugin(module, opts) do
+    with {:ok, plugin_state} <- module.init(opts),
+         {:ok, children} <- start_children(module, plugin_state) do
+      {:ok, %{state: plugin_state, children: children}}
+    end
+  end
+
+  defp start_children(module, plugin_state) do
+    if function_exported?(module, :children, 1) do
+      module.children(plugin_state)
+      |> Enum.reduce_while({:ok, []}, &start_child(module, &1, &2))
+    else
+      {:ok, []}
+    end
+  end
+
+  defp start_child(module, child_spec, {:ok, children}) do
+    case DynamicSupervisor.start_child(
+           Exy.Plugin.Supervisor,
+           normalize_child_spec(module, child_spec)
+         ) do
+      {:ok, pid} when is_pid(pid) -> {:cont, {:ok, [pid | children]}}
+      {:ok, pid, _info} when is_pid(pid) -> {:cont, {:ok, [pid | children]}}
+      :ignore -> {:cont, {:ok, children}}
+      {:error, {:already_started, pid}} -> {:cont, {:ok, [pid | children]}}
+      {:error, reason} -> {:halt, {:error, reason}}
+    end
+  end
+
+  defp normalize_child_spec(_module, child_spec) when is_map(child_spec), do: child_spec
+  defp normalize_child_spec(_module, child_spec) when is_atom(child_spec), do: child_spec
+  defp normalize_child_spec(_module, {child_module, arg}), do: {child_module, arg}
 
   defp do_dispatch([], _event, _context, state, results),
     do: {{:ok, Enum.reverse(results)}, state}
 
-  defp do_dispatch([{module, plugin_state} | rest], event, context, state, results) do
-    case module.handle_event(event, context, plugin_state) do
+  defp do_dispatch([{module, entry} | rest], event, context, state, results) do
+    case module.handle_event(event, context, entry.state) do
       {{:halt, reason}, new_plugin_state} ->
-        {{:halt, reason}, Map.put(state, module, new_plugin_state)}
+        {{:halt, reason}, put_plugin_state(state, module, new_plugin_state)}
 
       {{:error, reason}, new_plugin_state} ->
-        {{:error, {module, reason}}, Map.put(state, module, new_plugin_state)}
+        {{:error, {module, reason}}, put_plugin_state(state, module, new_plugin_state)}
 
       {result, new_plugin_state} ->
-        do_dispatch(rest, event, context, Map.put(state, module, new_plugin_state), [
-          result | results
-        ])
+        state = put_plugin_state(state, module, new_plugin_state)
+        do_dispatch(rest, event, context, state, [result | results])
     end
   rescue
     exception -> {{:error, {module, exception}}, state}
+  end
+
+  defp put_plugin(%__MODULE__{} = state, module, entry) do
+    %{state | plugins: Map.put(state.plugins, module, entry)}
+  end
+
+  defp put_plugin_state(%__MODULE__{} = state, module, plugin_state) do
+    update_in(state.plugins[module].state, fn _old_state -> plugin_state end)
+  end
+
+  defp unload_plugin(%__MODULE__{} = state, module) do
+    case Map.pop(state.plugins, module) do
+      {nil, plugins} ->
+        %{state | plugins: plugins}
+
+      {entry, plugins} ->
+        Enum.each(entry.children, &DynamicSupervisor.terminate_child(Exy.Plugin.Supervisor, &1))
+        safe_shutdown(module, entry.state)
+        %{state | plugins: plugins}
+    end
   end
 
   defp configured_plugins do

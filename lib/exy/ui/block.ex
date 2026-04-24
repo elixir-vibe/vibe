@@ -20,7 +20,7 @@ defmodule Exy.UI.Block do
 
   defmodule Footer do
     @moduledoc false
-    defstruct [:cwd, :model, :session_id, :status, :usage]
+    defstruct [:cwd, :model, :session_id, :status, :usage, plugin_statuses: %{}]
 
     @type t :: %__MODULE__{}
   end

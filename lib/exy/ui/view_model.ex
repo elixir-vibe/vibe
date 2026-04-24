@@ -26,7 +26,8 @@ defmodule Exy.UI.ViewModel do
         model: state.model,
         session_id: state.session_id,
         status: state.status,
-        usage: state.usage
+        usage: state.usage,
+        plugin_statuses: state.plugin_statuses
       },
       overlays: Enum.map(state.overlays, &%Overlay{kind: &1.kind, data: &1}),
       notifications: notification_block(state.notifications)

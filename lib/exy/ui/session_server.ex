@@ -31,9 +31,14 @@ defmodule Exy.UI.SessionServer do
   def dispatch(server, command),
     do: GenServer.call(server, {:dispatch, normalize_command(command)})
 
+  @spec emit_event(GenServer.server(), Event.t()) :: :ok
+  def emit_event(server, %Event{} = event), do: GenServer.call(server, {:emit_event, event})
+
   @impl true
   def init(opts) do
     state = State.new(opts)
+
+    maybe_register_ui_bus(state.session_id)
 
     {:ok,
      %{
@@ -55,6 +60,10 @@ defmodule Exy.UI.SessionServer do
 
   def handle_call({:dispatch, %Command{} = command}, _from, state) do
     {:reply, :ok, handle_command(command, state)}
+  end
+
+  def handle_call({:emit_event, %Event{} = event}, _from, state) do
+    {:reply, :ok, emit(state, event)}
   end
 
   @impl true
@@ -152,6 +161,10 @@ defmodule Exy.UI.SessionServer do
 
   defp normalize_command({type, data}) when is_atom(type) and is_map(data),
     do: Command.new(type, data)
+
+  defp maybe_register_ui_bus(session_id) do
+    if Process.whereis(Exy.UI.Bus), do: Exy.UI.Bus.register(session_id, self()), else: :ok
+  end
 
   defp default_ask(text, opts) do
     if Keyword.has_key?(opts, :on_result) or Keyword.has_key?(opts, :on_thinking) do
