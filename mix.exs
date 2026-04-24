@@ -1,13 +1,19 @@
 defmodule Exy.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @source_url "https://github.com/dannote/exy"
+
   def project do
     [
       app: :exy,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      description: "BEAM-native coding agent substrate for Elixir/OTP projects",
+      source_url: @source_url,
+      package: package()
     ]
   end
 
@@ -20,6 +26,14 @@ defmodule Exy.MixProject do
   end
 
   # Run "mix help deps" to learn about dependencies.
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url},
+      files: ~w(lib test mix.exs mix.lock README.md AGENTS.md .formatter.exs .gitignore)
+    ]
+  end
+
   defp deps do
     [
       {:ex_ast, "~> 0.5.0"},
