@@ -2,7 +2,7 @@ defmodule Exy.Skill do
   @moduledoc """
   Procedural memory for Exy.
 
-  Skills are markdown files with YAML-like frontmatter. They capture reusable
+  Skills are markdown files with YAML frontmatter. They capture reusable
   workflows and can be patched as Exy learns.
   """
 
@@ -80,25 +80,19 @@ defmodule Exy.Skill do
 
   @spec validate_content(String.t()) :: :ok | {:error, String.t()}
   def validate_content(content) when is_binary(content) do
-    cond do
-      not String.starts_with?(content, "---\n") ->
-        {:error, "skill must start with frontmatter"}
-
-      not Regex.match?(~r/\n---\s*\n/s, String.slice(content, 4..-1//1)) ->
-        {:error, "frontmatter must be closed with ---"}
-
-      not String.contains?(content, "name:") ->
-        {:error, "frontmatter must include name"}
-
-      not String.contains?(content, "description:") ->
-        {:error, "frontmatter must include description"}
-
-      String.length(content) > 100_000 ->
-        {:error, "skill too large"}
-
-      true ->
-        :ok
+    with :ok <- validate_size(content),
+         {:ok, metadata, _body} <- Exy.Skill.Frontmatter.parse(content),
+         :ok <- require_frontmatter_key(metadata, "name") do
+      require_frontmatter_key(metadata, "description")
     end
+  end
+
+  defp validate_size(content) do
+    if String.length(content) > 100_000, do: {:error, "skill too large"}, else: :ok
+  end
+
+  defp require_frontmatter_key(metadata, key) do
+    if Map.has_key?(metadata, key), do: :ok, else: {:error, "frontmatter must include #{key}"}
   end
 
   defp validate_name(name) do

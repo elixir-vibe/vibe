@@ -17,7 +17,7 @@ defmodule Exy.MixProject do
       aliases: aliases(),
       dialyzer: [
         plt_file: {:no_warn, "_build/dev/dialyxir_plt.plt"},
-        plt_add_apps: [:mix]
+        plt_add_apps: [:mix, :credo, :ex_dna, :ex_slop]
       ]
     ]
   end
@@ -44,6 +44,7 @@ defmodule Exy.MixProject do
       {:ex_ast, "~> 0.5.0"},
       {:jason, "~> 1.4"},
       {:json_spec, "~> 1.1"},
+      {:yaml_elixir, "~> 2.12"},
       {:req, "~> 0.5"},
       {:req_llm, "~> 1.10"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
