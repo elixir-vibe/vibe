@@ -1,4 +1,4 @@
-defmodule Exy.Model do
+defmodule Exy.LLM.Model do
   @moduledoc """
   Model selection helpers.
   """

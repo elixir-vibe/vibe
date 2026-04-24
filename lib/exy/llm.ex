@@ -13,7 +13,7 @@ defmodule Exy.LLM do
 
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(prompt, opts \\ []) when is_binary(prompt) do
-    model = Exy.Model.resolve(opts)
+    model = Exy.LLM.Model.resolve(opts)
     system = Keyword.get(opts, :system, @default_system)
 
     messages = [
@@ -39,7 +39,7 @@ defmodule Exy.LLM do
   defp record_response({:ok, response}, session_id) do
     Exy.Trajectory.Store.append(:assistant_message, %{result: response}, session_id: session_id)
 
-    if usage = Exy.Usage.from_response(response) do
+    if usage = Exy.LLM.Usage.from_response(response) do
       Exy.Trajectory.Store.append(:llm_usage, usage, session_id: session_id)
     end
   end

@@ -32,7 +32,7 @@ defmodule Exy.Agent do
 
     Exy.Trajectory.Store.append(:assistant_message, data, session_id: session_id)
 
-    if usage = Exy.Usage.from_response(result) do
+    if usage = Exy.LLM.Usage.from_response(result) do
       Exy.Trajectory.Store.append(:llm_usage, usage, session_id: session_id)
     end
 
@@ -41,6 +41,11 @@ defmodule Exy.Agent do
 
   defp configure_model_alias(opts) do
     current = Application.get_env(:jido_ai, :model_aliases, %{})
-    Application.put_env(:jido_ai, :model_aliases, Map.put(current, :exy, Exy.Model.resolve(opts)))
+
+    Application.put_env(
+      :jido_ai,
+      :model_aliases,
+      Map.put(current, :exy, Exy.LLM.Model.resolve(opts))
+    )
   end
 end
