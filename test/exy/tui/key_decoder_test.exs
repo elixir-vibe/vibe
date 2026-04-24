@@ -6,6 +6,8 @@ defmodule Exy.TUI.KeyDecoderTest do
   test "decodes editor keys" do
     assert KeyDecoder.decode("\e[D") == [:left]
     assert KeyDecoder.decode("\e[C") == [:right]
+    assert KeyDecoder.decode("\eb") == [:word_left]
+    assert KeyDecoder.decode("\ef") == [:word_right]
     assert KeyDecoder.decode("\r") == [:submit]
     assert KeyDecoder.decode("\n") == [:enter]
     assert KeyDecoder.decode("\u007F") == [:backspace]

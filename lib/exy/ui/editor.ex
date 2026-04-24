@@ -14,6 +14,8 @@ defmodule Exy.UI.Editor do
   @type key ::
           :left
           | :right
+          | :word_left
+          | :word_right
           | :up
           | :down
           | :home
@@ -30,7 +32,11 @@ defmodule Exy.UI.Editor do
           | :external_editor
           | {:external_result, String.t()}
 
-  @type command :: {:submit, String.t()} | :cancel | {:external_editor, String.t()}
+  @type command ::
+          {:submit, String.t()}
+          | {:slash_command, String.t(), String.t()}
+          | :cancel
+          | {:external_editor, String.t()}
   @type t :: %__MODULE__{}
 
   @spec new(keyword()) :: t()
@@ -66,6 +72,12 @@ defmodule Exy.UI.Editor do
   def handle_key(%__MODULE__{} = editor, :right),
     do: {%{editor | cursor: min(editor.cursor + 1, String.length(editor.text))}, []}
 
+  def handle_key(%__MODULE__{} = editor, :word_left),
+    do: {%{editor | cursor: word_left(editor)}, []}
+
+  def handle_key(%__MODULE__{} = editor, :word_right),
+    do: {%{editor | cursor: word_right(editor)}, []}
+
   def handle_key(%__MODULE__{} = editor, :home),
     do: {%{editor | cursor: line_start(editor.text, editor.cursor)}, []}
 
@@ -85,7 +97,8 @@ defmodule Exy.UI.Editor do
       {editor, []}
     else
       history = [text | Enum.reject(editor.history, &(&1 == text))]
-      {%{editor | text: "", cursor: 0, history: history, history_index: nil}, [{:submit, text}]}
+      command = submit_command(text)
+      {%{editor | text: "", cursor: 0, history: history, history_index: nil}, [command]}
     end
   end
 
@@ -104,8 +117,8 @@ defmodule Exy.UI.Editor do
     {%{editor | text: updated}, []}
   end
 
-  def handle_key(%__MODULE__{} = editor, :up), do: history(editor, 1)
-  def handle_key(%__MODULE__{} = editor, :down), do: history(editor, -1)
+  def handle_key(%__MODULE__{} = editor, :up), do: move_up(editor)
+  def handle_key(%__MODULE__{} = editor, :down), do: move_down(editor)
 
   def handle_key(%__MODULE__{completions: []} = editor, :tab), do: {editor, []}
 
@@ -120,10 +133,44 @@ defmodule Exy.UI.Editor do
   @spec lines(t()) :: [String.t()]
   def lines(%__MODULE__{text: text}), do: String.split(text, "\n")
 
+  @spec line_column(t()) :: {non_neg_integer(), non_neg_integer()}
+  def line_column(%__MODULE__{} = editor), do: line_column(editor.text, editor.cursor)
+
   defp insert(editor, text) do
     {left, right} = String.split_at(editor.text, editor.cursor)
     %{editor | text: left <> text <> right, cursor: editor.cursor + String.length(text)}
   end
+
+  defp submit_command("/" <> slash) do
+    {command, args} = parse_slash_command(slash)
+    {:slash_command, command, args}
+  end
+
+  defp submit_command(text), do: {:submit, text}
+
+  defp parse_slash_command(text) do
+    case String.split(text, ~r/\s+/, parts: 2, trim: true) do
+      [command, args] -> {command, args}
+      [command] -> {command, ""}
+      [] -> {"", ""}
+    end
+  end
+
+  defp move_up(editor) do
+    if multiline?(editor.text), do: {move_vertical(editor, -1), []}, else: history(editor, 1)
+  end
+
+  defp move_down(editor) do
+    if multiline?(editor.text), do: {move_vertical(editor, 1), []}, else: history(editor, -1)
+  end
+
+  defp move_vertical(editor, direction) do
+    {line, column} = line_column(editor)
+    target_line = (line + direction) |> max(0) |> min(length(lines(editor)) - 1)
+    %{editor | cursor: cursor_at(editor.text, target_line, column)}
+  end
+
+  defp multiline?(text), do: String.contains?(text, "\n")
 
   defp history(%__MODULE__{history: []} = editor, _direction), do: {editor, []}
 
@@ -142,6 +189,41 @@ defmodule Exy.UI.Editor do
       {deleted, rest} -> {deleted, left <> rest}
     end
   end
+
+  defp line_column(text, cursor) do
+    before_cursor = String.slice(text, 0, cursor)
+    lines = String.split(before_cursor, "\n")
+    {length(lines) - 1, lines |> List.last() |> String.length()}
+  end
+
+  defp cursor_at(text, target_line, target_column) do
+    text
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.reduce_while(0, fn {line, index}, cursor ->
+      cond do
+        index < target_line -> {:cont, cursor + String.length(line) + 1}
+        true -> {:halt, cursor + min(target_column, String.length(line))}
+      end
+    end)
+  end
+
+  defp word_left(editor) do
+    graphemes =
+      editor.text |> String.slice(0, editor.cursor) |> String.graphemes() |> Enum.reverse()
+
+    remaining = graphemes |> drop_spaces() |> drop_word()
+    editor.cursor - (length(graphemes) - length(remaining))
+  end
+
+  defp word_right(editor) do
+    graphemes = editor.text |> String.slice(editor.cursor..-1//1) |> String.graphemes()
+    remaining = graphemes |> drop_spaces() |> drop_word()
+    editor.cursor + length(graphemes) - length(remaining)
+  end
+
+  defp drop_spaces(graphemes), do: Enum.drop_while(graphemes, &(&1 == " "))
+  defp drop_word(graphemes), do: Enum.drop_while(graphemes, &(&1 != " "))
 
   defp line_start(text, cursor) do
     text

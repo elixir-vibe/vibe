@@ -76,6 +76,13 @@ defmodule Exy.TUI.App do
     SessionServer.dispatch(state.ui, Command.new(:submit_prompt, %{text: text}))
   end
 
+  defp handle_editor_command({:slash_command, command, args}, state) do
+    SessionServer.dispatch(
+      state.ui,
+      Command.new(:slash_command_submitted, %{command: command, args: args})
+    )
+  end
+
   defp handle_editor_command(:cancel, state) do
     SessionServer.dispatch(state.ui, Command.new(:cancel_stream))
   end

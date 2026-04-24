@@ -25,6 +25,17 @@ defmodule Exy.TUI.AppTest do
     assert snapshot.width == 80
   end
 
+  test "routes slash commands into semantic UI events" do
+    {:ok, app} = App.start_link()
+
+    :ok = App.key(app, {:insert, "/model openai_codex:gpt-5.5"})
+    :ok = App.key(app, :submit)
+
+    assert Enum.any?(App.snapshot(app).ui.events, fn event ->
+             event.type == :slash_command_submitted and event.data.command == "model"
+           end)
+  end
+
   test "tracks resize" do
     {:ok, app} = App.start_link()
     :ok = App.resize(app, 120, 40)

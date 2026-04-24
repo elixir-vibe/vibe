@@ -6,6 +6,8 @@ defmodule Exy.TUI.KeyDecoder do
   @type key :: Exy.UI.Editor.key()
 
   @spec decode(binary()) :: [key()]
+  def decode("\eb"), do: [:word_left]
+  def decode("\ef"), do: [:word_right]
   def decode("\e[D"), do: [:left]
   def decode("\e[C"), do: [:right]
   def decode("\e[A"), do: [:up]
