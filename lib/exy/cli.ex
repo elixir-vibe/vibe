@@ -27,29 +27,6 @@ defmodule Exy.CLI do
 
   @aliases [h: :help, v: :version, p: :print]
 
-  @options [
-    {:model, "<provider:model>",
-     "ReqLLM/Jido model (default: EXY_MODEL or openai_codex:gpt-5.5)"},
-    {:api_key, "<key>", "API key for OpenAI-compatible requests"},
-    {:system_prompt, "<text>", "Override system prompt for direct TUI/--no-agent calls"},
-    {:mode, "<text|json>", "Output mode (default: text)"},
-    {:print, "-p", "Non-interactive mode: process prompt and exit"},
-    {:no_agent, nil, "Use direct ReqLLM call instead of Jido.AI agent"},
-    {:stream, nil, "Stream direct ReqLLM calls (default for --no-agent)"},
-    {:no_stream, nil, "Disable direct ReqLLM streaming"},
-    {:eval, "<code>", "Evaluate Elixir code through Exy.Eval"},
-    {:compact, nil, "Compact stored trajectory context"},
-    {:keep_recent, "<n>", "Events to keep when compacting (default: 12)"},
-    {:checks, nil, "Run Exy validation gates"},
-    {:codex_usage, nil, "Show Codex subscription usage via Codex app-server RPC"},
-    {:session, "<id>", "Continue or name a persisted JSONL session"},
-    {:sessions, nil, "List persisted sessions"},
-    {:timeout, "<ms>", "Request/eval timeout"},
-    {:login, "codex", "Sign in with ChatGPT/Codex OAuth"},
-    {:help, "-h", "Show help"},
-    {:version, "-v", "Show version"}
-  ]
-
   def main(argv) do
     {opts, args, invalid} = parse(argv)
 
@@ -59,7 +36,7 @@ defmodule Exy.CLI do
         {:error, :invalid_args}
 
       opts[:help] ->
-        IO.puts(help())
+        Mix.Tasks.Help.run(["exy"])
         :ok
 
       opts[:version] ->
@@ -221,47 +198,4 @@ defmodule Exy.CLI do
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
-
-  defp help do
-    [
-      "exy - BEAM-native Elixir coding agent",
-      "",
-      "Usage:",
-      "  mix exy                    Start the interactive TUI",
-      "  mix exy [options] [message...]",
-      "",
-      "Options:",
-      option_lines(),
-      "",
-      "Examples:",
-      "  mix exy                        # interactive TUI; Ctrl-C exits",
-      "  mix exy -p \"Inspect runtime info with elixir_eval\"",
-      "  mix exy --model anthropic:claude-sonnet-4-5-20250929 \"Review this project\"",
-      "  mix exy --login codex",
-      "  mix exy --compact --keep-recent 20",
-      "  mix exy --eval \"Exy.OTP.runtime_info()\""
-    ]
-    |> List.flatten()
-    |> Enum.join("\n")
-  end
-
-  defp option_lines do
-    max_width = @options |> Enum.map(&(&1 |> option_name() |> String.length())) |> Enum.max()
-
-    Enum.map(@options, fn option ->
-      name = option_name(option)
-      {_key, _meta, description} = option
-      "  #{String.pad_trailing(name, max_width)}  #{description}"
-    end)
-  end
-
-  defp option_name({key, nil, _description}), do: "--#{switch_name(key)}"
-
-  defp option_name({key, meta, _description}) do
-    if String.starts_with?(meta, "-") and byte_size(meta) == 2,
-      do: "--#{switch_name(key)}, #{meta}",
-      else: "--#{switch_name(key)} #{meta}"
-  end
-
-  defp switch_name(key), do: key |> Atom.to_string() |> String.replace("_", "-")
 end

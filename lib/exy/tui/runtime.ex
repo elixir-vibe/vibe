@@ -5,10 +5,6 @@ defmodule Exy.TUI.Runtime do
 
   alias Exy.TUI.TerminalLoop
 
-  @alt_screen_enter "\e[?1049h"
-  @alt_screen_leave "\e[?1049l"
-  @show_cursor "\e[?25h"
-  @hide_cursor "\e[?25l"
   @escape_timeout 30
   @resize_interval 250
 
@@ -27,10 +23,10 @@ defmodule Exy.TUI.Runtime do
 
     try do
       :ok = raw_mode()
-      IO.write([@alt_screen_enter, @hide_cursor, IO.ANSI.home(), IO.ANSI.clear()])
+      IO.write([IO.ANSI.home(), IO.ANSI.clear()])
       fun.()
     after
-      IO.write([IO.ANSI.reset(), @show_cursor, @alt_screen_leave])
+      IO.write(IO.ANSI.reset())
       restore_mode(original)
     end
   end

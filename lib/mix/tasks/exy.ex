@@ -4,12 +4,42 @@ defmodule Mix.Tasks.Exy do
   @moduledoc """
   Launches Exy from Mix.
 
-      mix exy
-      mix exy -p "Inspect runtime info"
-      mix exy --login codex
-      mix exy --eval "Exy.OTP.runtime_info()"
+  ## Usage
 
-  Run `mix exy --help` for options.
+      mix exy                    # Start the interactive TUI
+      mix exy [options] [message...]
+
+  ## Options
+
+    * `--model <provider:model>` - ReqLLM/Jido model.
+      Defaults to `EXY_MODEL` or `openai_codex:gpt-5.5`.
+    * `--api-key <key>` - API key for OpenAI-compatible requests.
+    * `--system-prompt <text>` - Override system prompt for direct TUI/`--no-agent` calls.
+    * `--mode <text|json>` - Output mode. Defaults to `text`.
+    * `--print`, `-p` - Non-interactive mode: process prompt and exit.
+    * `--no-agent` - Use direct ReqLLM call instead of Jido.AI agent.
+    * `--stream` - Stream direct ReqLLM calls. Default for `--no-agent`.
+    * `--no-stream` - Disable direct ReqLLM streaming.
+    * `--eval <code>` - Evaluate Elixir code through `Exy.Eval`.
+    * `--compact` - Compact stored trajectory context.
+    * `--keep-recent <n>` - Events to keep when compacting. Defaults to `12`.
+    * `--checks` - Run Exy validation gates.
+    * `--codex-usage` - Show Codex subscription usage via Codex app-server RPC.
+    * `--session <id>` - Continue or name a persisted JSONL session.
+    * `--sessions` - List persisted sessions.
+    * `--timeout <ms>` - Request/eval timeout.
+    * `--login codex` - Sign in with ChatGPT/Codex OAuth.
+    * `--help`, `-h` - Show this help.
+    * `--version`, `-v` - Show version.
+
+  ## Examples
+
+      mix exy
+      mix exy -p "Inspect runtime info with elixir_eval"
+      mix exy --model anthropic:claude-sonnet-4-5-20250929 "Review this project"
+      mix exy --login codex
+      mix exy --compact --keep-recent 20
+      mix exy --eval "Exy.OTP.runtime_info()"
   """
 
   use Mix.Task
