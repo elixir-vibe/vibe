@@ -87,6 +87,12 @@ defmodule Exy.TUI do
   def model_info(props), do: Exy.TUI.DSL.model_info(props)
   def input(props), do: Exy.TUI.DSL.input(props)
   def textarea(props), do: Exy.TUI.DSL.textarea(props)
+  def select_list(props), do: Exy.TUI.DSL.select_list(props)
+
+  def notifications(%Exy.UI.Block.NotificationList{items: items}),
+    do: Exy.TUI.DSL.notifications(items: items)
+
+  def notifications(props), do: Exy.TUI.DSL.notifications(props)
   def dialog(title, children, opts \\ []), do: Exy.TUI.DSL.dialog(title, children, opts)
   def diff(props), do: Exy.TUI.DSL.diff(props)
 end

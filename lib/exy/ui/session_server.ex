@@ -39,6 +39,7 @@ defmodule Exy.UI.SessionServer do
      %{
        state: state,
        ask_fun: Keyword.get(opts, :ask_fun, &default_ask/2),
+       streaming?: not Keyword.has_key?(opts, :ask_fun),
        subscribers: %{}
      }}
   end
@@ -66,6 +67,15 @@ defmodule Exy.UI.SessionServer do
     {:noreply, state}
   end
 
+  def handle_info({:assistant_delta, text}, state) do
+    {:noreply, emit(state, Event.new(:assistant_delta, state.state.session_id, %{text: text}))}
+  end
+
+  def handle_info({:assistant_thinking_delta, text}, state) do
+    {:noreply,
+     emit(state, Event.new(:assistant_thinking_delta, state.state.session_id, %{text: text}))}
+  end
+
   defp handle_command(%Command{type: :submit_prompt, data: %{text: text}}, state)
        when is_binary(text) do
     session_id = state.state.session_id
@@ -73,7 +83,10 @@ defmodule Exy.UI.SessionServer do
     ask_fun = state.ask_fun
     parent = self()
 
-    Task.start(fn -> send(parent, {:prompt_result, ask_fun.(text, session_id: session_id)}) end)
+    {ask_opts, state} = ask_options(state, parent, session_id)
+
+    Task.start(fn -> send(parent, {:prompt_result, ask_fun.(text, ask_opts)}) end)
+
     state
   end
 
@@ -89,9 +102,26 @@ defmodule Exy.UI.SessionServer do
     emit(state, Event.new(type, state.state.session_id, data))
   end
 
+  defp ask_options(%{streaming?: true} = state, parent, session_id) do
+    state = emit(state, Event.new(:assistant_stream_started, session_id, %{}))
+
+    {[
+       session_id: session_id,
+       on_result: &send(parent, {:assistant_delta, &1}),
+       on_thinking: &send(parent, {:assistant_thinking_delta, &1})
+     ], state}
+  end
+
+  defp ask_options(state, _parent, session_id), do: {[session_id: session_id], state}
+
   defp record_prompt_result(state, {:ok, response}) do
-    data = %{result: response}
-    state = emit(state, Event.new(:assistant_message_added, state.state.session_id, data))
+    state =
+      if state.state.streaming_message do
+        emit(state, Event.new(:assistant_stream_finished, state.state.session_id, %{}))
+      else
+        data = %{result: response}
+        emit(state, Event.new(:assistant_message_added, state.state.session_id, data))
+      end
 
     case Usage.from_response(response) do
       nil -> state
@@ -100,6 +130,12 @@ defmodule Exy.UI.SessionServer do
   end
 
   defp record_prompt_result(state, {:error, reason}) do
+    state =
+      emit(
+        state,
+        Event.new(:assistant_aborted, state.state.session_id, %{reason: inspect(reason)})
+      )
+
     emit(
       state,
       Event.new(:assistant_message_added, state.state.session_id, %{error: inspect(reason)})
@@ -117,5 +153,11 @@ defmodule Exy.UI.SessionServer do
   defp normalize_command({type, data}) when is_atom(type) and is_map(data),
     do: Command.new(type, data)
 
-  defp default_ask(text, opts), do: LLM.ask(text, opts)
+  defp default_ask(text, opts) do
+    if Keyword.has_key?(opts, :on_result) or Keyword.has_key?(opts, :on_thinking) do
+      LLM.stream(text, opts)
+    else
+      LLM.ask(text, opts)
+    end
+  end
 end

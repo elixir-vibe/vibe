@@ -1,0 +1,86 @@
+defmodule Exy.TUI.App do
+  @moduledoc """
+  Minimal terminal app coordinator.
+
+  This module keeps terminal mechanics out of semantic UI state. It accepts key
+  events and resize events, delegates editing to `Exy.UI.EditorServer`, and
+  dispatches semantic commands to `Exy.UI.SessionServer`.
+  """
+
+  use GenServer
+
+  alias Exy.UI.{Command, EditorServer, SessionServer}
+
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts \\ []) do
+    {server_opts, init_opts} = Keyword.split(opts, [:name])
+    GenServer.start_link(__MODULE__, init_opts, server_opts)
+  end
+
+  @spec key(GenServer.server(), Exy.UI.Editor.key()) :: :ok
+  def key(server, key), do: GenServer.call(server, {:key, key})
+
+  @spec resize(GenServer.server(), pos_integer(), pos_integer()) :: :ok
+  def resize(server, columns, rows), do: GenServer.call(server, {:resize, columns, rows})
+
+  @spec snapshot(GenServer.server()) :: map()
+  def snapshot(server), do: GenServer.call(server, :snapshot)
+
+  @impl true
+  def init(opts) do
+    {:ok, ui} = SessionServer.start_link(opts)
+    {:ok, editor} = EditorServer.start_link(history: Keyword.get(opts, :history, []))
+    :ok = SessionServer.subscribe(ui, self())
+
+    {:ok,
+     %{
+       ui: ui,
+       editor: editor,
+       width: Keyword.get(opts, :width, 100),
+       height: Keyword.get(opts, :height, 30),
+       events: []
+     }}
+  end
+
+  @impl true
+  def handle_call({:key, key}, _from, state) do
+    commands = EditorServer.key(state.editor, key)
+    Enum.each(commands, &handle_editor_command(&1, state))
+    {:reply, :ok, state}
+  end
+
+  def handle_call({:resize, columns, rows}, _from, state) do
+    {:reply, :ok, %{state | width: columns, height: rows}}
+  end
+
+  def handle_call(:snapshot, _from, state) do
+    snapshot = %{
+      ui: SessionServer.state(state.ui),
+      editor: EditorServer.state(state.editor),
+      width: state.width,
+      height: state.height,
+      events: Enum.reverse(state.events)
+    }
+
+    {:reply, snapshot, state}
+  end
+
+  @impl true
+  def handle_info({:exy_ui_event, event}, state) do
+    {:noreply, %{state | events: [event | state.events]}}
+  end
+
+  def handle_info(_message, state), do: {:noreply, state}
+
+  defp handle_editor_command({:submit, text}, state) do
+    SessionServer.dispatch(state.ui, Command.new(:submit_prompt, %{text: text}))
+  end
+
+  defp handle_editor_command(:cancel, state) do
+    SessionServer.dispatch(state.ui, Command.new(:cancel_stream))
+  end
+
+  defp handle_editor_command({:external_editor, text}, state) do
+    SessionServer.dispatch(state.ui, Command.new(:external_editor_requested, %{text: text}))
+  end
+end

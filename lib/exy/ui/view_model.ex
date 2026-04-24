@@ -4,18 +4,23 @@ defmodule Exy.UI.ViewModel do
   """
 
   alias Exy.Lists
-  alias Exy.UI.Block.{AssistantMessage, Footer, Overlay, ToolCall, UserMessage}
+  alias Exy.UI.Block.{AssistantMessage, Footer, NotificationList, Overlay, ToolCall, UserMessage}
 
   @type t :: %{
           body: [struct()],
           footer: Footer.t(),
-          overlays: [Overlay.t()]
+          overlays: [Overlay.t()],
+          notifications: NotificationList.t() | nil
         }
 
   @spec from_state(Exy.UI.State.t()) :: t()
   def from_state(state) do
     %{
-      body: Lists.join(message_blocks(state), tool_blocks(state)),
+      body:
+        state
+        |> message_blocks()
+        |> Lists.join(streaming_blocks(state))
+        |> Lists.join(tool_blocks(state)),
       footer: %Footer{
         cwd: state.cwd,
         model: state.model,
@@ -23,7 +28,8 @@ defmodule Exy.UI.ViewModel do
         status: state.status,
         usage: state.usage
       },
-      overlays: Enum.map(state.overlays, &%Overlay{kind: &1.kind, data: &1})
+      overlays: Enum.map(state.overlays, &%Overlay{kind: &1.kind, data: &1}),
+      notifications: notification_block(state.notifications)
     }
   end
 
@@ -69,6 +75,15 @@ defmodule Exy.UI.ViewModel do
   end
 
   defp content_text(_content), do: nil
+
+  defp streaming_blocks(%{streaming_message: nil}), do: []
+
+  defp streaming_blocks(%{streaming_message: message}) do
+    [%AssistantMessage{id: "streaming", text: Map.get(message, :text), at: Map.get(message, :at)}]
+  end
+
+  defp notification_block([]), do: nil
+  defp notification_block(items), do: %NotificationList{items: items}
 
   defp tool_blocks(state) do
     state.pending_tools

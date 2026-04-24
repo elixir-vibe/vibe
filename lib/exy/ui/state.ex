@@ -11,6 +11,8 @@ defmodule Exy.UI.State do
             usage: %{input_tokens: 0, output_tokens: 0, total_tokens: 0, total_cost: 0.0},
             status: :idle,
             overlays: [],
+            notifications: [],
+            streaming_message: nil,
             editor: %{text: "", history: []},
             events: []
 
@@ -29,6 +31,8 @@ defmodule Exy.UI.State do
           usage: map(),
           status: atom(),
           overlays: [map()],
+          notifications: [map()],
+          streaming_message: map() | nil,
           editor: map(),
           events: [Exy.UI.Event.t()]
         }

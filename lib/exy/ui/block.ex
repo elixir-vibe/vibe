@@ -31,4 +31,11 @@ defmodule Exy.UI.Block do
 
     @type t :: %__MODULE__{}
   end
+
+  defmodule NotificationList do
+    @moduledoc false
+    defstruct items: []
+
+    @type t :: %__MODULE__{}
+  end
 end

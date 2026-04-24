@@ -63,6 +63,12 @@ defmodule Exy.TUI.DSL do
   @spec textarea(keyword() | map()) :: Node.t()
   def textarea(props), do: node(:textarea, Map.new(props))
 
+  @spec select_list(keyword() | map()) :: Node.t()
+  def select_list(props), do: node(:select_list, Map.new(props))
+
+  @spec notifications(keyword() | map()) :: Node.t()
+  def notifications(props), do: node(:notifications, Map.new(props))
+
   @spec dialog(IO.chardata(), [child()], keyword() | map()) :: Node.t()
   def dialog(title, children, opts \\ []) do
     node(:dialog, Map.put(Map.new(opts), :title, title), List.wrap(children))

@@ -21,6 +21,8 @@ defmodule Exy.TUI.Widget do
     model_info: Exy.TUI.Widgets.ModelInfo,
     input: Exy.TUI.Widgets.Input,
     textarea: Exy.TUI.Widgets.Textarea,
+    select_list: Exy.TUI.Widgets.SelectList,
+    notifications: Exy.TUI.Widgets.Notifications,
     horizontal: Exy.TUI.Widgets.Horizontal,
     box: Exy.TUI.Widgets.Box,
     padding: Exy.TUI.Widgets.Padding,

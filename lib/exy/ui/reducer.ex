@@ -23,7 +23,51 @@ defmodule Exy.UI.Reducer do
 
   defp reduce(state, %Event{type: :assistant_message_added, at: at, data: data}) do
     message = Map.merge(%{role: :assistant, at: at}, data)
-    %{state | messages: Lists.append(state.messages, message), status: :idle}
+
+    %{
+      state
+      | messages: Lists.append(state.messages, message),
+        status: :idle,
+        streaming_message: nil
+    }
+  end
+
+  defp reduce(state, %Event{type: :assistant_stream_started, at: at}) do
+    %{
+      state
+      | streaming_message: %{role: :assistant, text: "", thinking: "", at: at},
+        status: :working
+    }
+  end
+
+  defp reduce(state, %Event{type: :assistant_delta, data: %{text: text}}) do
+    update_streaming(state, :text, text)
+  end
+
+  defp reduce(state, %Event{type: :assistant_thinking_delta, data: %{text: text}}) do
+    update_streaming(state, :thinking, text)
+  end
+
+  defp reduce(state, %Event{type: :assistant_stream_finished, at: at}) do
+    message = Map.put(state.streaming_message || %{role: :assistant, text: "", at: at}, :at, at)
+
+    %{
+      state
+      | messages: Lists.append(state.messages, message),
+        streaming_message: nil,
+        status: :idle
+    }
+  end
+
+  defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
+    notice = %{level: :warning, text: Map.get(data, :reason, "stream aborted")}
+
+    %{
+      state
+      | notifications: Lists.append(state.notifications, notice),
+        streaming_message: nil,
+        status: :idle
+    }
   end
 
   defp reduce(state, %Event{type: :tool_started, data: %{id: id} = data}) do
@@ -34,6 +78,20 @@ defmodule Exy.UI.Reducer do
   defp reduce(state, %Event{type: :tool_finished, data: %{id: id} = data}) do
     pending_tools = Map.update(state.pending_tools, id, data, &Map.merge(&1, data))
     %{state | pending_tools: pending_tools}
+  end
+
+  defp reduce(state, %Event{type: :tool_toggled, data: %{id: id}}) do
+    pending_tools =
+      Map.update(state.pending_tools, id, nil, fn
+        nil -> nil
+        tool -> Map.update(tool, :expanded?, true, &(!&1))
+      end)
+
+    %{state | pending_tools: pending_tools}
+  end
+
+  defp reduce(state, %Event{type: :patch_confirmation_requested, data: data}) do
+    %{state | overlays: Lists.append(state.overlays, Map.put(data, :kind, :patch_confirmation))}
   end
 
   defp reduce(state, %Event{type: :usage_updated, data: usage}) do
@@ -52,5 +110,19 @@ defmodule Exy.UI.Reducer do
     %{state | overlays: Enum.drop(state.overlays, -1)}
   end
 
+  defp reduce(state, %Event{type: :notification_added, data: data}) do
+    %{state | notifications: Lists.append(state.notifications, data)}
+  end
+
+  defp reduce(state, %Event{type: :notification_expired, data: %{id: id}}) do
+    %{state | notifications: Enum.reject(state.notifications, &(&1[:id] == id || &1["id"] == id))}
+  end
+
   defp reduce(state, _event), do: state
+
+  defp update_streaming(state, key, delta) do
+    message = state.streaming_message || %{role: :assistant, text: "", thinking: ""}
+    updated = Map.update(message, key, delta, &(&1 <> delta))
+    %{state | streaming_message: updated, status: :working}
+  end
 end
