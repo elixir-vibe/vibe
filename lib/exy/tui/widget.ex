@@ -100,14 +100,41 @@ defmodule Exy.TUI.Widget do
   defp wrap_line("", _width), do: [""]
 
   defp wrap_line(line, width) do
-    if Width.visible_length(line) <= width do
-      [line]
-    else
-      line
-      |> Width.visible_text()
-      |> String.graphemes()
-      |> Enum.chunk_every(width)
-      |> Enum.map(&Enum.join/1)
+    cond do
+      Width.visible_length(line) <= width ->
+        [line]
+
+      String.contains?(line, " ") ->
+        word_wrap(line, width)
+
+      true ->
+        line
+        |> Width.visible_text()
+        |> String.graphemes()
+        |> Enum.chunk_every(width)
+        |> Enum.map(&Enum.join/1)
     end
+  end
+
+  defp word_wrap(line, width) do
+    line
+    |> String.split(~r/(\s+)/, include_captures: true, trim: true)
+    |> Enum.reduce([""], fn part, [current | rest] ->
+      candidate = [current, part]
+      current_text = IO.iodata_to_binary(current)
+
+      cond do
+        String.trim(current_text) == "" ->
+          [String.trim_leading(part) | rest]
+
+        Width.visible_length(candidate) <= width ->
+          [candidate | rest]
+
+        true ->
+          [String.trim_leading(part), String.trim_trailing(current_text) | rest]
+      end
+    end)
+    |> Enum.reverse()
+    |> Enum.reject(&(&1 == ""))
   end
 end

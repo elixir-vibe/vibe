@@ -22,7 +22,7 @@ defmodule Exy.TUI.MarkdownTest do
 
     plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
 
-    assert plain =~ "# Title"
+    assert plain =~ "Title\n─"
     assert plain =~ "Some bold and italic and code."
     assert plain =~ "elixir"
     assert plain =~ "IO.puts(:ok)"

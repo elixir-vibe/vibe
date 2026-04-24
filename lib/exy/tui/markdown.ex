@@ -38,11 +38,18 @@ defmodule Exy.TUI.Markdown do
     end
   end
 
-  defp block(%MDEx.Heading{level: level, nodes: nodes}, width, theme) do
-    marker = String.duplicate("#", level)
-    text = inline(nodes, theme)
-    line = Theme.bold(Theme.fg(theme, :accent, [marker, " ", text]))
-    Widget.wrap(line, width)
+  defp block(%MDEx.Heading{level: 1, nodes: nodes}, width, theme) do
+    title = theme |> Theme.fg(:accent, inline(nodes, theme)) |> Theme.bold()
+
+    underline =
+      Theme.fg(theme, :border, String.duplicate(Theme.symbol(theme, :section_line), width))
+
+    Widget.wrap(title, width) |> join_lines([underline, ""])
+  end
+
+  defp block(%MDEx.Heading{nodes: nodes}, width, theme) do
+    title = theme |> Theme.fg(:accent, inline(nodes, theme)) |> Theme.bold()
+    Widget.wrap(title, width) |> append_blank()
   end
 
   defp block(%MDEx.Paragraph{nodes: nodes}, width, theme),
@@ -50,8 +57,17 @@ defmodule Exy.TUI.Markdown do
 
   defp block(%MDEx.CodeBlock{literal: literal, info: info}, width, theme) do
     language = if info in [nil, ""], do: nil, else: String.trim(info)
-    border = Theme.fg(theme, :border, String.duplicate(Theme.symbol(theme, :section_line), width))
-    header = if language, do: [[Theme.fg(theme, :muted, language), " ", border]], else: [border]
+    line = Theme.symbol(theme, :section_line)
+    border = Theme.fg(theme, :border, String.duplicate(line, width))
+
+    header =
+      if language do
+        label = Theme.fg(theme, :muted, language)
+        fill = String.duplicate(line, max(width - Width.visible_length(label) - 1, 0))
+        [[label, " ", Theme.fg(theme, :border, fill)]]
+      else
+        [border]
+      end
 
     body =
       literal
@@ -115,17 +131,20 @@ defmodule Exy.TUI.Markdown do
     cells = Enum.map(rows, &table_row(&1, theme))
     widths = column_widths(cells, width)
 
-    cells
-    |> Enum.with_index()
-    |> Enum.flat_map(fn {row, index} ->
-      line = table_line(row, widths, theme)
+    rows =
+      cells
+      |> Enum.with_index()
+      |> Enum.flat_map(fn {row, index} ->
+        line = table_line(row, widths, theme)
 
-      if index == 0 do
-        [line, table_separator(widths, theme)]
-      else
-        [line]
-      end
-    end)
+        if index == 0 do
+          [line, table_separator(widths, theme)]
+        else
+          [line]
+        end
+      end)
+
+    Exy.TUI.Lines.append(rows, table_bottom(widths, theme))
   end
 
   defp table_row(%MDEx.TableRow{nodes: cells}, theme),
@@ -158,6 +177,11 @@ defmodule Exy.TUI.Markdown do
   defp table_separator(widths, theme) do
     parts = widths |> Enum.map(&String.duplicate("─", &1)) |> Enum.intersperse("─┼─")
     Theme.fg(theme, :border, ["├─", parts, "─┤"])
+  end
+
+  defp table_bottom(widths, theme) do
+    parts = widths |> Enum.map(&String.duplicate("─", &1)) |> Enum.intersperse("─┴─")
+    Theme.fg(theme, :border, ["╰─", parts, "─╯"])
   end
 
   defp inline(nodes, theme) when is_list(nodes), do: Enum.map(nodes, &inline(&1, theme))
