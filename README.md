@@ -30,6 +30,8 @@ Everything else is normal Elixir callable from `elixir_eval`:
 - `Exy.Subagents` — supervised subagent process runner
 - `Exy.Skill` — procedural-memory skill files
 - `Exy.Trajectory` — structured event capture for self-improvement
+- `Exy.Session` — persisted JSONL dialogs, events, and usage under `~/.exy/sessions`
+- `Exy.Usage` — normalized token/cost accounting from model responses
 - `Exy.Context` — pi-style context compaction checkpoints
 - `Exy.Runtime` / `Exy.Script` — Livebook-inspired standalone BEAM runtime and Mix.install script runner
 - `Exy.Sandbox.Policy` — explicit isolation policy data for runtime selection
@@ -74,11 +76,12 @@ Exy.Auth.ensure_fresh("openai-codex")
 Exy.Auth.usage("openai-codex")
 
 # Direct LLM call through ReqLLM
-Exy.LLM.ask("Summarize Exy's architecture", model: "openai:gpt-4o-mini")
+Exy.LLM.ask("Summarize Exy's architecture")
 
 # Elixir API: Jido-backed agent
-{:ok, pid} = Exy.start_link(model: "openai:gpt-4o-mini")
+{:ok, pid} = Exy.start_link()
 Exy.ask(pid, "Use elixir_eval to inspect runtime info")
+Exy.Session.list()
 
 # CLI / Mix task
 #   mix exy
@@ -87,6 +90,8 @@ Exy.ask(pid, "Use elixir_eval to inspect runtime info")
 #   mix exy --compact --keep-recent 20
 #   mix exy --checks
 #   mix exy --codex-usage
+#   mix exy --sessions
+#   mix exy --session work-1 -p "Continue this persisted session"
 #   mix exy --login codex
 
 # Expert LSP gateway

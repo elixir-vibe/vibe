@@ -6,6 +6,14 @@ defmodule ExyCoreTest do
     :ok
   end
 
+  test "default model is newest ChatGPT Codex model" do
+    assert Exy.Model.default() == "openai_codex:gpt-5.5"
+    assert Exy.Model.resolve() == "openai_codex:gpt-5.5"
+
+    assert Exy.Model.resolve(model: "anthropic:claude-sonnet-4-5-20250929") ==
+             "anthropic:claude-sonnet-4-5-20250929"
+  end
+
   test "eval captures result and io" do
     assert {:ok, output} = Exy.Eval.run(~s|IO.puts("hello"); 1 + 2|)
     assert output =~ "hello"
@@ -51,6 +59,51 @@ defmodule ExyCoreTest do
     assert %{code: "1 + 1"} = JSONSpec.atomize(Exy.Actions.Eval.schema(), %{code: "1 + 1"})
   end
 
+  test "session JSONL persists trajectory events" do
+    session_dir =
+      Path.join(System.tmp_dir!(), "exy-session-test-#{System.unique_integer([:positive])}")
+
+    previous = Application.get_env(:exy, :session_dir)
+    Application.put_env(:exy, :session_dir, session_dir)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:exy, :session_dir, previous),
+        else: Application.delete_env(:exy, :session_dir)
+
+      File.rm_rf(session_dir)
+    end)
+
+    session_id = "test-session"
+    Exy.Trajectory.Store.append(:user_message, %{prompt: "hello"}, session_id: session_id)
+
+    Exy.Trajectory.Store.append(:llm_usage, %{input_tokens: 2, output_tokens: 3, total_tokens: 5},
+      session_id: session_id
+    )
+
+    assert File.exists?(Exy.Session.path(session_id))
+    assert [%{id: ^session_id, path: path}] = Exy.Session.list()
+    assert path == Exy.Session.path(session_id)
+
+    assert [user, usage] = Exy.Session.events(session_id)
+    assert user.type == :user_message
+    assert user.data.prompt == "hello"
+    assert usage.type == :llm_usage
+    assert usage.data.total_tokens == 5
+  end
+
+  test "usage extraction normalizes model response usage" do
+    usage =
+      Exy.Usage.from_response(%{
+        model: "openai_codex:gpt-5.5",
+        usage: %{input_tokens: 4, output_tokens: 6, total_tokens: 10, total_cost: 0.2}
+      })
+
+    assert usage.model == "openai_codex:gpt-5.5"
+    assert usage.input_tokens == 4
+    assert Exy.Usage.summarize([usage]).total_tokens == 10
+  end
+
   test "context serialization keeps structured handoff data" do
     events = [
       Exy.Trajectory.new(:user_message, %{prompt: "Build Exy"}),
@@ -90,6 +143,31 @@ defmodule ExyCoreTest do
 
     assert output =~ "hello"
     assert :ok = Exy.Runtime.stop(runtime)
+  end
+
+  test "agent sessions are optional and attached to the pid" do
+    session_dir =
+      Path.join(System.tmp_dir!(), "exy-agent-session-test-#{System.unique_integer([:positive])}")
+
+    previous = Application.get_env(:exy, :session_dir)
+    Application.put_env(:exy, :session_dir, session_dir)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:exy, :session_dir, previous),
+        else: Application.delete_env(:exy, :session_dir)
+
+      File.rm_rf(session_dir)
+    end)
+
+    {:ok, pid} = Exy.start_link(session_id: "agent-session")
+
+    assert {:error, _reason} = Exy.ask(pid, "hello", timeout: 1)
+    assert [%{id: "agent-session"}] = Exy.Session.list()
+    assert [user, assistant | _] = Exy.Session.events("agent-session")
+    assert user.type == :user_message
+    assert user.data.prompt == "hello"
+    assert assistant.type == :assistant_message
   end
 
   test "subagents run under supervision and record trajectory" do

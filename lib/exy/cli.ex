@@ -34,6 +34,9 @@ defmodule Exy.CLI do
       opts[:codex_usage] ->
         print_result(Exy.Auth.Codex.usage_limits(), opts)
 
+      opts[:sessions] ->
+        print_result({:ok, Exy.Session.list()}, opts)
+
       opts[:print] or args != [] ->
         prompt = Enum.join(args, " ")
         ask(prompt, opts)
@@ -60,6 +63,8 @@ defmodule Exy.CLI do
         checks: :boolean,
         codex_usage: :boolean,
         timeout: :integer,
+        session: :string,
+        sessions: :boolean,
         no_agent: :boolean
       ],
       aliases: [h: :help, v: :version, p: :print]
@@ -84,13 +89,14 @@ defmodule Exy.CLI do
 
   defp ask(prompt, opts) do
     configure_api_key(opts)
+    session_id = session_id(opts)
 
     result =
       if opts[:no_agent] do
-        Exy.LLM.ask(prompt, llm_opts(opts))
+        Exy.LLM.ask(prompt, Keyword.put(llm_opts(opts), :session_id, session_id))
       else
         with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
-          Exy.ask(pid, prompt, timeout: opts[:timeout] || 120_000)
+          Exy.ask(pid, prompt, timeout: opts[:timeout] || 120_000, session_id: session_id)
         end
       end
 
@@ -99,9 +105,11 @@ defmodule Exy.CLI do
 
   defp repl(opts) do
     configure_api_key(opts)
-    {:ok, pid} = Exy.start_link(agent_opts(opts))
-    IO.puts("Exy #{@version}. Type /quit to exit, /help for commands.\n")
-    loop(pid, opts)
+    session_id = session_id(opts)
+    {:ok, pid} = Exy.start_link(Keyword.put(agent_opts(opts), :session_id, session_id))
+    IO.puts("Exy #{@version}. Type /quit to exit, /help for commands.")
+    IO.puts("Session: #{session_id}\n")
+    loop(pid, Keyword.put(opts, :session, session_id))
   end
 
   defp loop(pid, opts) do
@@ -127,7 +135,14 @@ defmodule Exy.CLI do
             loop(pid, opts)
 
           prompt ->
-            print_result(Exy.ask(pid, prompt, timeout: opts[:timeout] || 120_000), opts)
+            print_result(
+              Exy.ask(pid, prompt,
+                timeout: opts[:timeout] || 120_000,
+                session_id: opts[:session]
+              ),
+              opts
+            )
+
             loop(pid, opts)
         end
     end
@@ -185,6 +200,8 @@ defmodule Exy.CLI do
     |> maybe_put(:system, opts[:system_prompt])
   end
 
+  defp session_id(opts), do: opts[:session] || Exy.Session.new_id()
+
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
 
@@ -204,7 +221,7 @@ defmodule Exy.CLI do
       mix exy [options] [message...]
 
     Options:
-      --model <provider:model>       ReqLLM/Jido model (default: EXY_MODEL or openai:gpt-4o-mini)
+      --model <provider:model>       ReqLLM/Jido model (default: EXY_MODEL or openai_codex:gpt-5.5)
       --api-key <key>                API key for OpenAI-compatible requests
       --system-prompt <text>         Override system prompt for --no-agent direct ReqLLM calls
       --mode <text|json>             Output mode (default: text)
@@ -215,6 +232,8 @@ defmodule Exy.CLI do
       --keep-recent <n>              Events to keep when compacting (default: 12)
       --checks                       Run Exy validation gates
       --codex-usage                  Show Codex subscription usage via Codex app-server RPC
+      --session <id>                 Continue or name a persisted JSONL session
+      --sessions                     List persisted sessions
       --timeout <ms>                 Request/eval timeout
       --login codex                  Sign in with ChatGPT/Codex OAuth
       --help, -h                     Show help

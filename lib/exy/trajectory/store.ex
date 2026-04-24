@@ -32,7 +32,10 @@ defmodule Exy.Trajectory.Store do
   def init(_opts), do: {:ok, []}
 
   @impl true
-  def handle_call({:append, event}, _from, events), do: {:reply, :ok, [event | events]}
+  def handle_call({:append, event}, _from, events) do
+    _ = Exy.Session.append(event)
+    {:reply, :ok, [event | events]}
+  end
 
   def handle_call({:list, opts}, _from, events) do
     limit = Keyword.get(opts, :limit, :infinity)
