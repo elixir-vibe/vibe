@@ -39,10 +39,18 @@ defmodule Exy.Eval do
     {{success?, result}, io} = capture_io(fn -> eval_code(code) end)
 
     cond do
-      success? and result == :__exy_no_output__ -> {:ok, io}
-      success? and io == "" -> {:ok, inspect(result, @inspect_opts)}
-      success? -> {:ok, "IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}"}
-      true -> {:error, result}
+      success? and result == :__exy_no_output__ ->
+        {:ok, Exy.ToolOutput.limit_text(io)}
+
+      success? and io == "" ->
+        {:ok, result |> inspect(@inspect_opts) |> Exy.ToolOutput.limit_text()}
+
+      success? ->
+        {:ok,
+         Exy.ToolOutput.limit_text("IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}")}
+
+      true ->
+        {:error, Exy.ToolOutput.limit_text(result)}
     end
   end
 

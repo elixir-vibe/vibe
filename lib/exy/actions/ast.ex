@@ -35,6 +35,11 @@ defmodule Exy.Actions.AST do
   @impl true
   def run(params, _context) do
     params = JSONSpec.atomize(@schema, params)
-    Exy.AST.run(params)
+
+    case Exy.AST.run(params) do
+      {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
+      {:error, error} when is_binary(error) -> {:error, Exy.ToolOutput.limit_text(error)}
+      other -> other
+    end
   end
 end
