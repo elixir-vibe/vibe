@@ -13,6 +13,10 @@ defmodule Exy.UI.State do
             overlays: [],
             notifications: [],
             plugin_statuses: %{},
+            plugin_widgets: %{},
+            working_message: nil,
+            hidden_thinking_label: nil,
+            title: nil,
             streaming_message: nil,
             editor: %{text: "", history: []},
             events: []
@@ -34,6 +38,10 @@ defmodule Exy.UI.State do
           overlays: [map()],
           notifications: [map()],
           plugin_statuses: map(),
+          plugin_widgets: map(),
+          working_message: String.t() | nil,
+          hidden_thinking_label: String.t() | nil,
+          title: String.t() | nil,
           streaming_message: map() | nil,
           editor: map(),
           events: [Exy.UI.Event.t()]

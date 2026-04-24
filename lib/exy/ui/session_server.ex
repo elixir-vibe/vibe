@@ -39,6 +39,7 @@ defmodule Exy.UI.SessionServer do
     state = State.new(opts)
 
     maybe_register_ui_bus(state.session_id)
+    dispatch_plugin_lifecycle(:session_started, %{}, state)
 
     {:ok,
      %{
@@ -88,6 +89,7 @@ defmodule Exy.UI.SessionServer do
   defp handle_command(%Command{type: :submit_prompt, data: %{text: text}}, state)
        when is_binary(text) do
     session_id = state.state.session_id
+    state = emit(state, Event.new(:prompt_submitted, session_id, %{text: text}))
     state = emit(state, Event.new(:user_message_added, session_id, %{text: text}))
     ask_fun = state.ask_fun
     parent = self()
@@ -153,8 +155,30 @@ defmodule Exy.UI.SessionServer do
 
   defp emit(state, event) do
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {:exy_ui_event, event}) end)
+    dispatch_plugin_event(state.state, event)
     %{state | state: Reducer.apply_event(state.state, event)}
   end
+
+  defp dispatch_plugin_event(ui_state, event) do
+    dispatch_plugin_lifecycle(event.type, event.data, ui_state, plugin_event?(event.type))
+  end
+
+  defp dispatch_plugin_lifecycle(type, data, ui_state, enabled? \\ true) do
+    if enabled? and Process.whereis(Exy.Plugin.Manager) do
+      context = %{session_id: ui_state.session_id, cwd: ui_state.cwd, model: ui_state.model}
+      Task.start(fn -> Exy.Plugin.Manager.dispatch(type, data, context) end)
+    end
+
+    :ok
+  end
+
+  defp plugin_event?(:plugin_status_updated), do: false
+  defp plugin_event?(:plugin_status_cleared), do: false
+  defp plugin_event?(:plugin_widget_updated), do: false
+  defp plugin_event?(:plugin_widget_cleared), do: false
+  defp plugin_event?(:notification_added), do: false
+  defp plugin_event?(:notification_expired), do: false
+  defp plugin_event?(_type), do: true
 
   defp normalize_command(%Command{} = command), do: command
   defp normalize_command(type) when is_atom(type), do: Command.new(type)

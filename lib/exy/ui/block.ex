@@ -38,4 +38,11 @@ defmodule Exy.UI.Block do
 
     @type t :: %__MODULE__{}
   end
+
+  defmodule PluginWidget do
+    @moduledoc false
+    defstruct [:key, :content, placement: :above_editor]
+
+    @type t :: %__MODULE__{}
+  end
 end

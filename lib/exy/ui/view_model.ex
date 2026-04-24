@@ -4,13 +4,26 @@ defmodule Exy.UI.ViewModel do
   """
 
   alias Exy.Lists
-  alias Exy.UI.Block.{AssistantMessage, Footer, NotificationList, Overlay, ToolCall, UserMessage}
+
+  alias Exy.UI.Block.{
+    AssistantMessage,
+    Footer,
+    NotificationList,
+    Overlay,
+    PluginWidget,
+    ToolCall,
+    UserMessage
+  }
 
   @type t :: %{
           body: [struct()],
           footer: Footer.t(),
           overlays: [Overlay.t()],
-          notifications: NotificationList.t() | nil
+          notifications: NotificationList.t() | nil,
+          plugin_widgets: [PluginWidget.t()],
+          title: String.t() | nil,
+          working_message: String.t() | nil,
+          hidden_thinking_label: String.t() | nil
         }
 
   @spec from_state(Exy.UI.State.t()) :: t()
@@ -30,7 +43,11 @@ defmodule Exy.UI.ViewModel do
         plugin_statuses: state.plugin_statuses
       },
       overlays: Enum.map(state.overlays, &%Overlay{kind: &1.kind, data: &1}),
-      notifications: notification_block(state.notifications)
+      notifications: notification_block(state.notifications),
+      plugin_widgets: plugin_widgets(state.plugin_widgets),
+      title: state.title,
+      working_message: state.working_message,
+      hidden_thinking_label: state.hidden_thinking_label
     }
   end
 
@@ -85,6 +102,18 @@ defmodule Exy.UI.ViewModel do
 
   defp notification_block([]), do: nil
   defp notification_block(items), do: %NotificationList{items: items}
+
+  defp plugin_widgets(widgets) do
+    widgets
+    |> Enum.sort_by(fn {key, _widget} -> to_string(key) end)
+    |> Enum.map(fn {key, widget} ->
+      %PluginWidget{
+        key: key,
+        content: Map.get(widget, :content, []),
+        placement: Map.get(widget, :placement, :above_editor)
+      }
+    end)
+  end
 
   defp tool_blocks(state) do
     state.pending_tools

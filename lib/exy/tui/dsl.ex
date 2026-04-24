@@ -69,6 +69,9 @@ defmodule Exy.TUI.DSL do
   @spec notifications(keyword() | map()) :: Node.t()
   def notifications(props), do: node(:notifications, Map.new(props))
 
+  @spec plugin_widget(keyword() | map()) :: Node.t()
+  def plugin_widget(props), do: node(:plugin_widget, Map.new(props))
+
   @spec dialog(IO.chardata(), [child()], keyword() | map()) :: Node.t()
   def dialog(title, children, opts \\ []) do
     node(:dialog, Map.put(Map.new(opts), :title, title), List.wrap(children))

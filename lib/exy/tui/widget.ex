@@ -23,6 +23,7 @@ defmodule Exy.TUI.Widget do
     textarea: Exy.TUI.Widgets.Textarea,
     select_list: Exy.TUI.Widgets.SelectList,
     notifications: Exy.TUI.Widgets.Notifications,
+    plugin_widget: Exy.TUI.Widgets.PluginWidget,
     horizontal: Exy.TUI.Widgets.Horizontal,
     box: Exy.TUI.Widgets.Box,
     padding: Exy.TUI.Widgets.Padding,

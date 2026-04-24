@@ -60,19 +60,23 @@ defmodule Exy.Plugin.Manager do
   end
 
   defp start_plugin(module, opts) do
+    context = Exy.Plugin.Context.from_opts(opts)
+
     with {:ok, plugin_state} <- module.init(opts),
-         {:ok, children} <- start_children(module, plugin_state) do
+         {:ok, children} <- start_children(module, plugin_state, context) do
       {:ok, %{state: plugin_state, children: children}}
     end
   end
 
-  defp start_children(module, plugin_state) do
-    if function_exported?(module, :children, 1) do
-      module.children(plugin_state)
-      |> Enum.reduce_while({:ok, []}, &start_child(module, &1, &2))
-    else
-      {:ok, []}
-    end
+  defp start_children(module, plugin_state, context) do
+    children =
+      cond do
+        function_exported?(module, :children, 2) -> module.children(plugin_state, context)
+        function_exported?(module, :children, 1) -> module.children(plugin_state)
+        true -> []
+      end
+
+    Enum.reduce_while(children, {:ok, []}, &start_child(module, &1, &2))
   end
 
   defp start_child(module, child_spec, {:ok, children}) do

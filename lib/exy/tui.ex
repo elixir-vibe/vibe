@@ -93,6 +93,11 @@ defmodule Exy.TUI do
     do: Exy.TUI.DSL.notifications(items: items)
 
   def notifications(props), do: Exy.TUI.DSL.notifications(props)
+
+  def plugin_widget(%Exy.UI.Block.PluginWidget{} = widget),
+    do: Exy.TUI.DSL.plugin_widget(Map.from_struct(widget))
+
+  def plugin_widget(props), do: Exy.TUI.DSL.plugin_widget(props)
   def dialog(title, children, opts \\ []), do: Exy.TUI.DSL.dialog(title, children, opts)
   def diff(props), do: Exy.TUI.DSL.diff(props)
 end

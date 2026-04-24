@@ -16,6 +16,8 @@ defmodule Exy.TUI.Storybook do
       :tool_ast_matches,
       :tool_lsp_diagnostics,
       :footer_usage,
+      :footer_plugin_status,
+      :plugin_widget,
       :status_rows,
       :section_header,
       :markdown_rich,
@@ -87,6 +89,29 @@ defmodule Exy.TUI.Storybook do
       model: "openai_codex:gpt-5.5",
       status: :idle,
       usage: %{total_tokens: 12_345}
+    })
+  end
+
+  def story(:footer_plugin_status) do
+    DSL.footer(%{
+      cwd: File.cwd!(),
+      session_id: "story-footer",
+      model: "openai_codex:gpt-5.5",
+      status: :idle,
+      usage: %{total_tokens: 12_345},
+      plugin_statuses: %{
+        "git" => " main",
+        "worker" => "background index ready",
+        "model" => "🤖 gpt-5.5"
+      }
+    })
+  end
+
+  def story(:plugin_widget) do
+    plugin_widget(%{
+      key: "indexer",
+      placement: :above_editor,
+      content: ["Indexer", "3 files changed • embeddings warm"]
     })
   end
 

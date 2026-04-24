@@ -126,6 +126,26 @@ defmodule Exy.UI.Reducer do
     %{state | plugin_statuses: Map.delete(state.plugin_statuses, key)}
   end
 
+  defp reduce(state, %Event{type: :plugin_widget_updated, data: %{key: key} = data}) do
+    %{state | plugin_widgets: Map.put(state.plugin_widgets, key, Map.delete(data, :key))}
+  end
+
+  defp reduce(state, %Event{type: :plugin_widget_cleared, data: %{key: key}}) do
+    %{state | plugin_widgets: Map.delete(state.plugin_widgets, key)}
+  end
+
+  defp reduce(state, %Event{type: :working_message_updated, data: %{message: message}}) do
+    %{state | working_message: message}
+  end
+
+  defp reduce(state, %Event{type: :hidden_thinking_label_updated, data: %{label: label}}) do
+    %{state | hidden_thinking_label: label}
+  end
+
+  defp reduce(state, %Event{type: :title_updated, data: %{title: title}}) do
+    %{state | title: title}
+  end
+
   defp reduce(state, _event), do: state
 
   defp update_streaming(state, key, delta) do
