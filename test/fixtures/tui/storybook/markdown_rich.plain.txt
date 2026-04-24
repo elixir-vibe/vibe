@@ -1,0 +1,22 @@
+Markdown renderer
+────────────────────────────────────────────────────────────────────────────────
+
+Exy renders bold, italic, inline code, links like MDEx (https://mdelixir.dev),
+quotes, lists, code blocks, and tables.
+│ Streaming Markdown is parsed with MDEx, so partial LLM chunks stay renderable.
+
+• semantic TUI state
+• ANSI themed output
+• future LiveView renderer
+
+elixir ─────────────────────────────────────────────────────────────────────────
+  Exy.LLM.stream("hello", on_result: &IO.write/1)
+────────────────────────────────────────────────────────────────────────────────
+
+╭─────────┬─────────────╮
+│ Feature │ Status      │
+├─────────┼─────────────┤
+│ headers │ styled      │
+│ tables  │ framed      │
+│ code    │ highlighted │
+╰─────────┴─────────────╯

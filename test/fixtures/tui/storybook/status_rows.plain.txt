@@ -1,0 +1,3 @@
+✓ Expert ready
+× Auth missing credentials
+• Runtime standalone BEAM idle

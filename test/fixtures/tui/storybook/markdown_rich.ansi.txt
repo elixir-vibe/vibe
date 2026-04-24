@@ -1,0 +1,22 @@
+[1m[36mMarkdown renderer[0m[0m[0m
+[90m────────────────────────────────────────────────────────────────────────────────[0m[0m
+
+Exy renders [1mbold[0m, [3mitalic[0m, [36minline code[0m[0m, links like [36mMDEx (https://mdelixir.dev)[0m[0m,
+quotes, lists, code blocks, and tables.
+[90m│ [0m[0m[90mStreaming Markdown is parsed with MDEx, so partial LLM chunks stay renderable.[0m[0m
+
+[36m•[0m[0m semantic TUI state
+[36m•[0m[0m ANSI themed output
+[36m•[0m[0m future LiveView renderer
+
+[90melixir[0m[0m [90m─────────────────────────────────────────────────────────────────────────[0m[0m
+  [0m[38;2;229;192;123mExy.LLM[0m[0m[38;2;86;182;194m.[0m[0m[38;2;97;175;239mstream[0m[0m[38;2;198;120;221m([0m[0m[38;2;152;195;121m"hello"[0m[0m[38;2;171;178;191m,[0m [0m[38;2;224;108;117mon_result: [0m[0m[38;2;86;182;194m&[0m[0m[38;2;229;192;123mIO[0m[0m[38;2;86;182;194m.[0m[0m[38;2;97;175;239mwrite[0m[0m[38;2;86;182;194m/[0m[0m[38;2;86;182;194m1[0m[0m[38;2;198;120;221m)[0m
+[90m────────────────────────────────────────────────────────────────────────────────[0m[0m
+
+[90m╭─────────┬─────────────╮[0m[0m
+[90m│ [0m[0m[1m[36mFeature[0m[0m[0m[90m │ [0m[0m[1m[36mStatus     [0m[0m[0m[90m │[0m[0m
+[90m├─────────┼─────────────┤[0m[0m
+[90m│ [0m[0mheaders[90m │ [0m[0mstyled     [90m │[0m[0m
+[90m│ [0m[0mtables [90m │ [0m[0mframed     [90m │[0m[0m
+[90m│ [0m[0mcode   [90m │ [0m[0mhighlighted[90m │[0m[0m
+[90m╰─────────┴─────────────╯[0m[0m
