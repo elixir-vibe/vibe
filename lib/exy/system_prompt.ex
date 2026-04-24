@@ -1,9 +1,9 @@
 defmodule Exy.SystemPrompt do
   @moduledoc false
 
-  @prompt_path Path.expand("../../priv/prompts/system.md", __DIR__)
+  @prompt_path Exy.Prompts.path("system.md")
   @external_resource @prompt_path
-  @default File.read!(@prompt_path)
+  @default Exy.Prompts.read!("system.md")
 
   @spec default() :: String.t()
   def default, do: Application.get_env(:exy, :system_prompt, @default)

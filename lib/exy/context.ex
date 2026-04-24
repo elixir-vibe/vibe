@@ -9,22 +9,20 @@ defmodule Exy.Context do
 
   alias Exy.Trajectory
 
-  @prompt_dir Path.expand("../../priv/prompts", __DIR__)
-
-  @summarization_system_path Path.join(@prompt_dir, "summarization_system.md")
-  @context_summary_path Path.join(@prompt_dir, "context_summary.md")
-  @context_update_path Path.join(@prompt_dir, "context_update.md")
-  @turn_prefix_summary_path Path.join(@prompt_dir, "turn_prefix_summary.md")
+  @summarization_system_path Exy.Prompts.path("summarization_system.md")
+  @context_summary_path Exy.Prompts.path("context_summary.md")
+  @context_update_path Exy.Prompts.path("context_update.md")
+  @turn_prefix_summary_path Exy.Prompts.path("turn_prefix_summary.md")
 
   @external_resource @summarization_system_path
   @external_resource @context_summary_path
   @external_resource @context_update_path
   @external_resource @turn_prefix_summary_path
 
-  @system_prompt File.read!(@summarization_system_path)
-  @summary_prompt File.read!(@context_summary_path)
-  @update_prompt File.read!(@context_update_path)
-  @turn_prefix_prompt File.read!(@turn_prefix_summary_path)
+  @system_prompt Exy.Prompts.read!("summarization_system.md")
+  @summary_prompt Exy.Prompts.read!("context_summary.md")
+  @update_prompt Exy.Prompts.read!("context_update.md")
+  @turn_prefix_prompt Exy.Prompts.read!("turn_prefix_summary.md")
 
   @tool_result_max_chars 2_000
 
