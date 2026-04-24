@@ -36,6 +36,7 @@ defmodule Exy.UI.ViewModel do
         :user -> %UserMessage{id: id, text: message.text, at: message.at}
         :assistant -> assistant_block(id, message)
       end
+      |> Map.put(:role, message.role)
     end)
   end
 

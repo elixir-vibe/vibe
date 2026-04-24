@@ -12,11 +12,11 @@ defmodule Exy.TUI.RendererTest do
       )
 
     lines = state |> Exy.UI.ViewModel.from_state() |> Exy.TUI.Renderer.render(40)
-    plain_lines = Enum.map(lines, &Exy.TUI.Theme.strip/1)
+    plain_lines = Enum.map(lines, &Exy.TUI.Width.visible_text/1)
 
     assert Enum.all?(plain_lines, &(String.length(&1) <= 40))
     assert Enum.any?(plain_lines, &String.starts_with?(&1, "You: "))
     assert Enum.any?(plain_lines, &String.starts_with?(&1, "Exy: "))
-    assert Enum.any?(lines, &String.contains?(&1, IO.ANSI.cyan()))
+    assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.green()))
   end
 end
