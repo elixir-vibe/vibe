@@ -8,4 +8,9 @@ defmodule Exy.TUI.StorybookTest do
       assert Enum.all?(lines, &is_binary/1)
     end
   end
+
+  test "includes markdown stories" do
+    assert :markdown_rich in Exy.TUI.Storybook.stories()
+    assert :markdown_streaming in Exy.TUI.Storybook.stories()
+  end
 end

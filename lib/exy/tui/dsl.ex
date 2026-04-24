@@ -19,7 +19,11 @@ defmodule Exy.TUI.DSL do
   @spec spacer(non_neg_integer()) :: Node.t()
   def spacer(lines \\ 1), do: node(:spacer, %{lines: lines})
 
+  @spec text(IO.chardata(), keyword() | map()) :: Node.t()
   def text(content, opts \\ []), do: node(:text, Map.new(opts), [content])
+
+  @spec markdown(IO.chardata(), keyword() | map()) :: Node.t()
+  def markdown(content, opts \\ []), do: node(:markdown, Map.new(opts), [content])
 
   @spec footer(map() | struct()) :: Node.t()
   def footer(footer), do: node(:footer, to_props(footer))

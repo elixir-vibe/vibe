@@ -65,7 +65,9 @@ defmodule Exy.CLI do
         timeout: :integer,
         session: :string,
         sessions: :boolean,
-        no_agent: :boolean
+        no_agent: :boolean,
+        stream: :boolean,
+        no_stream: :boolean
       ],
       aliases: [h: :help, v: :version, p: :print]
     )
@@ -93,7 +95,13 @@ defmodule Exy.CLI do
 
     result =
       if opts[:no_agent] do
-        Exy.LLM.ask(prompt, Keyword.put(llm_opts(opts), :session_id, session_id))
+        llm_opts = Keyword.put(llm_opts(opts), :session_id, session_id)
+
+        if stream?(opts) do
+          Exy.LLM.stream(prompt, llm_opts)
+        else
+          Exy.LLM.ask(prompt, llm_opts)
+        end
       else
         with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
           Exy.ask(pid, prompt, timeout: opts[:timeout] || 120_000, session_id: session_id)
@@ -178,9 +186,12 @@ defmodule Exy.CLI do
   defp render_result(results) when is_list(results),
     do: Enum.map_join(results, "\n", &inspect(&1, pretty: true, limit: 20))
 
-  defp render_result(%{summary: summary}), do: summary
+  defp render_result(%ReqLLM.Response{} = response),
+    do: response |> ReqLLM.Response.text() |> render_markdown()
+
+  defp render_result(%{summary: summary}), do: render_markdown(summary)
   defp render_result(%{output: output}), do: output
-  defp render_result(result) when is_binary(result), do: result
+  defp render_result(result) when is_binary(result), do: render_markdown(result)
   defp render_result(result), do: inspect(result, pretty: true, limit: 50)
 
   defp configure_api_key(opts) do
@@ -201,6 +212,23 @@ defmodule Exy.CLI do
   end
 
   defp session_id(opts), do: opts[:session] || Exy.Session.new_id()
+
+  defp stream?(opts), do: not opts[:no_stream] and opts[:stream] != false
+
+  defp render_markdown(nil), do: ""
+
+  defp render_markdown(text) do
+    text
+    |> Exy.TUI.Markdown.render(terminal_width(), Exy.TUI.Theme.default())
+    |> Enum.map_join("\n", &IO.iodata_to_binary/1)
+  end
+
+  defp terminal_width do
+    case :io.columns() do
+      {:ok, columns} -> columns
+      _ -> 100
+    end
+  end
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
@@ -227,6 +255,8 @@ defmodule Exy.CLI do
       --mode <text|json>             Output mode (default: text)
       --print, -p                    Non-interactive mode: process prompt and exit
       --no-agent                     Use direct ReqLLM call instead of Jido.AI agent
+      --stream                       Stream direct ReqLLM calls (default for --no-agent)
+      --no-stream                    Disable direct ReqLLM streaming
       --eval <code>                  Evaluate Elixir code through Exy.Eval
       --compact                      Compact stored trajectory context
       --keep-recent <n>              Events to keep when compacting (default: 12)

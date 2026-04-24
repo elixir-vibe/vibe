@@ -16,6 +16,8 @@ defmodule Exy.TUI.Storybook do
       :footer_usage,
       :status_rows,
       :section_header,
+      :markdown_rich,
+      :markdown_streaming,
       :model_info,
       :dialog,
       :diff
@@ -116,6 +118,38 @@ defmodule Exy.TUI.Storybook do
         DSL.status(title: "elixir_lsp", description: "Expert gateway", color: :accent)
       ])
     ])
+  end
+
+  def story(:markdown_rich) do
+    DSL.markdown("""
+    # Markdown renderer
+
+    Exy renders **bold**, *italic*, `inline code`, links like [MDEx](https://mdelixir.dev), quotes, lists, code blocks, and tables.
+
+    > Streaming Markdown is parsed with MDEx, so partial LLM chunks stay renderable.
+
+    - semantic TUI state
+    - ANSI themed output
+    - future LiveView renderer
+
+    ```elixir
+    Exy.LLM.stream("hello", on_result: &IO.write/1)
+    ```
+
+    | Feature | Status |
+    |---|---|
+    | headers | styled |
+    | tables | framed |
+    | code | highlighted |
+    """)
+  end
+
+  def story(:markdown_streaming) do
+    document =
+      Exy.TUI.Markdown.new_stream()
+      |> Exy.TUI.Markdown.put_chunk("## Partial stream\n\nThis has **bo")
+
+    DSL.markdown(MDEx.to_markdown!(MDEx.Document.run(document)))
   end
 
   def story(:model_info) do

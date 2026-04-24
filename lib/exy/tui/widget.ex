@@ -13,6 +13,7 @@ defmodule Exy.TUI.Widget do
     vertical: Exy.TUI.Widgets.Vertical,
     raw: Exy.TUI.Widgets.Raw,
     text: Exy.TUI.Widgets.Text,
+    markdown: Exy.TUI.Widgets.Markdown,
     message: Exy.TUI.Widgets.Message,
     tool: Exy.TUI.Widgets.Tool,
     section: Exy.TUI.Widgets.Section,

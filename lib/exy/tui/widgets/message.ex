@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Message do
 
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.{Theme, Widget}
+  alias Exy.TUI.{Markdown, Theme, Widget}
 
   @impl true
   def render(%{props: %{role: :user, text: text}}, width, theme) do
@@ -16,12 +16,10 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   def render(%{props: %{role: :assistant} = props}, width, theme) do
-    prefix = Theme.fg(theme, :success, "Exy: ")
+    text = to_string(Map.get(props, :text) || "")
 
-    Widget.wrap(
-      [prefix, Theme.fg(theme, :assistant_message_text, to_string(Map.get(props, :text) || ""))],
-      width
-    )
+    [first | rest] = Markdown.render(text, width, theme)
+    [[Theme.fg(theme, :success, "Exy: "), first] | rest]
   end
 
   def render(%{props: %{text: text}}, width, theme) do

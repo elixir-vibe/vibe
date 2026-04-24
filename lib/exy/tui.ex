@@ -58,6 +58,7 @@ defmodule Exy.TUI do
   def raw(content), do: Exy.TUI.DSL.raw(content)
   def spacer(lines \\ 1), do: Exy.TUI.DSL.spacer(lines)
   def text(content, opts \\ []), do: Exy.TUI.DSL.text(content, opts)
+  def markdown(content, opts \\ []), do: Exy.TUI.DSL.markdown(content, opts)
   def truncate(content, opts \\ []), do: Exy.TUI.DSL.truncate(content, opts)
   def message(message), do: Exy.TUI.DSL.message(message)
   def tool(tool), do: Exy.TUI.DSL.tool(tool)

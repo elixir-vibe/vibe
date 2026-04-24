@@ -13,6 +13,32 @@ defmodule Exy.LLM do
 
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(prompt, opts \\ []) when is_binary(prompt) do
+    {model, messages, session_id, request_opts} = request(prompt, opts)
+
+    record_request(prompt, model, session_id)
+    result = ReqLLM.generate_text(model, messages, request_opts)
+    record_response(result, session_id)
+    result
+  end
+
+  @spec stream(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
+  def stream(prompt, opts \\ []) when is_binary(prompt) do
+    {model, messages, session_id, request_opts} = request(prompt, opts)
+
+    callback_opts =
+      Keyword.take(opts, [:on_chunk, :on_meta, :on_result, :on_thinking, :on_tool_call])
+
+    record_request(prompt, model, session_id)
+
+    with {:ok, response} <- ReqLLM.stream_text(model, messages, request_opts),
+         {:ok, final_response} <- ReqLLM.StreamResponse.process_stream(response, callback_opts) do
+      result = {:ok, final_response}
+      record_response(result, session_id)
+      result
+    end
+  end
+
+  defp request(prompt, opts) do
     model = Exy.LLM.Model.resolve(opts)
     system = Keyword.get(opts, :system, @default_system)
 
@@ -22,12 +48,20 @@ defmodule Exy.LLM do
     ]
 
     session_id = Keyword.get_lazy(opts, :session_id, &Exy.Session.new_id/0)
-    request_opts = Keyword.drop(opts, [:model, :system, :session_id])
 
-    record_request(prompt, model, session_id)
-    result = ReqLLM.generate_text(model, messages, request_opts)
-    record_response(result, session_id)
-    result
+    request_opts =
+      Keyword.drop(opts, [
+        :model,
+        :system,
+        :session_id,
+        :on_chunk,
+        :on_meta,
+        :on_result,
+        :on_thinking,
+        :on_tool_call
+      ])
+
+    {model, messages, session_id, request_opts}
   end
 
   defp record_request(prompt, model, session_id) do

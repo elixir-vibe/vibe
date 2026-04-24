@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
 
     stories =
       if opts[:story],
-        do: [String.to_existing_atom(opts[:story])],
+        do: [story!(opts[:story])],
         else: Exy.TUI.Storybook.stories()
 
     Enum.each(stories, fn story ->
@@ -41,6 +41,11 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
 
       Enum.each(lines, &IO.puts(IO.iodata_to_binary(&1)))
     end)
+  end
+
+  defp story!(name) do
+    Enum.find(Exy.TUI.Storybook.stories(), &(to_string(&1) == name)) ||
+      Mix.raise("unknown story #{inspect(name)}")
   end
 
   defp terminal_width do

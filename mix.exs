@@ -44,6 +44,7 @@ defmodule Exy.MixProject do
       {:ex_ast, "~> 0.5.0"},
       {:jason, "~> 1.4"},
       {:json_spec, "~> 1.1"},
+      {:mdex, "~> 0.12"},
       {:yaml_elixir, "~> 2.12"},
       {:req, "~> 0.5"},
       {:req_llm, "~> 1.10"},
