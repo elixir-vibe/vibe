@@ -13,6 +13,9 @@ defmodule Exy.TUI.Node do
   @spec vertical([t() | IO.chardata()]) :: t()
   def vertical(children), do: %__MODULE__{type: :vertical, children: List.wrap(children)}
 
+  @spec raw(IO.chardata()) :: t()
+  def raw(content), do: %__MODULE__{type: :raw, children: [content]}
+
   @spec text(IO.chardata(), keyword() | map()) :: t()
   def text(content, opts \\ []),
     do: %__MODULE__{type: :text, props: Map.new(opts), children: [content]}
@@ -35,6 +38,9 @@ defmodule Exy.TUI.Node do
   def render(%__MODULE__{type: :vertical, children: children}, width, theme) do
     Enum.flat_map(children, &render(&1, width, theme))
   end
+
+  def render(%__MODULE__{type: :raw, children: [content]}, width, _theme),
+    do: wrap(content, width)
 
   def render(%__MODULE__{type: :text, props: props, children: [content]}, width, theme) do
     content
@@ -67,19 +73,7 @@ defmodule Exy.TUI.Node do
   end
 
   def render(%__MODULE__{type: :tool, props: props}, width, theme) do
-    status = Map.get(props, :status, :unknown)
-    title = "Tool #{Map.get(props, :name) || Map.get(props, :id)} [#{status}]"
-
-    title =
-      theme
-      |> Theme.fg(:tool_title, title)
-      |> tool_background(status, theme)
-
-    if Map.get(props, :expanded?) and Map.get(props, :output) do
-      [title | wrap(Theme.fg(theme, :tool_output, to_string(props.output)), width)]
-    else
-      [title]
-    end
+    Exy.TUI.ToolWidget.render(props, width, theme)
   end
 
   def render(%__MODULE__{type: :footer, props: props}, width, theme) do
@@ -111,14 +105,6 @@ defmodule Exy.TUI.Node do
       color -> fun.(theme, color, content)
     end
   end
-
-  defp tool_background(text, status, theme) when status in [:ok, "ok"],
-    do: Theme.bg(theme, :tool_success_bg, text)
-
-  defp tool_background(text, status, theme) when status in [:error, "error"],
-    do: Theme.bg(theme, :tool_error_bg, text)
-
-  defp tool_background(text, _status, theme), do: Theme.bg(theme, :tool_pending_bg, text)
 
   defp wrap(content, width) do
     content
