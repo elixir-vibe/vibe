@@ -57,6 +57,9 @@ defmodule Exy.TUI.DSL do
   @spec model_info(keyword() | map()) :: Node.t()
   def model_info(props), do: node(:model_info, Map.new(props))
 
+  @spec input(keyword() | map()) :: Node.t()
+  def input(props), do: node(:input, Map.new(props))
+
   @spec dialog(IO.chardata(), [child()], keyword() | map()) :: Node.t()
   def dialog(title, children, opts \\ []) do
     node(:dialog, Map.put(Map.new(opts), :title, title), List.wrap(children))

@@ -40,6 +40,21 @@ defmodule Exy.TUI.WidgetsTest do
            )
   end
 
+  test "input widget renders prompt, value, cursor, and placeholder" do
+    focused =
+      DSL.input(value: "hello", cursor: 2)
+      |> Widget.render(40, Theme.default())
+      |> Enum.map_join("\n", &Width.visible_text/1)
+
+    placeholder =
+      DSL.input(value: "", placeholder: "Ask...", focused?: false)
+      |> Widget.render(40, Theme.default())
+      |> Enum.map_join("\n", &Width.visible_text/1)
+
+    assert focused =~ "› hello"
+    assert placeholder =~ "› Ask..."
+  end
+
   test "layout primitives render boxes, padding, horizontal rows, spacers, and truncation" do
     lines =
       DSL.box("Layout", [

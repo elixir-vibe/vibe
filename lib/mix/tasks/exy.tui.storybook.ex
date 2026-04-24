@@ -7,6 +7,7 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
       mix exy.tui.storybook
       mix exy.tui.storybook --story tool_eval_ok --width 100
       mix exy.tui.storybook --plain
+      mix exy.tui.storybook --theme light
 
   """
 
@@ -18,11 +19,12 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
 
     {opts, _args, _invalid} =
       OptionParser.parse(argv,
-        strict: [story: :string, width: :integer, plain: :boolean],
+        strict: [story: :string, width: :integer, plain: :boolean, theme: :string],
         aliases: [s: :story, w: :width]
       )
 
     width = opts[:width] || terminal_width()
+    theme = Exy.TUI.Theme.named(opts[:theme])
 
     stories =
       if opts[:story],
@@ -34,9 +36,9 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
 
       lines =
         if opts[:plain] do
-          Exy.TUI.Storybook.render_plain(story, width: width)
+          Exy.TUI.Storybook.render_plain(story, width: width, theme: theme)
         else
-          Exy.TUI.Storybook.render(story, width: width)
+          Exy.TUI.Storybook.render(story, width: width, theme: theme)
         end
 
       Enum.each(lines, &IO.puts(IO.iodata_to_binary(&1)))

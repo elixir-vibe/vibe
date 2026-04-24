@@ -19,6 +19,8 @@ defmodule Exy.TUI.Storybook do
       :markdown_rich,
       :markdown_streaming,
       :model_info,
+      :input,
+      :themes,
       :dialog,
       :diff
     ]
@@ -163,6 +165,20 @@ defmodule Exy.TUI.Storybook do
     )
   end
 
+  def story(:input) do
+    DSL.vertical([
+      DSL.input(value: "Use elixir_eval to inspect", cursor: 15, focused?: true),
+      DSL.input(value: "", placeholder: "Ask Exy to change this project...", focused?: false)
+    ])
+  end
+
+  def story(:themes) do
+    DSL.vertical([
+      DSL.section("Dark", [DSL.input(value: "dark prompt", cursor: 4)]),
+      DSL.section("Light", [DSL.input(value: "light prompt", cursor: 5)])
+    ])
+  end
+
   def story(:dialog) do
     DSL.dialog(
       "Resume Session",
@@ -185,10 +201,18 @@ defmodule Exy.TUI.Storybook do
     width = Keyword.get(opts, :width, 100)
     theme = Keyword.get_lazy(opts, :theme, &Theme.default/0)
 
-    case story(name) do
-      %{body: _body} = view -> Exy.TUI.Renderer.render(view, width, theme)
-      %Node{} = node -> Widget.render(node, width, theme)
+    case {name, story(name)} do
+      {:themes, %Node{} = node} -> render_theme_story(node, width)
+      {_name, %{body: _body} = view} -> Exy.TUI.Renderer.render(view, width, theme)
+      {_name, %Node{} = node} -> Widget.render(node, width, theme)
     end
+  end
+
+  defp render_theme_story(%Node{children: [dark, light]}, width) do
+    Exy.TUI.Lines.join(
+      Widget.render(dark, width, Theme.dark()),
+      Widget.render(light, width, Theme.light())
+    )
   end
 
   @spec render_plain(atom(), keyword()) :: [String.t()]

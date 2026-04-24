@@ -19,6 +19,7 @@ defmodule Exy.TUI.Widget do
     section: Exy.TUI.Widgets.Section,
     status: Exy.TUI.Widgets.Status,
     model_info: Exy.TUI.Widgets.ModelInfo,
+    input: Exy.TUI.Widgets.Input,
     horizontal: Exy.TUI.Widgets.Horizontal,
     box: Exy.TUI.Widgets.Box,
     padding: Exy.TUI.Widgets.Padding,

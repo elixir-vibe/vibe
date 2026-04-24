@@ -17,51 +17,104 @@ defmodule Exy.TUI.Theme do
 
   defstruct name: "default", fg: %{}, bg: %{}, symbols: %{}
 
+  @dark_fg %{
+    accent: :cyan,
+    border: :light_black,
+    success: :green,
+    error: :red,
+    warning: :yellow,
+    muted: :light_black,
+    dim: :light_black,
+    text: nil,
+    thinking_text: :light_black,
+    tool_title: :cyan,
+    tool_output: nil,
+    user_message_text: nil,
+    assistant_message_text: nil,
+    input_prompt: :cyan,
+    input_text: nil,
+    input_placeholder: :light_black,
+    input_cursor: :black
+  }
+
+  @light_fg %{
+    accent: :blue,
+    border: :light_black,
+    success: :green,
+    error: :red,
+    warning: :yellow,
+    muted: :light_black,
+    dim: :light_black,
+    text: :black,
+    thinking_text: :light_black,
+    tool_title: :blue,
+    tool_output: :black,
+    user_message_text: :black,
+    assistant_message_text: :black,
+    input_prompt: :blue,
+    input_text: :black,
+    input_placeholder: :light_black,
+    input_cursor: :white
+  }
+
+  @dark_bg %{
+    selected_bg: {45, 45, 45},
+    user_message_bg: nil,
+    tool_pending_bg: {38, 38, 38},
+    tool_success_bg: {22, 54, 34},
+    tool_error_bg: {70, 24, 24},
+    input_bg: {24, 24, 24},
+    input_cursor_bg: :cyan
+  }
+
+  @light_bg %{
+    selected_bg: {230, 230, 230},
+    user_message_bg: nil,
+    tool_pending_bg: {238, 238, 238},
+    tool_success_bg: {218, 245, 226},
+    tool_error_bg: {255, 224, 224},
+    input_bg: {245, 245, 245},
+    input_cursor_bg: :blue
+  }
+
+  @symbols %{
+    separator: " • ",
+    section_line: "─",
+    model_icon: "◇",
+    tool_icon: "◆",
+    status_icon: "•",
+    running_icon: "…",
+    success_icon: "✓",
+    error_icon: "×",
+    warning_icon: "!",
+    input_prompt: "›",
+    input_cursor: " ",
+    dialog_top_left: "╭",
+    dialog_top_right: "╮",
+    dialog_bottom_left: "╰",
+    dialog_bottom_right: "╯",
+    dialog_vertical: "│",
+    dialog_horizontal: "─"
+  }
+
   @spec default() :: t()
-  def default do
-    %__MODULE__{
-      name: "default",
-      fg: %{
-        accent: :cyan,
-        border: :light_black,
-        success: :green,
-        error: :red,
-        warning: :yellow,
-        muted: :light_black,
-        dim: :light_black,
-        text: nil,
-        thinking_text: :light_black,
-        tool_title: :cyan,
-        tool_output: nil,
-        user_message_text: nil,
-        assistant_message_text: nil
-      },
-      bg: %{
-        selected_bg: {45, 45, 45},
-        user_message_bg: nil,
-        tool_pending_bg: {38, 38, 38},
-        tool_success_bg: {22, 54, 34},
-        tool_error_bg: {70, 24, 24}
-      },
-      symbols: %{
-        separator: " • ",
-        section_line: "─",
-        model_icon: "◇",
-        tool_icon: "◆",
-        status_icon: "•",
-        running_icon: "…",
-        success_icon: "✓",
-        error_icon: "×",
-        warning_icon: "!",
-        dialog_top_left: "╭",
-        dialog_top_right: "╮",
-        dialog_bottom_left: "╰",
-        dialog_bottom_right: "╯",
-        dialog_vertical: "│",
-        dialog_horizontal: "─"
-      }
-    }
-  end
+  def default, do: dark()
+
+  @spec dark() :: t()
+  def dark, do: %__MODULE__{name: "dark", fg: @dark_fg, bg: @dark_bg, symbols: @symbols}
+
+  @spec light() :: t()
+  def light, do: %__MODULE__{name: "light", fg: @light_fg, bg: @light_bg, symbols: @symbols}
+
+  @spec named(atom() | String.t() | nil) :: t()
+  def named(nil), do: default()
+  def named(:default), do: default()
+  def named(:dark), do: dark()
+  def named(:light), do: light()
+  def named("default"), do: default()
+  def named("dark"), do: dark()
+  def named("light"), do: light()
+  def named(_name), do: default()
 
   @spec fg(t(), atom(), iodata()) :: IO.chardata()
   def fg(%__MODULE__{} = theme, key, text), do: apply_color(Map.get(theme.fg, key), :fg, text)

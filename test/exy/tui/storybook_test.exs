@@ -9,7 +9,9 @@ defmodule Exy.TUI.StorybookTest do
     end
   end
 
-  test "includes markdown stories" do
+  test "includes input, theme, and markdown stories" do
+    assert :input in Exy.TUI.Storybook.stories()
+    assert :themes in Exy.TUI.Storybook.stories()
     assert :markdown_rich in Exy.TUI.Storybook.stories()
     assert :markdown_streaming in Exy.TUI.Storybook.stories()
   end

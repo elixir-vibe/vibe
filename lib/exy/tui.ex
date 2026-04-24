@@ -69,6 +69,7 @@ defmodule Exy.TUI do
   def padding(children, opts \\ []), do: Exy.TUI.DSL.padding(children, opts)
   def status(props), do: Exy.TUI.DSL.status(props)
   def model_info(props), do: Exy.TUI.DSL.model_info(props)
+  def input(props), do: Exy.TUI.DSL.input(props)
   def dialog(title, children, opts \\ []), do: Exy.TUI.DSL.dialog(title, children, opts)
   def diff(props), do: Exy.TUI.DSL.diff(props)
 end
