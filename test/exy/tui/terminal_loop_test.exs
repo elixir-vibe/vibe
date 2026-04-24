@@ -26,6 +26,26 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "Prompt"))
   end
 
+  test "notifies event target for asynchronous UI updates" do
+    ask = fn _text, _opts -> {:ok, "done"} end
+
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 60,
+        height: 12,
+        ask_fun: ask,
+        event_target: self()
+      )
+
+    :ok = TerminalLoop.input(loop, "hello")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+
+    assert_receive {TerminalLoop, :event, %{type: :prompt_submitted}}, 100
+    assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 100
+    assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 100
+  end
+
   test "tracks resize" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
     assert :ok = TerminalLoop.resize(loop, 100, 30)

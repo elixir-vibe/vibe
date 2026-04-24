@@ -14,6 +14,7 @@ defmodule Exy.TUI.Runtime do
       |> Keyword.put_new(:width, columns)
       |> Keyword.put_new(:height, rows)
       |> Keyword.put(:output, false)
+      |> Keyword.put(:event_target, self())
 
     with {:ok, loop} <- TerminalLoop.start_link(opts),
          {:ok, tty} <- Ghostty.TTY.start_link(owner: self()) do
@@ -47,6 +48,10 @@ defmodule Exy.TUI.Runtime do
 
       {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
         TerminalLoop.resize(loop, columns, rows)
+        render(tty, loop)
+        receive_events(tty, loop)
+
+      {TerminalLoop, :event, _event} ->
         render(tty, loop)
         receive_events(tty, loop)
 

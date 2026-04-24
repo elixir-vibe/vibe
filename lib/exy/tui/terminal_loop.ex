@@ -39,6 +39,7 @@ defmodule Exy.TUI.TerminalLoop do
      %{
        app: app,
        output: Keyword.get(opts, :output, :stdio),
+       event_target: Keyword.get(opts, :event_target),
        theme: Keyword.get_lazy(opts, :theme, &Theme.default/0)
      }}
   end
@@ -73,12 +74,18 @@ defmodule Exy.TUI.TerminalLoop do
   end
 
   @impl true
-  def handle_info({App, :event, _event}, state) do
+  def handle_info({App, :event, event}, state) do
+    notify_event_target(state, event)
     paint(state)
     {:noreply, state}
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp notify_event_target(%{event_target: nil}, _event), do: :ok
+
+  defp notify_event_target(%{event_target: target}, event),
+    do: send(target, {__MODULE__, :event, event})
 
   defp paint(%{output: false}), do: :ok
 
