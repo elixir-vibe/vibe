@@ -94,6 +94,7 @@ Exy.LSP.run(%{action: :diagnostics, file: "lib/exy.ex"})
 
 # Self inspection and validation
 Exy.supervision_tree(depth: 2)
+Exy.Checks.analyze()
 Exy.Checks.run_all()
 
 # Livebook-style standalone runtime

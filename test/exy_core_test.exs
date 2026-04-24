@@ -36,6 +36,16 @@ defmodule ExyCoreTest do
     assert is_integer(info.process_count)
   end
 
+  test "checks analysis gives agent-friendly summary without reruns" do
+    report = Exy.Checks.analyze(checks: [:reach])
+
+    assert report.ok?
+    assert report.failed == []
+    assert [%{name: :reach, status: :ok}] = report.summary
+    assert [%{name: :reach, status: :ok, details: %{files: files}}] = report.results
+    assert files > 0
+  end
+
   test "action schemas use JSONSpec directly" do
     assert %{code: "1 + 1"} = JSONSpec.atomize(Exy.Actions.Eval.schema(), %{"code" => "1 + 1"})
     assert %{code: "1 + 1"} = JSONSpec.atomize(Exy.Actions.Eval.schema(), %{code: "1 + 1"})
