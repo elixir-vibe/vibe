@@ -43,10 +43,26 @@ defmodule Exy.TUI do
   end
 
   defmacro vertical(do: block) do
-    quote do
-      Exy.TUI.DSL.vertical(List.wrap(unquote(block)))
+    if binding_block?(block) do
+      quote do
+        Exy.TUI.DSL.vertical(List.wrap(unquote(block)))
+      end
+    else
+      children = block_children(block)
+
+      quote do
+        Exy.TUI.DSL.vertical(unquote(children))
+      end
     end
   end
+
+  defp binding_block?({:__block__, _meta, children}),
+    do: Enum.any?(children, &match?({:=, _, _}, &1))
+
+  defp binding_block?(_block), do: false
+
+  defp block_children({:__block__, _meta, children}), do: children
+  defp block_children(child), do: [child]
 
   defmacro assign(name) when is_atom(name) do
     quote do
@@ -70,6 +86,7 @@ defmodule Exy.TUI do
   def status(props), do: Exy.TUI.DSL.status(props)
   def model_info(props), do: Exy.TUI.DSL.model_info(props)
   def input(props), do: Exy.TUI.DSL.input(props)
+  def textarea(props), do: Exy.TUI.DSL.textarea(props)
   def dialog(title, children, opts \\ []), do: Exy.TUI.DSL.dialog(title, children, opts)
   def diff(props), do: Exy.TUI.DSL.diff(props)
 end

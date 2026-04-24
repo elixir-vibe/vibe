@@ -25,7 +25,7 @@ defmodule Exy.TUI.Widgets.ModelInfo do
 
     provider_part = if provider, do: Theme.fg(theme, :dim, [" via ", provider]), else: ""
 
-    meta =
+    right =
       [
         reasoning,
         subscription,
@@ -35,11 +35,9 @@ defmodule Exy.TUI.Widgets.ModelInfo do
       ]
       |> Enum.reject(&is_nil/1)
       |> Enum.intersperse(separator)
+      |> then(&Theme.fg(theme, context_color(percent), &1))
 
-    color = context_color(percent)
-    meta_part = if meta == [], do: "", else: Theme.fg(theme, color, [separator, meta])
-
-    [Widget.fit_line([model_part, provider_part, meta_part], width)]
+    [Widget.join_sides([model_part, provider_part], right, width)]
   end
 
   defp context_label(nil), do: nil

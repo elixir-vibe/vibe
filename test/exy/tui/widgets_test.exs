@@ -55,6 +55,18 @@ defmodule Exy.TUI.WidgetsTest do
     assert placeholder =~ "› Ask..."
   end
 
+  test "textarea widget renders multiline prompt box" do
+    lines =
+      DSL.textarea(title: "Prompt", value: "hello\nworld", cursor: 2, min_rows: 3)
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert hd(lines) =~ "Prompt"
+    assert Enum.any?(lines, &String.contains?(&1, "hello"))
+    assert Enum.any?(lines, &String.contains?(&1, "world"))
+    assert length(lines) == 5
+  end
+
   test "layout primitives render boxes, padding, horizontal rows, spacers, and truncation" do
     lines =
       DSL.box("Layout", [

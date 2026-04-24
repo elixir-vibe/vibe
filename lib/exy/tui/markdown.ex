@@ -134,7 +134,7 @@ defmodule Exy.TUI.Markdown do
       cells
       |> Enum.with_index()
       |> Enum.flat_map(fn {row, index} ->
-        line = table_line(row, widths, theme)
+        line = table_line(row, widths, theme, index == 0)
 
         if index == 0 do
           [line, table_separator(widths, theme)]
@@ -174,11 +174,14 @@ defmodule Exy.TUI.Markdown do
     _error -> Theme.fg(theme, :tool_output, code)
   end
 
-  defp table_line(row, widths, theme) do
+  defp table_line(row, widths, theme, header?) do
     cells =
       widths
       |> Enum.with_index()
-      |> Enum.map(fn {width, index} -> row |> Enum.at(index, "") |> Widget.pad_line(width) end)
+      |> Enum.map(fn {width, index} ->
+        cell = row |> Enum.at(index, "") |> Widget.pad_line(width)
+        if header?, do: Theme.bold(Theme.fg(theme, :accent, cell)), else: cell
+      end)
       |> Enum.intersperse(Theme.fg(theme, :border, " │ "))
 
     [Theme.fg(theme, :border, "│ "), cells, Theme.fg(theme, :border, " │")]

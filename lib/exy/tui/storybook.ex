@@ -3,7 +3,9 @@ defmodule Exy.TUI.Storybook do
   Small storybook for TUI widgets and views.
   """
 
-  alias Exy.TUI.{DSL, Node, Theme, Widget, Width}
+  use Exy.TUI
+
+  alias Exy.TUI.{Node, Theme, Widget, Width}
   alias Exy.UI.{Event, Reducer, State, ViewModel}
 
   @spec stories() :: [atom()]
@@ -89,35 +91,37 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:status_rows) do
-    DSL.vertical([
-      DSL.status(
+    vertical do
+      status(
         icon: Theme.symbol(Theme.default(), :success_icon),
         title: "Expert",
         description: "ready",
         color: :success
-      ),
-      DSL.status(
+      )
+
+      status(
         icon: Theme.symbol(Theme.default(), :error_icon),
         title: "Auth",
         description: "missing credentials",
         color: :error
-      ),
-      DSL.status(
+      )
+
+      status(
         icon: Theme.symbol(Theme.default(), :status_icon),
         title: "Runtime",
         description: "standalone BEAM",
         extra: "idle",
         color: :accent
       )
-    ])
+    end
   end
 
   def story(:section_header) do
-    DSL.box("Tools", [
-      DSL.horizontal([
-        DSL.status(title: "elixir_eval", description: "runtime introspection", color: :accent),
-        DSL.status(title: "elixir_ast", description: "syntax search", color: :accent),
-        DSL.status(title: "elixir_lsp", description: "Expert gateway", color: :accent)
+    box("Tools", [
+      horizontal([
+        status(title: "elixir_eval", description: "runtime introspection", color: :accent),
+        status(title: "elixir_ast", description: "syntax search", color: :accent),
+        status(title: "elixir_lsp", description: "Expert gateway", color: :accent)
       ])
     ])
   end
@@ -166,17 +170,20 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:input) do
-    DSL.vertical([
-      DSL.input(value: "Use elixir_eval to inspect", cursor: 15, focused?: true),
-      DSL.input(value: "", placeholder: "Ask Exy to change this project...", focused?: false)
-    ])
+    textarea(
+      title: "Prompt",
+      value: "Use elixir_eval to inspect runtime info\nThen summarize the important findings.",
+      cursor: 24,
+      min_rows: 4,
+      placeholder: "Ask Exy to change this project..."
+    )
   end
 
   def story(:themes) do
-    DSL.vertical([
-      DSL.section("Dark", [DSL.input(value: "dark prompt", cursor: 4)]),
-      DSL.section("Light", [DSL.input(value: "light prompt", cursor: 5)])
-    ])
+    vertical do
+      section("Dark", [textarea(title: "Prompt", value: "dark prompt", cursor: 4, min_rows: 2)])
+      section("Light", [textarea(title: "Prompt", value: "light prompt", cursor: 5, min_rows: 2)])
+    end
   end
 
   def story(:dialog) do

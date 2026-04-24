@@ -20,6 +20,7 @@ defmodule Exy.TUI.Widget do
     status: Exy.TUI.Widgets.Status,
     model_info: Exy.TUI.Widgets.ModelInfo,
     input: Exy.TUI.Widgets.Input,
+    textarea: Exy.TUI.Widgets.Textarea,
     horizontal: Exy.TUI.Widgets.Horizontal,
     box: Exy.TUI.Widgets.Box,
     padding: Exy.TUI.Widgets.Padding,
