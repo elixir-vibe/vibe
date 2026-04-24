@@ -3,13 +3,19 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{Node, Theme, ToolWidget}
+  alias Exy.TUI.{DSL, Theme, ToolWidget, Widget}
 
   @impl true
   def render(tool, width, theme) do
     title =
       theme
-      |> Theme.fg(:tool_title, ["◆ elixir_lsp  ", action(tool), "  ", status(tool)])
+      |> Theme.fg(:tool_title, [
+        Theme.symbol(theme, :tool_icon),
+        " elixir_lsp  ",
+        action(tool),
+        "  ",
+        status(tool)
+      ])
       |> ToolWidget.status_bg(Map.get(tool, :status), theme)
 
     if Map.get(tool, :expanded?, false) do
@@ -21,7 +27,7 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
 
   defp details(tool, width, theme) do
     output = Map.get(tool, :output) || Map.get(tool, :result)
-    Node.render(Node.text(format_output(output), fg: :tool_output), width, theme)
+    Widget.render(DSL.text(format_output(output), fg: :tool_output), width, theme)
   end
 
   defp action(tool) do

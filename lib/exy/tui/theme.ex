@@ -11,10 +11,11 @@ defmodule Exy.TUI.Theme do
   @type t :: %__MODULE__{
           name: String.t(),
           fg: %{atom() => color()},
-          bg: %{atom() => color()}
+          bg: %{atom() => color()},
+          symbols: %{atom() => IO.chardata()}
         }
 
-  defstruct name: "default", fg: %{}, bg: %{}
+  defstruct name: "default", fg: %{}, bg: %{}, symbols: %{}
 
   @spec default() :: t()
   def default do
@@ -41,6 +42,21 @@ defmodule Exy.TUI.Theme do
         tool_pending_bg: {38, 38, 38},
         tool_success_bg: {22, 54, 34},
         tool_error_bg: {70, 24, 24}
+      },
+      symbols: %{
+        separator: " • ",
+        section_line: "─",
+        model_icon: "◇",
+        tool_icon: "◆",
+        status_icon: "•",
+        success_icon: "✓",
+        error_icon: "×",
+        dialog_top_left: "╭",
+        dialog_top_right: "╮",
+        dialog_bottom_left: "╰",
+        dialog_bottom_right: "╯",
+        dialog_vertical: "│",
+        dialog_horizontal: "─"
       }
     }
   end
@@ -50,6 +66,9 @@ defmodule Exy.TUI.Theme do
 
   @spec bg(t(), atom(), iodata()) :: String.t()
   def bg(%__MODULE__{} = theme, key, text), do: apply_color(Map.get(theme.bg, key), :bg, text)
+
+  @spec symbol(t(), atom()) :: IO.chardata()
+  def symbol(%__MODULE__{} = theme, key), do: Map.fetch!(theme.symbols, key)
 
   @spec bold(iodata()) :: String.t()
   def bold(text), do: IO.iodata_to_binary(["\e[1m", text, reset()])

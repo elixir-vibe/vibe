@@ -3,7 +3,7 @@ defmodule Exy.TUI.ToolWidget do
   Behaviour and dispatcher for built-in tool widgets.
   """
 
-  alias Exy.TUI.{Node, Theme}
+  alias Exy.TUI.{DSL, Theme, Widget}
 
   @type tool :: map()
   @type renderer :: module()
@@ -45,7 +45,7 @@ defmodule Exy.TUI.ToolWidget do
 
   @doc false
   def generic_lines(tool, width, theme) do
-    Node.render(Node.raw(generic_title(tool, theme)), width, theme)
+    Widget.render(DSL.raw(generic_title(tool, theme)), width, theme)
   end
 
   defp generic_title(tool, theme) do
@@ -53,7 +53,13 @@ defmodule Exy.TUI.ToolWidget do
     name = Map.get(tool, :name) || Map.get(tool, :id) || "tool"
 
     theme
-    |> Theme.fg(:tool_title, ["◆ ", to_string(name), "  ", to_string(status)])
+    |> Theme.fg(:tool_title, [
+      Theme.symbol(theme, :tool_icon),
+      " ",
+      to_string(name),
+      "  ",
+      to_string(status)
+    ])
     |> status_bg(status, theme)
   end
 

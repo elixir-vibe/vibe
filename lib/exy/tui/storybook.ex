@@ -3,12 +3,24 @@ defmodule Exy.TUI.Storybook do
   Small storybook for TUI widgets and views.
   """
 
-  alias Exy.TUI.{Node, Theme, Width}
+  alias Exy.TUI.{DSL, Node, Theme, Widget, Width}
   alias Exy.UI.{Event, Reducer, State, ViewModel}
 
   @spec stories() :: [atom()]
-  def stories,
-    do: [:chat_basic, :tool_eval_ok, :tool_ast_matches, :tool_lsp_diagnostics, :footer_usage]
+  def stories do
+    [
+      :chat_basic,
+      :tool_eval_ok,
+      :tool_ast_matches,
+      :tool_lsp_diagnostics,
+      :footer_usage,
+      :status_rows,
+      :section_header,
+      :model_info,
+      :dialog,
+      :diff
+    ]
+  end
 
   @spec story(atom()) :: Node.t() | map()
   def story(:chat_basic) do
@@ -30,7 +42,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:tool_eval_ok) do
-    Node.tool(%{
+    DSL.tool(%{
       id: "eval-1",
       name: :elixir_eval,
       status: :ok,
@@ -41,7 +53,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:tool_ast_matches) do
-    Node.tool(%{
+    DSL.tool(%{
       id: "ast-1",
       name: :elixir_ast,
       status: :ok,
@@ -52,7 +64,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:tool_lsp_diagnostics) do
-    Node.tool(%{
+    DSL.tool(%{
       id: "lsp-1",
       name: :elixir_lsp,
       status: :ok,
@@ -63,13 +75,63 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:footer_usage) do
-    Node.footer(%{
+    DSL.footer(%{
       cwd: File.cwd!(),
       session_id: "story-footer",
       model: "openai_codex:gpt-5.5",
       status: :idle,
       usage: %{total_tokens: 12_345}
     })
+  end
+
+  def story(:status_rows) do
+    DSL.vertical([
+      DSL.status(
+        icon: Theme.symbol(Theme.default(), :success_icon),
+        title: "Expert",
+        description: "ready",
+        color: :success
+      ),
+      DSL.status(
+        icon: Theme.symbol(Theme.default(), :error_icon),
+        title: "Auth",
+        description: "missing credentials",
+        color: :error
+      ),
+      DSL.status(
+        icon: "•",
+        title: "Runtime",
+        description: "standalone BEAM",
+        extra: "idle",
+        color: :accent
+      )
+    ])
+  end
+
+  def story(:section_header),
+    do: DSL.section("Tools", [DSL.text("elixir_eval, elixir_ast, elixir_lsp")])
+
+  def story(:model_info) do
+    DSL.model_info(
+      model: "gpt-5.5",
+      provider: "openai_codex",
+      reasoning: "medium",
+      context_percent: 42.5,
+      usage: %{total_tokens: 123_456, total_cost: 0.023}
+    )
+  end
+
+  def story(:dialog) do
+    DSL.dialog("Resume Session", [
+      DSL.status(icon: "1", title: "story-chat", description: "now", color: :accent),
+      DSL.status(icon: "2", title: "previous-work", description: "2h", color: :muted)
+    ])
+  end
+
+  def story(:diff) do
+    DSL.diff(
+      lines: [{:context, "def hello do"}, {:del, "  :old"}, {:add, "  :new"}, {:context, "end"}]
+    )
   end
 
   @spec render(atom(), keyword()) :: [IO.chardata()]
@@ -79,7 +141,7 @@ defmodule Exy.TUI.Storybook do
 
     case story(name) do
       %{body: _body} = view -> Exy.TUI.Renderer.render(view, width, theme)
-      %Node{} = node -> Node.render(node, width, theme)
+      %Node{} = node -> Widget.render(node, width, theme)
     end
   end
 

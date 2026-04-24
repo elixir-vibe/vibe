@@ -6,7 +6,7 @@ defmodule Exy.TUI do
   defmacro __using__(_opts) do
     quote do
       import Exy.TUI
-      alias Exy.TUI.Node
+      alias Exy.TUI.{DSL, Node}
     end
   end
 
@@ -38,14 +38,14 @@ defmodule Exy.TUI do
 
       @spec render_lines(map(), pos_integer(), Exy.TUI.Theme.t()) :: [IO.chardata()]
       def render_lines(assigns \\ %{}, width, theme \\ Exy.TUI.Theme.default()) do
-        assigns |> render() |> Exy.TUI.Node.render(width, theme)
+        assigns |> render() |> Exy.TUI.Widget.render(width, theme)
       end
     end
   end
 
   defmacro vertical(do: block) do
     quote do
-      Exy.TUI.Node.vertical(List.wrap(unquote(block)))
+      Exy.TUI.DSL.vertical(List.wrap(unquote(block)))
     end
   end
 
@@ -55,9 +55,14 @@ defmodule Exy.TUI do
     end
   end
 
-  def text(content, opts \\ []), do: Exy.TUI.Node.text(content, opts)
-  def message(message), do: Exy.TUI.Node.message(message)
-  def tool(tool), do: Exy.TUI.Node.tool(tool)
-  def footer(footer), do: Exy.TUI.Node.footer(footer)
-  def overlay(overlay), do: Exy.TUI.Node.overlay(overlay)
+  def text(content, opts \\ []), do: Exy.TUI.DSL.text(content, opts)
+  def message(message), do: Exy.TUI.DSL.message(message)
+  def tool(tool), do: Exy.TUI.DSL.tool(tool)
+  def footer(footer), do: Exy.TUI.DSL.footer(footer)
+  def overlay(overlay), do: Exy.TUI.DSL.overlay(overlay)
+  def section(title, children \\ []), do: Exy.TUI.DSL.section(title, children)
+  def status(props), do: Exy.TUI.DSL.status(props)
+  def model_info(props), do: Exy.TUI.DSL.model_info(props)
+  def dialog(title, children, opts \\ []), do: Exy.TUI.DSL.dialog(title, children, opts)
+  def diff(props), do: Exy.TUI.DSL.diff(props)
 end

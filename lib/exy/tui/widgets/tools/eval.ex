@@ -3,13 +3,13 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{Node, Theme, ToolWidget}
+  alias Exy.TUI.{DSL, Theme, ToolWidget, Widget}
 
   @impl true
   def render(tool, width, theme) do
     title =
       theme
-      |> Theme.fg(:tool_title, ["◆ elixir_eval  ", status(tool)])
+      |> Theme.fg(:tool_title, [Theme.symbol(theme, :tool_icon), " elixir_eval  ", status(tool)])
       |> ToolWidget.status_bg(Map.get(tool, :status), theme)
 
     lines = [title]
@@ -31,8 +31,8 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   defp append_section(lines, label, value, width, theme) do
     lines ++
-      Node.render(Node.text([to_string(label), ":"], fg: :muted), width, theme) ++
-      Node.render(Node.text(format_value(value), fg: :tool_output), width, theme)
+      Widget.render(DSL.text([to_string(label), ":"], fg: :muted), width, theme) ++
+      Widget.render(DSL.text(format_value(value), fg: :tool_output), width, theme)
   end
 
   defp expanded?(tool), do: Map.get(tool, :expanded?, false)
