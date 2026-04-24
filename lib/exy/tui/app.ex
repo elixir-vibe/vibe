@@ -23,6 +23,10 @@ defmodule Exy.TUI.App do
   @spec resize(GenServer.server(), pos_integer(), pos_integer()) :: :ok
   def resize(server, columns, rows), do: GenServer.call(server, {:resize, columns, rows})
 
+  @spec subscribe(GenServer.server(), pid()) :: :ok
+  def subscribe(server, pid \\ self()) when is_pid(pid),
+    do: GenServer.call(server, {:subscribe, pid})
+
   @spec snapshot(GenServer.server()) :: map()
   def snapshot(server), do: GenServer.call(server, :snapshot)
 
@@ -38,7 +42,8 @@ defmodule Exy.TUI.App do
        editor: editor,
        width: Keyword.get(opts, :width, 100),
        height: Keyword.get(opts, :height, 30),
-       events: []
+       events: [],
+       subscribers: %{}
      }}
   end
 
@@ -58,6 +63,11 @@ defmodule Exy.TUI.App do
     {:reply, :ok, %{state | width: columns, height: rows}}
   end
 
+  def handle_call({:subscribe, pid}, _from, state) do
+    ref = Process.monitor(pid)
+    {:reply, :ok, %{state | subscribers: Map.put(state.subscribers, ref, pid)}}
+  end
+
   def handle_call(:snapshot, _from, state) do
     snapshot = %{
       ui: SessionServer.state(state.ui),
@@ -71,8 +81,13 @@ defmodule Exy.TUI.App do
   end
 
   @impl true
-  def handle_info({:exy_ui_event, event}, state) do
+  def handle_info({SessionServer, :event, event}, state) do
+    Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     {:noreply, %{state | events: [event | state.events]}}
+  end
+
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
+    {:noreply, %{state | subscribers: Map.delete(state.subscribers, ref)}}
   end
 
   def handle_info(_message, state), do: {:noreply, state}

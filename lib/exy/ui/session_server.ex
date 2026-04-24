@@ -45,6 +45,7 @@ defmodule Exy.UI.SessionServer do
      %{
        state: state,
        ask_fun: Keyword.get(opts, :ask_fun, &default_ask/2),
+       llm_opts: Keyword.take(opts, [:model, :system]),
        streaming?: not Keyword.has_key?(opts, :ask_fun),
        subscribers: %{}
      }}
@@ -128,14 +129,18 @@ defmodule Exy.UI.SessionServer do
   defp ask_options(%{streaming?: true} = state, parent, session_id) do
     state = emit(state, Event.new(:assistant_stream_started, session_id, %{}))
 
-    {[
-       session_id: session_id,
-       on_result: &send(parent, {:assistant_delta, &1}),
-       on_thinking: &send(parent, {:assistant_thinking_delta, &1})
-     ], state}
+    ask_opts =
+      state.llm_opts
+      |> Keyword.put(:session_id, session_id)
+      |> Keyword.put(:on_result, &send(parent, {:assistant_delta, &1}))
+      |> Keyword.put(:on_thinking, &send(parent, {:assistant_thinking_delta, &1}))
+
+    {ask_opts, state}
   end
 
-  defp ask_options(state, _parent, session_id), do: {[session_id: session_id], state}
+  defp ask_options(state, _parent, session_id) do
+    {Keyword.put(state.llm_opts, :session_id, session_id), state}
+  end
 
   defp record_prompt_result(state, {:ok, response}) do
     state =
@@ -166,7 +171,7 @@ defmodule Exy.UI.SessionServer do
   end
 
   defp emit(state, event) do
-    Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {:exy_ui_event, event}) end)
+    Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     dispatch_plugin_event(state.state, event)
     %{state | state: Reducer.apply_event(state.state, event)}
   end

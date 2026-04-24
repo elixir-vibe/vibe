@@ -33,6 +33,7 @@ defmodule Exy.TUI.TerminalLoop do
   @impl true
   def init(opts) do
     {:ok, app} = App.start_link(opts)
+    :ok = App.subscribe(app, self())
 
     {:ok,
      %{
@@ -70,6 +71,14 @@ defmodule Exy.TUI.TerminalLoop do
   def handle_call(:render, _from, state) do
     {:reply, render_lines(state), state}
   end
+
+  @impl true
+  def handle_info({App, :event, _event}, state) do
+    paint(state)
+    {:noreply, state}
+  end
+
+  def handle_info(_message, state), do: {:noreply, state}
 
   defp paint(%{output: false}), do: :ok
 

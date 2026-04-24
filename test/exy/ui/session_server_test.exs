@@ -10,9 +10,9 @@ defmodule Exy.UI.SessionServerTest do
     :ok = Exy.UI.SessionServer.subscribe(server)
     :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
-    assert_receive {:exy_ui_event, %{type: :user_message_added}}, 500
-    assert_receive {:exy_ui_event, %{type: :assistant_message_added}}, 500
-    assert_receive {:exy_ui_event, %{type: :usage_updated}}, 500
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :user_message_added}}, 500
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_message_added}}, 500
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :usage_updated}}, 500
 
     state = Exy.UI.SessionServer.state(server)
     assert Enum.map(state.messages, & &1.role) == [:user, :assistant]
