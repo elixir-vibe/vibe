@@ -2,6 +2,18 @@
 
 Minimal BEAM-native coding-agent substrate.
 
+## Install
+
+```elixir
+{:exy, "~> 0.1.0"}
+```
+
+Or run from this repository:
+
+```bash
+mix exy --help
+```
+
 Exy keeps the model-facing tool surface small:
 
 - `read`
@@ -18,10 +30,14 @@ Everything else is normal Elixir callable from `elixir_eval`:
 - `Exy.Subagents` — supervised subagent process runner
 - `Exy.Skill` — procedural-memory skill files
 - `Exy.Trajectory` — structured event capture for self-improvement
-- `Exy.SelfPatch` — development hot-compile helpers
+- `Exy.Context` — pi-style context compaction checkpoints
+- `Exy.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
+- `Exy.SelfPatch` — validated development hot-compile helpers
 - `Exy.LLM` — direct ReqLLM calls
 - `Exy.Agent` / `Exy.Agent.Coding` — Jido.AI ReAct agent over Exy's three Elixir tools
-- `Exy.Auth.Codex` — ChatGPT/Codex OAuth login compatible with pi's flow
+- `Exy.Auth` / `Exy.Auth.Codex` — behaviour-based auth providers and ChatGPT/Codex OAuth
+- `Exy.Plugin` — behaviour-based plugin hooks discovered from `Exy.Plugins.*`
+- `Exy.Python` / `Exy.JS` — optional Pythonx and QuickBEAM evaluation helpers
 - `Exy.TUI.Terminal` — minimal Ghostty-backed terminal pane primitive
 
 ## First principles
@@ -32,6 +48,7 @@ Everything else is normal Elixir callable from `elixir_eval`:
 4. Use LSP for diagnostics/navigation, runtime eval for OTP state.
 5. Subagents are OTP processes, not prompt magic.
 6. Self-improvement evolves skills/helpers first, runtime core only with validation.
+7. Tests come before self-modification; `Exy.Checks.run_all/1` gates reloads.
 
 ## Examples
 
@@ -50,8 +67,9 @@ Exy.Subagents.run_many([
 ])
 
 # ChatGPT/Codex OAuth
-Exy.Auth.Codex.login()
-Exy.Auth.Codex.ensure_fresh()
+Exy.Auth.login("codex")
+Exy.Auth.ensure_fresh("openai-codex")
+Exy.Auth.usage("openai-codex")
 
 # Direct LLM call through ReqLLM
 Exy.LLM.ask("Summarize Exy's architecture", model: "openai:gpt-4o-mini")
@@ -65,10 +83,20 @@ Exy.ask(pid, "Use elixir_eval to inspect runtime info")
 #   mix exy -p "Inspect runtime info"
 #   mix exy --eval "Exy.OTP.runtime_info()"
 #   mix exy --compact --keep-recent 20
+#   mix exy --checks
+#   mix exy --codex-usage
 #   mix exy --login codex
 
 # Expert LSP gateway
 Exy.LSP.run(%{action: :diagnostics, file: "lib/exy.ex"})
+
+# Self inspection and validation
+Exy.supervision_tree(depth: 2)
+Exy.Checks.run_all()
+
+# Optional Python/JS helpers through Pythonx and QuickBEAM
+Exy.Python.run("x = 1 + 2\nx", %{})
+Exy.JS.run("1 + 2")
 
 # Ghostty terminal primitive
 {:ok, pane} = Exy.TUI.Terminal.start(cmd: "/bin/sh")
