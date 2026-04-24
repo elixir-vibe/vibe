@@ -12,7 +12,12 @@
 - Avoid static catalogs/registries when modules can be discovered idiomatically from compiled application modules or dependency availability, like Reach/Volt plugin detection.
 - Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
 - Auth, plugins, runtimes, and providers should be behaviour-based so future implementations can be added without changing callers.
+- `mix exy` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
+- For Mix task help, use Mix's built-in help rendering (`@moduledoc` + `Mix.Tasks.Help`) instead of hand-rolled CLI help formatters.
 - TUI rendering should stay semantic and iodata-first; avoid raw markdown markers/fences when rendering Markdown widgets.
 - Use MDEx streaming documents for partial LLM Markdown and Lumis terminal highlighting for fenced code blocks instead of hand-rolled parsers/highlighters.
 - Storybook output is a visual regression surface; inspect it after changing TUI/Markdown rendering, not just tests.
+- Prefer `IO.ANSI` or established terminal libraries over raw ANSI escape strings. If a raw terminal control sequence is unavoidable, isolate it behind a small named adapter and document why no library API is available.
+- Use Ghostty/Ghostty.KeyEvent in TUI harness tests for keyboard input and terminal snapshots instead of hard-coding VT byte sequences wherever possible.
+- Plugins may run supervised background children and update semantic UI state through `Exy.Plugin.UI`; keep plugin UI APIs renderer-neutral so TUI and future LiveView consume the same state.
 - For Livebook-style execution and `Mix.install/2`, isolate work in a child BEAM/runtime; do not pollute Exy's long-running VM.
