@@ -30,7 +30,7 @@ defmodule Exy.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib test mix.exs mix.lock README.md AGENTS.md .formatter.exs .gitignore)
+      files: ~w(lib priv test mix.exs mix.lock README.md AGENTS.md .formatter.exs .gitignore)
     ]
   end
 
