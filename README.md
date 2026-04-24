@@ -98,6 +98,8 @@ report = Exy.Checks.analyze()
 report.ok?
 report.failures
 Exy.Checks.analyze(checks: [:test, :ex_slop])
+Exy.SelfPatch.deployment_gate()
+Exy.SelfPatch.compile_and_reload()
 
 # Livebook-style standalone runtime
 {:ok, runtime} = Exy.Runtime.start_link()
