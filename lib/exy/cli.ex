@@ -114,7 +114,7 @@ defmodule Exy.CLI do
 
   defp loop(pid, opts) do
     case IO.gets("exy> ") do
-      nil ->
+      :eof ->
         :ok
 
       line ->

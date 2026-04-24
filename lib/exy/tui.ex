@@ -30,7 +30,6 @@ defmodule Exy.TUI do
 
   defp render_ast(block) do
     quote do
-      @spec render(map()) :: Node.t()
       def render(assigns \\ %{}) when is_map(assigns) do
         var!(assigns) = assigns
         unquote(block)

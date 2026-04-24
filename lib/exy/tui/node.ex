@@ -5,5 +5,5 @@ defmodule Exy.TUI.Node do
 
   defstruct [:type, props: %{}, children: []]
 
-  @type t :: %__MODULE__{type: atom(), props: map(), children: [t() | IO.chardata()]}
+  @type t :: %__MODULE__{}
 end

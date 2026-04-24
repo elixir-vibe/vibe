@@ -79,13 +79,18 @@ defmodule Exy.Context do
           {:ok, String.t()} | {:error, term()}
   def summarize(events, previous_summary \\ nil, opts \\ []) do
     prompt = summary_request(events, previous_summary, opts)
-    Exy.LLM.ask(prompt, Keyword.put(opts, :system, @system_prompt))
+    ask_llm(prompt, Keyword.put(opts, :system, @system_prompt))
   end
 
   @spec turn_prefix_summary([Trajectory.t()], keyword()) :: {:ok, String.t()} | {:error, term()}
   def turn_prefix_summary(events, opts \\ []) do
     prompt = "<conversation>\n#{serialize(events)}\n</conversation>\n\n" <> @turn_prefix_prompt
-    Exy.LLM.ask(prompt, Keyword.put(opts, :system, @system_prompt))
+    ask_llm(prompt, Keyword.put(opts, :system, @system_prompt))
+  end
+
+  defp ask_llm(prompt, opts) do
+    ask = &Exy.LLM.ask/2
+    ask.(prompt, opts)
   end
 
   @spec serialize([Trajectory.t()]) :: String.t()

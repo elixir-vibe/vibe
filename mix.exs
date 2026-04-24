@@ -17,8 +17,7 @@ defmodule Exy.MixProject do
       aliases: aliases(),
       dialyzer: [
         plt_file: {:no_warn, "_build/dev/dialyxir_plt.plt"},
-        plt_add_apps: [:mix],
-        ignore_warnings: ".dialyzer_ignore.exs"
+        plt_add_apps: [:mix]
       ]
     ]
   end

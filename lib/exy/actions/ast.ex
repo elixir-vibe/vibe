@@ -38,8 +38,7 @@ defmodule Exy.Actions.AST do
 
     case Exy.AST.run(params) do
       {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
-      {:error, error} when is_binary(error) -> {:error, Exy.ToolOutput.limit_text(error)}
-      other -> other
+      {:error, error} -> {:error, Exy.ToolOutput.limit_text(error)}
     end
   end
 end

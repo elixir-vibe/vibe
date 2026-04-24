@@ -84,7 +84,7 @@ defmodule Exy.Skill do
       not String.starts_with?(content, "---\n") ->
         {:error, "skill must start with frontmatter"}
 
-      not Regex.match?(~r/\n---\s*\n/s, String.slice(content, 4..-1//1) || "") ->
+      not Regex.match?(~r/\n---\s*\n/s, String.slice(content, 4..-1//1)) ->
         {:error, "frontmatter must be closed with ---"}
 
       not String.contains?(content, "name:") ->
