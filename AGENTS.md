@@ -12,4 +12,7 @@
 - Avoid static catalogs/registries when modules can be discovered idiomatically from compiled application modules or dependency availability, like Reach/Volt plugin detection.
 - Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
 - Auth, plugins, runtimes, and providers should be behaviour-based so future implementations can be added without changing callers.
+- TUI rendering should stay semantic and iodata-first; avoid raw markdown markers/fences when rendering Markdown widgets.
+- Use MDEx streaming documents for partial LLM Markdown and Lumis terminal highlighting for fenced code blocks instead of hand-rolled parsers/highlighters.
+- Storybook output is a visual regression surface; inspect it after changing TUI/Markdown rendering, not just tests.
 - For Livebook-style execution and `Mix.install/2`, isolate work in a child BEAM/runtime; do not pollute Exy's long-running VM.

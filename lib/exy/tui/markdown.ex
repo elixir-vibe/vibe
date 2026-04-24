@@ -71,11 +71,10 @@ defmodule Exy.TUI.Markdown do
 
     body =
       literal
+      |> highlight_code(language, theme)
       |> String.trim_trailing("\n")
       |> String.split("\n")
-      |> Enum.flat_map(fn line ->
-        Widget.wrap(Theme.fg(theme, :tool_output, ["  ", line]), width)
-      end)
+      |> Enum.flat_map(fn line -> Widget.wrap(["  ", line], width) end)
 
     header |> join_lines(body) |> join_lines([border]) |> append_blank()
   end
@@ -144,7 +143,9 @@ defmodule Exy.TUI.Markdown do
         end
       end)
 
-    Exy.TUI.Lines.append(rows, table_bottom(widths, theme))
+    rows
+    |> then(&[table_top(widths, theme) | &1])
+    |> Exy.TUI.Lines.append(table_bottom(widths, theme))
   end
 
   defp table_row(%MDEx.TableRow{nodes: cells}, theme),
@@ -164,6 +165,15 @@ defmodule Exy.TUI.Markdown do
     end)
   end
 
+  defp highlight_code(code, nil, theme), do: Theme.fg(theme, :tool_output, code)
+
+  defp highlight_code(code, language, theme) do
+    {:ok, highlighted} = Lumis.highlight(code, formatter: {:terminal, language: language})
+    highlighted
+  rescue
+    _error -> Theme.fg(theme, :tool_output, code)
+  end
+
   defp table_line(row, widths, theme) do
     cells =
       widths
@@ -172,6 +182,11 @@ defmodule Exy.TUI.Markdown do
       |> Enum.intersperse(Theme.fg(theme, :border, " │ "))
 
     [Theme.fg(theme, :border, "│ "), cells, Theme.fg(theme, :border, " │")]
+  end
+
+  defp table_top(widths, theme) do
+    parts = widths |> Enum.map(&String.duplicate("─", &1)) |> Enum.intersperse("─┬─")
+    Theme.fg(theme, :border, ["╭─", parts, "─╮"])
   end
 
   defp table_separator(widths, theme) do

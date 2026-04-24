@@ -27,7 +27,15 @@ defmodule Exy.TUI.MarkdownTest do
     assert plain =~ "elixir"
     assert plain =~ "IO.puts(:ok)"
     refute plain =~ "```"
+    assert plain =~ "╭───┬───╮"
     assert plain =~ "│ A │ B │"
+  end
+
+  test "syntax highlights fenced code with terminal ANSI" do
+    lines = Markdown.render("```elixir\nIO.puts(:ok)\n```", 80, Theme.default())
+    rendered = IO.iodata_to_binary(lines)
+
+    assert rendered =~ "\e[38;2;"
   end
 
   test "renders partial streaming markdown with temporary closures" do
