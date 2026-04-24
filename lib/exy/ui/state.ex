@@ -17,6 +17,7 @@ defmodule Exy.UI.State do
             working_message: nil,
             hidden_thinking_label: nil,
             title: nil,
+            selector: nil,
             streaming_message: nil,
             editor: %{text: "", history: []},
             events: []
@@ -42,6 +43,7 @@ defmodule Exy.UI.State do
           working_message: String.t() | nil,
           hidden_thinking_label: String.t() | nil,
           title: String.t() | nil,
+          selector: map() | nil,
           streaming_message: map() | nil,
           editor: map(),
           events: [Exy.UI.Event.t()]

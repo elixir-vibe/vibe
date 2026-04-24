@@ -34,6 +34,10 @@ defmodule Exy.TUI.AppTest do
     assert Enum.any?(App.snapshot(app).ui.events, fn event ->
              event.type == :slash_command_submitted and event.data.command == "model"
            end)
+
+    assert App.snapshot(app).ui.selector.kind == :model_selector
+    :ok = App.key(app, :cancel)
+    assert App.snapshot(app).ui.selector == nil
   end
 
   test "tracks resize" do

@@ -44,8 +44,13 @@ defmodule Exy.TUI.App do
 
   @impl true
   def handle_call({:key, key}, _from, state) do
-    commands = EditorServer.key(state.editor, key)
-    Enum.each(commands, &handle_editor_command(&1, state))
+    if selector_open?(state) do
+      handle_selector_key(key, state)
+    else
+      commands = EditorServer.key(state.editor, key)
+      Enum.each(commands, &handle_editor_command(&1, state))
+    end
+
     {:reply, :ok, state}
   end
 
@@ -71,6 +76,32 @@ defmodule Exy.TUI.App do
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp selector_open?(state), do: not is_nil(SessionServer.state(state.ui).selector)
+
+  defp handle_selector_key(:up, state) do
+    SessionServer.dispatch(state.ui, Command.new(:selector_moved, %{direction: -1}))
+  end
+
+  defp handle_selector_key(:down, state) do
+    SessionServer.dispatch(state.ui, Command.new(:selector_moved, %{direction: 1}))
+  end
+
+  defp handle_selector_key(:submit, state) do
+    selector = SessionServer.state(state.ui).selector
+    item = selector |> Map.get(:items, []) |> Enum.at(Map.get(selector, :selected, 0))
+
+    SessionServer.dispatch(
+      state.ui,
+      Command.new(:selector_confirmed, %{selector: Map.get(selector, :kind), item: item})
+    )
+  end
+
+  defp handle_selector_key(:cancel, state) do
+    SessionServer.dispatch(state.ui, Command.new(:selector_closed))
+  end
+
+  defp handle_selector_key(_key, _state), do: :ok
 
   defp handle_editor_command({:submit, text}, state) do
     SessionServer.dispatch(state.ui, Command.new(:submit_prompt, %{text: text}))

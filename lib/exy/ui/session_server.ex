@@ -101,6 +101,18 @@ defmodule Exy.UI.SessionServer do
     state
   end
 
+  defp handle_command(
+         %Command{type: :slash_command_submitted, data: %{command: command} = data},
+         state
+       ) do
+    state = emit(state, Event.new(:slash_command_submitted, state.state.session_id, data))
+
+    case slash_selector(command, state.state) do
+      nil -> state
+      selector -> emit(state, Event.new(:selector_opened, state.state.session_id, selector))
+    end
+  end
+
   defp handle_command(%Command{type: :open_overlay, data: data}, state) do
     emit(state, Event.new(:overlay_opened, state.state.session_id, data))
   end
@@ -185,6 +197,32 @@ defmodule Exy.UI.SessionServer do
 
   defp normalize_command({type, data}) when is_atom(type) and is_map(data),
     do: Command.new(type, data)
+
+  defp slash_selector("model", ui_state) do
+    %{kind: :model_selector, title: "Model", items: [ui_state.model], selected: 0, limit: 8}
+  end
+
+  defp slash_selector("session", _ui_state) do
+    items = Exy.Session.list() |> Enum.map(& &1.id)
+    %{kind: :session_selector, title: "Session", items: items, selected: 0, limit: 8}
+  end
+
+  defp slash_selector("skill", _ui_state) do
+    items = Exy.Skill.list() |> Enum.map(& &1.name)
+    %{kind: :skill_selector, title: "Skill", items: items, selected: 0, limit: 8}
+  end
+
+  defp slash_selector("commands", _ui_state) do
+    %{
+      kind: :command_palette,
+      title: "Commands",
+      items: ["model", "session", "skill", "clear", "compact"],
+      selected: 0,
+      limit: 8
+    }
+  end
+
+  defp slash_selector(_command, _ui_state), do: nil
 
   defp maybe_register_ui_bus(session_id) do
     if Process.whereis(Exy.UI.Bus), do: Exy.UI.Bus.register(session_id, self()), else: :ok

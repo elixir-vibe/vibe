@@ -146,7 +146,59 @@ defmodule Exy.UI.Reducer do
     %{state | title: title}
   end
 
+  defp reduce(state, %Event{type: :selector_opened, data: data}) do
+    selector = data |> Map.put_new(:selected, 0) |> Map.put_new(:items, [])
+
+    %{
+      state
+      | selector: selector,
+        overlays: Lists.append(state.overlays, Map.put(selector, :kind, :selector))
+    }
+  end
+
+  defp reduce(state, %Event{type: :selector_moved, data: %{direction: direction}}) do
+    %{
+      state
+      | selector: move_selector(state.selector, direction),
+        overlays: update_selector_overlay(state.overlays, direction)
+    }
+  end
+
+  defp reduce(state, %Event{type: :selector_closed}) do
+    %{
+      state
+      | selector: nil,
+        overlays: Enum.reject(state.overlays, &(&1[:kind] == :selector || &1.kind == :selector))
+    }
+  end
+
+  defp reduce(state, %Event{type: :selector_confirmed}) do
+    %{
+      state
+      | selector: nil,
+        overlays: Enum.reject(state.overlays, &(&1[:kind] == :selector || &1.kind == :selector))
+    }
+  end
+
   defp reduce(state, _event), do: state
+
+  defp move_selector(nil, _direction), do: nil
+
+  defp move_selector(selector, direction) do
+    count = length(Map.get(selector, :items, []))
+    selected = Map.get(selector, :selected, 0)
+    Map.put(selector, :selected, clamp_selection(selected + direction, count))
+  end
+
+  defp update_selector_overlay(overlays, direction) do
+    Enum.map(overlays, fn
+      %{kind: :selector} = overlay -> move_selector(overlay, direction)
+      overlay -> overlay
+    end)
+  end
+
+  defp clamp_selection(_selected, 0), do: 0
+  defp clamp_selection(selected, count), do: selected |> max(0) |> min(count - 1)
 
   defp update_streaming(state, key, delta) do
     message = state.streaming_message || %{role: :assistant, text: "", thinking: ""}
