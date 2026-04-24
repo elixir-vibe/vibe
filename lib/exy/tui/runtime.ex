@@ -16,13 +16,14 @@ defmodule Exy.TUI.Runtime do
       |> Keyword.put(:output, false)
       |> Keyword.put(:event_target, self())
 
-    with {:ok, loop} <- TerminalLoop.start_link(opts),
+    with :ok <- ensure_interactive_terminal(),
+         {:ok, loop} <- TerminalLoop.start_link(opts),
          {:ok, tty} <- Ghostty.TTY.start_link(owner: self()) do
       try do
         render(tty, loop)
         receive_events(tty, loop)
       after
-        Ghostty.TTY.write(tty, IO.ANSI.reset())
+        Ghostty.TTY.write(tty, [show_cursor(), IO.ANSI.reset()])
         GenServer.stop(tty)
       end
     end
@@ -62,6 +63,26 @@ defmodule Exy.TUI.Runtime do
 
   defp render(tty, loop) do
     lines = TerminalLoop.render(loop)
-    Ghostty.TTY.write(tty, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
+    {cursor_row, cursor_column} = TerminalLoop.cursor_position(loop)
+
+    Ghostty.TTY.write(tty, [
+      hide_cursor(),
+      IO.ANSI.home(),
+      IO.ANSI.clear(),
+      Enum.intersperse(lines, "\r\n"),
+      IO.ANSI.cursor(cursor_row, cursor_column),
+      show_cursor()
+    ])
+  end
+
+  defp hide_cursor, do: "\e[?25l"
+  defp show_cursor, do: "\e[?25h"
+
+  defp ensure_interactive_terminal do
+    if :prim_tty.isatty(:stdin) do
+      :ok
+    else
+      {:error, :stdio_is_not_a_terminal}
+    end
   end
 end

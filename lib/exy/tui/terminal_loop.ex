@@ -8,7 +8,7 @@ defmodule Exy.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Exy.TUI.{App, DSL, KeyDecoder, Renderer, Theme, Widget}
+  alias Exy.TUI.{App, DSL, KeyDecoder, Renderer, Theme, Widget, Width}
   alias Exy.UI.ViewModel
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -29,6 +29,9 @@ defmodule Exy.TUI.TerminalLoop do
 
   @spec render(GenServer.server()) :: [IO.chardata()]
   def render(server), do: GenServer.call(server, :render)
+
+  @spec cursor_position(GenServer.server()) :: {pos_integer(), pos_integer()}
+  def cursor_position(server), do: GenServer.call(server, :cursor_position)
 
   @impl true
   def init(opts) do
@@ -73,6 +76,10 @@ defmodule Exy.TUI.TerminalLoop do
     {:reply, render_lines(state), state}
   end
 
+  def handle_call(:cursor_position, _from, state) do
+    {:reply, calculate_cursor_position(state), state}
+  end
+
   @impl true
   def handle_info({App, :event, event}, state) do
     notify_event_target(state, event)
@@ -108,6 +115,19 @@ defmodule Exy.TUI.TerminalLoop do
   defp fit_body(body, height, editor) when is_integer(height) do
     body_lines = max(height - length(editor), 1)
     Enum.take(body, -body_lines)
+  end
+
+  defp calculate_cursor_position(state) do
+    snapshot = App.snapshot(state.app)
+    editor = render_editor(snapshot, state.theme)
+    editor_start_row = max(snapshot.height - length(editor), 0)
+    inner_width = max(snapshot.width - 4, 1)
+    left = String.slice(snapshot.editor.text || "", 0, snapshot.editor.cursor || 0)
+    left_width = Width.visible_length(left)
+    row = editor_start_row + 2 + div(left_width, inner_width)
+    column = 3 + rem(left_width, inner_width)
+
+    {max(row, 1), max(column, 1)}
   end
 
   defp render_editor(snapshot, theme) do
