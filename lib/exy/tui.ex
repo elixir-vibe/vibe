@@ -55,12 +55,18 @@ defmodule Exy.TUI do
     end
   end
 
+  def horizontal(children), do: Exy.TUI.DSL.horizontal(children)
+  def raw(content), do: Exy.TUI.DSL.raw(content)
+  def spacer(lines \\ 1), do: Exy.TUI.DSL.spacer(lines)
   def text(content, opts \\ []), do: Exy.TUI.DSL.text(content, opts)
+  def truncate(content, opts \\ []), do: Exy.TUI.DSL.truncate(content, opts)
   def message(message), do: Exy.TUI.DSL.message(message)
   def tool(tool), do: Exy.TUI.DSL.tool(tool)
   def footer(footer), do: Exy.TUI.DSL.footer(footer)
   def overlay(overlay), do: Exy.TUI.DSL.overlay(overlay)
   def section(title, children \\ []), do: Exy.TUI.DSL.section(title, children)
+  def box(title \\ nil, children, opts \\ []), do: Exy.TUI.DSL.box(title, children, opts)
+  def padding(children, opts \\ []), do: Exy.TUI.DSL.padding(children, opts)
   def status(props), do: Exy.TUI.DSL.status(props)
   def model_info(props), do: Exy.TUI.DSL.model_info(props)
   def dialog(title, children, opts \\ []), do: Exy.TUI.DSL.dialog(title, children, opts)

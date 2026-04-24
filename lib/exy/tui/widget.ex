@@ -18,6 +18,11 @@ defmodule Exy.TUI.Widget do
     section: Exy.TUI.Widgets.Section,
     status: Exy.TUI.Widgets.Status,
     model_info: Exy.TUI.Widgets.ModelInfo,
+    horizontal: Exy.TUI.Widgets.Horizontal,
+    box: Exy.TUI.Widgets.Box,
+    padding: Exy.TUI.Widgets.Padding,
+    spacer: Exy.TUI.Widgets.Spacer,
+    truncate: Exy.TUI.Widgets.Truncate,
     dialog: Exy.TUI.Widgets.Dialog,
     diff: Exy.TUI.Widgets.Diff,
     footer: Exy.TUI.Widgets.Footer,
@@ -52,6 +57,25 @@ defmodule Exy.TUI.Widget do
     else
       line |> Width.visible_text() |> String.graphemes() |> Enum.take(width) |> Enum.join()
     end
+  end
+
+  @spec pad_line(IO.chardata(), non_neg_integer()) :: line()
+  def pad_line(line, width) do
+    line = fit_line(line, width)
+    [line, String.duplicate(" ", max(width - Width.visible_length(line), 0))]
+  end
+
+  @spec frame_line(IO.chardata(), pos_integer(), Theme.t()) :: line()
+  def frame_line(content, width, theme) do
+    inner_width = max(width - 4, 0)
+
+    [
+      Theme.symbol(theme, :dialog_vertical),
+      " ",
+      pad_line(content, inner_width),
+      " ",
+      Theme.symbol(theme, :dialog_vertical)
+    ]
   end
 
   @spec join_sides(IO.chardata(), IO.chardata(), pos_integer()) :: line()

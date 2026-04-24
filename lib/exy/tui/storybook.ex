@@ -99,7 +99,7 @@ defmodule Exy.TUI.Storybook do
         color: :error
       ),
       DSL.status(
-        icon: "•",
+        icon: Theme.symbol(Theme.default(), :status_icon),
         title: "Runtime",
         description: "standalone BEAM",
         extra: "idle",
@@ -108,24 +108,36 @@ defmodule Exy.TUI.Storybook do
     ])
   end
 
-  def story(:section_header),
-    do: DSL.section("Tools", [DSL.text("elixir_eval, elixir_ast, elixir_lsp")])
+  def story(:section_header) do
+    DSL.box("Tools", [
+      DSL.horizontal([
+        DSL.status(title: "elixir_eval", description: "runtime introspection", color: :accent),
+        DSL.status(title: "elixir_ast", description: "syntax search", color: :accent),
+        DSL.status(title: "elixir_lsp", description: "Expert gateway", color: :accent)
+      ])
+    ])
+  end
 
   def story(:model_info) do
     DSL.model_info(
       model: "gpt-5.5",
       provider: "openai_codex",
       reasoning: "medium",
-      context_percent: 42.5,
+      context_percent: 88.5,
+      subscription: "chatgpt",
       usage: %{total_tokens: 123_456, total_cost: 0.023}
     )
   end
 
   def story(:dialog) do
-    DSL.dialog("Resume Session", [
-      DSL.status(icon: "1", title: "story-chat", description: "now", color: :accent),
-      DSL.status(icon: "2", title: "previous-work", description: "2h", color: :muted)
-    ])
+    DSL.dialog(
+      "Resume Session",
+      [
+        DSL.status(icon: "1", title: "story-chat", description: "now", color: :accent),
+        DSL.status(icon: "2", title: "previous-work", description: "2h", color: :muted)
+      ],
+      hint: "enter opens • esc cancels"
+    )
   end
 
   def story(:diff) do

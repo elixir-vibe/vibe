@@ -7,17 +7,20 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   @impl true
   def render(tool, width, theme) do
-    title =
-      theme
-      |> Theme.fg(:tool_title, [Theme.symbol(theme, :tool_icon), " elixir_eval  ", status(tool)])
-      |> ToolWidget.status_bg(Map.get(tool, :status), theme)
-
-    lines = [title]
+    title = ToolWidget.title(tool, theme, name: :elixir_eval, summary: eval_summary(tool))
 
     if expanded?(tool) do
-      lines ++ detail_lines(tool, width, theme)
+      [title | detail_lines(tool, width, theme)]
     else
-      lines
+      [title]
+    end
+  end
+
+  defp eval_summary(tool) do
+    cond do
+      code = Map.get(tool, :code) -> ToolWidget.summarize_value(code, 72)
+      args = Map.get(tool, :args) -> args |> code_from_args() |> ToolWidget.summarize_value(72)
+      true -> ToolWidget.compact_summary(tool)
     end
   end
 
@@ -31,12 +34,19 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   defp append_section(lines, label, value, width, theme) do
     lines ++
-      Widget.render(DSL.text([to_string(label), ":"], fg: :muted), width, theme) ++
-      Widget.render(DSL.text(format_value(value), fg: :tool_output), width, theme)
+      Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme) ++
+      Widget.render(
+        DSL.padding([DSL.text(format_value(value), fg: :tool_output)], x: 2),
+        width,
+        theme
+      )
   end
 
+  defp code_from_args(%{code: code}), do: code
+  defp code_from_args(%{"code" => code}), do: code
+  defp code_from_args(args), do: args
+
   defp expanded?(tool), do: Map.get(tool, :expanded?, false)
-  defp status(tool), do: tool |> Map.get(:status, :running) |> to_string()
   defp format_value(value) when is_binary(value), do: value
   defp format_value(value), do: inspect(value, pretty: true, limit: 20)
 end

@@ -25,4 +25,35 @@ defmodule Exy.TUI.WidgetsTest do
     assert plain =~ "-old"
     assert plain =~ "+new"
   end
+
+  test "dialog keeps right border on every framed row" do
+    lines =
+      DSL.dialog("Resume", [DSL.text("session")], hint: "enter opens")
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.all?(lines, &(String.length(&1) == 40))
+
+    assert Enum.all?(
+             lines,
+             &(String.ends_with?(&1, "│") or String.ends_with?(&1, "╮") or
+                 String.ends_with?(&1, "╯"))
+           )
+  end
+
+  test "layout primitives render boxes, padding, horizontal rows, spacers, and truncation" do
+    lines =
+      DSL.box("Layout", [
+        DSL.horizontal([DSL.text("left"), DSL.text("right")]),
+        DSL.spacer(),
+        DSL.padding([DSL.truncate("abcdef", suffix: "…")], x: 2)
+      ])
+      |> Widget.render(30, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert hd(lines) =~ "Layout"
+    assert Enum.any?(lines, &String.contains?(&1, "left"))
+    assert Enum.any?(lines, &String.contains?(&1, "right"))
+    assert Enum.any?(lines, &String.contains?(&1, "abcdef"))
+  end
 end

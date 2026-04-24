@@ -7,45 +7,61 @@ defmodule Exy.TUI.Widgets.Tools.AST do
 
   @impl true
   def render(tool, width, theme) do
+    result = Map.get(tool, :output) || Map.get(tool, :result) || Map.get(tool, :matches)
+
     title =
-      theme
-      |> Theme.fg(:tool_title, [
-        Theme.symbol(theme, :tool_icon),
-        " elixir_ast  ",
-        action(tool),
-        "  ",
-        status(tool)
-      ])
-      |> ToolWidget.status_bg(Map.get(tool, :status), theme)
+      ToolWidget.title(tool, theme,
+        name: :elixir_ast,
+        action: action(tool),
+        summary: collapsed_summary(result)
+      )
 
     if Map.get(tool, :expanded?, false) do
-      [title | details(tool, width, theme)]
+      [title | details(result, width, theme)]
     else
       [title]
     end
   end
 
-  defp details(tool, width, theme) do
-    result = Map.get(tool, :output) || Map.get(tool, :result) || Map.get(tool, :matches)
+  defp details(nil, _width, _theme), do: []
 
-    Widget.render(DSL.text(summary(result), fg: :tool_output), width, theme)
+  defp details(matches, width, theme) when is_list(matches) do
+    rows = Enum.take(matches, 8) |> Enum.map(&match_row/1)
+    more = max(length(matches) - length(rows), 0)
+
+    body =
+      if more > 0 do
+        rows ++ [Theme.fg(theme, :muted, "+#{more} more matches")]
+      else
+        rows
+      end
+
+    Widget.render(
+      DSL.padding(Enum.map(body, &DSL.text(&1, fg: :tool_output)), x: 2),
+      width,
+      theme
+    )
   end
+
+  defp details(value, width, theme),
+    do: Widget.render(DSL.text(summary(value), fg: :tool_output), width, theme)
 
   defp action(tool) do
     case Map.get(tool, :args) do
       %{action: action} -> to_string(action)
       %{"action" => action} -> to_string(action)
-      _ -> ""
+      _ -> nil
     end
   end
 
+  defp collapsed_summary(matches) when is_list(matches), do: "#{length(matches)} matches"
+  defp collapsed_summary(value), do: ToolWidget.summarize_value(value, 72)
+
+  defp match_row(%{file: file, line: line}), do: [to_string(file), ":", to_string(line)]
+  defp match_row(%{"file" => file, "line" => line}), do: [to_string(file), ":", to_string(line)]
+  defp match_row(match), do: ToolWidget.summarize_value(match, 100)
+
   defp summary(nil), do: ""
-
-  defp summary(list) when is_list(list),
-    do: "matches: #{length(list)}\n" <> inspect(list, pretty: true, limit: 10)
-
   defp summary(value) when is_binary(value), do: value
   defp summary(value), do: inspect(value, pretty: true, limit: 20)
-
-  defp status(tool), do: tool |> Map.get(:status, :running) |> to_string()
 end

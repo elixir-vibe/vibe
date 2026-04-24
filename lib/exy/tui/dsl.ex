@@ -10,10 +10,15 @@ defmodule Exy.TUI.DSL do
   @spec vertical([child()]) :: Node.t()
   def vertical(children), do: node(:vertical, %{}, List.wrap(children))
 
+  @spec horizontal([child()]) :: Node.t()
+  def horizontal(children), do: node(:horizontal, %{}, List.wrap(children))
+
   @spec raw(IO.chardata()) :: Node.t()
   def raw(content), do: node(:raw, %{}, [content])
 
-  @spec text(IO.chardata(), keyword() | map()) :: Node.t()
+  @spec spacer(non_neg_integer()) :: Node.t()
+  def spacer(lines \\ 1), do: node(:spacer, %{lines: lines})
+
   def text(content, opts \\ []), do: node(:text, Map.new(opts), [content])
 
   @spec footer(map() | struct()) :: Node.t()
@@ -30,6 +35,17 @@ defmodule Exy.TUI.DSL do
 
   @spec section(IO.chardata(), [child()]) :: Node.t()
   def section(title, children \\ []), do: node(:section, %{title: title}, List.wrap(children))
+
+  @spec box(IO.chardata() | nil, [child()], keyword() | map()) :: Node.t()
+  def box(title \\ nil, children, opts \\ []) do
+    node(:box, Map.put(Map.new(opts), :title, title), List.wrap(children))
+  end
+
+  @spec padding([child()], keyword() | map()) :: Node.t()
+  def padding(children, opts \\ []), do: node(:padding, Map.new(opts), List.wrap(children))
+
+  @spec truncate(IO.chardata(), keyword() | map()) :: Node.t()
+  def truncate(content, opts \\ []), do: node(:truncate, Map.new(opts), [content])
 
   @spec status(keyword() | map()) :: Node.t()
   def status(props), do: node(:status, Map.new(props))
