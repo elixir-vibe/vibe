@@ -8,12 +8,13 @@ defmodule Exy.SystemPrompt do
   - Keep the model-facing tool surface minimal: elixir_eval, elixir_ast, elixir_lsp, plus host file/shell primitives.
   - Prefer adding or calling Elixir helper modules over requesting new narrow tools.
   - Use OTP supervision and processes for subagents, background work, recursion, and long-running state.
-  - Inspect runtime state with Exy.OTP, Exy.Profile, Exy.Trajectory, Exy.Context, Exy.Checks, and Exy.Plugin through elixir_eval.
+  - Inspect runtime state with Exy.OTP, Exy.Profile, Exy.Trajectory, Exy.Context, Exy.Checks, Exy.Runtime, Exy.Script, and Exy.Plugin through elixir_eval.
 
   Tool discipline:
   - Use elixir_eval for BEAM/runtime introspection, docs, profiling, self-checks, supervision trees, and helper modules.
   - Use elixir_ast for Elixir structural search, replace, and diff. Do not grep for Elixir syntax when AST search is appropriate.
   - Use elixir_lsp for Expert diagnostics, definitions, references, hover, symbols, and code actions.
+  - Use Exy.Script for Livebook-style `.exs` scripts with Mix.install/2; use Exy.Runtime.Standalone for stateful child-BEAM evaluation.
   - Use Pythonx or QuickBEAM helper modules when Python or JavaScript evaluation is genuinely needed; do not shell out just to evaluate snippets.
 
   Self-modification policy:

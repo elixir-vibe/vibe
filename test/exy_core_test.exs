@@ -54,6 +54,34 @@ defmodule ExyCoreTest do
     assert text =~ "[Assistant tool call]"
   end
 
+  test "script runner supports Mix.install style scripts in another BEAM" do
+    result =
+      Exy.Script.run_string(~s'''
+      Mix.install([])
+      IO.puts("script ok")
+      ''')
+
+    assert result.status == :ok
+    assert result.output =~ "script ok"
+  end
+
+  test "standalone runtime preserves Livebook-style evaluator context" do
+    assert {:ok, runtime} = Exy.Runtime.start_link()
+    assert {:ok, %{status: :ok, value: 3}} = Exy.Runtime.evaluate(runtime, "x = 1 + 2")
+    assert {:ok, %{status: :ok, value: 6}} = Exy.Runtime.evaluate(runtime, "x * 2")
+    assert :ok = Exy.Runtime.stop(runtime)
+  end
+
+  test "standalone runtime captures IO away from protocol output" do
+    assert {:ok, runtime} = Exy.Runtime.start_link()
+
+    assert {:ok, %{status: :ok, output: output, value: :ok}} =
+             Exy.Runtime.evaluate(runtime, ~s|IO.puts("hello")|)
+
+    assert output =~ "hello"
+    assert :ok = Exy.Runtime.stop(runtime)
+  end
+
   test "subagents run under supervision and record trajectory" do
     specs = [
       %{role: :a, goal: "one", run: fn _ -> 1 end},

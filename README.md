@@ -31,6 +31,8 @@ Everything else is normal Elixir callable from `elixir_eval`:
 - `Exy.Skill` — procedural-memory skill files
 - `Exy.Trajectory` — structured event capture for self-improvement
 - `Exy.Context` — pi-style context compaction checkpoints
+- `Exy.Runtime` / `Exy.Script` — Livebook-inspired standalone BEAM runtime and Mix.install script runner
+- `Exy.Sandbox.Policy` — explicit isolation policy data for runtime selection
 - `Exy.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
 - `Exy.SelfPatch` — validated development hot-compile helpers
 - `Exy.LLM` — direct ReqLLM calls
@@ -93,6 +95,16 @@ Exy.LSP.run(%{action: :diagnostics, file: "lib/exy.ex"})
 # Self inspection and validation
 Exy.supervision_tree(depth: 2)
 Exy.Checks.run_all()
+
+# Livebook-style standalone runtime
+{:ok, runtime} = Exy.Runtime.start_link()
+Exy.Runtime.evaluate(runtime, "Mix.install([])\nx = 1 + 2")
+Exy.Runtime.evaluate(runtime, "x * 2")
+Exy.Runtime.stop(runtime)
+
+# One-shot scripts with Mix.install/2
+Exy.Script.run_string("Mix.install([])\nIO.puts(:ok)")
+Exy.Script.run_string("x = 1 + 2", runtime: :standalone)
 
 # Optional Python/JS helpers through Pythonx and QuickBEAM
 Exy.Python.run("x = 1 + 2\nx", %{})
