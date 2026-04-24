@@ -41,8 +41,9 @@ Everything else is normal Elixir callable from `elixir_eval`:
 - `Exy.Agent` / `Exy.Agent.Coding` — Jido.AI ReAct agent over Exy's three Elixir tools
 - `Exy.Auth` / `Exy.Auth.Codex` — behaviour-based auth providers and ChatGPT/Codex OAuth
 - `Exy.Plugin` — behaviour-based plugin hooks discovered from `Exy.Plugins.*`
+- `Exy.UI` — UI-neutral event/state/command layer for TUI and future LiveView clients
+- `Exy.Terminal` — Ghostty-backed terminal panes and terminal-aware snapshots
 - `Exy.Python` / `Exy.JS` — optional Pythonx and QuickBEAM evaluation helpers
-- `Exy.TUI.Terminal` — minimal Ghostty-backed terminal pane primitive
 
 ## First principles
 
@@ -120,9 +121,19 @@ Exy.Script.run_string("x = 1 + 2", runtime: :standalone)
 Exy.Python.run("x = 1 + 2\nx", %{})
 Exy.JS.run("1 + 2")
 
-# Ghostty terminal primitive
-{:ok, pane} = Exy.TUI.Terminal.start(cmd: "/bin/sh")
-Exy.TUI.Terminal.write(pane, "echo hello\\n")
-Exy.TUI.Terminal.pump_once(pane)
-Exy.TUI.Terminal.snapshot(pane)
+# UI-neutral session state for TUI and future LiveView clients
+{:ok, ui} = Exy.UI.SessionServer.start_link()
+Exy.UI.SessionServer.subscribe(ui)
+Exy.UI.SessionServer.dispatch(ui, {:open_overlay, %{kind: :session_selector}})
+Exy.UI.SessionServer.state(ui)
+
+# Ghostty terminal panes and snapshots
+{:ok, pane} = Exy.Terminal.Pane.start_link(cmd: "/bin/sh")
+Exy.Terminal.Pane.write(pane, "echo hello\\n")
+Exy.Terminal.Pane.snapshot(pane)
+Exy.Terminal.Snapshot.from_ansi("\\e[32mok\\e[0m\\r\\n")
+
+# Semantic TUI theming maps to ANSI now and CSS variables later
+view = Exy.UI.SessionServer.state(ui) |> Exy.UI.ViewModel.from_state()
+Exy.TUI.Renderer.render(view, 100, Exy.TUI.Theme.default())
 ```
