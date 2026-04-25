@@ -53,7 +53,7 @@ defmodule Exy.TUI.Markdown do
   end
 
   defp block(%MDEx.Paragraph{nodes: nodes}, width, theme),
-    do: Widget.wrap(inline(nodes, theme), width)
+    do: inline(nodes, theme) |> Widget.wrap(width) |> append_blank()
 
   defp block(%MDEx.CodeBlock{literal: literal, info: info}, width, theme) do
     language = if info in [nil, ""], do: nil, else: String.trim(info)

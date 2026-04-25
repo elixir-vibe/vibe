@@ -31,6 +31,15 @@ defmodule Exy.TUI.MarkdownTest do
     assert plain =~ "│ A │ B │"
   end
 
+  test "adds vertical rhythm between markdown blocks" do
+    plain =
+      "First paragraph\n\nSecond paragraph"
+      |> Markdown.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert plain == ["First paragraph", "", "Second paragraph"]
+  end
+
   test "syntax highlights fenced code with terminal ANSI" do
     lines = Markdown.render("```elixir\nIO.puts(:ok)\n```", 80, Theme.default())
     rendered = IO.iodata_to_binary(lines)

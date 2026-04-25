@@ -62,14 +62,22 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   defp block_line(line, width, theme, bg_key, fg_key) do
-    left_padding = Theme.bg(theme, bg_key, "  ")
-    content = line |> then(&Theme.fg(theme, fg_key, &1)) |> then(&Theme.bg(theme, bg_key, &1))
+    background = IO.iodata_to_binary(Theme.bg_start(theme, bg_key))
+    reset = IO.ANSI.reset()
+
+    content =
+      line |> then(&Theme.fg(theme, fg_key, &1)) |> keep_background_after_resets(background)
+
     content_width = Exy.TUI.Width.visible_length(line)
+    right_padding = String.duplicate(" ", max(width - content_width - 2, 0))
 
-    right_padding =
-      Theme.bg(theme, bg_key, String.duplicate(" ", max(width - content_width - 2, 0)))
+    [background, "  ", content, right_padding, reset]
+  end
 
-    [left_padding, content, right_padding]
+  defp keep_background_after_resets(content, background) do
+    content
+    |> IO.iodata_to_binary()
+    |> String.replace(IO.ANSI.reset(), IO.ANSI.reset() <> background)
   end
 
   defp prefix_first_line([first | rest], prefix), do: [[prefix, first] | rest]

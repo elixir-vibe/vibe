@@ -74,6 +74,19 @@ defmodule Exy.TUI.WidgetsTest do
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
   end
 
+  test "message background survives nested markdown ANSI resets" do
+    [blank, content, _blank] =
+      DSL.message(%{role: :assistant, text: "**bold** normal"})
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&IO.iodata_to_binary/1)
+
+    background = IO.iodata_to_binary(Theme.bg_start(Theme.default(), :assistant_message_bg))
+
+    assert blank =~ background
+    assert content =~ background <> "  "
+    assert content =~ IO.ANSI.reset() <> background
+  end
+
   test "input widget renders prompt, value, cursor, and placeholder" do
     focused =
       DSL.input(value: "hello", cursor: 2)

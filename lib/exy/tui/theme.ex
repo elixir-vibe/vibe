@@ -139,6 +139,9 @@ defmodule Exy.TUI.Theme do
   @spec bg(t(), atom(), iodata()) :: IO.chardata()
   def bg(%__MODULE__{} = theme, key, text), do: apply_color(Map.get(theme.bg, key), :bg, text)
 
+  @spec bg_start(t(), atom()) :: IO.chardata()
+  def bg_start(%__MODULE__{} = theme, key), do: color_start(Map.get(theme.bg, key), :bg)
+
   @spec symbol(t(), atom()) :: IO.chardata()
   def symbol(%__MODULE__{} = theme, key), do: Map.fetch!(theme.symbols, key)
 
@@ -210,15 +213,12 @@ defmodule Exy.TUI.Theme do
 
   defp apply_color(nil, _target, text), do: text
 
-  defp apply_color({r, g, b}, :fg, text),
-    do: ansi([IO.ANSI.color(cube(r), cube(g), cube(b)), text, :reset])
+  defp apply_color(color, target, text), do: ansi([color_start(color, target), text, :reset])
 
-  defp apply_color({r, g, b}, :bg, text),
-    do: ansi([IO.ANSI.color_background(cube(r), cube(g), cube(b)), text, :reset])
-
-  defp apply_color(color, target, text) when is_atom(color) do
-    ansi([ansi_color(color, target), text, :reset])
-  end
+  defp color_start(nil, _target), do: ""
+  defp color_start({r, g, b}, :fg), do: IO.ANSI.color(cube(r), cube(g), cube(b))
+  defp color_start({r, g, b}, :bg), do: IO.ANSI.color_background(cube(r), cube(g), cube(b))
+  defp color_start(color, target) when is_atom(color), do: ansi_color(color, target)
 
   defp ansi_color(:black, :fg), do: IO.ANSI.black()
   defp ansi_color(:red, :fg), do: IO.ANSI.red()
