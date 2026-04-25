@@ -17,9 +17,27 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     plain = Enum.map(lines, &Width.visible_text/1)
     assert Enum.any?(plain, &String.contains?(&1, "elixir_eval"))
-    assert "params:" in plain
-    assert Enum.any?(plain, &String.contains?(&1, "%{code: \"1 + 1\"}"))
+    refute "params:" in plain
     assert "output:" in plain
+  end
+
+  test "elixir_eval shows timeout in header and unwraps output envelope" do
+    plain =
+      %{
+        id: "eval-1",
+        name: :elixir_eval,
+        status: :ok,
+        args: %{"code" => "File.cwd!()", "timeout" => 1000},
+        output: %{output: ~s("/tmp")}
+      }
+      |> DSL.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "timeout 1000ms"))
+    assert Enum.any?(plain, &String.contains?(&1, "File.cwd!()"))
+    refute Enum.any?(plain, &String.contains?(&1, "%{output:"))
+    assert Enum.any?(plain, &String.contains?(&1, ~s("/tmp")))
   end
 
   test "truncates tool output with reusable shortcut hint" do

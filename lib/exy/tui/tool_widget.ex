@@ -33,7 +33,7 @@ defmodule Exy.TUI.ToolWidget do
 
     sections =
       []
-      |> append_section(:params, params(tool), width, theme, tool)
+      |> maybe_append_params(tool, width, theme, opts)
       |> append_section(:output, output(tool), width, theme, tool)
 
     [title | sections]
@@ -107,13 +107,31 @@ defmodule Exy.TUI.ToolWidget do
       Map.get(tool, :args) || Map.get(tool, "args") || Map.get(tool, :params) ||
         Map.get(tool, "params")
 
-  def output(tool),
+  def output(tool) do
+    tool
+    |> raw_output()
+    |> unwrap_output()
+  end
+
+  def format_value(value) when is_binary(value), do: value
+  def format_value(value), do: inspect(value, pretty: true, limit: 20)
+
+  defp raw_output(tool),
     do:
       Map.get(tool, :output) || Map.get(tool, "output") || Map.get(tool, :result) ||
         Map.get(tool, "result")
 
-  def format_value(value) when is_binary(value), do: value
-  def format_value(value), do: inspect(value, pretty: true, limit: 20)
+  defp unwrap_output(%{output: output}), do: output
+  defp unwrap_output(%{"output" => output}), do: output
+  defp unwrap_output(output), do: output
+
+  defp maybe_append_params(lines, tool, width, theme, opts) do
+    if Keyword.get(opts, :params?, true) do
+      append_section(lines, :params, params(tool), width, theme, tool)
+    else
+      lines
+    end
+  end
 
   defp append_section(lines, _label, nil, _width, _theme, _tool), do: lines
 
@@ -122,11 +140,33 @@ defmodule Exy.TUI.ToolWidget do
       Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
 
     value_lines =
-      DSL.padding([DSL.text(format_value(value), fg: :tool_output)], x: 2)
-      |> Widget.render(width, theme)
+      value_lines(label, value, width, theme)
       |> maybe_truncate(label, tool, width, theme)
 
     lines |> Lines.join(label_lines) |> Lines.join(value_lines)
+  end
+
+  defp value_lines(:output, value, width, theme) do
+    value
+    |> format_value()
+    |> highlight_output(theme)
+    |> String.split("\n")
+    |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), line], width) end)
+  end
+
+  defp value_lines(_label, value, width, theme) do
+    Widget.render(
+      DSL.padding([DSL.text(format_value(value), fg: :tool_output)], x: 2),
+      width,
+      theme
+    )
+  end
+
+  defp highlight_output(value, theme) do
+    {:ok, highlighted} = Lumis.highlight(value, formatter: {:terminal, language: "elixir"})
+    highlighted
+  rescue
+    _error -> Theme.fg(theme, :tool_output, value)
   end
 
   defp maybe_truncate(lines, :params, _tool, _width, _theme), do: lines

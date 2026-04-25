@@ -60,14 +60,16 @@ defmodule Exy.Agent.StreamingTest do
 
     finished = %{
       type: "ai.tool.result",
-      data: %{call_id: "call-1", tool_name: "elixir_eval", result: {:ok, "2", []}}
+      data: %{call_id: "call-1", tool_name: "elixir_eval", result: {:ok, %{output: "2"}, []}}
     }
 
     assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(started, context)
     assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(finished, context)
 
     assert_receive {:tool_started, %{id: "call-1", name: "elixir_eval", args: %{code: "1 + 1"}}}
-    assert_receive {:tool_finished, %{id: "call-1", name: "elixir_eval", output: "2"}}
+
+    assert_receive {:tool_finished,
+                    %{id: "call-1", name: "elixir_eval", output: "2", status: :ok}}
   after
     Exy.Agent.Streaming.unregister(agent)
   end

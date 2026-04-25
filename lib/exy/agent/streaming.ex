@@ -57,7 +57,7 @@ defmodule Exy.Agent.Streaming do
 
   @spec dispatch_tool_finished(String.t(), map()) :: :ok
   def dispatch_tool_finished(agent_id, data) when is_binary(agent_id) and is_map(data) do
-    dispatch_tool(agent_id, :tool_finished, data)
+    dispatch_tool(agent_id, :tool_finished, Map.put(data, :status, tool_status(data)))
   end
 
   defp callbacks(opts) do
@@ -95,16 +95,28 @@ defmodule Exy.Agent.Streaming do
     :ok
   end
 
-  defp normalize_result({:ok, result, _effects}), do: result
+  defp tool_status(data) do
+    case data |> Map.get(:result, Map.get(data, "result")) |> normalize_result() do
+      %{error: _error} -> :error
+      _result -> :ok
+    end
+  end
+
+  defp normalize_result({:ok, result, _effects}), do: unwrap_output(result)
   defp normalize_result({:error, reason, _effects}), do: %{error: reason}
-  defp normalize_result(result), do: result
+  defp normalize_result(result), do: unwrap_output(result)
+
+  defp unwrap_output(%{output: output}) when is_binary(output), do: output
+  defp unwrap_output(%{"output" => output}) when is_binary(output), do: output
+  defp unwrap_output(result), do: result
 
   defp normalize_tool_event(data) do
     %{
       id: Map.get(data, :call_id) || Map.get(data, "call_id"),
       name: Map.get(data, :tool_name) || Map.get(data, "tool_name"),
       args: Map.get(data, :arguments) || Map.get(data, "arguments"),
-      output: data |> Map.get(:result, Map.get(data, "result")) |> normalize_result()
+      output: data |> Map.get(:result, Map.get(data, "result")) |> normalize_result(),
+      status: Map.get(data, :status) || Map.get(data, "status")
     }
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
     |> Map.new()
