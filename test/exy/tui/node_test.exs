@@ -12,7 +12,7 @@ defmodule Exy.TUI.NodeTest do
       |> Widget.render(80, Theme.default())
 
     assert [styled, "plain"] = lines
-    assert IO.iodata_to_binary(styled) =~ IO.ANSI.color(3, 4, 4)
+    assert IO.iodata_to_binary(styled) =~ IO.ANSI.color(2, 4, 5)
     assert Width.visible_text(styled) == "hello world"
   end
 

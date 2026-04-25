@@ -28,7 +28,7 @@ defmodule Exy.TUI.ThemeTest do
 
     styled = IO.iodata_to_binary(styled)
 
-    assert styled =~ IO.ANSI.color(4, 2, 2)
+    assert styled =~ IO.ANSI.color(5, 2, 2)
     assert styled =~ IO.ANSI.reset()
     assert Exy.TUI.Theme.strip(styled) == "boom"
   end

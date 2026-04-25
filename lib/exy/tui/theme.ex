@@ -18,65 +18,65 @@ defmodule Exy.TUI.Theme do
   defstruct name: "default", fg: %{}, bg: %{}, symbols: %{}
 
   @dark_fg %{
-    accent: {138, 190, 183},
-    border: {95, 135, 255},
-    success: {181, 189, 104},
-    error: {204, 102, 102},
-    warning: {255, 255, 0},
-    muted: {128, 128, 128},
+    accent: {120, 210, 255},
+    border: {120, 140, 255},
+    success: {130, 210, 150},
+    error: {255, 120, 120},
+    warning: {245, 210, 100},
+    muted: {150, 155, 170},
     dim: {102, 102, 102},
     text: nil,
-    thinking_text: {128, 128, 128},
+    thinking_text: {170, 150, 230},
     tool_title: nil,
     tool_output: {128, 128, 128},
     user_message_text: nil,
     assistant_message_text: nil,
-    input_prompt: {138, 190, 183},
+    input_prompt: {120, 210, 255},
     input_text: nil,
     input_placeholder: {128, 128, 128},
     input_cursor: :black
   }
 
   @light_fg %{
-    accent: {90, 128, 128},
-    border: {84, 125, 167},
-    success: {88, 132, 88},
-    error: {170, 85, 85},
-    warning: {154, 115, 38},
-    muted: {108, 108, 108},
+    accent: {30, 120, 170},
+    border: {85, 105, 190},
+    success: {55, 135, 80},
+    error: {185, 70, 70},
+    warning: {170, 115, 25},
+    muted: {95, 100, 115},
     dim: {118, 118, 118},
     text: nil,
-    thinking_text: {108, 108, 108},
+    thinking_text: {105, 80, 165},
     tool_title: nil,
     tool_output: {108, 108, 108},
     user_message_text: {45, 45, 45},
     assistant_message_text: {45, 45, 45},
-    input_prompt: {90, 128, 128},
+    input_prompt: {30, 120, 170},
     input_text: nil,
     input_placeholder: {108, 108, 108},
     input_cursor: :white
   }
 
   @dark_bg %{
-    selected_bg: {58, 58, 74},
-    user_message_bg: {52, 53, 65},
-    assistant_message_bg: {22, 24, 36},
+    selected_bg: {58, 58, 90},
+    user_message_bg: {34, 48, 88},
+    assistant_message_bg: {28, 62, 48},
     tool_pending_bg: {40, 40, 50},
     tool_success_bg: {40, 50, 40},
     tool_error_bg: {60, 40, 40},
-    input_bg: {52, 53, 65},
-    input_cursor_bg: {138, 190, 183}
+    input_bg: {36, 38, 54},
+    input_cursor_bg: {120, 210, 255}
   }
 
   @light_bg %{
-    selected_bg: {208, 208, 224},
-    user_message_bg: {222, 222, 222},
-    assistant_message_bg: {245, 245, 245},
+    selected_bg: {208, 214, 235},
+    user_message_bg: {204, 224, 255},
+    assistant_message_bg: {210, 240, 220},
     tool_pending_bg: {232, 232, 240},
     tool_success_bg: {232, 240, 232},
     tool_error_bg: {240, 232, 232},
-    input_bg: {232, 232, 232},
-    input_cursor_bg: {90, 128, 128}
+    input_bg: {240, 242, 248},
+    input_cursor_bg: {30, 120, 170}
   }
 
   @symbols %{

@@ -60,7 +60,11 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert_receive {TerminalLoop, :event, :loader_tick}, 300
 
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
-    assert Enum.any?(plain, &(&1 in ["⋰ Thinking…", "⋱ Thinking…", "✧ Thinking…", "✦ Thinking…"]))
+
+    assert Enum.any?(
+             plain,
+             &(&1 in ["  ⋰ Thinking…", "  ⋱ Thinking…", "  ✧ Thinking…", "  ✦ Thinking…"])
+           )
   end
 
   test "notifies event target for asynchronous UI updates" do

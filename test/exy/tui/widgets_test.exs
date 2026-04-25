@@ -68,7 +68,7 @@ defmodule Exy.TUI.WidgetsTest do
              String.duplicate(" ", 40)
            ]
 
-    assert thinking == ["✦ Thinking…"]
+    assert thinking == ["  ✦ Thinking…"]
 
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "You:"))
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
@@ -109,7 +109,7 @@ defmodule Exy.TUI.WidgetsTest do
         |> Enum.map(&Width.visible_text/1)
       end
 
-    assert plain == [["✦ Working…"], ["⋰ Working…"], ["⋱ Working…"], ["✧ Working…"]]
+    assert plain == [["  ✦ Working…"], ["  ⋰ Working…"], ["  ⋱ Working…"], ["  ✧ Working…"]]
   end
 
   test "layout primitives render boxes, padding, horizontal rows, spacers, and truncation" do

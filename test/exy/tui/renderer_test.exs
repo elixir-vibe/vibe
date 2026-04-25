@@ -19,7 +19,7 @@ defmodule Exy.TUI.RendererTest do
     assert ("  ok" <> String.duplicate(" ", 36)) in plain_lines
     refute Enum.any?(plain_lines, &String.starts_with?(&1, "You: "))
     refute Enum.any?(plain_lines, &String.starts_with?(&1, "Exy: "))
+    assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.color_background(1, 1, 2)))
     assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.color_background(1, 1, 1)))
-    assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.color_background(0, 0, 1)))
   end
 end

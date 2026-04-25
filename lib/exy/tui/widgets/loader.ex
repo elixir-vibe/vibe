@@ -12,7 +12,7 @@ defmodule Exy.TUI.Widgets.Loader do
   def render(%{props: props}, _width, theme) do
     label = Map.get(props, :label, @default_label)
     phase = Map.get(props, :phase, 0)
-    [[art(theme, phase), " ", Theme.italic(Theme.fg(theme, :thinking_text, [label, "…"]))]]
+    [["  ", art(theme, phase), " ", Theme.italic(Theme.fg(theme, :thinking_text, [label, "…"]))]]
   end
 
   defp art(theme, phase) do
