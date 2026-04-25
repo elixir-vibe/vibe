@@ -17,9 +17,11 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     plain = Enum.map(lines, &Width.visible_text/1)
     assert Enum.any?(plain, &String.contains?(&1, "elixir_eval"))
+    assert Enum.all?(plain, &String.starts_with?(&1, " "))
+    assert Enum.all?(plain, &String.ends_with?(&1, " "))
     refute "params:" in plain
     refute "output:" in plain
-    assert Enum.any?(plain, &(&1 == ""))
+    assert Enum.any?(plain, &(String.trim(&1) == ""))
     assert Enum.any?(plain, &String.contains?(&1, "✓"))
     refute Enum.any?(plain, &String.contains?(&1, "ok"))
   end

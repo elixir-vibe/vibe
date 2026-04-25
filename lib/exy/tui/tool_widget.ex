@@ -29,14 +29,16 @@ defmodule Exy.TUI.ToolWidget do
 
   @spec block(tool(), pos_integer(), Theme.t(), keyword()) :: [IO.chardata()]
   def block(tool, width, theme, opts \\ []) do
+    inner_width = max(width - 2, 1)
     title = title(tool, theme, opts)
 
     sections =
       []
-      |> maybe_append_params(tool, width, theme, opts)
-      |> append_section(:output, output(tool), width, theme, tool)
+      |> maybe_append_params(tool, inner_width, theme, opts)
+      |> append_section(:output, output(tool), inner_width, theme, tool)
 
     [title | sections]
+    |> Enum.map(&margin_line(&1, width))
   end
 
   @spec title(tool(), Theme.t(), keyword()) :: IO.chardata()
@@ -182,6 +184,11 @@ defmodule Exy.TUI.ToolWidget do
     else
       truncation.lines
     end
+  end
+
+  defp margin_line(line, width) do
+    inner_width = max(width - 2, 1)
+    [" ", Widget.pad_line(line, inner_width), " "]
   end
 
   defp do_render(renderer, tool, width, theme), do: renderer.render(tool, width, theme)
