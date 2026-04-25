@@ -21,7 +21,7 @@ defmodule Exy.TUI.Runtime do
          {:ok, tty} <- Ghostty.TTY.start_link(owner: self(), takeover: true) do
       try do
         render(tty, loop)
-        receive_events(tty, loop)
+        receive_events(tty, loop, nil)
       after
         write_output([
           end_synchronized_update(),
@@ -35,67 +35,89 @@ defmodule Exy.TUI.Runtime do
     end
   end
 
-  defp receive_events(tty, loop) do
+  defp receive_events(tty, loop, last_interrupt_at) do
     receive do
-      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]}}} ->
-        :ok
+      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]} = event}} ->
+        handle_interrupt(tty, loop, event, last_interrupt_at)
 
-      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape}}} ->
-        :ok
+      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}} ->
+        TerminalLoop.input_key(loop, event)
+        repaint_or_stop(tty, loop, last_interrupt_at)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{} = event}} ->
         TerminalLoop.input_key(loop, event)
-        repaint_or_stop(tty, loop)
+        repaint_or_stop(tty, loop, nil)
 
       {Ghostty.TTY, ^tty, {:data, data}} when is_binary(data) ->
         TerminalLoop.input(loop, data)
-        repaint_or_stop(tty, loop)
+        repaint_or_stop(tty, loop, nil)
 
       {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
         TerminalLoop.resize(loop, columns, rows)
-        repaint_or_stop(tty, loop)
+        repaint_or_stop(tty, loop, nil)
 
       {TerminalLoop, :event, _event} ->
-        repaint_or_stop(tty, loop)
+        repaint_or_stop(tty, loop, last_interrupt_at)
 
       {Ghostty.TTY, ^tty, :eof} ->
         :ok
     end
   end
 
-  defp repaint_or_stop(tty, loop) do
-    case drain_pending_events(tty, loop) do
+  defp repaint_or_stop(tty, loop, last_interrupt_at) do
+    case drain_pending_events(tty, loop, last_interrupt_at) do
       :continue ->
         render(tty, loop)
-        receive_events(tty, loop)
+        receive_events(tty, loop, last_interrupt_at)
 
       :stop ->
         :ok
     end
   end
 
-  defp drain_pending_events(tty, loop) do
-    receive do
-      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]}}} ->
-        :stop
+  defp handle_interrupt(tty, loop, event, last_interrupt_at) do
+    now = System.monotonic_time(:millisecond)
 
-      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape}}} ->
-        :stop
+    if recent_interrupt?(last_interrupt_at, now) do
+      :ok
+    else
+      TerminalLoop.input_key(loop, event)
+      repaint_or_stop(tty, loop, now)
+    end
+  end
+
+  defp recent_interrupt?(last_interrupt_at, now \\ System.monotonic_time(:millisecond))
+  defp recent_interrupt?(nil, _now), do: false
+  defp recent_interrupt?(last_interrupt_at, now), do: now - last_interrupt_at <= 1_500
+
+  defp drain_pending_events(tty, loop, last_interrupt_at) do
+    receive do
+      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]} = event}} ->
+        if recent_interrupt?(last_interrupt_at) do
+          :stop
+        else
+          TerminalLoop.input_key(loop, event)
+          drain_pending_events(tty, loop, System.monotonic_time(:millisecond))
+        end
+
+      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}} ->
+        TerminalLoop.input_key(loop, event)
+        drain_pending_events(tty, loop, last_interrupt_at)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{} = event}} ->
         TerminalLoop.input_key(loop, event)
-        drain_pending_events(tty, loop)
+        drain_pending_events(tty, loop, nil)
 
       {Ghostty.TTY, ^tty, {:data, data}} when is_binary(data) ->
         TerminalLoop.input(loop, data)
-        drain_pending_events(tty, loop)
+        drain_pending_events(tty, loop, nil)
 
       {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
         TerminalLoop.resize(loop, columns, rows)
-        drain_pending_events(tty, loop)
+        drain_pending_events(tty, loop, nil)
 
       {TerminalLoop, :event, _event} ->
-        drain_pending_events(tty, loop)
+        drain_pending_events(tty, loop, last_interrupt_at)
 
       {Ghostty.TTY, ^tty, :eof} ->
         :stop

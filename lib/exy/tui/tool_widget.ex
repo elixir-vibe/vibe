@@ -3,7 +3,7 @@ defmodule Exy.TUI.ToolWidget do
   Behaviour and dispatcher for built-in tool widgets.
   """
 
-  alias Exy.TUI.{DSL, Theme, Widget}
+  alias Exy.TUI.{DSL, Lines, TextTruncation, Theme, Widget}
 
   @type tool :: map()
   @type renderer :: module()
@@ -26,6 +26,18 @@ defmodule Exy.TUI.ToolWidget do
 
   @spec renderer(atom() | String.t() | nil) :: renderer()
   def renderer(name), do: Map.get(@renderers, normalize_name(name), Exy.TUI.Widgets.Tools.Generic)
+
+  @spec block(tool(), pos_integer(), Theme.t(), keyword()) :: [IO.chardata()]
+  def block(tool, width, theme, opts \\ []) do
+    title = title(tool, theme, opts)
+
+    sections =
+      []
+      |> append_section(:params, params(tool), width, theme, tool)
+      |> append_section(:output, output(tool), width, theme, tool)
+
+    [title | sections]
+  end
 
   @spec title(tool(), Theme.t(), keyword()) :: IO.chardata()
   def title(tool, theme, opts \\ []) do
@@ -53,14 +65,13 @@ defmodule Exy.TUI.ToolWidget do
   end
 
   @doc false
-  def generic_lines(tool, width, theme) do
-    Widget.render(DSL.raw(title(tool, theme, summary: compact_summary(tool))), width, theme)
-  end
+  def generic_lines(tool, width, theme),
+    do: block(tool, width, theme, summary: compact_summary(tool))
 
   def compact_summary(tool) do
     cond do
-      args = Map.get(tool, :args) || Map.get(tool, "args") -> summarize_value(args, 80)
-      output = Map.get(tool, :output) || Map.get(tool, :result) -> summarize_value(output, 80)
+      args = params(tool) -> summarize_value(args, 80)
+      output = output(tool) -> summarize_value(output, 80)
       true -> nil
     end
   end
@@ -90,6 +101,45 @@ defmodule Exy.TUI.ToolWidget do
     do: Theme.symbol(theme, :error_icon)
 
   def status_icon(_status, theme), do: Theme.symbol(theme, :running_icon)
+
+  def params(tool),
+    do:
+      Map.get(tool, :args) || Map.get(tool, "args") || Map.get(tool, :params) ||
+        Map.get(tool, "params")
+
+  def output(tool),
+    do:
+      Map.get(tool, :output) || Map.get(tool, "output") || Map.get(tool, :result) ||
+        Map.get(tool, "result")
+
+  def format_value(value) when is_binary(value), do: value
+  def format_value(value), do: inspect(value, pretty: true, limit: 20)
+
+  defp append_section(lines, _label, nil, _width, _theme, _tool), do: lines
+
+  defp append_section(lines, label, value, width, theme, tool) do
+    label_lines =
+      Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
+
+    value_lines =
+      DSL.padding([DSL.text(format_value(value), fg: :tool_output)], x: 2)
+      |> Widget.render(width, theme)
+      |> maybe_truncate(label, tool, width, theme)
+
+    lines |> Lines.join(label_lines) |> Lines.join(value_lines)
+  end
+
+  defp maybe_truncate(lines, :params, _tool, _width, _theme), do: lines
+
+  defp maybe_truncate(lines, _label, tool, width, theme) do
+    truncation = TextTruncation.lines(lines, enabled?: Map.get(tool, :truncate?, true), limit: 8)
+
+    if truncation.truncated? do
+      Lines.join(truncation.lines, [TextTruncation.hint(truncation.omitted, theme, width)])
+    else
+      truncation.lines
+    end
+  end
 
   defp do_render(renderer, tool, width, theme), do: renderer.render(tool, width, theme)
 

@@ -76,6 +76,34 @@ defmodule Exy.UI.SessionServerTest do
     assert Exy.UI.ViewModel.from_state(final_state).footer.usage.total_tokens == 30
   end
 
+  test "cancel aborts active prompt task and ignores late results" do
+    ask_fun = fn _text, _opts ->
+      Process.sleep(5_000)
+      {:ok, "too late"}
+    end
+
+    {:ok, server} =
+      Exy.UI.SessionServer.start_link(
+        session_id: "ui-session",
+        ask_fun: ask_fun,
+        streaming?: true
+      )
+
+    :ok = Exy.UI.SessionServer.subscribe(server)
+    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_stream_started}}, 500
+    :ok = Exy.UI.SessionServer.dispatch(server, :cancel_stream)
+
+    assert_receive {Exy.UI.SessionServer, :event,
+                    %{type: :assistant_aborted, data: %{reason: "cancelled"}}},
+                   500
+
+    refute_receive {Exy.UI.SessionServer, :event, %{type: :assistant_message_added}}, 100
+
+    assert Exy.UI.SessionServer.state(server).status == :idle
+  end
+
   test "records ask function crashes as assistant errors" do
     ask_fun = fn _text, _opts -> raise ArgumentError, "boom" end
 

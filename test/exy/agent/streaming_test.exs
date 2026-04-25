@@ -42,4 +42,33 @@ defmodule Exy.Agent.StreamingTest do
   after
     Exy.Agent.Streaming.unregister(agent)
   end
+
+  test "plugin forwards tool lifecycle signals", %{agent: agent, agent_id: agent_id} do
+    test_pid = self()
+
+    Exy.Agent.Streaming.register(agent,
+      on_tool_started: &send(test_pid, {:tool_started, &1}),
+      on_tool_finished: &send(test_pid, {:tool_finished, &1})
+    )
+
+    context = %{agent: %{id: agent_id}}
+
+    started = %{
+      type: "ai.tool.started",
+      data: %{call_id: "call-1", tool_name: "elixir_eval", arguments: %{code: "1 + 1"}}
+    }
+
+    finished = %{
+      type: "ai.tool.result",
+      data: %{call_id: "call-1", tool_name: "elixir_eval", result: {:ok, "2", []}}
+    }
+
+    assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(started, context)
+    assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(finished, context)
+
+    assert_receive {:tool_started, %{id: "call-1", name: "elixir_eval", args: %{code: "1 + 1"}}}
+    assert_receive {:tool_finished, %{id: "call-1", name: "elixir_eval", output: "2"}}
+  after
+    Exy.Agent.Streaming.unregister(agent)
+  end
 end

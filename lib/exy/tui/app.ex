@@ -133,6 +133,10 @@ defmodule Exy.TUI.App do
     SessionServer.dispatch(state.ui, Command.new(:cancel_stream))
   end
 
+  defp handle_editor_command(:toggle_truncation, state) do
+    SessionServer.dispatch(state.ui, Command.new(:toggle_truncation))
+  end
+
   defp handle_editor_command({:external_editor, text}, state) do
     SessionServer.dispatch(state.ui, Command.new(:external_editor_requested, %{text: text}))
   end

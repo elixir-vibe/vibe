@@ -38,7 +38,7 @@ defmodule Exy.Agent.Streaming do
     with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
       data
       |> chunk()
-      |> maybe_dispatch(callbacks)
+      |> maybe_dispatch_delta(callbacks)
     end
 
     :ok
@@ -50,10 +50,22 @@ defmodule Exy.Agent.Streaming do
     {:ok, %{}}
   end
 
+  @spec dispatch_tool_started(String.t(), map()) :: :ok
+  def dispatch_tool_started(agent_id, data) when is_binary(agent_id) and is_map(data) do
+    dispatch_tool(agent_id, :tool_started, data)
+  end
+
+  @spec dispatch_tool_finished(String.t(), map()) :: :ok
+  def dispatch_tool_finished(agent_id, data) when is_binary(agent_id) and is_map(data) do
+    dispatch_tool(agent_id, :tool_finished, data)
+  end
+
   defp callbacks(opts) do
     %{}
     |> maybe_put_callback(:content, Keyword.get(opts, :on_result))
     |> maybe_put_callback(:thinking, Keyword.get(opts, :on_thinking))
+    |> maybe_put_callback(:tool_started, Keyword.get(opts, :on_tool_started))
+    |> maybe_put_callback(:tool_finished, Keyword.get(opts, :on_tool_finished))
   end
 
   defp maybe_put_callback(callbacks, key, callback) when is_function(callback, 1),
@@ -70,8 +82,33 @@ defmodule Exy.Agent.Streaming do
   defp normalize_type(type) when type in [:thinking, "thinking"], do: :thinking
   defp normalize_type(_type), do: :content
 
-  defp maybe_dispatch({_type, ""}, _callbacks), do: :ok
-  defp maybe_dispatch({type, text}, callbacks), do: callbacks[type] && callbacks[type].(text)
+  defp maybe_dispatch_delta({_type, ""}, _callbacks), do: :ok
+
+  defp maybe_dispatch_delta({type, text}, callbacks),
+    do: callbacks[type] && callbacks[type].(text)
+
+  defp dispatch_tool(agent_id, type, data) do
+    with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
+      callbacks[type] && callbacks[type].(normalize_tool_event(data))
+    end
+
+    :ok
+  end
+
+  defp normalize_result({:ok, result, _effects}), do: result
+  defp normalize_result({:error, reason, _effects}), do: %{error: reason}
+  defp normalize_result(result), do: result
+
+  defp normalize_tool_event(data) do
+    %{
+      id: Map.get(data, :call_id) || Map.get(data, "call_id"),
+      name: Map.get(data, :tool_name) || Map.get(data, "tool_name"),
+      args: Map.get(data, :arguments) || Map.get(data, "arguments"),
+      output: data |> Map.get(:result, Map.get(data, "result")) |> normalize_result()
+    }
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
+  end
 
   defp ensure_table! do
     case :ets.whereis(@table) do

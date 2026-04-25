@@ -17,8 +17,41 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     plain = Enum.map(lines, &Width.visible_text/1)
     assert Enum.any?(plain, &String.contains?(&1, "elixir_eval"))
-    assert "code:" in plain
+    assert "params:" in plain
+    assert Enum.any?(plain, &String.contains?(&1, "%{code: \"1 + 1\"}"))
     assert "output:" in plain
+  end
+
+  test "truncates tool output with reusable shortcut hint" do
+    output = Enum.map_join(1..12, "\n", &"line #{&1}")
+
+    plain =
+      %{id: "tool", name: :elixir_eval, status: :ok, args: %{code: "many()"}, output: output}
+      |> DSL.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "… (4 more lines, ctrl+o to expand)"))
+  end
+
+  test "does not truncate output when global truncation is off" do
+    output = Enum.map_join(1..12, "\n", &"line #{&1}")
+
+    plain =
+      %{
+        id: "tool",
+        name: :elixir_eval,
+        status: :ok,
+        args: %{code: "many()"},
+        output: output,
+        truncate?: false
+      }
+      |> DSL.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    refute Enum.any?(plain, &String.contains?(&1, "ctrl+o"))
+    assert Enum.any?(plain, &String.contains?(&1, "line 12"))
   end
 
   test "dispatches AST and LSP widgets" do

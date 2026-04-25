@@ -62,7 +62,7 @@ defmodule Exy.TUI.RuntimeTest do
     end)
   end
 
-  test "mix exy accepts input in a real PTY and exits with escape" do
+  test "mix exy accepts input in a real PTY, escape cancels, and double ctrl-c exits" do
     {:ok, terminal} = Ghostty.Terminal.start_link(cols: @cols, rows: @rows)
 
     {:ok, pty} =
@@ -89,6 +89,11 @@ defmodule Exy.TUI.RuntimeTest do
       assert render_state.cursor.visible
 
       Ghostty.PTY.write(pty, <<27>>)
+      assert {:error, {:exit_timeout, _output}} = wait_for_exit("", 300)
+
+      Ghostty.PTY.write(pty, <<3>>)
+      Process.sleep(50)
+      Ghostty.PTY.write(pty, <<3>>)
       assert {:exit, 0, _output} = wait_for_exit("", @exit_timeout_ms)
     after
       if Process.alive?(pty), do: Ghostty.PTY.close(pty)

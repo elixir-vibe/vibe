@@ -50,7 +50,10 @@ defmodule Exy.UI.SessionServer do
        ask_fun: Keyword.get(opts, :ask_fun, &default_ask/2),
        llm_opts: Keyword.take(opts, [:model, :system]),
        streaming?: Keyword.get(opts, :streaming?, not Keyword.has_key?(opts, :ask_fun)),
-       subscribers: %{}
+       subscribers: %{},
+       prompt_task: nil,
+       prompt_ref: nil,
+       active_agent: nil
      }}
   end
 
@@ -76,10 +79,19 @@ defmodule Exy.UI.SessionServer do
     {:noreply, %{state | subscribers: Map.delete(state.subscribers, ref)}}
   end
 
-  def handle_info({:prompt_result, result}, state) do
+  def handle_info({:prompt_result, ref, result}, %{prompt_ref: ref} = state) do
+    state = %{state | prompt_task: nil, prompt_ref: nil, active_agent: nil}
     state = record_prompt_result(state, result)
     {:noreply, state}
   end
+
+  def handle_info({:prompt_result, _ref, _result}, state), do: {:noreply, state}
+
+  def handle_info({:active_agent, ref, agent}, %{prompt_ref: ref} = state) when is_pid(agent) do
+    {:noreply, %{state | active_agent: agent}}
+  end
+
+  def handle_info({:active_agent, _ref, _agent}, state), do: {:noreply, state}
 
   def handle_info({:assistant_delta, text}, state) do
     {:noreply, emit(state, Event.new(:assistant_delta, state.state.session_id, %{text: text}))}
@@ -90,6 +102,14 @@ defmodule Exy.UI.SessionServer do
      emit(state, Event.new(:assistant_thinking_delta, state.state.session_id, %{text: text}))}
   end
 
+  def handle_info({:tool_started, data}, state) do
+    {:noreply, emit(state, Event.new(:tool_started, state.state.session_id, data))}
+  end
+
+  def handle_info({:tool_finished, data}, state) do
+    {:noreply, emit(state, Event.new(:tool_finished, state.state.session_id, data))}
+  end
+
   defp handle_command(%Command{type: :submit_prompt, data: %{text: text}}, state)
        when is_binary(text) do
     session_id = state.state.session_id
@@ -97,12 +117,22 @@ defmodule Exy.UI.SessionServer do
     state = emit(state, Event.new(:user_message_added, session_id, %{text: text}))
     ask_fun = state.ask_fun
     parent = self()
+    ref = make_ref()
 
-    {ask_opts, state} = ask_options(state, parent, session_id)
+    {ask_opts, state} = ask_options(state, parent, ref, session_id)
 
-    Task.start(fn -> send(parent, {:prompt_result, safe_ask(ask_fun, text, ask_opts)}) end)
+    {:ok, task} =
+      Task.start(fn -> send(parent, {:prompt_result, ref, safe_ask(ask_fun, text, ask_opts)}) end)
 
-    state
+    %{state | prompt_task: task, prompt_ref: ref, active_agent: nil}
+  end
+
+  defp handle_command(%Command{type: :cancel_stream}, state) do
+    cancel_prompt(state)
+  end
+
+  defp handle_command(%Command{type: :toggle_truncation}, state) do
+    emit(state, Event.new(:truncation_toggled, state.state.session_id, %{}))
   end
 
   defp handle_command(
@@ -130,20 +160,47 @@ defmodule Exy.UI.SessionServer do
     emit(state, Event.new(type, state.state.session_id, data))
   end
 
-  defp ask_options(%{streaming?: true} = state, parent, session_id) do
+  defp ask_options(%{streaming?: true} = state, parent, ref, session_id) do
     state = emit(state, Event.new(:assistant_stream_started, session_id, %{}))
 
     ask_opts =
       state.llm_opts
       |> Keyword.put(:session_id, session_id)
+      |> Keyword.put(:stream_owner, {parent, ref})
       |> Keyword.put(:on_result, &send(parent, {:assistant_delta, &1}))
       |> Keyword.put(:on_thinking, &send(parent, {:assistant_thinking_delta, &1}))
+      |> Keyword.put(:on_tool_started, &send(parent, {:tool_started, &1}))
+      |> Keyword.put(:on_tool_finished, &send(parent, {:tool_finished, &1}))
 
     {ask_opts, state}
   end
 
-  defp ask_options(state, _parent, session_id) do
-    {Keyword.put(state.llm_opts, :session_id, session_id), state}
+  defp ask_options(state, parent, ref, session_id) do
+    ask_opts =
+      state.llm_opts
+      |> Keyword.put(:session_id, session_id)
+      |> Keyword.put(:stream_owner, {parent, ref})
+      |> Keyword.put(:on_tool_started, &send(parent, {:tool_started, &1}))
+      |> Keyword.put(:on_tool_finished, &send(parent, {:tool_finished, &1}))
+
+    {ask_opts, state}
+  end
+
+  defp cancel_prompt(%{prompt_task: nil} = state), do: state
+
+  defp cancel_prompt(state) do
+    if is_pid(state.active_agent) and Process.alive?(state.active_agent) do
+      _ = Exy.Agent.Coding.cancel(state.active_agent, reason: :user_cancelled)
+      GenServer.stop(state.active_agent, :normal, 100)
+    end
+
+    if is_pid(state.prompt_task) and Process.alive?(state.prompt_task) do
+      Process.exit(state.prompt_task, :kill)
+    end
+
+    state
+    |> Map.merge(%{prompt_task: nil, prompt_ref: nil, active_agent: nil})
+    |> emit(Event.new(:assistant_aborted, state.state.session_id, %{reason: "cancelled"}))
   end
 
   defp record_prompt_result(state, {:ok, response}) do
@@ -321,9 +378,11 @@ defmodule Exy.UI.SessionServer do
 
   defp default_ask(text, opts) do
     agent_opts = Keyword.take(opts, [:model, :session_id])
-    ask_opts = agent_ask_opts(opts)
+    ask_opts = opts |> agent_ask_opts() |> Keyword.delete(:stream_owner)
 
     with {:ok, agent} <- Exy.start_link(agent_opts) do
+      notify_stream_owner(opts[:stream_owner], agent)
+
       try do
         Exy.ask(agent, text, Keyword.put_new(ask_opts, :timeout, 120_000))
       after
@@ -331,4 +390,10 @@ defmodule Exy.UI.SessionServer do
       end
     end
   end
+
+  defp notify_stream_owner({owner, ref}, agent) when is_pid(owner) and is_reference(ref) do
+    send(owner, {:active_agent, ref, agent})
+  end
+
+  defp notify_stream_owner(_owner, _agent), do: :ok
 end

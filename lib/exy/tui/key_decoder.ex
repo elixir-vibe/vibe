@@ -19,6 +19,8 @@ defmodule Exy.TUI.KeyDecoder do
   def decode_event(%Ghostty.KeyEvent{key: :enter}), do: [:submit]
   def decode_event(%Ghostty.KeyEvent{key: :tab}), do: [:tab]
   def decode_event(%Ghostty.KeyEvent{key: :escape}), do: [:cancel]
+  def decode_event(%Ghostty.KeyEvent{key: :c, mods: [:ctrl]}), do: [:cancel]
+  def decode_event(%Ghostty.KeyEvent{key: :o, mods: [:ctrl]}), do: [:toggle_truncation]
   def decode_event(%Ghostty.KeyEvent{key: :b, mods: [:alt]}), do: [:word_left]
   def decode_event(%Ghostty.KeyEvent{key: :f, mods: [:alt]}), do: [:word_right]
   def decode_event(%Ghostty.KeyEvent{utf8: utf8}) when is_binary(utf8), do: [{:insert, utf8}]
@@ -43,6 +45,7 @@ defmodule Exy.TUI.KeyDecoder do
   def decode("\t"), do: [:tab]
   def decode("\e"), do: [:cancel]
   def decode(<<3>>), do: [:cancel]
+  def decode(<<15>>), do: [:toggle_truncation]
 
   def decode(data) when is_binary(data) do
     cond do

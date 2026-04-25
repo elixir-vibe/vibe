@@ -91,6 +91,10 @@ defmodule Exy.UI.Reducer do
     %{state | pending_tools: pending_tools}
   end
 
+  defp reduce(state, %Event{type: :truncation_toggled}) do
+    %{state | truncate?: !state.truncate?}
+  end
+
   defp reduce(state, %Event{type: :tool_toggled, data: %{id: id}}) do
     pending_tools =
       Map.update(state.pending_tools, id, nil, fn

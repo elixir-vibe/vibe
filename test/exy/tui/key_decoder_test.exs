@@ -14,6 +14,13 @@ defmodule Exy.TUI.KeyDecoderTest do
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :enter, mods: [:shift]}) == [:enter]
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :enter, mods: [:alt]}) == [:enter]
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :backspace}) == [:backspace]
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :escape}) == [:cancel]
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :c, mods: [:ctrl]}) == [:cancel]
+
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :o, mods: [:ctrl]}) == [
+             :toggle_truncation
+           ]
+
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :a, utf8: "a"}) == [{:insert, "a"}]
   end
 
@@ -24,6 +31,7 @@ defmodule Exy.TUI.KeyDecoderTest do
     assert KeyDecoder.decode("\e\r") == [:enter]
 
     assert :backspace |> key_bytes() |> KeyDecoder.decode() == [:backspace]
+    assert KeyDecoder.decode(<<15>>) == [:toggle_truncation]
   end
 
   test "decodes printable input and paste" do

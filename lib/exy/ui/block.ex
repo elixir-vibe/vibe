@@ -15,7 +15,7 @@ defmodule Exy.UI.Block do
 
   defmodule ToolCall do
     @moduledoc false
-    defstruct [:id, :name, :status, :args, :output, :expanded?]
+    defstruct [:id, :name, :status, :args, :output, :expanded?, :truncate?]
   end
 
   defmodule Footer do

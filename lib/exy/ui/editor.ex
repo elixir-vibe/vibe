@@ -25,6 +25,7 @@ defmodule Exy.UI.Editor do
           | :enter
           | :submit
           | :cancel
+          | :toggle_truncation
           | :tab
           | {:insert, String.t()}
           | {:paste, String.t()}
@@ -36,6 +37,7 @@ defmodule Exy.UI.Editor do
           {:submit, String.t()}
           | {:slash_command, String.t(), String.t()}
           | :cancel
+          | :toggle_truncation
           | {:external_editor, String.t()}
   @type t :: %__MODULE__{}
 
@@ -86,6 +88,7 @@ defmodule Exy.UI.Editor do
 
   def handle_key(%__MODULE__{} = editor, :enter), do: {insert(editor, "\n"), []}
   def handle_key(%__MODULE__{} = editor, :cancel), do: {editor, [:cancel]}
+  def handle_key(%__MODULE__{} = editor, :toggle_truncation), do: {editor, [:toggle_truncation]}
 
   def handle_key(%__MODULE__{} = editor, :external_editor),
     do: {editor, [{:external_editor, editor.text}]}
