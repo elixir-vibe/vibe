@@ -92,21 +92,61 @@ defmodule Exy.TUI.MarkdownTest do
   end
 
   test "renders comprehensive stress fixture without known spacing regressions" do
-    plain =
-      "priv/fixtures/markdown_stress.md"
-      |> File.read!()
-      |> Markdown.render(100, Theme.default())
-      |> Enum.map(&Width.visible_text/1)
+    plain = render_stress_fixture(120)
 
-    assert Enum.any?(plain, &String.contains?(&1, "Markdown Stress Fixture"))
-    assert Enum.any?(plain, &String.contains?(&1, "[ ] Pending nested task"))
+    assert Enum.any?(plain, &String.contains?(&1, "Comprehensive Markdown Test Suite"))
+    assert Enum.any?(plain, &String.contains?(&1, "│ │ • With a list"))
+    assert Enum.any?(plain, &String.contains?(&1, "[ ] Incomplete nested task"))
+    assert Enum.any?(plain, &String.contains?(&1, "Code block inside blockquote inside list"))
+    assert Enum.any?(plain, &String.contains?(&1, "This is content inside a <details> block."))
+    assert Enum.any?(plain, &String.contains?(&1, "f(x) = x^2 + 2x + 1"))
     refute Enum.any?(plain, &String.contains?(&1, "```"))
+    refute adjacent_table_tops?(plain)
 
-    paragraph_index = Enum.find_index(plain, &String.contains?(&1, "This paragraph belongs"))
-    quote_item_index = Enum.find_index(plain, &String.contains?(&1, "2. Ordered item"))
+    assert Enum.count(plain, &String.starts_with?(&1, "╭")) == 2
 
-    assert Enum.at(plain, paragraph_index + 1) |> String.trim() == ""
-    assert quote_item_index > paragraph_index + 1
+    quote_index = Enum.find_index(plain, &String.contains?(&1, "Blockquote inside list"))
+    next_nested_item_index = Enum.find_index(plain, &String.contains?(&1, "Another nested item"))
+
+    assert Enum.any?(
+             Enum.slice(plain, (quote_index + 1)..(next_nested_item_index - 1)//1),
+             &(String.trim(&1) == "")
+           )
+
+    assert next_nested_item_index > quote_index + 1
+  end
+
+  test "streaming comprehensive fixture does not leave duplicate table top borders" do
+    "priv/fixtures/markdown_stress.md"
+    |> File.stream!([], :line)
+    |> Enum.reduce(Markdown.new_stream(), fn chunk, document ->
+      document = Markdown.put_chunk(document, chunk)
+
+      plain =
+        document
+        |> Markdown.render_stream(120, Theme.default())
+        |> Enum.map(&Width.visible_text/1)
+
+      refute adjacent_table_tops?(plain)
+      assert Enum.count(plain, &String.starts_with?(&1, "╭")) <= 2
+
+      document
+    end)
+  end
+
+  defp render_stress_fixture(width) do
+    "priv/fixtures/markdown_stress.md"
+    |> File.read!()
+    |> Markdown.render(width, Theme.default())
+    |> Enum.map(&Width.visible_text/1)
+  end
+
+  defp adjacent_table_tops?(lines) do
+    lines
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.any?(fn [left, right] ->
+      String.starts_with?(left, "╭") and String.starts_with?(right, "╭")
+    end)
   end
 
   test "preserves spacing between complex nested list items" do

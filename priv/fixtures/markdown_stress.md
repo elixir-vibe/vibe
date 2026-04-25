@@ -1,70 +1,278 @@
-# Markdown Stress Fixture
+# Comprehensive Markdown Test Suite
 
-Paragraph with **bold**, *italic*, `inline code`, [link](https://example.com), ~~strike~~, and a very long sentence that should wrap naturally without breaking backgrounds or leaving visible markdown artifacts in the terminal renderer.
+> A compact but feature-rich Markdown response to test rendering, formatting, nesting, code blocks, tables, lists, links, and edge cases.
 
 ---
 
-## Ordered Lists
+## 1. Text Formatting
 
-1. First item
-2. Second item
-3. Third item
+This paragraph includes **bold text**, *italic text*, ***bold italic text***, ~~strikethrough~~, `inline code`, and a normal sentence.
 
-   1. Nested ordered item
-   2. Another nested item
-4. Fourth item
+You can also combine formatting:
 
-## Mixed Nested Content
+- **Bold with `inline code`**
+- *Italic with [a link](https://example.com)*
+- ~~Deleted text with **bold inside**~~
+- `code_with_snake_case()` next to punctuation.
 
-1. Ordered item with paragraph
+---
 
-   This paragraph belongs to the ordered item.
-2. Ordered item with blockquote
+## 2. Headings
 
-   > Quote inside ordered list.
-   >
-   > - Bullet inside quote
-   >   Another paragraph inside the bullet.
-3. Ordered item with code
+# H1 Heading
 
-   ```elixir
-   def hello(name) do
-     {:ok, "hello #{name}"}
-   end
-   ```
-4. Ordered item with task list
+## H2 Heading
 
-   - [x] Done nested task
-   - [ ] Pending nested task
+### H3 Heading
 
-## Blockquotes
+#### H4 Heading
+
+##### H5 Heading
+
+###### H6 Heading
+
+---
+
+## 3. Blockquotes
 
 > This is a blockquote.
 >
-> It can contain multiple paragraphs.
+> It supports multiple paragraphs.
 >
 > > This is a nested blockquote.
 > >
-> > Nested quotes test indentation.
+> > - With a list
+> > - Inside the quote
+>
+> Final line of the outer.
 
-## Tables
+quote---
 
-| Feature | Status | Notes |
-| --- | --- | --- |
-| read | done | syntax highlighted |
-| write | done | diff output |
-| edit | done | exact replacement |
+## 4. Lists
 
-## Task Lists
+### Unordered List
 
-- [x] Completed task
-- [ ] Pending task
-- [x]
+- Item one
+- Item two
 
-## Code
+  - Nested item two-one
+  - Nested item two-two
+
+    - Deeply nested item
+
+- three Item
+
+### Ordered List
+
+1. First step
+2. Second step
+   1. Sub-step A
+   2. Sub-step B
+3. Third step
+
+### Mixed Checklist
+
+- [x] Write tests
+- [x] Run formatter
+- [ ] Add integration coverage
+- [ ] Document edge cases
+
+---
+
+## 5. Code Blocks
+
+### Elixir
 
 ```elixir
-IO.puts(:ok)
+defmodule Example.Counter do
+  use GenServer
 
-Enum.map(1..3, &(&1 * 2))
+  def start_link(initial \\ 0) do
+    GenServer.start_link(__MODULE__, initial, name: __MODULE__)
+  end
+
+  def increment do
+    GenServer.call(__MODULE__, :increment)
+  end
+
+  @impl true
+  def init(initial), do: {:ok, initial}
+
+  @impl true
+  def handle_call(:increment, _from, state) do
+    next = state + 1
+    {:reply, next, next}
+  end
+end
 ```
+
+### JSON
+
+```json
+{
+  "name": "markdown-test",
+  "features": ["tables", "lists", "code", "links"],
+  "enabled": true,
+  "count": 42
+}
+```
+
+### Bash
+
+```bash
+mix format
+mix test
+mix credo --strict
+```
+
+---
+
+## 6. Tables
+
+| Feature | Supported | Notes |
+| --- | --- | --- |
+| Bold | ✅ | **text** |
+| Italic | ✅ | *text* |
+| Tables | ✅ | Alignment included |
+| Code blocks | ✅ | Fenced blocks |
+| Footnotes | ⚠️ | Renderer-dependent |
+
+### Alignment Test
+
+| Left Aligned | Center Aligned | Right Aligned |
+| :--- | :---: | ---: |
+| alpha | beta | gamma |
+| short | medium text | very long text |
+| 1 | | |
+| 1 | 22 | 333 |
+
+---
+
+## 7. Links and Images
+
+Inline link: [OpenAI](https://openai.com)
+
+Reference-style link: [Example Reference][example-ref]
+
+Autolink: <https://example.com>
+
+Image syntax:
+
+![Placeholder image](https://example.com/image.png)
+
+[example-ref]: https://example.com
+
+---
+
+## 8. Horizontal Rules
+
+Three hyphens:
+
+---
+
+Three asterisks:
+
+***
+
+Three underscores:
+
+___
+
+---
+
+## 9. Escaping Characters
+
+Escaped Markdown characters:
+
+\*not italic\*
+
+\# not a heading
+
+\`not inline code\`
+
+\[not a link\](https://example.com)
+
+---
+
+## 10. Nested Structure Stress Test
+
+1. Parent ordered item
+
+   - Nested unordered item
+
+     > Blockquote inside list
+     >
+     > ```text
+     > Code block inside blockquote inside list
+     > ```
+
+   - Another nested item
+
+2. Second parent item
+
+   1. Nested ordered item
+
+      - Mixed child item
+
+        - [x] Completed nested task
+        - [ ] Incomplete nested task
+
+---
+
+## 11. HTML Inline Compatibility
+
+Some renderers allow inline HTML:
+
+<details>
+<summary>Open details</summary>
+
+This is content inside a `<details>` block.
+
+- It includes list.
+- It includes `inline code`.
+- It includes **bold text**.
+
+</details>
+
+---
+
+## 12. Math-Like Text
+
+Inline math-style text: E = mc^2
+
+Renderer-dependent LaTeX-style syntax:
+
+$$
+f(x) = x^2 + 2x + 1
+$$
+
+---
+
+## 13. Definition-Style Content
+
+Term: Markdown
+
+: A lightweight markup language for plain text formatting.
+
+Term: Renderer
+
+: A system that converts Markdown into HTML or another display format.
+
+---
+
+## 14. Final Checklist
+
+- [x] Headings
+- [x] Emphasis
+- [x] Lists
+- [x] Blockquotes
+- [x] Code blocks
+- [x] Tables
+- [x] Links
+- [x] Images
+- [x] Escaping
+- [x] Nested structures
+- [x] HTML compatibility
+- [x] Renderer-dependent features
+
+> End of comprehensive Markdown test.
