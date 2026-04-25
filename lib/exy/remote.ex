@@ -29,7 +29,11 @@ defmodule Exy.Remote do
     if Node.alive?() do
       :ok
     else
-      name = String.to_atom("exy_client_#{System.unique_integer([:positive])}@127.0.0.1")
+      name =
+        String.to_atom(
+          "exy_client_#{System.unique_integer([:positive, :monotonic])}_#{System.os_time(:nanosecond)}@127.0.0.1"
+        )
+
       ensure_epmd()
 
       case Node.start(name) do

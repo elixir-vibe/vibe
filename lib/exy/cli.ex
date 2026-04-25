@@ -40,7 +40,9 @@ defmodule Exy.CLI do
         server_command(tl(args), opts)
 
       invalid == [] and match?([command | _] when command in ["new", "n"], args) ->
-        new_session(opts)
+        if opts[:print] == true or opts[:mode] == "json",
+          do: new_session(opts),
+          else: new_session_tui(opts)
 
       invalid == [] and match?([command | _] when command in ["sessions", "ls"], args) ->
         [_command | rest] = args
@@ -144,6 +146,13 @@ defmodule Exy.CLI do
   defp sessions_command(_args, _opts) do
     shell_error("Usage: exy sessions [--all] [--live] [--failed] [--limit n] | prune --empty")
     {:error, :invalid_sessions_command}
+  end
+
+  defp new_session_tui(opts) do
+    case server_rpc(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]) do
+      {:ok, %{id: session_id}} -> attach_session(session_id, opts)
+      other -> print_result(other, opts)
+    end
   end
 
   defp new_session(opts) do

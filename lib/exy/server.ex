@@ -107,7 +107,9 @@ defmodule Exy.Server do
       :ok
     else
       ensure_distribution(
-        String.to_atom("exy_stop_#{System.unique_integer([:positive])}@127.0.0.1")
+        String.to_atom(
+          "exy_stop_#{System.unique_integer([:positive, :monotonic])}_#{System.os_time(:nanosecond)}@127.0.0.1"
+        )
       )
     end
   end

@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Exy do
       exy server start [--foreground]
       exy server status
       exy server stop
-      exy new                    # Alias: exy n
+      exy new                    # Create and attach a fresh session. Alias: exy n
       exy sessions [--all] [--live] [--failed] [--limit n]  # Alias: exy ls
       exy sessions prune --empty
       exy send <session-id> "prompt"
