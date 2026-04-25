@@ -88,7 +88,8 @@ defmodule Exy.UI.Reducer do
     %{
       state
       | messages: update_tool_message(state.messages, id, data),
-        pending_tools: pending_tools
+        pending_tools: pending_tools,
+        status: maybe_idle_after_tool_finished(state, pending_tools)
     }
   end
 
@@ -295,6 +296,14 @@ defmodule Exy.UI.Reducer do
         message = %{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
         updated = Map.update(message, key, delta, &(&1 <> delta))
         {Lists.append(messages, updated), updated}
+    end
+  end
+
+  defp maybe_idle_after_tool_finished(state, pending_tools) do
+    if Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end) do
+      state.status
+    else
+      :idle
     end
   end
 

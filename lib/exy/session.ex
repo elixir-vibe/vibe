@@ -44,10 +44,11 @@ defmodule Exy.Session do
   @impl true
   def init(opts) do
     persist? = Keyword.get(opts, :persist?, true)
-    {state, event_seq, events_tail} = restore_state(State.new(opts), persist?)
+    restoring? = Keyword.get(opts, :restoring?, false)
+    {state, event_seq, events_tail} = restore_state(State.new(opts), persist?, restoring?)
 
     maybe_register_ui_bus(state.session_id)
-    PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
+    unless restoring?, do: PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
 
     {:ok,
      %{
@@ -361,14 +362,32 @@ defmodule Exy.Session do
   defp token_text(value) when is_binary(value), do: value
   defp token_text(value), do: inspect(value, limit: 20)
 
-  defp restore_state(state, false), do: {state, 0, []}
+  defp restore_state(state, false, _restoring?), do: {state, 0, []}
 
-  defp restore_state(state, true) do
+  defp restore_state(state, true, restoring?) do
     events = Exy.Session.Store.ui_events(state.session_id)
-    ui_state = Reducer.apply_events(state, Enum.map(events, fn {_seq, event} -> event end))
+
+    ui_state =
+      state
+      |> Reducer.apply_events(Enum.map(events, fn {_seq, event} -> event end))
+      |> finalize_restored_state(restoring?)
+
     event_seq = events |> List.last({0, nil}) |> elem(0)
     {ui_state, event_seq, Enum.take(events, -200)}
   end
+
+  defp finalize_restored_state(state, false), do: state
+
+  defp finalize_restored_state(%{status: :working} = state, true) do
+    has_active_stream? = not is_nil(state.streaming_message)
+
+    has_running_tool? =
+      Enum.any?(state.pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end)
+
+    if has_active_stream? or has_running_tool?, do: state, else: %{state | status: :idle}
+  end
+
+  defp finalize_restored_state(state, true), do: state
 
   defp replay_events(state, replay_after, pid) do
     events =

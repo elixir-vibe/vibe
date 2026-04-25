@@ -71,6 +71,7 @@ defmodule Exy.UI.ReducerTest do
     assert state.pending_tools["tool-1"].name == "eval"
     assert state.pending_tools["tool-1"].status == :ok
     assert %{role: :tool, id: "tool-1", status: :ok} = List.last(state.messages)
+    assert state.status == :idle
   end
 
   test "keeps assistant text and tool calls in chronological order" do

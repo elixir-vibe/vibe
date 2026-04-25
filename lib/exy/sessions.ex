@@ -61,7 +61,7 @@ defmodule Exy.Sessions do
   end
 
   defp start_stored(id) do
-    if stored?(id), do: start(session_id: id), else: {:error, :not_found}
+    if stored?(id), do: start(session_id: id, restoring?: true), else: {:error, :not_found}
   end
 
   defp stored?(id) do

@@ -161,7 +161,7 @@ defmodule Exy.Session.Store do
     stat = File.stat!(full_path, time: :posix)
     id = Path.rootname(file)
     events = ui_events(id)
-    state = restore_state(id, events)
+    state = id |> restore_state(events) |> finalize_restored_state()
     messages = Enum.reject(state.messages, &match?(%{streaming?: true}, &1))
     first_user = Enum.find(messages, &(&1[:role] == :user))
     last_message = List.last(messages)
@@ -180,6 +180,17 @@ defmodule Exy.Session.Store do
       usage: state.usage
     }
   end
+
+  defp finalize_restored_state(%{status: :working} = state) do
+    has_active_stream? = not is_nil(state.streaming_message)
+
+    has_running_tool? =
+      Enum.any?(state.pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end)
+
+    if has_active_stream? or has_running_tool?, do: state, else: %{state | status: :idle}
+  end
+
+  defp finalize_restored_state(state), do: state
 
   defp restore_state(session_id, events) do
     events
