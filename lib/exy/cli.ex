@@ -154,11 +154,11 @@ defmodule Exy.CLI do
     configure_api_key(opts)
 
     case Exy.Remote.connect() do
-      {:ok, _node} ->
+      {:ok, node} ->
         session_id =
           opts[:session] || latest_live_remote_session_id() || new_remote_session_id(opts)
 
-        attach_session(session_id, opts)
+        attach_session(session_id, Keyword.put(opts, :remote_node, node))
 
       {:error, _reason} ->
         launch_background_server()
@@ -417,6 +417,7 @@ defmodule Exy.CLI do
 
     runtime_opts =
       [session_id: session_id(opts), model: Exy.LLM.Model.resolve(opts)]
+      |> maybe_put(:remote_node, opts[:remote_node])
       |> Keyword.merge(runtime_extra)
       |> maybe_put_system_prompt(opts[:system_prompt])
 

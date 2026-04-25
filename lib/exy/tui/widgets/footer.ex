@@ -17,6 +17,8 @@ defmodule Exy.TUI.Widgets.Footer do
       separator,
       to_string(Map.get(props, :status)),
       separator,
+      sessions_label(Map.get(props, :active_sessions)),
+      separator,
       to_string(tokens),
       " tok"
     ]
@@ -28,6 +30,9 @@ defmodule Exy.TUI.Widgets.Footer do
       status_line -> [footer, status_line]
     end
   end
+
+  defp sessions_label(nil), do: "- sessions"
+  defp sessions_label(count), do: "#{count} sessions"
 
   defp plugin_status_line(statuses, _width, _theme) when map_size(statuses) == 0, do: nil
 

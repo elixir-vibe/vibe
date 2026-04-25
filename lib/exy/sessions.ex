@@ -24,6 +24,12 @@ defmodule Exy.Sessions do
     end
   end
 
+  @spec active_count() :: non_neg_integer()
+  def active_count do
+    Registry.select(Exy.Registry, [{{{:session, :"$1"}, :"$2", :"$3"}, [], [true]}])
+    |> length()
+  end
+
   @spec list() :: [map()]
   def list do
     live =

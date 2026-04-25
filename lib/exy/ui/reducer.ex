@@ -203,6 +203,10 @@ defmodule Exy.UI.Reducer do
     %{state | notifications: Enum.reject(state.notifications, &(&1[:id] == id || &1["id"] == id))}
   end
 
+  defp reduce(state, %Event{type: :active_sessions_updated, data: %{count: count}}) do
+    %{state | active_sessions: count}
+  end
+
   defp reduce(state, %Event{type: :plugin_status_updated, data: %{key: key, text: text}}) do
     %{state | plugin_statuses: Map.put(state.plugin_statuses, key, text)}
   end

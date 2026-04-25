@@ -36,6 +36,8 @@ defmodule Exy.TUI.App do
     {:ok, ui} = session_server(opts)
     {:ok, editor} = editor_server(opts)
     {:ok, _snapshot, _cursor} = Session.attach(ui, self())
+    remote_node = Keyword.get(opts, :remote_node)
+    active_sessions_timer = Process.send_after(self(), :active_sessions_tick, 0)
 
     {:ok,
      %{
@@ -44,7 +46,9 @@ defmodule Exy.TUI.App do
        width: Keyword.get(opts, :width, 100),
        height: Keyword.get(opts, :height, 30),
        events: [],
-       subscribers: %{}
+       subscribers: %{},
+       remote_node: remote_node,
+       active_sessions_timer: active_sessions_timer
      }}
   end
 
@@ -82,6 +86,12 @@ defmodule Exy.TUI.App do
   end
 
   @impl true
+  def handle_info(:active_sessions_tick, state) do
+    publish_active_sessions(state)
+    timer = Process.send_after(self(), :active_sessions_tick, 1_000)
+    {:noreply, %{state | active_sessions_timer: timer}}
+  end
+
   def handle_info({Session, :event, event}, state) do
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     {:noreply, %{state | events: [event | state.events]}}
@@ -92,6 +102,23 @@ defmodule Exy.TUI.App do
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp publish_active_sessions(%{remote_node: nil}), do: :ok
+
+  defp publish_active_sessions(state) do
+    case :rpc.call(state.remote_node, Exy.Server.RPC, :active_session_count, []) do
+      count when is_integer(count) ->
+        Session.emit_event(
+          state.ui,
+          Exy.UI.Event.new(:active_sessions_updated, Session.state(state.ui).session_id, %{
+            count: count
+          })
+        )
+
+      _other ->
+        :ok
+    end
+  end
 
   defp session_server(opts) do
     case Keyword.fetch(opts, :session_server) do

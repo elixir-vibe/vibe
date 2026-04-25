@@ -9,6 +9,9 @@ defmodule Exy.Server.RPC do
   @spec sessions() :: {:ok, [map()]}
   def sessions, do: {:ok, Exy.Sessions.list()}
 
+  @spec active_session_count() :: non_neg_integer()
+  def active_session_count, do: Exy.Sessions.active_count()
+
   @spec new_session(keyword()) :: {:ok, map()} | {:error, term()}
   def new_session(opts \\ []) do
     case Exy.Sessions.start(opts) do
