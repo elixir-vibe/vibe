@@ -24,6 +24,11 @@ defmodule Exy.Session do
     Path.join(dir(), safe_session_id(session_id) <> ".jsonl")
   end
 
+  @spec log_path(String.t()) :: String.t()
+  def log_path(session_id) when is_binary(session_id) do
+    Path.join(dir(), safe_session_id(session_id) <> ".log")
+  end
+
   @spec append(Trajectory.t()) :: :ok | {:error, term()}
   def append(%Trajectory{session_id: nil}), do: :ok
 

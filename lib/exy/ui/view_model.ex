@@ -3,7 +3,7 @@ defmodule Exy.UI.ViewModel do
   Converts `Exy.UI.State` into semantic blocks for renderers.
   """
 
-  alias Exy.Lists
+  alias Exy.{Lists, LLM.Usage}
 
   alias Exy.UI.Block.{
     AssistantMessage,
@@ -39,7 +39,7 @@ defmodule Exy.UI.ViewModel do
         model: state.model,
         session_id: state.session_id,
         status: state.status,
-        usage: state.usage,
+        usage: visible_usage(state),
         plugin_statuses: state.plugin_statuses
       },
       overlays: Enum.map(state.overlays, &%Overlay{kind: &1.kind, data: &1}),
@@ -50,6 +50,8 @@ defmodule Exy.UI.ViewModel do
       hidden_thinking_label: state.hidden_thinking_label
     }
   end
+
+  defp visible_usage(state), do: Usage.summarize([state.usage, state.usage_preview])
 
   defp message_blocks(state) do
     state.messages

@@ -5,9 +5,12 @@ defmodule Exy.Application do
 
   @impl true
   def start(_type, _args) do
+    configure_dependency_logging()
+
     children = [
       {Registry, keys: :unique, name: Exy.Registry},
       {Jido, name: Jido, otp_app: :exy},
+      Exy.Jido,
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Subagents.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.LSP.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Terminal.Supervisor},
@@ -19,5 +22,18 @@ defmodule Exy.Application do
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Exy.Supervisor)
+  end
+
+  defp configure_dependency_logging do
+    Logger.put_application_level(:jido_action, :warning)
+
+    Application.put_env(:jido, :telemetry,
+      log_level: :error,
+      log_args: :none,
+      slow_signal_threshold_ms: 1_000,
+      slow_directive_threshold_ms: 1_000
+    )
+
+    Application.put_env(:jido, :observability, log_level: :warning)
   end
 end

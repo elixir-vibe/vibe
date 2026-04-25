@@ -18,65 +18,65 @@ defmodule Exy.TUI.Theme do
   defstruct name: "default", fg: %{}, bg: %{}, symbols: %{}
 
   @dark_fg %{
-    accent: {120, 210, 255},
-    border: {120, 140, 255},
-    success: {130, 210, 150},
-    error: {255, 120, 120},
-    warning: {245, 210, 100},
-    muted: {150, 155, 170},
-    dim: {102, 102, 102},
-    text: nil,
-    thinking_text: {170, 150, 230},
-    tool_title: nil,
-    tool_output: {128, 128, 128},
-    user_message_text: nil,
-    assistant_message_text: nil,
-    input_prompt: {120, 210, 255},
-    input_text: nil,
-    input_placeholder: {128, 128, 128},
+    accent: {178, 148, 187},
+    border: {74, 78, 88},
+    success: {126, 170, 115},
+    error: {204, 102, 102},
+    warning: {240, 198, 116},
+    muted: {156, 160, 168},
+    dim: {100, 104, 112},
+    text: {220, 224, 230},
+    thinking_text: {150, 154, 164},
+    tool_title: {220, 224, 230},
+    tool_output: {150, 154, 164},
+    user_message_text: {232, 232, 236},
+    assistant_message_text: {220, 224, 230},
+    input_prompt: {126, 170, 115},
+    input_text: {232, 232, 236},
+    input_placeholder: {128, 132, 140},
     input_cursor: :black
   }
 
   @light_fg %{
-    accent: {30, 120, 170},
-    border: {85, 105, 190},
-    success: {55, 135, 80},
-    error: {185, 70, 70},
-    warning: {170, 115, 25},
-    muted: {95, 100, 115},
-    dim: {118, 118, 118},
-    text: nil,
-    thinking_text: {105, 80, 165},
-    tool_title: nil,
-    tool_output: {108, 108, 108},
-    user_message_text: {45, 45, 45},
-    assistant_message_text: {45, 45, 45},
-    input_prompt: {30, 120, 170},
-    input_text: nil,
-    input_placeholder: {108, 108, 108},
+    accent: {126, 92, 145},
+    border: {190, 184, 198},
+    success: {86, 132, 78},
+    error: {176, 78, 78},
+    warning: {156, 112, 42},
+    muted: {92, 96, 108},
+    dim: {128, 132, 142},
+    text: {34, 36, 44},
+    thinking_text: {100, 104, 116},
+    tool_title: {34, 36, 44},
+    tool_output: {92, 96, 108},
+    user_message_text: {34, 36, 44},
+    assistant_message_text: {34, 36, 44},
+    input_prompt: {86, 132, 78},
+    input_text: {34, 36, 44},
+    input_placeholder: {128, 132, 142},
     input_cursor: :white
   }
 
   @dark_bg %{
-    selected_bg: {58, 58, 90},
-    user_message_bg: {26, 32, 56},
-    assistant_message_bg: {24, 42, 36},
-    tool_pending_bg: {40, 40, 50},
-    tool_success_bg: {40, 50, 40},
-    tool_error_bg: {60, 40, 40},
-    input_bg: {36, 38, 54},
-    input_cursor_bg: {120, 210, 255}
+    selected_bg: {60, 54, 72},
+    user_message_bg: {37, 39, 47},
+    assistant_message_bg: {27, 29, 34},
+    tool_pending_bg: {34, 36, 42},
+    tool_success_bg: {35, 44, 34},
+    tool_error_bg: {48, 35, 35},
+    input_bg: {31, 33, 39},
+    input_cursor_bg: {178, 148, 187}
   }
 
   @light_bg %{
-    selected_bg: {208, 214, 235},
-    user_message_bg: {204, 224, 255},
-    assistant_message_bg: {210, 240, 220},
-    tool_pending_bg: {232, 232, 240},
-    tool_success_bg: {232, 240, 232},
-    tool_error_bg: {240, 232, 232},
-    input_bg: {240, 242, 248},
-    input_cursor_bg: {30, 120, 170}
+    selected_bg: {230, 224, 238},
+    user_message_bg: {244, 242, 247},
+    assistant_message_bg: {250, 250, 252},
+    tool_pending_bg: {244, 244, 248},
+    tool_success_bg: {238, 246, 236},
+    tool_error_bg: {248, 238, 238},
+    input_bg: {247, 247, 250},
+    input_cursor_bg: {126, 92, 145}
   }
 
   @symbols %{
@@ -158,7 +158,7 @@ defmodule Exy.TUI.Theme do
   def strip(text) do
     text
     |> IO.iodata_to_binary()
-    |> then(&Regex.replace(~r/\e\[[0-9;]*[A-Za-z]/, &1, ""))
+    |> then(&Regex.replace(~r/\e\[[0-?]*[ -\/]*[@-~]/, &1, ""))
   end
 
   defp terminal_background do
@@ -216,8 +216,8 @@ defmodule Exy.TUI.Theme do
   defp apply_color(color, target, text), do: ansi([color_start(color, target), text, :reset])
 
   defp color_start(nil, _target), do: ""
-  defp color_start({r, g, b}, :fg), do: IO.ANSI.color(cube(r), cube(g), cube(b))
-  defp color_start({r, g, b}, :bg), do: IO.ANSI.color_background(cube(r), cube(g), cube(b))
+  defp color_start({r, g, b}, :fg), do: truecolor(38, r, g, b)
+  defp color_start({r, g, b}, :bg), do: truecolor(48, r, g, b)
   defp color_start(color, target) when is_atom(color), do: ansi_color(color, target)
 
   defp ansi_color(:black, :fg), do: IO.ANSI.black()
@@ -248,7 +248,11 @@ defmodule Exy.TUI.Theme do
   defp ansi_bg_color(:white), do: IO.ANSI.white_background()
   defp ansi_bg_color(_color), do: ""
 
-  defp cube(channel), do: channel |> Kernel./(255) |> Kernel.*(5) |> round() |> min(5) |> max(0)
+  defp truecolor(target, r, g, b) do
+    ["\e[", Integer.to_string(target), ";2;", byte(r), ";", byte(g), ";", byte(b), "m"]
+  end
+
+  defp byte(value), do: value |> min(255) |> max(0) |> Integer.to_string()
 
   defp ansi(format), do: IO.ANSI.format(format, true)
 end

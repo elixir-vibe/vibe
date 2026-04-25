@@ -33,7 +33,7 @@ defmodule Exy.LLM.Usage do
         acc
         |> add(:input_tokens, usage)
         |> add(:output_tokens, usage)
-        |> add(:total_tokens, usage)
+        |> add_total_tokens(usage)
         |> add_float(:total_cost, usage)
       end
     )
@@ -56,6 +56,21 @@ defmodule Exy.LLM.Usage do
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp add(acc, key, usage), do: Map.update!(acc, key, &(&1 + integer_value(usage[key])))
+
+  defp add_total_tokens(acc, usage) do
+    total = integer_value(usage[:total_tokens])
+
+    if total > 0 do
+      Map.update!(acc, :total_tokens, &(&1 + total))
+    else
+      Map.update!(
+        acc,
+        :total_tokens,
+        &(&1 + integer_value(usage[:input_tokens]) + integer_value(usage[:output_tokens]))
+      )
+    end
+  end
+
   defp add_float(acc, key, usage), do: Map.update!(acc, key, &(&1 + float_value(usage[key])))
 
   defp integer_value(value) when is_integer(value), do: value

@@ -17,8 +17,15 @@ defmodule Exy.UI.Reducer do
   def apply_events(%State{} = state, events), do: Enum.reduce(events, state, &apply_event(&2, &1))
 
   defp reduce(state, %Event{type: :user_message_added, at: at, data: data}) do
-    message = %{role: :user, text: Map.fetch!(data, :text), at: at}
-    %{state | messages: Lists.append(state.messages, message), status: :working}
+    text = Map.fetch!(data, :text)
+    message = %{role: :user, text: text, at: at}
+
+    %{
+      state
+      | messages: Lists.append(state.messages, message),
+        status: :working,
+        usage_preview: usage_preview(input_tokens: estimate_tokens(text), output_tokens: 0)
+    }
   end
 
   defp reduce(state, %Event{type: :assistant_message_added, at: at, data: data}) do
@@ -28,7 +35,8 @@ defmodule Exy.UI.Reducer do
       state
       | messages: Lists.append(state.messages, message),
         status: :idle,
-        streaming_message: nil
+        streaming_message: nil,
+        usage_preview: empty_usage_preview()
     }
   end
 
@@ -41,7 +49,9 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_delta, data: %{text: text}}) do
-    update_streaming(state, :text, text)
+    state
+    |> update_streaming(:text, text)
+    |> update_usage_preview(:output_tokens, estimate_tokens(text))
   end
 
   defp reduce(state, %Event{type: :assistant_thinking_delta, data: %{text: text}}) do
@@ -66,7 +76,8 @@ defmodule Exy.UI.Reducer do
       state
       | notifications: Lists.append(state.notifications, notice),
         streaming_message: nil,
-        status: :idle
+        status: :idle,
+        usage_preview: empty_usage_preview()
     }
   end
 
@@ -95,7 +106,7 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :usage_updated, data: usage}) do
-    %{state | usage: Usage.summarize([state.usage, usage])}
+    %{state | usage: Usage.summarize([state.usage, usage]), usage_preview: empty_usage_preview()}
   end
 
   defp reduce(state, %Event{type: :status_changed, data: %{status: status}}) do
@@ -111,7 +122,14 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :messages_cleared}) do
-    %{state | messages: [], pending_tools: %{}, streaming_message: nil, status: :idle}
+    %{
+      state
+      | messages: [],
+        pending_tools: %{},
+        streaming_message: nil,
+        usage_preview: empty_usage_preview(),
+        status: :idle
+    }
   end
 
   defp reduce(state, %Event{type: :context_compaction_finished, data: data}) do
@@ -217,4 +235,26 @@ defmodule Exy.UI.Reducer do
     updated = Map.update(message, key, delta, &(&1 <> delta))
     %{state | streaming_message: updated, status: :working}
   end
+
+  defp update_usage_preview(state, key, count) do
+    preview =
+      state.usage_preview
+      |> Map.update(key, count, &(&1 + count))
+      |> Map.update(:total_tokens, count, &(&1 + count))
+
+    %{state | usage_preview: preview}
+  end
+
+  defp usage_preview(input_tokens: input_tokens, output_tokens: output_tokens) do
+    %{
+      input_tokens: input_tokens,
+      output_tokens: output_tokens,
+      total_tokens: input_tokens + output_tokens
+    }
+  end
+
+  defp empty_usage_preview, do: usage_preview(input_tokens: 0, output_tokens: 0)
+
+  defp estimate_tokens(""), do: 0
+  defp estimate_tokens(text) when is_binary(text), do: max(1, div(String.length(text) + 3, 4))
 end

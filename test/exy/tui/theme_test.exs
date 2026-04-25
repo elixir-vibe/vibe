@@ -28,17 +28,17 @@ defmodule Exy.TUI.ThemeTest do
 
     styled = IO.iodata_to_binary(styled)
 
-    assert styled =~ IO.ANSI.color(5, 2, 2)
+    assert styled =~ "\e[38;2;204;102;102m"
     assert styled =~ IO.ANSI.reset()
     assert Exy.TUI.Theme.strip(styled) == "boom"
   end
 
-  test "applies RGB backgrounds through IO.ANSI color cube" do
+  test "applies RGB backgrounds through truecolor ANSI" do
     styled = Exy.TUI.Theme.default() |> Exy.TUI.Theme.bg(:tool_pending_bg, "tool")
 
     styled = IO.iodata_to_binary(styled)
 
-    assert styled =~ IO.ANSI.color_background(1, 1, 1)
+    assert styled =~ "\e[48;2;34;36;42m"
     assert Exy.TUI.Theme.strip(styled) == "tool"
   end
 

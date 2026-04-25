@@ -22,6 +22,36 @@ defmodule Exy.UI.ReducerTest do
     assert length(state.events) == 3
   end
 
+  test "previews token usage while assistant response streams" do
+    state =
+      Exy.UI.State.new(session_id: "ui-test")
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:user_message_added, "ui-test", %{text: "hello"})
+      )
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:assistant_delta, "ui-test", %{text: "streaming text"})
+      )
+
+    assert state.usage.total_tokens == 0
+    assert state.usage_preview.input_tokens == 2
+    assert state.usage_preview.output_tokens == 4
+    assert state.usage_preview.total_tokens == 6
+
+    state =
+      Exy.UI.Reducer.apply_event(
+        state,
+        Exy.UI.Event.new(:usage_updated, "ui-test", %{
+          input_tokens: 10,
+          output_tokens: 20,
+          total_tokens: 30
+        })
+      )
+
+    assert state.usage.total_tokens == 30
+    assert state.usage_preview.total_tokens == 0
+  end
+
   test "tracks overlays and tool state" do
     state = Exy.UI.State.new(session_id: "ui-test")
 

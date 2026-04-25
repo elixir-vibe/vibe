@@ -17,6 +17,18 @@ defmodule Exy.UI.ViewModelTest do
     assert view.footer.usage.total_tokens == 7
   end
 
+  test "footer includes streaming token preview" do
+    state =
+      Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:usage_updated, "s1", %{total_tokens: 7}))
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:user_message_added, "s1", %{text: "hello"}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:assistant_delta, "s1", %{text: "streaming text"})
+      )
+
+    assert Exy.UI.ViewModel.from_state(state).footer.usage.total_tokens == 13
+  end
+
   test "streaming assistant block keeps assistant role before first token" do
     state =
       Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")

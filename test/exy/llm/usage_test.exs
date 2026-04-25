@@ -12,4 +12,9 @@ defmodule Exy.LLM.UsageTest do
     assert usage.input_tokens == 4
     assert Exy.LLM.Usage.summarize([usage]).total_tokens == 10
   end
+
+  test "summarizes total tokens from input and output when provider omits total" do
+    assert %{total_tokens: 10} =
+             Exy.LLM.Usage.summarize([%{input_tokens: 4, output_tokens: 6}])
+  end
 end

@@ -7,7 +7,7 @@ defmodule Exy.Agent do
   def start_link(opts \\ []) do
     configure_model_alias(opts)
 
-    with {:ok, pid} <- Jido.AgentServer.start_link(agent: Exy.Agent.Coding) do
+    with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
       session_id = Keyword.get(opts, :session_id) || Exy.Session.new_id()
       Exy.Session.Processes.register(pid, session_id)
       {:ok, pid}
