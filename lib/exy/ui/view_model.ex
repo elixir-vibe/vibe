@@ -78,6 +78,7 @@ defmodule Exy.UI.ViewModel do
   end
 
   defp result_text(nil), do: nil
+  defp result_text(%{output: output}), do: result_text(output)
   defp result_text(%{message: %{content: content}}), do: content_text(content)
   defp result_text(result) when is_binary(result), do: result
   defp result_text(result), do: inspect(result, pretty: true, limit: 20)

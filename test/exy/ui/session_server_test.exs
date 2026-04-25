@@ -19,6 +19,43 @@ defmodule Exy.UI.SessionServerTest do
     assert state.usage.total_tokens == 10
   end
 
+  test "updates token preview from streaming callbacks before final usage" do
+    ask_fun = fn _text, opts ->
+      opts[:on_result].("streaming text")
+      Process.sleep(20)
+
+      {:ok,
+       %{
+         output: "streaming text",
+         usage: %{input_tokens: 10, output_tokens: 20, total_tokens: 30}
+       }}
+    end
+
+    {:ok, server} =
+      Exy.UI.SessionServer.start_link(
+        session_id: "ui-session",
+        ask_fun: ask_fun,
+        streaming?: true
+      )
+
+    :ok = Exy.UI.SessionServer.subscribe(server)
+    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_delta}}, 500
+
+    preview_state = Exy.UI.SessionServer.state(server)
+    assert preview_state.usage.total_tokens == 0
+    assert preview_state.usage_preview.total_tokens > 0
+    assert Exy.UI.ViewModel.from_state(preview_state).footer.usage.total_tokens > 0
+
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :usage_updated}}, 500
+
+    final_state = Exy.UI.SessionServer.state(server)
+    assert final_state.usage.total_tokens == 30
+    assert final_state.usage_preview.total_tokens == 0
+    assert Exy.UI.ViewModel.from_state(final_state).footer.usage.total_tokens == 30
+  end
+
   test "records ask function crashes as assistant errors" do
     ask_fun = fn _text, _opts -> raise ArgumentError, "boom" end
 
