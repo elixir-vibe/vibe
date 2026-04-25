@@ -28,7 +28,12 @@ defmodule Exy.TUI.ToolWidget do
   end
 
   @spec renderer(atom() | String.t() | nil) :: renderer()
-  def renderer(name), do: Map.get(@renderers, normalize_name(name), Exy.TUI.Widgets.Tools.Generic)
+  def renderer(name) do
+    name
+    |> normalize_name()
+    |> then(&Map.get(@renderers, &1, Exy.TUI.Widgets.Tools.Generic))
+    |> ensure_renderer_loaded()
+  end
 
   @spec block(tool(), pos_integer(), Theme.t(), keyword()) :: [IO.chardata()]
   def block(tool, width, theme, opts \\ []) do
@@ -218,6 +223,13 @@ defmodule Exy.TUI.ToolWidget do
   defp margin_line(line, width) do
     inner_width = max(width - 2, 1)
     [" ", Widget.pad_line(line, inner_width), " "]
+  end
+
+  defp ensure_renderer_loaded(renderer) do
+    case Code.ensure_loaded(renderer) do
+      {:module, ^renderer} -> renderer
+      _other -> Exy.TUI.Widgets.Tools.Generic
+    end
   end
 
   defp do_render(renderer, tool, width, theme), do: renderer.render(tool, width, theme)
