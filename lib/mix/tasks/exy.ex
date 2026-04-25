@@ -17,6 +17,7 @@ defmodule Mix.Tasks.Exy do
       exy sessions [--all] [--live] [--failed] [--limit n]
       exy sessions prune --empty
       exy send <session-id> "prompt"
+      exy attach                 # Attach latest live session or create a fresh TUI session
       exy attach <session-id>
 
   From a checkout:
@@ -61,6 +62,7 @@ defmodule Mix.Tasks.Exy do
       exy --eval "Exy.OTP.runtime_info()"
       exy new --mode json
       exy send 20260425-120000-abcd "Use eval to inspect System.version()"
+      exy attach
       exy attach 20260425-120000-abcd
   """
 

@@ -53,6 +53,9 @@ defmodule Exy.CLI do
           opts
         )
 
+      invalid == [] and match?(["attach"], args) ->
+        attach_default_session(opts)
+
       invalid == [] and match?(["attach", _session_id], args) ->
         ["attach", session_id] = args
         attach_session(session_id, opts)
