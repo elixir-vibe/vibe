@@ -174,12 +174,12 @@ defmodule Exy.TUI.Markdown do
       cells
       |> Enum.with_index()
       |> Enum.flat_map(fn {row, index} ->
-        line = table_line(row, widths, theme, index == 0)
+        lines = table_lines(row, widths, theme, index == 0)
 
         if index == 0 do
-          [line, table_separator(widths, theme)]
+          Exy.TUI.Lines.append(lines, table_separator(widths, theme))
         else
-          [line]
+          lines
         end
       end)
 
@@ -233,17 +233,37 @@ defmodule Exy.TUI.Markdown do
     _error -> Theme.fg(theme, :tool_output, code)
   end
 
-  defp table_line(row, widths, theme, header?) do
+  defp table_lines(row, widths, theme, header?) do
     cells =
       widths
       |> Enum.with_index()
       |> Enum.map(fn {width, index} ->
-        cell = row |> Enum.at(index, "") |> Widget.pad_line(width)
-        if header?, do: Theme.bold(Theme.fg(theme, :accent, cell)), else: cell
+        table_cell_lines(Enum.at(row, index, ""), width, theme, header?)
       end)
-      |> Enum.intersperse(Theme.fg(theme, :border, " │ "))
 
-    [Theme.fg(theme, :border, "│ "), cells, Theme.fg(theme, :border, " │")]
+    height = cells |> Enum.map(&length/1) |> Enum.max(fn -> 1 end)
+
+    0..(height - 1)
+    |> Enum.map(fn line_index ->
+      row_cells =
+        cells
+        |> Enum.zip(widths)
+        |> Enum.map(fn {cell, width} ->
+          Enum.at(cell, line_index) || Widget.pad_line("", width)
+        end)
+        |> Enum.intersperse(Theme.fg(theme, :border, " │ "))
+
+      [Theme.fg(theme, :border, "│ "), row_cells, Theme.fg(theme, :border, " │")]
+    end)
+  end
+
+  defp table_cell_lines(cell, width, theme, header?) do
+    cell
+    |> Widget.wrap(width)
+    |> Enum.map(fn line ->
+      padded = Widget.pad_line(line, width)
+      if header?, do: Theme.bold(Theme.fg(theme, :accent, padded)), else: padded
+    end)
   end
 
   defp table_top(widths, theme) do

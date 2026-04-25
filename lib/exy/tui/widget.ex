@@ -149,6 +149,7 @@ defmodule Exy.TUI.Widget do
   defp word_wrap(line, width) do
     line
     |> String.split(~r/(\s+)/, include_captures: true, trim: true)
+    |> Enum.flat_map(&split_long_wrap_part(&1, width))
     |> Enum.reduce([""], fn part, [current | rest] ->
       candidate = [current, part]
       current_text = IO.iodata_to_binary(current)
@@ -166,5 +167,17 @@ defmodule Exy.TUI.Widget do
     end)
     |> Enum.reverse()
     |> Enum.reject(&(&1 == ""))
+  end
+
+  defp split_long_wrap_part(part, width) do
+    if String.trim(part) == "" or Width.visible_length(part) <= width do
+      [part]
+    else
+      part
+      |> Width.visible_text()
+      |> String.graphemes()
+      |> Enum.chunk_every(width)
+      |> Enum.map(&Enum.join/1)
+    end
   end
 end

@@ -108,6 +108,26 @@ defmodule Exy.TUI.MarkdownTest do
            |> Enum.any?(&String.starts_with?(&1, "╭"))
   end
 
+  test "wraps long table cells instead of silently truncating them" do
+    plain =
+      """
+      | Feature | Description |
+      |---|---|
+      | Link | [a very long link label](https://example.com/some/really/long/path) with trailing words |
+      | Code | `Enum.map([1, 2, 3], &(&1 * 2))` keeps the rest visible |
+      """
+      |> Markdown.render(48, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "https://example.com"))
+    assert Enum.any?(plain, &String.contains?(&1, "/some/really/long/pa"))
+    assert Enum.any?(plain, &String.contains?(&1, "th) with trailing"))
+    assert Enum.any?(plain, &String.contains?(&1, "with trailing"))
+    assert Enum.any?(plain, &String.contains?(&1, "words"))
+    assert Enum.any?(plain, &String.contains?(&1, "keeps the"))
+    assert Enum.any?(plain, &String.contains?(&1, "rest visible"))
+  end
+
   test "streaming table border width stays stable as wider rows arrive" do
     document =
       Markdown.new_stream()
