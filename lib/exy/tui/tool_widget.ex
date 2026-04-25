@@ -56,9 +56,7 @@ defmodule Exy.TUI.ToolWidget do
         else: [Theme.symbol(theme, :separator), Theme.fg(theme, :dim, summary)]
       ),
       "  ",
-      status_icon(status, theme),
-      " ",
-      to_string(status)
+      status_icon(status, theme)
     ]
 
     theme |> Theme.fg(:tool_title, text) |> status_bg(status, theme)
@@ -95,12 +93,12 @@ defmodule Exy.TUI.ToolWidget do
   def status(tool), do: tool |> Map.get(:status, :running) |> normalize_status()
 
   def status_icon(status, theme) when status in [:ok, "ok", :success, "success"],
-    do: Theme.symbol(theme, :success_icon)
+    do: Theme.fg(theme, :success, Theme.symbol(theme, :success_icon))
 
   def status_icon(status, theme) when status in [:error, "error"],
-    do: Theme.symbol(theme, :error_icon)
+    do: Theme.fg(theme, :error, Theme.symbol(theme, :error_icon))
 
-  def status_icon(_status, theme), do: Theme.symbol(theme, :running_icon)
+  def status_icon(_status, theme), do: Theme.fg(theme, :muted, Theme.symbol(theme, :running_icon))
 
   def params(tool),
     do:
@@ -136,14 +134,19 @@ defmodule Exy.TUI.ToolWidget do
   defp append_section(lines, _label, nil, _width, _theme, _tool), do: lines
 
   defp append_section(lines, label, value, width, theme, tool) do
-    label_lines =
-      Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
+    label_lines = section_label_lines(label, width, theme)
 
     value_lines =
       value_lines(label, value, width, theme)
       |> maybe_truncate(label, tool, width, theme)
 
     lines |> Lines.join(label_lines) |> Lines.join(value_lines)
+  end
+
+  defp section_label_lines(:output, _width, _theme), do: [""]
+
+  defp section_label_lines(label, width, theme) do
+    Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
   end
 
   defp value_lines(:output, value, width, theme) do
