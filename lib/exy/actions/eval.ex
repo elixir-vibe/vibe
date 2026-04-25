@@ -23,7 +23,7 @@ defmodule Exy.Actions.Eval do
 
     case Exy.Eval.run(params.code, timeout: Map.get(params, :timeout, 30_000)) do
       {:ok, text} -> {:ok, %{output: text}}
-      {:error, error} -> {:error, error}
+      {:error, error} -> {:ok, %{error: error}}
     end
   end
 end
