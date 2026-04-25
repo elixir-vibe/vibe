@@ -20,11 +20,10 @@ defmodule Exy.TUI.RuntimeSupervisor do
     editor_name = name(id, :editor)
     app_name = name(id, :app)
 
+    session_server = Keyword.get(opts, :session_server)
+
     children = [
-      %{
-        id: Session,
-        start: {Session, :start_link, [Keyword.put(opts, :name, session_name)]}
-      },
+      local_session_child(session_server, opts, session_name),
       %{
         id: EditorServer,
         start:
@@ -38,7 +37,7 @@ defmodule Exy.TUI.RuntimeSupervisor do
            [
              opts
              |> Keyword.put(:name, app_name)
-             |> Keyword.put(:session_server, session_name)
+             |> Keyword.put(:session_server, session_server || session_name)
              |> Keyword.put(:editor_server, editor_name)
            ]}
       },
@@ -50,8 +49,19 @@ defmodule Exy.TUI.RuntimeSupervisor do
       }
     ]
 
-    Supervisor.init(children, strategy: :one_for_all)
+    children
+    |> Enum.reject(&is_nil/1)
+    |> Supervisor.init(strategy: :one_for_all)
   end
+
+  defp local_session_child(nil, opts, session_name) do
+    %{
+      id: Session,
+      start: {Session, :start_link, [Keyword.put(opts, :name, session_name)]}
+    }
+  end
+
+  defp local_session_child(_session_server, _opts, _session_name), do: nil
 
   @spec name(term(), atom()) :: GenServer.name()
   def name(id, child), do: {:via, Registry, {Exy.Registry, {__MODULE__, id, child}}}

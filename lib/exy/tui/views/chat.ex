@@ -16,7 +16,11 @@ defmodule Exy.TUI.Views.Chat do
         end
 
       body = Enum.intersperse(body, spacer())
-      plugin_widgets = Enum.map(assign(:plugin_widgets), &plugin_widget/1)
+      widget_slots = assign(:plugin_widgets)
+      above_editor_widgets = Enum.map(Map.get(widget_slots, :above_editor, []), &plugin_widget/1)
+      below_editor_widgets = Enum.map(Map.get(widget_slots, :below_editor, []), &plugin_widget/1)
+      sidebar_widgets = Enum.map(Map.get(widget_slots, :sidebar, []), &plugin_widget/1)
+      plugin_widgets = Exy.Lists.join(above_editor_widgets, sidebar_widgets)
       notices = if assign(:notifications), do: [notifications(assign(:notifications))], else: []
       overlays = Enum.map(assign(:overlays), &overlay/1)
 
@@ -29,6 +33,7 @@ defmodule Exy.TUI.Views.Chat do
         notices,
         footer_margin,
         footer(assign(:footer)),
+        below_editor_widgets,
         overlays
       ])
     end

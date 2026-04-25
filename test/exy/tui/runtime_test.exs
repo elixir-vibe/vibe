@@ -65,59 +65,36 @@ defmodule Exy.TUI.RuntimeTest do
     end)
   end
 
-  test "mix exy attach renders a persisted session in a real PTY" do
-    session_dir =
-      Path.join(System.tmp_dir!(), "exy-attach-pty-#{System.unique_integer([:positive])}")
+  test "runtime supervisor preserves caller-provided live session server" do
+    {:ok, session} = Exy.Session.start_link(persist?: false, session_id: "remote-runtime")
+    runtime_id = make_ref()
 
-    session_id = "attach-pty"
-    File.mkdir_p!(session_dir)
-
-    previous = Application.get_env(:exy, :session_dir)
-    Application.put_env(:exy, :session_dir, session_dir)
-
-    try do
-      event =
-        Exy.UI.Event.new(:user_message_added, session_id, %{text: "hello from attached session"})
-
-      assert :ok = Exy.Session.Store.append_ui_event(event, 1)
-    after
-      if previous,
-        do: Application.put_env(:exy, :session_dir, previous),
-        else: Application.delete_env(:exy, :session_dir)
-    end
-
-    {:ok, terminal} = Terminal.start_link(cols: @cols, rows: @rows)
-
-    {:ok, pty} =
-      Ghostty.PTY.start_link(
-        cmd: "/bin/sh",
-        args: [
-          "-lc",
-          "cd #{File.cwd!()} && EXY_SESSION_DIR=#{shell_quote(session_dir)} mix exy attach #{session_id}"
-        ],
-        cols: @cols,
-        rows: @rows,
-        reader_start_timeout: 5_000
+    {:ok, supervisor} =
+      Exy.TUI.RuntimeSupervisor.start_link(
+        runtime_id: runtime_id,
+        session_id: "remote-runtime",
+        session_server: session,
+        width: @cols,
+        height: @rows,
+        output: false
       )
 
-    try do
-      assert {:ok, _output} =
-               wait_for_screen_text(
-                 pty,
-                 terminal,
-                 "hello from attached session",
-                 "",
-                 @startup_timeout_ms
-               )
+    app = Exy.TUI.RuntimeSupervisor.name(runtime_id, :app)
+    :ok = Exy.TUI.App.subscribe(app, self())
 
-      Ghostty.PTY.write(pty, <<3>>)
-      Process.sleep(50)
-      Ghostty.PTY.write(pty, <<3>>)
-      assert {:exit, 0, _output} = wait_for_exit("", @exit_timeout_ms)
-    after
-      if Process.alive?(pty), do: Ghostty.PTY.close(pty)
-      File.rm_rf(session_dir)
-    end
+    :ok =
+      Exy.Session.emit_event(
+        session,
+        Exy.UI.Event.new(:notification_added, "remote-runtime", %{text: "live event"})
+      )
+
+    assert_receive {Exy.TUI.App, :event,
+                    %{type: :notification_added, data: %{text: "live event"}}}
+
+    assert [%{text: "live event"}] = Exy.TUI.App.snapshot(app).ui.notifications
+
+    Supervisor.stop(supervisor)
+    GenServer.stop(session)
   end
 
   test "mix exy accepts input in a real PTY, escape cancels, and double ctrl-c exits" do
@@ -250,10 +227,6 @@ defmodule Exy.TUI.RuntimeTest do
     after
       remaining_timeout(deadline) -> {:error, {:exit_timeout, output}}
     end
-  end
-
-  defp shell_quote(value) do
-    "'" <> String.replace(value, "'", "'\\''") <> "'"
   end
 
   defp remaining_timeout(deadline) do

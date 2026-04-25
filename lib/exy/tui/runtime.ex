@@ -21,18 +21,28 @@ defmodule Exy.TUI.Runtime do
     opts = Keyword.put(opts, :runtime_id, runtime_id)
 
     with :ok <- ensure_interactive_terminal(),
-         {:ok, supervisor} <- RuntimeSupervisor.start_link(opts),
-         {:ok, tty} <- Ghostty.TTY.start_link(owner: self(), takeover: true) do
-      loop = RuntimeSupervisor.name(runtime_id, TerminalLoop)
+         {:ok, supervisor} <- RuntimeSupervisor.start_link(opts) do
+      run_with_tty(supervisor, runtime_id, columns, rows)
+    end
+  end
 
-      try do
-        painter = render(loop, TerminalPainter.new(columns, rows))
-        receive_events(tty, loop, nil, painter)
-      after
-        write_output(TerminalPainter.cleanup())
-        GenServer.stop(tty)
+  defp run_with_tty(supervisor, runtime_id, columns, rows) do
+    case Ghostty.TTY.start_link(owner: self(), takeover: true) do
+      {:ok, tty} ->
+        loop = RuntimeSupervisor.name(runtime_id, TerminalLoop)
+
+        try do
+          painter = render(loop, TerminalPainter.new(columns, rows))
+          receive_events(tty, loop, nil, painter)
+        after
+          write_output(TerminalPainter.cleanup())
+          GenServer.stop(tty)
+          Supervisor.stop(supervisor)
+        end
+
+      {:error, reason} ->
         Supervisor.stop(supervisor)
-      end
+        {:error, reason}
     end
   end
 

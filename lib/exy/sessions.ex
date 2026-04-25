@@ -34,8 +34,15 @@ defmodule Exy.Sessions do
 
     stored = Exy.Session.Store.list() |> Enum.map(&Map.put(&1, :live?, false))
     live_ids = MapSet.new(Enum.map(live, & &1.id))
-    live ++ Enum.reject(stored, &MapSet.member?(live_ids, &1.id))
+
+    (live ++ Enum.reject(stored, &MapSet.member?(live_ids, &1.id)))
+    |> Enum.sort_by(&updated_at_sort_key/1, :desc)
   end
+
+  defp updated_at_sort_key(%{updated_at: %DateTime{} = updated_at}),
+    do: DateTime.to_unix(updated_at, :microsecond)
+
+  defp updated_at_sort_key(_session), do: 0
 
   defp live_info({id, pid}) do
     state = Exy.Session.state(pid)

@@ -48,4 +48,45 @@ defmodule Exy.SessionTest do
     assert restored_event.type == :user_message_added
     assert restored_event.data.text == "hello"
   end
+
+  test "trajectory-only sessions project basic visible history" do
+    session_id = "trajectory-only"
+    Exy.Trajectory.Store.append(:user_message, %{prompt: "old hello"}, session_id: session_id)
+
+    Exy.Trajectory.Store.append(:assistant_message, %{result: "old response"},
+      session_id: session_id
+    )
+
+    assert [%{id: ^session_id, message_count: 2, first_message: "old hello"}] =
+             Exy.Session.Store.list()
+
+    assert [{1, user}, {2, assistant}] = Exy.Session.Store.ui_events(session_id)
+    assert user.type == :user_message_added
+    assert user.data.text == "old hello"
+    assert assistant.type == :assistant_message_added
+    assert assistant.data.result == "old response"
+  end
+
+  test "invalid persisted atoms and event types are skipped without creating atoms" do
+    session_id = "crafted"
+
+    File.mkdir_p!(Exy.Session.Store.dir())
+
+    File.write!(
+      Exy.Session.Store.path(session_id),
+      Jason.encode!(%{
+        "entry_type" => "ui_event",
+        "seq" => 1,
+        "id" => "bad",
+        "session_id" => session_id,
+        "type" => "does_not_exist_#{System.unique_integer([:positive])}",
+        "at" => DateTime.to_iso8601(DateTime.utc_now()),
+        "data" => %{
+          "new_atom_key_#{System.unique_integer([:positive])}" => %{"$atom" => "also_new"}
+        }
+      }) <> "\n"
+    )
+
+    assert [] = Exy.Session.Store.ui_events(session_id)
+  end
 end

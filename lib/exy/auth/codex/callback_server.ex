@@ -8,7 +8,7 @@ defmodule Exy.Auth.Codex.CallbackServer do
     parent = self()
 
     pid =
-      spawn_link(fn ->
+      spawn(fn ->
         {:ok, listen} =
           :gen_tcp.listen(@redirect_port, [
             :binary,
@@ -50,7 +50,7 @@ defmodule Exy.Auth.Codex.CallbackServer do
   end
 
   @spec stop(pid()) :: true
-  def stop(pid) when is_pid(pid), do: Process.exit(pid, :normal)
+  def stop(pid) when is_pid(pid), do: Process.exit(pid, :shutdown)
 
   defp accept_once(listen, parent, state) do
     case :gen_tcp.accept(listen, 180_000) do

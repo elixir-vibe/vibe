@@ -61,7 +61,8 @@ defmodule Exy.Session do
        active_agent: nil,
        event_seq: event_seq,
        events_tail: events_tail,
-       persist?: persist?
+       persist?: persist?,
+       persistence_failed?: false
      }}
   end
 
@@ -247,17 +248,57 @@ defmodule Exy.Session do
 
   defp emit(state, event) do
     event_seq = state.event_seq + 1
-    if state.persist?, do: Exy.Session.Store.append_ui_event(event, event_seq)
-    Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
-    ui_state = Reducer.apply_event(state.state, event)
-    PluginBridge.dispatch(ui_state, event)
+    {events, persistence_failed?} = events_with_persistence_status(state, event, event_seq)
+
+    Enum.each(events, fn {_seq, event} ->
+      Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
+    end)
+
+    ui_state =
+      Enum.reduce(events, state.state, fn {_seq, event}, ui_state ->
+        Reducer.apply_event(ui_state, event)
+      end)
+
+    Enum.each(events, fn {_seq, event} -> PluginBridge.dispatch(ui_state, event) end)
 
     %{
       state
       | state: ui_state,
-        event_seq: event_seq,
-        events_tail: remember_event(state.events_tail, event_seq, event)
+        event_seq: event_seq + length(events) - 1,
+        events_tail:
+          Enum.reduce(events, state.events_tail, fn {seq, event}, tail ->
+            remember_event(tail, seq, event)
+          end),
+        persistence_failed?: persistence_failed?
     }
+  end
+
+  defp events_with_persistence_status(%{persist?: false} = state, event, event_seq) do
+    {[{event_seq, event}], state.persistence_failed?}
+  end
+
+  defp events_with_persistence_status(state, event, event_seq) do
+    case Exy.Session.Store.append_ui_event(event, event_seq) do
+      :ok ->
+        {[{event_seq, event}], state.persistence_failed?}
+
+      {:error, reason} ->
+        require Logger
+        Logger.error("Exy session persistence failed: #{inspect(reason)}")
+
+        failure_event =
+          Event.new(:notification_added, state.state.session_id, %{
+            level: :error,
+            text: "Session persistence failed: #{inspect(reason)}"
+          })
+
+        events =
+          if state.persistence_failed?,
+            do: [{event_seq, event}],
+            else: [{event_seq, event}, {event_seq + 1, failure_event}]
+
+        {events, true}
+    end
   end
 
   defp normalize_command(%Command{} = command), do: command
@@ -298,7 +339,7 @@ defmodule Exy.Session do
       {:error, reason} ->
         emit(
           state,
-          Event.new(:notification_added, session_id, %{level: :error, text: inspect(reason)})
+          Event.new(:context_compaction_failed, session_id, %{reason: inspect(reason)})
         )
     end
   end

@@ -20,7 +20,11 @@ defmodule Exy.UI.ViewModel do
           footer: Footer.t(),
           overlays: [Overlay.t()],
           notifications: NotificationList.t() | nil,
-          plugin_widgets: [PluginWidget.t()],
+          plugin_widgets: %{
+            above_editor: [PluginWidget.t()],
+            below_editor: [PluginWidget.t()],
+            sidebar: [PluginWidget.t()]
+          },
           title: String.t() | nil,
           working_message: String.t() | nil,
           hidden_thinking_label: String.t() | nil
@@ -124,6 +128,14 @@ defmodule Exy.UI.ViewModel do
         props: widget.props,
         placement: widget.placement,
         version: widget.version
+      }
+    end)
+    |> Enum.group_by(& &1.placement)
+    |> then(fn groups ->
+      %{
+        above_editor: Map.get(groups, :above_editor, []),
+        below_editor: Map.get(groups, :below_editor, []),
+        sidebar: Map.get(groups, :sidebar, [])
       }
     end)
   end

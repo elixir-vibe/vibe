@@ -3,8 +3,6 @@ defmodule Exy.Checks do
   Validation gates Exy can run before and after self-modification.
   """
 
-  alias Credo.Execution
-
   @type check_result :: %{name: atom(), status: :ok | :error, details: term()}
 
   @spec analyze(keyword()) :: map()
@@ -48,22 +46,10 @@ defmodule Exy.Checks do
   def run(:ex_dna, opts), do: ex_dna_check(opts)
 
   def run(:reach, opts) do
-    paths = Keyword.get(opts, :paths, ["lib/**/*.ex"])
-    files = paths |> Enum.flat_map(&Path.wildcard/1) |> Enum.sort()
-
-    errors =
-      Enum.flat_map(files, fn file ->
-        case reach_file_to_graph(file) do
-          {:ok, graph} ->
-            if graph_node_count(graph) > 0, do: [], else: [%{file: file, reason: :empty_graph}]
-
-          {:error, reason} ->
-            [%{file: file, reason: reason}]
-        end
-      end)
-
-    status = if errors == [], do: :ok, else: :error
-    %{name: :reach, status: status, details: %{files: length(files), errors: errors}}
+    case ensure_optional_app(:reach) do
+      :ok -> reach_check(opts)
+      {:error, reason} -> %{name: :reach, status: :error, details: reason}
+    end
   end
 
   def run(name, _opts), do: %{name: name, status: :error, details: {:unknown_check, name}}
@@ -95,10 +81,35 @@ defmodule Exy.Checks do
   end
 
   defp credo_check(opts) do
-    {:ok, _apps} = Application.ensure_all_started(:credo)
+    case ensure_optional_app(:credo) do
+      :ok -> run_credo(opts)
+      {:error, reason} -> %{name: :credo, status: :error, details: reason}
+    end
+  end
+
+  defp reach_check(opts) do
+    paths = Keyword.get(opts, :paths, ["lib/**/*.ex"])
+    files = paths |> Enum.flat_map(&Path.wildcard/1) |> Enum.sort()
+
+    errors =
+      Enum.flat_map(files, fn file ->
+        case reach_file_to_graph(file) do
+          {:ok, graph} ->
+            if graph_node_count(graph) > 0, do: [], else: [%{file: file, reason: :empty_graph}]
+
+          {:error, reason} ->
+            [%{file: file, reason: reason}]
+        end
+      end)
+
+    status = if errors == [], do: :ok, else: :error
+    %{name: :reach, status: status, details: %{files: length(files), errors: errors}}
+  end
+
+  defp run_credo(opts) do
     argv = opts |> Keyword.get(:credo_args, ["--strict"]) |> add_mute_exit_status()
-    {output, exec} = capture_io(fn -> Credo.run(argv) end)
-    issues = Execution.get_issues(exec)
+    {output, exec} = capture_io(fn -> eval_optional("Credo.run(argv)", argv: argv) end)
+    issues = eval_optional("Credo.Execution.get_issues(exec)", exec: exec)
     status = if issues == [], do: :ok, else: :error
 
     %{
@@ -110,11 +121,25 @@ defmodule Exy.Checks do
 
   defp graph_node_count(graph), do: graph |> reach_nodes() |> length()
 
-  defp reach_file_to_graph(file), do: Reach.file_to_graph(file)
-  defp reach_nodes(graph), do: Reach.nodes(graph)
+  defp reach_file_to_graph(file), do: eval_optional("Reach.file_to_graph(file)", file: file)
+
+  defp reach_nodes(graph), do: eval_optional("Reach.nodes(graph)", graph: graph)
 
   defp ex_slop_check(opts) do
-    {:ok, _apps} = Application.ensure_all_started(:credo)
+    case ensure_optional_app(:credo) do
+      :ok -> run_ex_slop(opts)
+      {:error, reason} -> %{name: :ex_slop, status: :error, details: reason}
+    end
+  end
+
+  defp ex_dna_check(opts) do
+    case ensure_optional_app(:ex_dna) do
+      :ok -> run_ex_dna(opts)
+      {:error, reason} -> %{name: :ex_dna, status: :error, details: reason}
+    end
+  end
+
+  defp run_ex_slop(opts) do
     paths = Keyword.get(opts, :paths, ["lib", "test"])
 
     issues =
@@ -129,10 +154,9 @@ defmodule Exy.Checks do
     %{name: :ex_slop, status: status, details: %{issues: Enum.map(issues, &issue_to_map/1)}}
   end
 
-  defp ex_dna_check(opts) do
-    {:ok, _apps} = Application.ensure_all_started(:ex_dna)
+  defp run_ex_dna(opts) do
     paths = Keyword.get(opts, :paths, ["lib", "test"])
-    report = ExDNA.analyze(paths: paths, reporters: [])
+    report = eval_optional("ExDNA.analyze(paths: paths, reporters: [])", paths: paths)
     clones = Map.get(report, :clones, [])
     status = if clones == [], do: :ok, else: :error
     %{name: :ex_dna, status: status, details: %{stats: Map.get(report, :stats), clones: clones}}
@@ -214,7 +238,9 @@ defmodule Exy.Checks do
     end)
     |> Enum.uniq()
     |> Enum.sort()
-    |> Enum.map(fn path -> Credo.SourceFile.parse(File.read!(path), path) end)
+    |> Enum.map(fn path ->
+      eval_optional("Credo.SourceFile.parse(source, path)", source: File.read!(path), path: path)
+    end)
   end
 
   defp issue_to_map(%{
@@ -228,6 +254,18 @@ defmodule Exy.Checks do
   end
 
   defp issue_to_map(issue), do: issue
+
+  defp eval_optional(code, binding) do
+    {result, _binding} = Code.eval_string(code, binding)
+    result
+  end
+
+  defp ensure_optional_app(app) do
+    case Application.ensure_all_started(app) do
+      {:ok, _apps} -> :ok
+      {:error, reason} -> {:error, {:optional_dependency_unavailable, app, reason}}
+    end
+  end
 
   defp add_mute_exit_status(argv) do
     if "--mute-exit-status" in argv, do: argv, else: ["--mute-exit-status" | argv]

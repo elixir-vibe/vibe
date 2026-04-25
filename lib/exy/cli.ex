@@ -39,13 +39,13 @@ defmodule Exy.CLI do
         new_session(opts)
 
       invalid == [] and match?(["sessions" | _], args) ->
-        print_result(remote_or_local(:sessions, []), opts)
+        print_result(server_rpc(:sessions, []), opts)
 
       invalid == [] and match?(["send", _session_id | _], args) ->
         ["send", session_id | prompt_parts] = args
 
         print_result(
-          remote_or_local(:send_prompt, [session_id, Enum.join(prompt_parts, " ")]),
+          server_rpc(:send_prompt, [session_id, Enum.join(prompt_parts, " ")]),
           opts
         )
 
@@ -118,7 +118,7 @@ defmodule Exy.CLI do
   end
 
   defp new_session(opts) do
-    print_result(remote_or_local(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]), opts)
+    print_result(server_rpc(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]), opts)
   end
 
   defp attach_default_session(opts) do
@@ -135,7 +135,7 @@ defmodule Exy.CLI do
   end
 
   defp attach_session(session_id, opts) do
-    case remote_or_local(:session_pid, [session_id]) do
+    case server_rpc(:session_pid, [session_id]) do
       {:ok, session} ->
         tui(opts, session_server: session, session_id: session_id)
 
@@ -155,7 +155,7 @@ defmodule Exy.CLI do
   end
 
   defp latest_remote_session_id do
-    case remote_or_local(:sessions, []) do
+    case server_rpc(:sessions, []) do
       {:ok, [%{id: id} | _sessions]} -> id
       {:ok, []} -> nil
       {:error, _reason} -> nil
@@ -163,20 +163,18 @@ defmodule Exy.CLI do
   end
 
   defp new_remote_session_id(opts) do
-    case remote_or_local(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]) do
+    case server_rpc(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]) do
       {:ok, %{id: id}} -> id
       {:error, reason} -> raise "cannot create Exy session: #{inspect(reason)}"
     end
   end
 
-  defp remote_or_local(function, args) do
-    case Exy.Remote.connect() do
-      {:ok, node} ->
-        :rpc.call(node, Exy.Server.RPC, function, args)
-
-      {:error, _reason} ->
-        {:ok, _apps} = Application.ensure_all_started(:exy)
-        apply(Exy.Server.RPC, function, args)
+  defp server_rpc(function, args) do
+    with :ok <- ensure_server_running(),
+         {:ok, node} <- Exy.Remote.connect() do
+      :rpc.call(node, Exy.Server.RPC, function, args)
+    else
+      {:error, reason} -> {:error, {:server_not_running, reason}}
     end
   end
 

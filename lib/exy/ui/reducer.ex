@@ -154,6 +154,17 @@ defmodule Exy.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{type: :context_compaction_failed, data: data}) do
+    notice = %{level: :error, text: Map.get(data, :reason, "context compaction failed")}
+
+    %{
+      state
+      | notifications: Lists.append(state.notifications, notice),
+        status: :idle,
+        plugin_widgets: Map.delete(state.plugin_widgets, "context_compaction")
+    }
+  end
+
   defp reduce(state, %Event{type: :context_compaction_finished, data: data}) do
     summary = Map.get(data, :summary, "context compacted")
     notice = %{level: :success, text: summary}
