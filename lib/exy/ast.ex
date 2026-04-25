@@ -16,7 +16,7 @@ defmodule Exy.AST do
       :search -> search(params)
       :replace -> replace(params)
       :diff -> diff(params)
-      other -> {:error, "unknown elixir_ast action: #{inspect(other)}"}
+      other -> {:error, "unknown ast action: #{inspect(other)}"}
     end
   rescue
     exception -> {:error, Exception.format(:error, exception, __STACKTRACE__)}

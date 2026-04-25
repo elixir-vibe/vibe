@@ -2,7 +2,7 @@ defmodule Exy.Python do
   @moduledoc """
   Optional Python evaluation through Pythonx.
 
-  This is intentionally a helper module callable from `elixir_eval`, not a new
+  This is intentionally a helper module callable from `eval`, not a new
   model-facing tool.
   """
 

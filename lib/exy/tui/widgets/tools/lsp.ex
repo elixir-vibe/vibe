@@ -10,7 +10,7 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
     output = Map.get(tool, :output) || Map.get(tool, :result)
 
     ToolWidget.block(tool, width, theme,
-      name: :elixir_lsp,
+      name: :lsp,
       action: action(tool),
       summary: collapsed_summary(output)
     )

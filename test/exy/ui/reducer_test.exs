@@ -61,14 +61,14 @@ defmodule Exy.UI.ReducerTest do
         Exy.UI.Event.new(:overlay_opened, "ui-test", %{kind: :session_selector})
       )
       |> Exy.UI.Reducer.apply_event(
-        Exy.UI.Event.new(:tool_started, "ui-test", %{id: "tool-1", name: "elixir_eval"})
+        Exy.UI.Event.new(:tool_started, "ui-test", %{id: "tool-1", name: "eval"})
       )
       |> Exy.UI.Reducer.apply_event(
         Exy.UI.Event.new(:tool_finished, "ui-test", %{id: "tool-1", status: :ok})
       )
 
     assert [%{kind: :session_selector}] = state.overlays
-    assert state.pending_tools["tool-1"].name == "elixir_eval"
+    assert state.pending_tools["tool-1"].name == "eval"
     assert state.pending_tools["tool-1"].status == :ok
     assert %{role: :tool, id: "tool-1", status: :ok} = List.last(state.messages)
   end
@@ -83,7 +83,7 @@ defmodule Exy.UI.ReducerTest do
       |> Exy.UI.Reducer.apply_event(
         Exy.UI.Event.new(:tool_started, "ui-test", %{
           id: "tool-1",
-          name: "elixir_eval",
+          name: "eval",
           args: %{code: "1 + 1"}
         })
       )

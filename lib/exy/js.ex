@@ -2,7 +2,7 @@ defmodule Exy.JS do
   @moduledoc """
   Optional JavaScript/TypeScript evaluation through QuickBEAM.
 
-  This is intentionally a helper module callable from `elixir_eval`, not a new
+  This is intentionally a helper module callable from `eval`, not a new
   model-facing tool.
   """
 

@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Exy do
   ## Examples
 
       exy
-      exy -p "Inspect runtime info with elixir_eval"
+      exy -p "Inspect runtime info with eval"
       exy --model anthropic:claude-sonnet-4-5-20250929 "Review this project"
       exy --login codex
       exy --compact --keep-recent 20

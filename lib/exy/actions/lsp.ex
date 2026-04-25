@@ -31,7 +31,7 @@ defmodule Exy.Actions.LSP do
           )
 
   use Jido.Action,
-    name: "elixir_lsp",
+    name: "lsp",
     description:
       "Ask Expert LSP for diagnostics, definitions, references, hover, symbols, and code actions.",
     schema: @schema

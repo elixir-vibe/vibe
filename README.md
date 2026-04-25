@@ -38,11 +38,11 @@ Exy keeps the model-facing tool surface small:
 - `read`
 - `edit` / `write`
 - `bash` / terminal
-- `elixir_eval` → `Exy.Eval.run/2`
-- `elixir_ast` → `Exy.AST.run/1`
-- `elixir_lsp` → `Exy.LSP.run/1`
+- `eval` → `Exy.Eval.run/2`
+- `ast` → `Exy.AST.run/1`
+- `lsp` → `Exy.LSP.run/1`
 
-Everything else is normal Elixir callable from `elixir_eval`:
+Everything else is normal Elixir callable from `eval`:
 
 - `Exy.OTP` — process, ETS, supervision, runtime introspection
 - `Exy.Profile` — `:cprof`, `:eprof`, `:fprof`, process-growth helpers
@@ -67,8 +67,8 @@ Everything else is normal Elixir callable from `elixir_eval`:
 ## First principles
 
 1. Few tools outside, many BEAM powers inside.
-2. Prefer `elixir_eval` over shelling out to `mix run`.
-3. Prefer `elixir_ast` over grep for Elixir syntax.
+2. Prefer `eval` over shelling out to `mix run`.
+3. Prefer `ast` over grep for Elixir syntax.
 4. Use LSP for diagnostics/navigation, runtime eval for OTP state.
 5. Subagents are OTP processes, not prompt magic.
 6. Self-improvement evolves skills/helpers first, runtime core only with validation.
@@ -100,7 +100,7 @@ Exy.LLM.ask("Summarize Exy's architecture")
 
 # Elixir API: Jido-backed agent
 {:ok, pid} = Exy.start_link()
-Exy.ask(pid, "Use elixir_eval to inspect runtime info")
+Exy.ask(pid, "Use eval to inspect runtime info")
 Exy.Session.list()
 
 # CLI / Mix task

@@ -14,7 +14,7 @@ defmodule Exy.Actions.Eval do
           )
 
   use Jido.Action,
-    name: "elixir_eval",
+    name: "eval",
     description:
       "Evaluate Elixir code inside Exy's BEAM runtime. Prefer this for OTP introspection, profiling, docs, and helper modules.",
     schema: @schema

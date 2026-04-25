@@ -3,11 +3,11 @@ defmodule Exy.TUI.ToolWidgetTest do
 
   alias Exy.TUI.{DSL, Theme, Widget, Width}
 
-  test "dispatches elixir_eval by atom name" do
+  test "dispatches eval by atom name" do
     lines =
       DSL.tool(%{
         id: "eval-1",
-        name: :elixir_eval,
+        name: :eval,
         status: :ok,
         args: %{code: "1 + 1"},
         output: "2",
@@ -16,7 +16,7 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> Widget.render(80, Theme.default())
 
     plain = Enum.map(lines, &Width.visible_text/1)
-    assert Enum.any?(plain, &String.contains?(&1, "elixir_eval"))
+    assert Enum.any?(plain, &String.contains?(&1, "eval"))
     assert Enum.all?(plain, &String.starts_with?(&1, " "))
     assert Enum.all?(plain, &String.ends_with?(&1, " "))
     refute "params:" in plain
@@ -26,11 +26,11 @@ defmodule Exy.TUI.ToolWidgetTest do
     refute Enum.any?(plain, &String.contains?(&1, "ok"))
   end
 
-  test "elixir_eval shows timeout in header and unwraps output envelope" do
+  test "eval shows timeout in header and unwraps output envelope" do
     plain =
       %{
         id: "eval-1",
-        name: :elixir_eval,
+        name: :eval,
         status: :ok,
         args: %{"code" => "File.cwd!()", "timeout" => 1000},
         output: %{output: ~s("/tmp")}
@@ -49,13 +49,13 @@ defmodule Exy.TUI.ToolWidgetTest do
 
   test "tool title is bold without status background" do
     line =
-      %{id: "eval-1", name: :elixir_eval, status: :ok, args: %{code: "1 + 1"}, output: "2"}
+      %{id: "eval-1", name: :eval, status: :ok, args: %{code: "1 + 1"}, output: "2"}
       |> DSL.tool()
       |> Widget.render(80, Theme.default())
       |> List.first()
       |> IO.iodata_to_binary()
 
-    assert line =~ IO.ANSI.format([:bright, "elixir_eval"], true) |> IO.iodata_to_binary()
+    assert line =~ IO.ANSI.format([:bright, "eval"], true) |> IO.iodata_to_binary()
     refute line =~ "48;2"
   end
 
@@ -63,7 +63,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     lines =
       %{
         id: "eval-1",
-        name: :elixir_eval,
+        name: :eval,
         status: :error,
         args: %{code: "raise \"boom\""},
         output: %{error: "boom"}
@@ -84,7 +84,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     output = Enum.map_join(1..12, "\n", &"line #{&1}")
 
     plain =
-      %{id: "tool", name: :elixir_eval, status: :ok, args: %{code: "many()"}, output: output}
+      %{id: "tool", name: :eval, status: :ok, args: %{code: "many()"}, output: output}
       |> DSL.tool()
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
@@ -102,7 +102,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     plain =
       %{
         id: "tool",
-        name: :elixir_eval,
+        name: :eval,
         status: :ok,
         args: %{code: "many()"},
         output: output,
@@ -175,7 +175,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     ast =
       DSL.tool(%{
         id: "ast",
-        name: :elixir_ast,
+        name: :ast,
         status: :ok,
         args: %{action: :search},
         output: [1, 2],
@@ -185,7 +185,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     lsp =
       DSL.tool(%{
         id: "lsp",
-        name: :elixir_lsp,
+        name: :lsp,
         status: :ok,
         args: %{action: :diagnostics},
         output: [],
@@ -195,7 +195,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert ast
            |> Widget.render(80, Theme.default())
            |> Enum.map(&Width.visible_text/1)
-           |> Enum.any?(&String.contains?(&1, "elixir_ast"))
+           |> Enum.any?(&String.contains?(&1, "ast"))
 
     assert lsp
            |> Widget.render(80, Theme.default())

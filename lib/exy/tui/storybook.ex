@@ -52,7 +52,7 @@ defmodule Exy.TUI.Storybook do
   def story(:tool_eval_ok) do
     DSL.tool(%{
       id: "eval-1",
-      name: :elixir_eval,
+      name: :eval,
       status: :ok,
       args: %{code: "Exy.OTP.runtime_info()"},
       output: "%{elixir: \"1.19.5\", process_count: 187}",
@@ -63,7 +63,7 @@ defmodule Exy.TUI.Storybook do
   def story(:tool_ast_matches) do
     DSL.tool(%{
       id: "ast-1",
-      name: :elixir_ast,
+      name: :ast,
       status: :ok,
       args: %{action: :search, pattern: "def handle_call(_, _, _) do _ end"},
       output: [%{file: "lib/exy/trajectory/store.ex", line: 35}],
@@ -74,7 +74,7 @@ defmodule Exy.TUI.Storybook do
   def story(:tool_lsp_diagnostics) do
     DSL.tool(%{
       id: "lsp-1",
-      name: :elixir_lsp,
+      name: :lsp,
       status: :ok,
       args: %{action: :diagnostics, file: "lib/exy.ex"},
       output: [],
@@ -150,9 +150,9 @@ defmodule Exy.TUI.Storybook do
   def story(:section_header) do
     box("Tools", [
       horizontal([
-        status(title: "elixir_eval", description: "runtime introspection", color: :accent),
-        status(title: "elixir_ast", description: "syntax search", color: :accent),
-        status(title: "elixir_lsp", description: "Expert gateway", color: :accent)
+        status(title: "eval", description: "runtime introspection", color: :accent),
+        status(title: "ast", description: "syntax search", color: :accent),
+        status(title: "lsp", description: "Expert gateway", color: :accent)
       ])
     ])
   end
@@ -203,7 +203,7 @@ defmodule Exy.TUI.Storybook do
   def story(:input) do
     textarea(
       title: "Prompt",
-      value: "Use elixir_eval to inspect runtime info\nThen summarize the important findings.",
+      value: "Use eval to inspect runtime info\nThen summarize the important findings.",
       cursor: 24,
       min_rows: 4,
       placeholder: "Ask Exy to change this project..."

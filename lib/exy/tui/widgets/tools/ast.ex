@@ -10,7 +10,7 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     result = Map.get(tool, :output) || Map.get(tool, :result) || Map.get(tool, :matches)
 
     ToolWidget.block(tool, width, theme,
-      name: :elixir_ast,
+      name: :ast,
       action: action(tool),
       summary: collapsed_summary(result)
     )

@@ -35,7 +35,7 @@ defmodule Exy.UI.ViewModelTest do
       |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "s1", %{}))
       |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_delta, "s1", %{text: "Before."}))
       |> Exy.UI.Reducer.apply_event(
-        Exy.UI.Event.new(:tool_started, "s1", %{id: "tool-1", name: "elixir_eval"})
+        Exy.UI.Event.new(:tool_started, "s1", %{id: "tool-1", name: "eval"})
       )
       |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_delta, "s1", %{text: "After."}))
 

@@ -27,7 +27,7 @@ defmodule Exy.Actions.AST do
           )
 
   use Jido.Action,
-    name: "elixir_ast",
+    name: "ast",
     description:
       "Structural Elixir search/replace/diff via ExAST. Use instead of grep for Elixir syntax.",
     schema: @schema

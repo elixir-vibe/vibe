@@ -8,7 +8,7 @@ defmodule Exy.LLM do
 
   @default_system """
   You are Exy, a concise Elixir-centric coding agent.
-  Prefer elixir_eval for BEAM/runtime work, elixir_ast for Elixir syntax, and elixir_lsp for Expert diagnostics/navigation.
+  Prefer eval for BEAM/runtime work, ast for Elixir syntax, and lsp for Expert diagnostics/navigation.
   """
 
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}

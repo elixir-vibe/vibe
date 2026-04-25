@@ -8,7 +8,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
   @impl true
   def render(tool, width, theme) do
     ToolWidget.block(tool, width, theme,
-      name: :elixir_eval,
+      name: :eval,
       action: timeout_summary(tool),
       summary: eval_summary(tool),
       params?: false

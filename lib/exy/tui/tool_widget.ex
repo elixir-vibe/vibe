@@ -14,9 +14,9 @@ defmodule Exy.TUI.ToolWidget do
     read: Exy.TUI.Widgets.Tools.Read,
     write: Exy.TUI.Widgets.Tools.Write,
     edit: Exy.TUI.Widgets.Tools.Edit,
-    elixir_eval: Exy.TUI.Widgets.Tools.Eval,
-    elixir_ast: Exy.TUI.Widgets.Tools.AST,
-    elixir_lsp: Exy.TUI.Widgets.Tools.LSP
+    eval: Exy.TUI.Widgets.Tools.Eval,
+    ast: Exy.TUI.Widgets.Tools.AST,
+    lsp: Exy.TUI.Widgets.Tools.LSP
   }
 
   @spec render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
