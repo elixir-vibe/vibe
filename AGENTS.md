@@ -13,6 +13,7 @@
 - Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
 - Auth, plugins, runtimes, and providers should be behaviour-based so future implementations can be added without changing callers.
 - `mix exy` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
+- Keep `exy sessions` human-friendly by default: recent useful sessions only. Put raw exhaustive listings behind `--all` and destructive cleanup behind explicit subcommands.
 - For Mix task help, use Mix's built-in help rendering (`@moduledoc` + `Mix.Tasks.Help`) instead of hand-rolled CLI help formatters.
 - Use `OptionParser` or Mix/Elixir built-ins for argv parsing and switch detection; avoid ad-hoc manual flag scans.
 - TUI rendering should stay semantic and iodata-first; avoid raw markdown markers/fences when rendering Markdown widgets.

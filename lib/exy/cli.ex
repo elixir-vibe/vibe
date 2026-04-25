@@ -23,7 +23,11 @@ defmodule Exy.CLI do
     no_agent: :boolean,
     stream: :boolean,
     no_stream: :boolean,
-    foreground: :boolean
+    foreground: :boolean,
+    all: :boolean,
+    live: :boolean,
+    failed: :boolean,
+    limit: :integer
   ]
 
   @aliases [h: :help, v: :version, p: :print]
@@ -39,7 +43,7 @@ defmodule Exy.CLI do
         new_session(opts)
 
       invalid == [] and match?(["sessions" | _], args) ->
-        print_result(server_rpc(:sessions, []), opts)
+        sessions_command(tl(args), opts)
 
       invalid == [] and match?(["send", _session_id | _], args) ->
         ["send", session_id | prompt_parts] = args
@@ -117,6 +121,27 @@ defmodule Exy.CLI do
     {:error, :invalid_server_command}
   end
 
+  defp sessions_command(["prune", "--empty"], opts) do
+    print_result(prune_empty_sessions(), opts)
+  end
+
+  defp sessions_command(["prune"], _opts) do
+    shell_error("Usage: exy sessions prune --empty")
+    {:error, :invalid_sessions_command}
+  end
+
+  defp sessions_command([], opts) do
+    case server_rpc(:sessions, []) do
+      {:ok, sessions} -> print_result({:ok, filter_sessions(sessions, opts)}, opts)
+      error -> print_result(error, opts)
+    end
+  end
+
+  defp sessions_command(_args, _opts) do
+    shell_error("Usage: exy sessions [--all] [--live] [--failed] [--limit n] | prune --empty")
+    {:error, :invalid_sessions_command}
+  end
+
   defp new_session(opts) do
     print_result(server_rpc(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]), opts)
   end
@@ -152,6 +177,77 @@ defmodule Exy.CLI do
       {:ok, _node} -> :ok
       {:error, _reason} -> start_background_server(timeout_ms)
     end
+  end
+
+  defp filter_sessions(sessions, opts) do
+    sessions
+    |> maybe_filter_live(opts[:live])
+    |> maybe_filter_failed(opts[:failed])
+    |> maybe_filter_useful(opts[:all] || opts[:live] || opts[:failed])
+    |> Enum.take(opts[:limit] || if(opts[:all], do: length(sessions), else: 20))
+  end
+
+  defp maybe_filter_live(sessions, true), do: Enum.filter(sessions, & &1[:live?])
+  defp maybe_filter_live(sessions, _live?), do: sessions
+
+  defp maybe_filter_failed(sessions, true), do: Enum.filter(sessions, &failed_session?/1)
+  defp maybe_filter_failed(sessions, _failed?), do: sessions
+
+  defp maybe_filter_useful(sessions, true), do: sessions
+
+  defp maybe_filter_useful(sessions, _raw?) do
+    Enum.filter(sessions, fn session ->
+      session[:live?] or useful_session?(session)
+    end)
+  end
+
+  defp useful_session?(session) do
+    message_count = session[:message_count] || 0
+    preview = session[:first_message] || session[:last_message_preview] || ""
+
+    message_count > 0 and preview != "" and not internal_session_id?(session[:id])
+  end
+
+  defp failed_session?(session) do
+    preview = session[:last_message_preview] || ""
+
+    String.contains?(preview, [
+      "ERROR",
+      "failed",
+      "http_streaming_failed",
+      "provider_build_failed"
+    ])
+  end
+
+  defp internal_session_id?(id) when is_binary(id) do
+    String.starts_with?(id, [
+      "plugin-",
+      "selector-",
+      "attach-",
+      "durable-",
+      "restore-",
+      "ui-session",
+      "loader-",
+      "background-"
+    ])
+  end
+
+  defp internal_session_id?(_id), do: false
+
+  defp prune_empty_sessions do
+    sessions = Exy.Session.Store.list()
+
+    pruned =
+      sessions
+      |> Enum.filter(fn session ->
+        not session[:live?] and (session[:message_count] || 0) == 0
+      end)
+      |> Enum.map(fn session ->
+        :ok = File.rm(session.path)
+        session.id
+      end)
+
+    {:ok, %{pruned: length(pruned), sessions: pruned}}
   end
 
   defp latest_live_remote_session_id do
@@ -376,6 +472,9 @@ defmodule Exy.CLI do
   defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
   defp json_safe(value), do: value
 
+  defp render_result([]), do: "No results."
+  defp render_result([%{id: _id} | _rest] = sessions), do: render_sessions(sessions)
+
   defp render_result(results) when is_list(results),
     do: Enum.map_join(results, "\n", &inspect(&1, pretty: true, limit: 20))
 
@@ -386,6 +485,30 @@ defmodule Exy.CLI do
   defp render_result(%{output: output}), do: output
   defp render_result(result) when is_binary(result), do: render_markdown(result)
   defp render_result(result), do: inspect(result, pretty: true, limit: 50)
+
+  defp render_sessions(sessions) do
+    header = "UPDATED              LIVE STATUS  ID                         PREVIEW"
+
+    rows =
+      Enum.map(sessions, fn session ->
+        updated = session[:updated_at] |> format_updated_at() |> String.pad_trailing(19)
+        live = if session[:live?], do: "yes ", else: "no  "
+        status = session[:status] |> to_string() |> String.pad_trailing(7)
+        id = session[:id] |> to_string() |> String.slice(0, 26) |> String.pad_trailing(26)
+        preview = session[:last_message_preview] || session[:first_message] || ""
+        "#{updated}  #{live} #{status} #{id} #{preview}"
+      end)
+
+    Enum.join([header | rows], "\n")
+  end
+
+  defp format_updated_at(%DateTime{} = updated_at),
+    do: Calendar.strftime(updated_at, "%Y-%m-%d %H:%M")
+
+  defp format_updated_at(updated_at) when is_binary(updated_at),
+    do: String.slice(updated_at, 0, 16)
+
+  defp format_updated_at(_updated_at), do: "-"
 
   defp configure_api_key(opts) do
     if key = opts[:api_key] do

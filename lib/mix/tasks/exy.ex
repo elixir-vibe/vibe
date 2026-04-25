@@ -14,7 +14,8 @@ defmodule Mix.Tasks.Exy do
       exy server status
       exy server stop
       exy new
-      exy sessions
+      exy sessions [--all] [--live] [--failed] [--limit n]
+      exy sessions prune --empty
       exy send <session-id> "prompt"
       exy attach <session-id>
 
@@ -41,6 +42,10 @@ defmodule Mix.Tasks.Exy do
     * `--codex-usage` - Show Codex subscription usage via Codex app-server RPC.
     * `--session <id>` - Continue or name a persisted JSONL session.
     * `--sessions` - List persisted sessions. Prefer `exy sessions` for server-aware listings.
+    * `--all` - With `exy sessions`, include empty/internal historical sessions.
+    * `--live` - With `exy sessions`, show only live sessions.
+    * `--failed` - With `exy sessions`, show sessions whose preview looks failed.
+    * `--limit <n>` - With `exy sessions`, limit displayed sessions. Defaults to `20`.
     * `--timeout <ms>` - Request/eval timeout.
     * `--login codex` - Sign in with ChatGPT/Codex OAuth.
     * `--help`, `-h` - Show this help.
