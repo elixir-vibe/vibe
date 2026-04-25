@@ -57,7 +57,7 @@ defmodule Exy.PluginManagerTest do
     session_id = "plugin-ui-session"
 
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: session_id,
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
@@ -67,7 +67,7 @@ defmodule Exy.PluginManagerTest do
     assert :ok = Exy.Plugin.Manager.load(BackgroundPlugin, session_id: session_id)
     Process.sleep(50)
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
     assert state.plugin_statuses == %{"worker" => "worker ready"}
 
     assert :ok =
@@ -79,7 +79,7 @@ defmodule Exy.PluginManagerTest do
     assert :ok = Exy.Plugin.UI.set_hidden_thinking_label(session_id, "hidden thoughts")
     assert :ok = Exy.Plugin.UI.set_title(session_id, "Exy Test")
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
     assert state.plugin_widgets["panel"].type == :lines
     assert state.plugin_widgets["panel"].props.content == ["one", "two"]
     assert state.plugin_widgets["panel"].placement == :below_editor
@@ -93,7 +93,7 @@ defmodule Exy.PluginManagerTest do
                placement: :below_editor
              )
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
 
     assert state.plugin_widgets["indexer"] == %Exy.UI.Widget{
              id: "indexer",
@@ -115,7 +115,7 @@ defmodule Exy.PluginManagerTest do
     assert :ok = Exy.Plugin.UI.clear_widget(session_id, :indexer)
     assert :ok = Exy.Plugin.UI.set_status(session_id, :worker, nil)
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
     assert state.plugin_widgets == %{}
     assert state.plugin_statuses == %{}
 
@@ -144,17 +144,17 @@ defmodule Exy.PluginManagerTest do
     session_id = "plugin-event-session"
 
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: session_id,
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
 
     assert :ok = Exy.UI.Bus.register(session_id, server)
     assert :ok = Exy.Plugin.Manager.load(EventPlugin, session_id: session_id)
-    assert :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+    assert :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
     Process.sleep(50)
 
-    assert Exy.UI.SessionServer.state(server).plugin_statuses["prompt"] == "prompt: hello"
+    assert Exy.Session.state(server).plugin_statuses["prompt"] == "prompt: hello"
     assert :ok = Exy.Plugin.Manager.unload(EventPlugin)
   end
 end

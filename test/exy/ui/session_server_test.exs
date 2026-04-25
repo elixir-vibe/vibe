@@ -1,4 +1,4 @@
-defmodule Exy.UI.SessionServerTest do
+defmodule Exy.SessionProcessTest do
   use ExUnit.Case, async: true
 
   test "dispatches commands, emits events, and records usage" do
@@ -6,15 +6,15 @@ defmodule Exy.UI.SessionServerTest do
       {:ok, %{model: "test-model", usage: %{input_tokens: 4, output_tokens: 6, total_tokens: 10}}}
     end
 
-    {:ok, server} = Exy.UI.SessionServer.start_link(session_id: "ui-session", ask_fun: ask_fun)
-    :ok = Exy.UI.SessionServer.subscribe(server)
-    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+    {:ok, server} = Exy.Session.start_link(session_id: "ui-session", ask_fun: ask_fun)
+    :ok = Exy.Session.subscribe(server)
+    :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :user_message_added}}, 500
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_message_added}}, 500
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :usage_updated}}, 500
+    assert_receive {Exy.Session, :event, %{type: :user_message_added}}, 500
+    assert_receive {Exy.Session, :event, %{type: :assistant_message_added}}, 500
+    assert_receive {Exy.Session, :event, %{type: :usage_updated}}, 500
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
     assert Enum.map(state.messages, & &1.role) == [:user, :assistant]
     assert state.usage.total_tokens == 10
   end
@@ -24,7 +24,7 @@ defmodule Exy.UI.SessionServerTest do
     on_thinking = fn _text -> :ok end
 
     opts =
-      Exy.UI.SessionServer.agent_ask_opts(
+      Exy.Session.agent_ask_opts(
         model: "test-model",
         session_id: "ui-session",
         on_result: on_result,
@@ -52,25 +52,25 @@ defmodule Exy.UI.SessionServerTest do
     end
 
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: "ui-session",
         ask_fun: ask_fun,
         streaming?: true
       )
 
-    :ok = Exy.UI.SessionServer.subscribe(server)
-    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+    :ok = Exy.Session.subscribe(server)
+    :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_delta}}, 500
+    assert_receive {Exy.Session, :event, %{type: :assistant_delta}}, 500
 
-    preview_state = Exy.UI.SessionServer.state(server)
+    preview_state = Exy.Session.state(server)
     assert preview_state.usage.total_tokens == 0
     assert preview_state.usage_preview.total_tokens > 0
     assert Exy.UI.ViewModel.from_state(preview_state).footer.usage.total_tokens > 0
 
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :usage_updated}}, 500
+    assert_receive {Exy.Session, :event, %{type: :usage_updated}}, 500
 
-    final_state = Exy.UI.SessionServer.state(server)
+    final_state = Exy.Session.state(server)
     assert final_state.usage.total_tokens == 30
     assert final_state.usage_preview.total_tokens == 0
     assert Exy.UI.ViewModel.from_state(final_state).footer.usage.total_tokens == 30
@@ -83,38 +83,38 @@ defmodule Exy.UI.SessionServerTest do
     end
 
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: "ui-session",
         ask_fun: ask_fun,
         streaming?: true
       )
 
-    :ok = Exy.UI.SessionServer.subscribe(server)
-    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+    :ok = Exy.Session.subscribe(server)
+    :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_stream_started}}, 500
-    :ok = Exy.UI.SessionServer.dispatch(server, :cancel_stream)
+    assert_receive {Exy.Session, :event, %{type: :assistant_stream_started}}, 500
+    :ok = Exy.Session.dispatch(server, :cancel_stream)
 
-    assert_receive {Exy.UI.SessionServer, :event,
+    assert_receive {Exy.Session, :event,
                     %{type: :assistant_aborted, data: %{reason: "cancelled"}}},
                    500
 
-    refute_receive {Exy.UI.SessionServer, :event, %{type: :assistant_message_added}}, 100
+    refute_receive {Exy.Session, :event, %{type: :assistant_message_added}}, 100
 
-    assert Exy.UI.SessionServer.state(server).status == :idle
+    assert Exy.Session.state(server).status == :idle
   end
 
   test "records ask function crashes as assistant errors" do
     ask_fun = fn _text, _opts -> raise ArgumentError, "boom" end
 
-    {:ok, server} = Exy.UI.SessionServer.start_link(session_id: "ui-session", ask_fun: ask_fun)
-    :ok = Exy.UI.SessionServer.subscribe(server)
-    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+    {:ok, server} = Exy.Session.start_link(session_id: "ui-session", ask_fun: ask_fun)
+    :ok = Exy.Session.subscribe(server)
+    :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_aborted}}, 500
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_message_added}}, 500
+    assert_receive {Exy.Session, :event, %{type: :assistant_aborted}}, 500
+    assert_receive {Exy.Session, :event, %{type: :assistant_message_added}}, 500
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
     assert [%{role: :user}, %{role: :assistant, error: error}] = state.messages
     assert error =~ "ArgumentError"
     assert error =~ "boom"
@@ -124,30 +124,30 @@ defmodule Exy.UI.SessionServerTest do
     ask_fun = fn _text, _opts -> {:ok, "done"} end
 
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: "ui-session",
         ask_fun: ask_fun,
         streaming?: true
       )
 
-    :ok = Exy.UI.SessionServer.subscribe(server)
-    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+    :ok = Exy.Session.subscribe(server)
+    :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_stream_started}}, 500
-    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_message_added}}, 500
+    assert_receive {Exy.Session, :event, %{type: :assistant_stream_started}}, 500
+    assert_receive {Exy.Session, :event, %{type: :assistant_message_added}}, 500
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
     assert [%{role: :user}, %{role: :assistant, result: "done"}] = state.messages
     assert is_nil(state.streaming_message)
   end
 
   test "supports overlay commands" do
-    {:ok, server} = Exy.UI.SessionServer.start_link(session_id: "ui-session")
+    {:ok, server} = Exy.Session.start_link(session_id: "ui-session")
 
-    :ok = Exy.UI.SessionServer.dispatch(server, {:open_overlay, %{kind: :model_selector}})
-    assert [%{kind: :model_selector}] = Exy.UI.SessionServer.state(server).overlays
+    :ok = Exy.Session.dispatch(server, {:open_overlay, %{kind: :model_selector}})
+    assert [%{kind: :model_selector}] = Exy.Session.state(server).overlays
 
-    :ok = Exy.UI.SessionServer.dispatch(server, :close_overlay)
-    assert [] = Exy.UI.SessionServer.state(server).overlays
+    :ok = Exy.Session.dispatch(server, :close_overlay)
+    assert [] = Exy.Session.state(server).overlays
   end
 end

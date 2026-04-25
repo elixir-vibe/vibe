@@ -33,7 +33,7 @@ defmodule Exy.Trajectory.Store do
 
   @impl true
   def handle_call({:append, event}, _from, events) do
-    _ = Exy.Session.append(event)
+    _ = Exy.Session.Store.append(event)
     {:reply, :ok, [event | events]}
   end
 

@@ -8,7 +8,8 @@ defmodule Exy.UI.Bus do
 
   use GenServer
 
-  alias Exy.UI.{Command, Event, SessionServer}
+  alias Exy.Session
+  alias Exy.UI.{Command, Event}
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -28,14 +29,14 @@ defmodule Exy.UI.Bus do
   @spec dispatch(String.t(), Command.t() | atom() | {atom(), map()}) :: :ok | {:error, :not_found}
   def dispatch(session_id, command) do
     with {:ok, server} <- server(session_id) do
-      SessionServer.dispatch(server, command)
+      Session.dispatch(server, command)
     end
   end
 
   @spec emit(String.t(), atom(), map()) :: :ok | {:error, :not_found}
   def emit(session_id, type, data \\ %{}) when is_atom(type) and is_map(data) do
     with {:ok, server} <- server(session_id) do
-      SessionServer.emit_event(server, Event.new(type, session_id, data))
+      Session.emit_event(server, Event.new(type, session_id, data))
     end
   end
 

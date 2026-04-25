@@ -4,12 +4,13 @@ defmodule Exy.TUI.App do
 
   This module keeps terminal mechanics out of semantic UI state. It accepts key
   events and resize events, delegates editing to `Exy.UI.EditorServer`, and
-  dispatches semantic commands to `Exy.UI.SessionServer`.
+  dispatches semantic commands to `Exy.Session`.
   """
 
   use GenServer
 
-  alias Exy.UI.{Command, EditorServer, SessionServer}
+  alias Exy.Session
+  alias Exy.UI.{Command, EditorServer}
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -34,7 +35,7 @@ defmodule Exy.TUI.App do
   def init(opts) do
     {:ok, ui} = session_server(opts)
     {:ok, editor} = editor_server(opts)
-    :ok = SessionServer.subscribe(ui, self())
+    :ok = Session.subscribe(ui, self())
 
     {:ok,
      %{
@@ -70,7 +71,7 @@ defmodule Exy.TUI.App do
 
   def handle_call(:snapshot, _from, state) do
     snapshot = %{
-      ui: SessionServer.state(state.ui),
+      ui: Session.state(state.ui),
       editor: EditorServer.state(state.editor),
       width: state.width,
       height: state.height,
@@ -81,7 +82,7 @@ defmodule Exy.TUI.App do
   end
 
   @impl true
-  def handle_info({SessionServer, :event, event}, state) do
+  def handle_info({Session, :event, event}, state) do
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     {:noreply, %{state | events: [event | state.events]}}
   end
@@ -95,7 +96,7 @@ defmodule Exy.TUI.App do
   defp session_server(opts) do
     case Keyword.fetch(opts, :session_server) do
       {:ok, server} -> {:ok, server}
-      :error -> SessionServer.start_link(opts)
+      :error -> Session.start_link(opts)
     end
   end
 
@@ -106,52 +107,52 @@ defmodule Exy.TUI.App do
     end
   end
 
-  defp selector_open?(state), do: not is_nil(SessionServer.state(state.ui).selector)
+  defp selector_open?(state), do: not is_nil(Session.state(state.ui).selector)
 
   defp handle_selector_key(:up, state) do
-    SessionServer.dispatch(state.ui, Command.new(:selector_moved, %{direction: -1}))
+    Session.dispatch(state.ui, Command.new(:selector_moved, %{direction: -1}))
   end
 
   defp handle_selector_key(:down, state) do
-    SessionServer.dispatch(state.ui, Command.new(:selector_moved, %{direction: 1}))
+    Session.dispatch(state.ui, Command.new(:selector_moved, %{direction: 1}))
   end
 
   defp handle_selector_key(:submit, state) do
-    selector = SessionServer.state(state.ui).selector
+    selector = Session.state(state.ui).selector
     item = selector |> Map.get(:items, []) |> Enum.at(Map.get(selector, :selected, 0))
 
-    SessionServer.dispatch(
+    Session.dispatch(
       state.ui,
       Command.new(:selector_confirmed, %{selector: Map.get(selector, :kind), item: item})
     )
   end
 
   defp handle_selector_key(:cancel, state) do
-    SessionServer.dispatch(state.ui, Command.new(:selector_closed))
+    Session.dispatch(state.ui, Command.new(:selector_closed))
   end
 
   defp handle_selector_key(_key, _state), do: :ok
 
   defp handle_editor_command({:submit, text}, state) do
-    SessionServer.dispatch(state.ui, Command.new(:submit_prompt, %{text: text}))
+    Session.dispatch(state.ui, Command.new(:submit_prompt, %{text: text}))
   end
 
   defp handle_editor_command({:slash_command, command, args}, state) do
-    SessionServer.dispatch(
+    Session.dispatch(
       state.ui,
       Command.new(:slash_command_submitted, %{command: command, args: args})
     )
   end
 
   defp handle_editor_command(:cancel, state) do
-    SessionServer.dispatch(state.ui, Command.new(:cancel_stream))
+    Session.dispatch(state.ui, Command.new(:cancel_stream))
   end
 
   defp handle_editor_command(:toggle_truncation, state) do
-    SessionServer.dispatch(state.ui, Command.new(:toggle_truncation))
+    Session.dispatch(state.ui, Command.new(:toggle_truncation))
   end
 
   defp handle_editor_command({:external_editor, text}, state) do
-    SessionServer.dispatch(state.ui, Command.new(:external_editor_requested, %{text: text}))
+    Session.dispatch(state.ui, Command.new(:external_editor_requested, %{text: text}))
   end
 end

@@ -10,7 +10,7 @@ defmodule Exy.Agent do
     configure_model_alias(opts)
 
     with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
-      session_id = Keyword.get(opts, :session_id) || Exy.Session.new_id()
+      session_id = Keyword.get(opts, :session_id) || Exy.Session.Store.new_id()
       Exy.Session.Processes.register(pid, session_id)
       {:ok, pid}
     end
@@ -20,7 +20,7 @@ defmodule Exy.Agent do
   def ask_sync(pid, prompt, opts \\ []) do
     session_id =
       Keyword.get(opts, :session_id) || Exy.Session.Processes.session_id(pid) ||
-        Exy.Session.new_id()
+        Exy.Session.Store.new_id()
 
     Store.append(:user_message, %{prompt: prompt}, session_id: session_id)
 

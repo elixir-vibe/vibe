@@ -34,7 +34,7 @@ defmodule Exy.UI.PromptRunner do
   @spec default_ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def default_ask(text, opts) do
     agent_opts = Keyword.take(opts, [:model, :session_id])
-    ask_opts = opts |> Exy.UI.SessionServer.agent_ask_opts() |> Keyword.delete(:stream_owner)
+    ask_opts = opts |> Exy.Session.agent_ask_opts() |> Keyword.delete(:stream_owner)
 
     with {:ok, agent} <- Exy.start_link(agent_opts) do
       notify_stream_owner(opts[:stream_owner], agent)

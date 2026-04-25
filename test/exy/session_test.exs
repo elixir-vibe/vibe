@@ -28,11 +28,11 @@ defmodule Exy.SessionTest do
       session_id: session_id
     )
 
-    assert File.exists?(Exy.Session.path(session_id))
-    assert [%{id: ^session_id, path: path}] = Exy.Session.list()
-    assert path == Exy.Session.path(session_id)
+    assert File.exists?(Exy.Session.Store.path(session_id))
+    assert [%{id: ^session_id, path: path}] = Exy.Session.Store.list()
+    assert path == Exy.Session.Store.path(session_id)
 
-    assert [user, usage] = Exy.Session.events(session_id)
+    assert [user, usage] = Exy.Session.Store.events(session_id)
     assert user.type == :user_message
     assert user.data.prompt == "hello"
     assert usage.type == :llm_usage

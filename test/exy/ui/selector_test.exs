@@ -27,19 +27,19 @@ defmodule Exy.UI.SelectorTest do
 
   test "slash model command opens a selector" do
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: "selector-session",
         model: "openai_codex:gpt-5.5",
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
 
     :ok =
-      Exy.UI.SessionServer.dispatch(
+      Exy.Session.dispatch(
         server,
         Command.new(:slash_command_submitted, %{command: "model", args: ""})
       )
 
-    state = Exy.UI.SessionServer.state(server)
+    state = Exy.Session.state(server)
 
     assert state.selector.kind == :model_selector
     assert state.selector.items == ["openai_codex:gpt-5.5"]
@@ -47,38 +47,38 @@ defmodule Exy.UI.SelectorTest do
 
   test "selector confirmation updates model" do
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: "selector-model-session",
         model: "old-model",
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
 
     :ok =
-      Exy.UI.SessionServer.dispatch(
+      Exy.Session.dispatch(
         server,
         Command.new(:selector_confirmed, %{selector: :model_selector, item: "new-model"})
       )
 
-    assert Exy.UI.SessionServer.state(server).model == "new-model"
+    assert Exy.Session.state(server).model == "new-model"
   end
 
   test "clear slash command clears visible messages" do
     {:ok, server} =
-      Exy.UI.SessionServer.start_link(
+      Exy.Session.start_link(
         session_id: "selector-clear-session",
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
 
-    :ok = Exy.UI.SessionServer.dispatch(server, Command.new(:submit_prompt, %{text: "hello"}))
+    :ok = Exy.Session.dispatch(server, Command.new(:submit_prompt, %{text: "hello"}))
     Process.sleep(50)
-    assert Exy.UI.SessionServer.state(server).messages != []
+    assert Exy.Session.state(server).messages != []
 
     :ok =
-      Exy.UI.SessionServer.dispatch(
+      Exy.Session.dispatch(
         server,
         Command.new(:slash_command_submitted, %{command: "clear", args: ""})
       )
 
-    assert Exy.UI.SessionServer.state(server).messages == []
+    assert Exy.Session.state(server).messages == []
   end
 end

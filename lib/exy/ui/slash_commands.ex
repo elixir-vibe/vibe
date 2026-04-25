@@ -58,7 +58,7 @@ defmodule Exy.UI.SlashCommands do
   end
 
   defp selector("session", _ui_state) do
-    items = Exy.Session.list() |> Enum.map(& &1.id)
+    items = Exy.Session.Store.list() |> Enum.map(& &1.id)
     %{kind: :session_selector, title: "Session", items: items, selected: 0, limit: 8}
   end
 

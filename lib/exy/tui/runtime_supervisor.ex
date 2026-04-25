@@ -3,8 +3,9 @@ defmodule Exy.TUI.RuntimeSupervisor do
 
   use Supervisor
 
+  alias Exy.Session
   alias Exy.TUI.{App, TerminalLoop}
-  alias Exy.UI.{EditorServer, SessionServer}
+  alias Exy.UI.EditorServer
 
   @spec start_link(keyword()) :: Supervisor.on_start()
   def start_link(opts) do
@@ -21,8 +22,8 @@ defmodule Exy.TUI.RuntimeSupervisor do
 
     children = [
       %{
-        id: SessionServer,
-        start: {SessionServer, :start_link, [Keyword.put(opts, :name, session_name)]}
+        id: Session,
+        start: {Session, :start_link, [Keyword.put(opts, :name, session_name)]}
       },
       %{
         id: EditorServer,

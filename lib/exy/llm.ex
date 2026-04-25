@@ -47,7 +47,7 @@ defmodule Exy.LLM do
       ReqLLM.Context.user(prompt)
     ]
 
-    session_id = Keyword.get_lazy(opts, :session_id, &Exy.Session.new_id/0)
+    session_id = Keyword.get_lazy(opts, :session_id, &Exy.Session.Store.new_id/0)
 
     request_opts =
       opts

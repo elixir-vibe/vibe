@@ -24,8 +24,8 @@ defmodule Exy.AgentTest do
     {:ok, pid} = Exy.start_link(session_id: "agent-session")
 
     assert {:error, _reason} = Exy.ask(pid, "hello", timeout: 1)
-    assert [%{id: "agent-session"}] = Exy.Session.list()
-    assert [user, assistant | _] = Exy.Session.events("agent-session")
+    assert [%{id: "agent-session"}] = Exy.Session.Store.list()
+    assert [user, assistant | _] = Exy.Session.Store.events("agent-session")
     assert user.type == :user_message
     assert user.data.prompt == "hello"
     assert assistant.type == :assistant_message

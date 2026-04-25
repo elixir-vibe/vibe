@@ -22,7 +22,8 @@ defmodule Exy.CLI do
     sessions: :boolean,
     no_agent: :boolean,
     stream: :boolean,
-    no_stream: :boolean
+    no_stream: :boolean,
+    foreground: :boolean
   ]
 
   @aliases [h: :help, v: :version, p: :print]
@@ -30,6 +31,34 @@ defmodule Exy.CLI do
   def main(argv) do
     {opts, args, invalid} = parse(argv)
 
+    cond do
+      invalid == [] and match?(["server" | _], args) ->
+        server_command(tl(args), opts)
+
+      invalid == [] and match?(["new" | _], args) ->
+        new_session(opts)
+
+      invalid == [] and match?(["sessions" | _], args) ->
+        print_result(remote_or_local(:sessions, []), opts)
+
+      invalid == [] and match?(["send", _session_id | _], args) ->
+        ["send", session_id | prompt_parts] = args
+
+        print_result(
+          remote_or_local(:send_prompt, [session_id, Enum.join(prompt_parts, " ")]),
+          opts
+        )
+
+      invalid == [] and match?(["attach", _session_id], args) ->
+        ["attach", session_id] = args
+        attach_session(session_id, opts)
+
+      true ->
+        main_options(opts, args, invalid)
+    end
+  end
+
+  defp main_options(opts, args, invalid) do
     cond do
       invalid != [] ->
         Enum.each(invalid, fn {flag, _} -> shell_error("Unknown option: #{flag}") end)
@@ -59,7 +88,7 @@ defmodule Exy.CLI do
         print_result(Exy.Auth.Codex.usage_limits(), opts)
 
       opts[:sessions] ->
-        print_result({:ok, Exy.Session.list()}, opts)
+        print_result({:ok, Exy.Session.Store.list()}, opts)
 
       opts[:print] == true or args != [] ->
         prompt = Enum.join(args, " ")
@@ -68,6 +97,58 @@ defmodule Exy.CLI do
       true ->
         tui(opts)
     end
+  end
+
+  defp server_command(["start"], opts), do: server_command(["start", "--auto"], opts)
+
+  defp server_command(["start", _mode], opts) do
+    if opts[:foreground] do
+      Exy.Server.start(foreground: true)
+    else
+      start_background_server()
+    end
+  end
+
+  defp server_command(["status"], opts), do: print_result(Exy.Server.status(), opts)
+  defp server_command(["stop"], opts), do: print_result(Exy.Server.stop(), opts)
+
+  defp server_command(_args, _opts) do
+    shell_error("Usage: exy server start [--foreground] | status | stop")
+    {:error, :invalid_server_command}
+  end
+
+  defp new_session(opts) do
+    print_result(remote_or_local(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]), opts)
+  end
+
+  defp attach_session(session_id, opts) do
+    case remote_or_local(:session_pid, [session_id]) do
+      {:ok, session} ->
+        tui(opts, session_server: session, session_id: session_id)
+
+      {:error, reason} ->
+        print_result({:error, reason}, opts)
+    end
+  end
+
+  defp remote_or_local(function, args) do
+    case Exy.Remote.connect() do
+      {:ok, node} -> :rpc.call(node, Exy.Server.RPC, function, args)
+      {:error, _reason} -> apply(Exy.Server.RPC, function, args)
+    end
+  end
+
+  defp start_background_server do
+    executable = System.find_executable("exy") || List.first(System.argv())
+
+    Port.open({:spawn_executable, executable}, [
+      :binary,
+      :exit_status,
+      :hide,
+      args: ["server", "start", "--foreground"]
+    ])
+
+    :ok
   end
 
   @doc false
@@ -124,12 +205,13 @@ defmodule Exy.CLI do
     print_result(result, opts)
   end
 
-  defp tui(opts) do
+  defp tui(opts, runtime_extra \\ []) do
     configure_api_key(opts)
     Exy.Application.configure_dependency_logging()
 
     runtime_opts =
       [session_id: session_id(opts), model: Exy.LLM.Model.resolve(opts)]
+      |> Keyword.merge(runtime_extra)
       |> maybe_put_system_prompt(opts[:system_prompt])
 
     case with_console_logs_suppressed(runtime_opts[:session_id], fn ->
@@ -208,7 +290,7 @@ defmodule Exy.CLI do
     |> maybe_put(:system, opts[:system_prompt])
   end
 
-  defp session_id(opts), do: opts[:session] || Exy.Session.new_id()
+  defp session_id(opts), do: opts[:session] || Exy.Session.Store.new_id()
 
   defp stream?(opts), do: opts[:no_stream] != true and opts[:stream] != false
 
@@ -252,7 +334,7 @@ defmodule Exy.CLI do
   defp attach_session_log(nil), do: nil
 
   defp attach_session_log(session_id) do
-    path = Exy.Session.log_path(session_id)
+    path = Exy.Session.Store.log_path(session_id)
     File.mkdir_p!(Path.dirname(path))
     _ = :logger.remove_handler(:exy_session_log)
 
