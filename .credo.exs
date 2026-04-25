@@ -13,9 +13,7 @@
           {Credo.Check.Readability.ModuleDoc, []},
           {Credo.Check.Readability.PreferImplicitTry, []},
           {Credo.Check.Refactor.CyclomaticComplexity, []},
-          {Credo.Check.Refactor.Nesting, []},
-          {Credo.Check.Refactor.CondStatements, []},
-          {ExSlop.Check.Readability.UnaliasedModuleUse, []}
+          {Credo.Check.Refactor.Nesting, []}
         ],
         extra: [
           {Credo.Check.Warning.ExpensiveEmptyEnumCheck, []},
@@ -29,13 +27,11 @@
           {Credo.Check.Refactor.FilterCount, []},
           {Credo.Check.Refactor.NegatedConditionsInUnless, []},
           {Credo.Check.Refactor.UnlessWithElse, []},
-
           {ExSlop.Check.Warning.BlanketRescue, []},
           {ExSlop.Check.Warning.RescueWithoutReraise, []},
           {ExSlop.Check.Warning.RepoAllThenFilter, []},
           {ExSlop.Check.Warning.QueryInEnumMap, []},
           {ExSlop.Check.Warning.GenserverAsKvStore, []},
-
           {ExSlop.Check.Refactor.FilterNil, []},
           {ExSlop.Check.Refactor.RejectNil, []},
           {ExSlop.Check.Refactor.ReduceAsMap, []},
@@ -48,13 +44,13 @@
           {ExSlop.Check.Refactor.WithIdentityDo, []},
           {ExSlop.Check.Refactor.SortThenReverse, []},
           {ExSlop.Check.Refactor.StringConcatInReduce, []},
-
           {ExSlop.Check.Readability.NarratorDoc, []},
           {ExSlop.Check.Readability.DocFalseOnPublicFunction, []},
           {ExSlop.Check.Readability.BoilerplateDocParams, []},
-          {ExSlop.Check.Readability.ObviousComment, []},
+          {ExSlop.Check.Readability.ObviousComment, [additional_keywords: []]},
           {ExSlop.Check.Readability.StepComment, []},
-          {ExSlop.Check.Readability.NarratorComment, []}
+          {ExSlop.Check.Readability.NarratorComment, []},
+          {ExSlop.Check.Readability.UnaliasedModuleUse, []}
         ]
       }
     }

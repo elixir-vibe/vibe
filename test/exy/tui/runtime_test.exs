@@ -1,6 +1,9 @@
 defmodule Exy.TUI.RuntimeTest do
   use ExUnit.Case, async: false
 
+  alias Exy.TUI.TerminalLoop
+  alias Ghostty.Terminal
+
   @cols 100
   @rows 30
   @startup_timeout_ms 10_000
@@ -22,14 +25,14 @@ defmodule Exy.TUI.RuntimeTest do
   end
 
   test "render frame can pin the prompt to the bottom rows" do
-    assert {:ok, terminal} = Ghostty.Terminal.start_link(cols: @cols, rows: @rows)
+    assert {:ok, terminal} = Terminal.start_link(cols: @cols, rows: @rows)
     {lines, cursor} = rendered_textarea("")
     start_row = @rows - length(lines) + 1
 
-    Ghostty.Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor, start_row))
+    Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor, start_row))
 
-    {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
-    render_state = Ghostty.Terminal.render_state(terminal)
+    {:ok, screen} = Terminal.snapshot(terminal, :plain)
+    render_state = Terminal.render_state(terminal)
     screen_lines = String.split(screen, "\n")
 
     assert Enum.at(screen_lines, start_row - 1) |> String.starts_with?("~/")
@@ -40,7 +43,7 @@ defmodule Exy.TUI.RuntimeTest do
   end
 
   test "render frame leaves terminal content and cursor stable after every typed character" do
-    assert {:ok, terminal} = Ghostty.Terminal.start_link(cols: @cols, rows: @rows)
+    assert {:ok, terminal} = Terminal.start_link(cols: @cols, rows: @rows)
     text = "hello world this is a long prompt that wraps across textarea rows"
 
     Enum.reduce(String.graphemes(text), "", fn grapheme, typed ->
@@ -48,10 +51,10 @@ defmodule Exy.TUI.RuntimeTest do
       {lines, cursor} = rendered_textarea(typed)
 
       start_row = @rows - length(lines) + 1
-      Ghostty.Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor, start_row))
+      Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor, start_row))
 
-      {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
-      render_state = Ghostty.Terminal.render_state(terminal)
+      {:ok, screen} = Terminal.snapshot(terminal, :plain)
+      render_state = Terminal.render_state(terminal)
 
       assert_textarea_shape!(screen)
       assert String.contains?(screen, typed)
@@ -63,7 +66,7 @@ defmodule Exy.TUI.RuntimeTest do
   end
 
   test "mix exy accepts input in a real PTY, escape cancels, and double ctrl-c exits" do
-    {:ok, terminal} = Ghostty.Terminal.start_link(cols: @cols, rows: @rows)
+    {:ok, terminal} = Terminal.start_link(cols: @cols, rows: @rows)
 
     {:ok, pty} =
       Ghostty.PTY.start_link(
@@ -81,8 +84,8 @@ defmodule Exy.TUI.RuntimeTest do
 
       type_and_assert_stable_frames(pty, terminal, "abc wraps across the prompt", output)
 
-      {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
-      render_state = Ghostty.Terminal.render_state(terminal)
+      {:ok, screen} = Terminal.snapshot(terminal, :plain)
+      render_state = Terminal.render_state(terminal)
 
       refute String.contains?(screen, "BREAK:")
       assert_textarea_shape!(screen)
@@ -110,7 +113,7 @@ defmodule Exy.TUI.RuntimeTest do
       assert {:ok, output} = wait_for_screen_text(pty, terminal, typed, output, @input_timeout_ms)
       assert {:ok, output} = wait_for_screen_text(pty, terminal, "╯", output, @input_timeout_ms)
 
-      {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+      {:ok, screen} = Terminal.snapshot(terminal, :plain)
       assert_textarea_shape!(screen)
       assert String.contains?(screen, typed)
 
@@ -121,15 +124,15 @@ defmodule Exy.TUI.RuntimeTest do
 
   defp rendered_textarea(text) do
     {:ok, loop} =
-      Exy.TUI.TerminalLoop.start_link(
+      TerminalLoop.start_link(
         width: @cols,
         height: @rows,
         output: false,
         ask_fun: fn _prompt -> "" end
       )
 
-    Exy.TUI.TerminalLoop.input(loop, text)
-    {Exy.TUI.TerminalLoop.render(loop), Exy.TUI.TerminalLoop.cursor_position(loop)}
+    TerminalLoop.input(loop, text)
+    {TerminalLoop.render(loop), TerminalLoop.cursor_position(loop)}
   end
 
   defp assert_textarea_shape!(screen) do
@@ -152,8 +155,8 @@ defmodule Exy.TUI.RuntimeTest do
   defp do_wait_for_screen_text(pty, terminal, text, output, deadline) do
     receive do
       {:data, data} ->
-        Ghostty.Terminal.write(terminal, data)
-        {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+        Terminal.write(terminal, data)
+        {:ok, screen} = Terminal.snapshot(terminal, :plain)
         output = IO.iodata_to_binary([output, data])
 
         if String.contains?(screen, text) do
@@ -170,7 +173,7 @@ defmodule Exy.TUI.RuntimeTest do
         {:exit, status, output}
     after
       remaining_timeout(deadline) ->
-        {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+        {:ok, screen} = Terminal.snapshot(terminal, :plain)
         {:error, {:missing_text, text, screen, output}}
     end
   end

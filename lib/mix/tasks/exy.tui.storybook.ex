@@ -13,6 +13,8 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
 
   use Mix.Task
 
+  alias Exy.TUI.Storybook
+
   @impl true
   def run(argv) do
     Mix.Task.run("app.start")
@@ -29,16 +31,16 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
     stories =
       if opts[:story],
         do: [story!(opts[:story])],
-        else: Exy.TUI.Storybook.stories()
+        else: Storybook.stories()
 
     Enum.each(stories, fn story ->
       IO.puts("\n#{story}\n" <> String.duplicate("=", String.length(to_string(story))))
 
       lines =
         if opts[:plain] do
-          Exy.TUI.Storybook.render_plain(story, width: width, theme: theme)
+          Storybook.render_plain(story, width: width, theme: theme)
         else
-          Exy.TUI.Storybook.render(story, width: width, theme: theme)
+          Storybook.render(story, width: width, theme: theme)
         end
 
       Enum.each(lines, &IO.puts(IO.iodata_to_binary(&1)))
@@ -46,7 +48,7 @@ defmodule Mix.Tasks.Exy.Tui.Storybook do
   end
 
   defp story!(name) do
-    Enum.find(Exy.TUI.Storybook.stories(), &(to_string(&1) == name)) ||
+    Enum.find(Storybook.stories(), &(to_string(&1) == name)) ||
       Mix.raise("unknown story #{inspect(name)}")
   end
 

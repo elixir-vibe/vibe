@@ -204,9 +204,10 @@ defmodule Exy.UI.Editor do
     |> String.split("\n")
     |> Enum.with_index()
     |> Enum.reduce_while(0, fn {line, index}, cursor ->
-      cond do
-        index < target_line -> {:cont, cursor + String.length(line) + 1}
-        true -> {:halt, cursor + min(target_column, String.length(line))}
+      if index < target_line do
+        {:cont, cursor + String.length(line) + 1}
+      else
+        {:halt, cursor + min(target_column, String.length(line))}
       end
     end)
   end

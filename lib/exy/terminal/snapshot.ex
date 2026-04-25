@@ -6,6 +6,9 @@ defmodule Exy.Terminal.Snapshot do
   colors, and Unicode width are interpreted like a real terminal.
   """
 
+  alias Exy.ToolOutput
+  alias Ghostty.Terminal
+
   @type t :: %{
           plain: String.t(),
           html: String.t() | nil,
@@ -16,20 +19,20 @@ defmodule Exy.Terminal.Snapshot do
 
   @spec from_ansi(iodata(), keyword()) :: {:ok, t()} | {:error, term()}
   def from_ansi(data, opts \\ []) do
-    if Code.ensure_loaded?(Ghostty.Terminal) do
+    if Code.ensure_loaded?(Terminal) do
       cols = Keyword.get(opts, :cols, 120)
       rows = Keyword.get(opts, :rows, 80)
-      max_bytes = Keyword.get(opts, :max_bytes, Exy.ToolOutput.default_max_bytes())
+      max_bytes = Keyword.get(opts, :max_bytes, ToolOutput.default_max_bytes())
 
-      with {:ok, term} <- Ghostty.Terminal.start_link(cols: cols, rows: rows),
-           :ok <- Ghostty.Terminal.write(term, data),
-           {:ok, plain} <- Ghostty.Terminal.snapshot(term, :plain),
-           {:ok, html} <- Ghostty.Terminal.snapshot(term, :html),
-           {:ok, vt} <- Ghostty.Terminal.snapshot(term, :vt) do
-        cells = Ghostty.Terminal.cells(term)
+      with {:ok, term} <- Terminal.start_link(cols: cols, rows: rows),
+           :ok <- Terminal.write(term, data),
+           {:ok, plain} <- Terminal.snapshot(term, :plain),
+           {:ok, html} <- Terminal.snapshot(term, :html),
+           {:ok, vt} <- Terminal.snapshot(term, :vt) do
+        cells = Terminal.cells(term)
         GenServer.stop(term)
 
-        limited = Exy.ToolOutput.limit_text(plain, max_bytes)
+        limited = ToolOutput.limit_text(plain, max_bytes)
 
         {:ok,
          %{
@@ -41,7 +44,7 @@ defmodule Exy.Terminal.Snapshot do
          }}
       end
     else
-      plain = data |> IO.iodata_to_binary() |> Exy.ToolOutput.limit_text()
+      plain = data |> IO.iodata_to_binary() |> ToolOutput.limit_text()
       {:ok, %{plain: plain, html: nil, vt: nil, cells: nil, truncated?: true}}
     end
   end

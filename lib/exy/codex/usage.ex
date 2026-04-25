@@ -85,9 +85,10 @@ defmodule Exy.Codex.Usage do
       {_port, {:data, {:eol, line}}} ->
         with {:ok, message} <- Jason.decode(line),
              true <- Map.get(message, "id") == id do
-          cond do
-            error = message["error"] -> {:error, error}
-            true -> {:ok, message["result"] || %{}}
+          if error = message["error"] do
+            {:error, error}
+          else
+            {:ok, message["result"] || %{}}
           end
         else
           _ -> await_response(id, timeout)

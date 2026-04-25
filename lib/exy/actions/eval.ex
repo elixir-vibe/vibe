@@ -3,6 +3,8 @@ defmodule Exy.Actions.Eval do
 
   import JSONSpec
 
+  alias Exy.Actions.Result
+
   @schema schema(
             %{
               required(:code) => String.t(),
@@ -21,10 +23,10 @@ defmodule Exy.Actions.Eval do
   def run(params, _context) do
     params = JSONSpec.atomize(@schema, params)
 
-    Exy.Actions.Result.run(fn ->
+    Result.run(fn ->
       case Exy.Eval.run(params.code, timeout: Map.get(params, :timeout, 30_000)) do
-        {:ok, text} -> Exy.Actions.Result.ok(%{output: text})
-        {:error, error} -> Exy.Actions.Result.error(error)
+        {:ok, text} -> Result.ok(%{output: text})
+        {:error, error} -> Result.error(error)
       end
     end)
   end

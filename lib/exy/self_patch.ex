@@ -62,9 +62,10 @@ defmodule Exy.SelfPatch do
   def snapshot_process(process) do
     pid = if is_pid(process), do: process, else: Process.whereis(process)
 
-    cond do
-      is_nil(pid) -> {:error, :not_found}
-      true -> {:ok, :sys.get_state(pid)}
+    if is_nil(pid) do
+      {:error, :not_found}
+    else
+      {:ok, :sys.get_state(pid)}
     end
   catch
     kind, reason -> {:error, {kind, reason}}

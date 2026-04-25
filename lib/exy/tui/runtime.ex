@@ -4,6 +4,7 @@ defmodule Exy.TUI.Runtime do
   """
 
   alias Exy.TUI.TerminalLoop
+  alias IO.ANSI
 
   @spec run(keyword()) :: :ok | {:error, term()}
   def run(opts \\ []) do
@@ -27,7 +28,7 @@ defmodule Exy.TUI.Runtime do
           end_synchronized_update(),
           enable_autowrap(),
           show_cursor(),
-          IO.ANSI.reset()
+          ANSI.reset()
         ])
 
         GenServer.stop(tty)
@@ -150,18 +151,18 @@ defmodule Exy.TUI.Runtime do
       begin_synchronized_update(),
       hide_cursor(),
       disable_autowrap(),
-      IO.ANSI.home(),
-      IO.ANSI.clear()
+      ANSI.home(),
+      ANSI.clear()
     ]
 
     rows =
       lines
       |> Enum.with_index(start_row)
-      |> Enum.map(fn {line, row} -> [IO.ANSI.cursor(row, 1), IO.ANSI.clear_line(), line] end)
+      |> Enum.map(fn {line, row} -> [ANSI.cursor(row, 1), ANSI.clear_line(), line] end)
 
     finish = [
       end_synchronized_update(),
-      IO.ANSI.cursor(cursor_row, cursor_column),
+      ANSI.cursor(cursor_row, cursor_column),
       enable_autowrap(),
       show_cursor()
     ]

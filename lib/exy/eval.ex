@@ -6,6 +6,8 @@ defmodule Exy.Eval do
   here over growing the external tool list.
   """
 
+  alias Exy.ToolOutput
+
   @inspect_opts [charlists: :as_lists, limit: 80, pretty: true]
 
   @type result :: {:ok, String.t()} | {:error, String.t()}
@@ -40,17 +42,17 @@ defmodule Exy.Eval do
 
     cond do
       success? and result == :__exy_no_output__ ->
-        {:ok, Exy.ToolOutput.limit_text(io)}
+        {:ok, ToolOutput.limit_text(io)}
 
       success? and io == "" ->
-        {:ok, result |> inspect(@inspect_opts) |> Exy.ToolOutput.limit_text()}
+        {:ok, result |> inspect(@inspect_opts) |> ToolOutput.limit_text()}
 
       success? ->
         {:ok,
-         Exy.ToolOutput.limit_text("IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}")}
+         ToolOutput.limit_text("IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}")}
 
       true ->
-        {:error, Exy.ToolOutput.limit_text(result)}
+        {:error, ToolOutput.limit_text(result)}
     end
   end
 

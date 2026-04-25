@@ -50,7 +50,7 @@ defmodule Exy.MixProject do
       {:req_llm, "~> 1.10"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_dna, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:ex_slop, "~> 0.3", only: [:dev, :test], runtime: false},
+      {:ex_slop, "~> 0.3.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:reach, "~> 1.7", only: [:dev, :test], runtime: false},
       {:pythonx, "~> 0.4.9", optional: true},
