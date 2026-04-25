@@ -33,18 +33,13 @@ defmodule Exy.TUI.Widgets.Message do
   defp render_assistant(text, width, theme, loader_phase) do
     text = text |> to_string() |> String.trim()
 
-    lines =
-      if text == "" do
-        Loader.render(
-          %{props: %{label: "Thinking", phase: loader_phase}},
-          max(width - 4, 1),
-          theme
-        )
-      else
-        Markdown.render(text, max(width - 4, 1), theme)
-      end
-
-    render_block_lines(lines, width, theme, :assistant_message_bg, :assistant_message_text)
+    if text == "" do
+      Loader.render(%{props: %{label: "Thinking", phase: loader_phase}}, width, theme)
+    else
+      text
+      |> Markdown.render(max(width - 4, 1), theme)
+      |> render_block_lines(width, theme, :assistant_message_bg, :assistant_message_text)
+    end
   end
 
   defp render_block(text, width, theme, bg_key, fg_key) do

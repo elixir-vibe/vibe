@@ -20,7 +20,17 @@ defmodule Exy.TUI.Views.Chat do
       notices = if assign(:notifications), do: [notifications(assign(:notifications))], else: []
       overlays = Enum.map(assign(:overlays), &overlay/1)
 
-      List.flatten([body, plugin_widgets, notices, footer(assign(:footer)), overlays])
+      footer_margin =
+        if body == [] and plugin_widgets == [] and notices == [], do: [], else: [spacer()]
+
+      List.flatten([
+        body,
+        plugin_widgets,
+        notices,
+        footer_margin,
+        footer(assign(:footer)),
+        overlays
+      ])
     end
   end
 end

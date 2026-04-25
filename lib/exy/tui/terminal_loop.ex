@@ -129,11 +129,9 @@ defmodule Exy.TUI.TerminalLoop do
     body =
       view
       |> Renderer.render(snapshot.width, state.theme)
-      |> fit_body(snapshot.height - 1, editor)
+      |> fit_body(snapshot.height, editor)
 
-    body
-    |> Lines.join([String.duplicate(" ", snapshot.width)])
-    |> Lines.join(editor)
+    Lines.join(body, editor)
   end
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do

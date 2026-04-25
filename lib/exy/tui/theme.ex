@@ -50,7 +50,7 @@ defmodule Exy.TUI.Theme do
     tool_title: nil,
     tool_output: {108, 108, 108},
     user_message_text: {45, 45, 45},
-    assistant_message_text: nil,
+    assistant_message_text: {45, 45, 45},
     input_prompt: {90, 128, 128},
     input_text: nil,
     input_placeholder: {108, 108, 108},
