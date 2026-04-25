@@ -23,9 +23,9 @@ defmodule Exy.Session do
   def subscribe(server, pid \\ self()) when is_pid(pid),
     do: GenServer.call(server, {:subscribe, pid})
 
-  @spec attach(GenServer.server(), pid()) :: {:ok, State.t(), non_neg_integer()}
-  def attach(server, pid \\ self()) when is_pid(pid),
-    do: GenServer.call(server, {:attach, pid})
+  @spec attach(GenServer.server(), pid(), keyword()) :: {:ok, State.t(), non_neg_integer()}
+  def attach(server, pid \\ self(), opts \\ []) when is_pid(pid),
+    do: GenServer.call(server, {:attach, pid, opts})
 
   @spec state(GenServer.server()) :: State.t()
   def state(server), do: GenServer.call(server, :state)
@@ -57,7 +57,9 @@ defmodule Exy.Session do
        subscribers: %{},
        prompt_task: nil,
        prompt_ref: nil,
-       active_agent: nil
+       active_agent: nil,
+       event_seq: 0,
+       events_tail: []
      }}
   end
 
@@ -70,10 +72,12 @@ defmodule Exy.Session do
 
   def handle_call(:state, _from, state), do: {:reply, state.state, state}
 
-  def handle_call({:attach, pid}, _from, state) do
+  def handle_call({:attach, pid, opts}, _from, state) do
     ref = Process.monitor(pid)
     state = %{state | subscribers: Map.put(state.subscribers, ref, pid)}
-    {:reply, {:ok, state.state, 0}, state}
+    replay_after = Keyword.get(opts, :after, state.event_seq)
+    replay_events(state.events_tail, replay_after, pid)
+    {:reply, {:ok, state.state, state.event_seq}, state}
   end
 
   def handle_call({:dispatch, %Command{} = command}, _from, state) do
@@ -240,10 +244,17 @@ defmodule Exy.Session do
   end
 
   defp emit(state, event) do
+    event_seq = state.event_seq + 1
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     ui_state = Reducer.apply_event(state.state, event)
     PluginBridge.dispatch(ui_state, event)
-    %{state | state: ui_state}
+
+    %{
+      state
+      | state: ui_state,
+        event_seq: event_seq,
+        events_tail: remember_event(state.events_tail, event_seq, event)
+    }
   end
 
   defp normalize_command(%Command{} = command), do: command
@@ -282,6 +293,15 @@ defmodule Exy.Session do
         )
     end
   end
+
+  defp replay_events(events, replay_after, pid) do
+    events
+    |> Enum.filter(fn {seq, _event} -> seq > replay_after end)
+    |> Enum.each(fn {_seq, event} -> send(pid, {__MODULE__, :event, event}) end)
+  end
+
+  defp remember_event(events, seq, event),
+    do: events |> Exy.Lists.append({seq, event}) |> Enum.take(-200)
 
   defp maybe_register_ui_bus(session_id) do
     if Process.whereis(Exy.UI.Bus), do: Exy.UI.Bus.register(session_id, self()), else: :ok

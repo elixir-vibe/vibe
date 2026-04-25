@@ -35,7 +35,7 @@ defmodule Exy.TUI.App do
   def init(opts) do
     {:ok, ui} = session_server(opts)
     {:ok, editor} = editor_server(opts)
-    :ok = Session.subscribe(ui, self())
+    {:ok, _snapshot, _cursor} = Session.attach(ui, self())
 
     {:ok,
      %{

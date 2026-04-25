@@ -105,7 +105,7 @@ defmodule Exy.CLI do
     if opts[:foreground] do
       Exy.Server.start(foreground: true)
     else
-      start_background_server()
+      print_result(start_background_server(), opts)
     end
   end
 
@@ -145,19 +145,24 @@ defmodule Exy.CLI do
   defp start_background_server do
     executable = executable_path()
 
-    Port.open({:spawn_executable, executable}, [
-      :binary,
-      :exit_status,
-      :hide,
-      args: ["server", "start", "--foreground"]
+    log_path = Path.expand("~/.exy/server.out")
+    File.mkdir_p!(Path.dirname(log_path))
+
+    System.cmd("/bin/sh", [
+      "-c",
+      "nohup #{shell_quote(executable)} server start --foreground > #{shell_quote(log_path)} 2>&1 &"
     ])
 
-    wait_for_server(2_000)
+    wait_for_server(20_000)
+  end
+
+  defp shell_quote(value) do
+    "'" <> String.replace(value, "'", "'\\''") <> "'"
   end
 
   defp executable_path do
     case :escript.script_name() do
-      path when is_list(path) and path != [] -> List.to_string(path)
+      path when is_list(path) and path != [] -> path |> List.to_string() |> Path.expand()
       _other -> System.find_executable("exy") || "exy"
     end
   rescue
