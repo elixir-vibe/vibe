@@ -27,9 +27,6 @@ defmodule Exy.Actions.Edit do
   def run(params, _context) do
     params = JSONSpec.atomize(@schema, params)
 
-    case Exy.FileTools.edit_file(params.path, params.edits) do
-      {:ok, result} -> {:ok, result}
-      {:error, error} -> {:ok, %{error: error}}
-    end
+    Exy.Actions.Result.run(fn -> Exy.FileTools.edit_file(params.path, params.edits) end)
   end
 end

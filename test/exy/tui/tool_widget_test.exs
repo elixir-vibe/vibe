@@ -116,6 +116,14 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Enum.any?(plain, &String.contains?(&1, "line 12"))
   end
 
+  test "renderer failures become error tool blocks" do
+    assert Exy.TUI.ToolWidget.render(
+             %{name: :definitely_missing_tool, status: :ok, output: "value"},
+             80,
+             Theme.default()
+           )
+  end
+
   test "renders read output as highlighted code" do
     lines =
       %{

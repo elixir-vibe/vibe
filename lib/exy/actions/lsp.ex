@@ -40,10 +40,11 @@ defmodule Exy.Actions.LSP do
   def run(params, _context) do
     params = JSONSpec.atomize(@schema, params)
 
-    case Exy.LSP.run(params) do
-      {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
-      {:error, error} when is_binary(error) -> {:error, Exy.ToolOutput.limit_text(error)}
-      other -> other
-    end
+    Exy.Actions.Result.run(fn ->
+      case Exy.LSP.run(params) do
+        {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
+        other -> other
+      end
+    end)
   end
 end

@@ -36,9 +36,11 @@ defmodule Exy.Actions.AST do
   def run(params, _context) do
     params = JSONSpec.atomize(@schema, params)
 
-    case Exy.AST.run(params) do
-      {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
-      {:error, error} -> {:error, Exy.ToolOutput.limit_text(error)}
-    end
+    Exy.Actions.Result.run(fn ->
+      case Exy.AST.run(params) do
+        {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
+        other -> other
+      end
+    end)
   end
 end

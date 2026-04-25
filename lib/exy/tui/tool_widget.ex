@@ -232,7 +232,21 @@ defmodule Exy.TUI.ToolWidget do
     end
   end
 
-  defp do_render(renderer, tool, width, theme), do: renderer.render(tool, width, theme)
+  defp do_render(renderer, tool, width, theme) do
+    renderer.render(tool, width, theme)
+  rescue
+    error -> render_failure(tool, width, theme, Exception.format(:error, error, __STACKTRACE__))
+  catch
+    kind, reason ->
+      render_failure(tool, width, theme, Exception.format(kind, reason, __STACKTRACE__))
+  end
+
+  defp render_failure(tool, width, theme, error) do
+    tool
+    |> Map.put(:status, :error)
+    |> Map.put(:output, %{error: error})
+    |> block(width, theme, summary: "render failed", params?: false)
+  end
 
   defp tool_name(tool), do: Map.get(tool, :name) || Map.get(tool, "name")
 
