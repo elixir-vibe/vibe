@@ -16,7 +16,11 @@ defmodule Exy.TUI.Views.ChatTest do
     plain = Enum.map(lines, &Width.visible_text/1)
 
     assert ("  hello" <> String.duplicate(" ", 73)) in plain
-    assert "hi" in plain
+    user_index = Enum.find_index(plain, &String.contains?(&1, "hello"))
+    assistant_index = Enum.find_index(plain, &String.contains?(&1, "hi"))
+
+    assert ("  hi" <> String.duplicate(" ", 76)) in plain
+    assert Enum.any?(Enum.slice(plain, user_index..assistant_index), &(&1 == ""))
     refute "You: hello" in plain
     refute "Exy: hi" in plain
     assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))

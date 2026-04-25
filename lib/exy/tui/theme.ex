@@ -60,6 +60,7 @@ defmodule Exy.TUI.Theme do
   @dark_bg %{
     selected_bg: {58, 58, 74},
     user_message_bg: {52, 53, 65},
+    assistant_message_bg: {22, 24, 36},
     tool_pending_bg: {40, 40, 50},
     tool_success_bg: {40, 50, 40},
     tool_error_bg: {60, 40, 40},
@@ -69,7 +70,8 @@ defmodule Exy.TUI.Theme do
 
   @light_bg %{
     selected_bg: {208, 208, 224},
-    user_message_bg: {232, 232, 232},
+    user_message_bg: {222, 222, 222},
+    assistant_message_bg: {245, 245, 245},
     tool_pending_bg: {232, 232, 240},
     tool_success_bg: {232, 240, 232},
     tool_error_bg: {240, 232, 232},

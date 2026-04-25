@@ -62,8 +62,18 @@ defmodule Exy.TUI.WidgetsTest do
              String.duplicate(" ", 40)
            ]
 
-    assert assistant == ["hi"]
-    assert thinking == ["✦ Thinking…"]
+    assert assistant == [
+             String.duplicate(" ", 40),
+             "  hi" <> String.duplicate(" ", 36),
+             String.duplicate(" ", 40)
+           ]
+
+    assert thinking == [
+             String.duplicate(" ", 40),
+             "  ✦ Thinking…" <> String.duplicate(" ", 27),
+             String.duplicate(" ", 40)
+           ]
+
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "You:"))
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
   end

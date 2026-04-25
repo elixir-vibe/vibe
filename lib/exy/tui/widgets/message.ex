@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Message do
 
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.{Markdown, Theme, Widget}
+  alias Exy.TUI.{Markdown, Theme}
   alias Exy.TUI.Widgets.Loader
 
   @impl true
@@ -27,34 +27,54 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   defp render_user(text, width, theme) do
-    inner_width = max(width - 4, 1)
-    blank = user_message_line("", width, theme)
-
-    lines =
-      text
-      |> to_string()
-      |> Markdown.render(inner_width, theme)
-      |> Enum.map(&user_message_line(&1, width, theme))
-
-    [blank | Exy.TUI.Lines.append(lines, blank)]
-  end
-
-  defp user_message_line(line, width, theme) do
-    line = Theme.fg(theme, :user_message_text, line)
-
-    ["  ", line]
-    |> Widget.pad_line(width)
-    |> then(&Theme.bg(theme, :user_message_bg, &1))
+    render_block(text, width, theme, :user_message_bg, :user_message_text)
   end
 
   defp render_assistant(text, width, theme, loader_phase) do
     text = text |> to_string() |> String.trim()
 
-    if text == "" do
-      Loader.render(%{props: %{label: "Thinking", phase: loader_phase}}, width, theme)
-    else
-      Markdown.render(text, width, theme)
-    end
+    lines =
+      if text == "" do
+        Loader.render(
+          %{props: %{label: "Thinking", phase: loader_phase}},
+          max(width - 4, 1),
+          theme
+        )
+      else
+        Markdown.render(text, max(width - 4, 1), theme)
+      end
+
+    render_block_lines(lines, width, theme, :assistant_message_bg, :assistant_message_text)
+  end
+
+  defp render_block(text, width, theme, bg_key, fg_key) do
+    text
+    |> to_string()
+    |> Markdown.render(max(width - 4, 1), theme)
+    |> render_block_lines(width, theme, bg_key, fg_key)
+  end
+
+  defp render_block_lines(lines, width, theme, bg_key, fg_key) do
+    blank = block_line("", width, theme, bg_key, fg_key)
+
+    [
+      blank
+      | Exy.TUI.Lines.append(
+          Enum.map(lines, &block_line(&1, width, theme, bg_key, fg_key)),
+          blank
+        )
+    ]
+  end
+
+  defp block_line(line, width, theme, bg_key, fg_key) do
+    left_padding = Theme.bg(theme, bg_key, "  ")
+    content = line |> then(&Theme.fg(theme, fg_key, &1)) |> then(&Theme.bg(theme, bg_key, &1))
+    content_width = Exy.TUI.Width.visible_length(line)
+
+    right_padding =
+      Theme.bg(theme, bg_key, String.duplicate(" ", max(width - content_width - 2, 0)))
+
+    [left_padding, content, right_padding]
   end
 
   defp prefix_first_line([first | rest], prefix), do: [[prefix, first] | rest]

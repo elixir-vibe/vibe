@@ -22,8 +22,11 @@ defmodule Exy.TUI.TerminalLoopTest do
     Process.sleep(50)
 
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+    prompt_index = Enum.find_index(plain, &String.contains?(&1, "Prompt"))
+
     assert length(plain) <= 12
-    assert Enum.any?(plain, &String.contains?(&1, "Prompt"))
+    assert prompt_index
+    assert plain |> Enum.at(prompt_index - 1) |> String.trim() == ""
   end
 
   test "repaints immediately for background UI updates" do
@@ -55,7 +58,12 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert_receive {TerminalLoop, :event, :loader_tick}, 300
 
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
-    assert Enum.any?(plain, &(&1 in ["⋰ Thinking…", "⋱ Thinking…", "✧ Thinking…", "✦ Thinking…"]))
+    assert Enum.any?(plain, &String.contains?(&1, "Thinking…"))
+
+    assert Enum.any?(
+             plain,
+             &(String.trim(&1) in ["⋰ Thinking…", "⋱ Thinking…", "✧ Thinking…", "✦ Thinking…"])
+           )
   end
 
   test "notifies event target for asynchronous UI updates" do

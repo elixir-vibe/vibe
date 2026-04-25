@@ -33,7 +33,8 @@ defmodule Exy.TUI.RuntimeTest do
     screen_lines = String.split(screen, "\n")
 
     assert Enum.at(screen_lines, start_row - 1) |> String.starts_with?("~/")
-    assert Enum.at(screen_lines, start_row) |> String.starts_with?("╭")
+    assert Enum.at(screen_lines, start_row) |> String.trim() == ""
+    assert Enum.at(screen_lines, start_row + 1) |> String.starts_with?("╭")
     assert List.last(screen_lines) |> String.starts_with?("╰")
     assert {render_state.cursor.y + 1, render_state.cursor.x + 1} == cursor
     refute Enum.any?(Enum.slice(screen_lines, 0, start_row - 1), &String.contains?(&1, "Prompt"))

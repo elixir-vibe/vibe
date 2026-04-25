@@ -15,6 +15,7 @@ defmodule Exy.TUI.Views.Chat do
           end
         end
 
+      body = Enum.intersperse(body, spacer())
       plugin_widgets = Enum.map(assign(:plugin_widgets), &plugin_widget/1)
       notices = if assign(:notifications), do: [notifications(assign(:notifications))], else: []
       overlays = Enum.map(assign(:overlays), &overlay/1)
