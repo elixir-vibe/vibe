@@ -124,7 +124,7 @@ defmodule Exy.CLI do
   defp attach_default_session(opts) do
     configure_api_key(opts)
 
-    case ensure_server_running() do
+    case ensure_server_running(2_000) do
       :ok ->
         session_id = opts[:session] || latest_remote_session_id() || new_remote_session_id(opts)
         attach_session(session_id, opts)
@@ -144,10 +144,10 @@ defmodule Exy.CLI do
     end
   end
 
-  defp ensure_server_running do
+  defp ensure_server_running(timeout_ms \\ 20_000) do
     case Exy.Remote.connect() do
       {:ok, _node} -> :ok
-      {:error, _reason} -> start_background_server()
+      {:error, _reason} -> start_background_server(timeout_ms)
     end
   end
 
@@ -175,7 +175,7 @@ defmodule Exy.CLI do
     end
   end
 
-  defp start_background_server do
+  defp start_background_server(timeout_ms \\ 20_000) do
     log_path = Path.expand("~/.exy/server.out")
     File.mkdir_p!(Path.dirname(log_path))
 
@@ -184,7 +184,7 @@ defmodule Exy.CLI do
       "nohup #{background_server_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null &"
     ])
 
-    case wait_for_server(20_000) do
+    case wait_for_server(timeout_ms) do
       :ok ->
         :ok
 
