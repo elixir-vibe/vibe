@@ -18,63 +18,63 @@ defmodule Exy.TUI.Theme do
   defstruct name: "default", fg: %{}, bg: %{}, symbols: %{}
 
   @dark_fg %{
-    accent: :cyan,
-    border: :light_black,
-    success: :green,
-    error: :red,
-    warning: :yellow,
-    muted: :light_black,
-    dim: :light_black,
+    accent: {138, 190, 183},
+    border: {95, 135, 255},
+    success: {181, 189, 104},
+    error: {204, 102, 102},
+    warning: {255, 255, 0},
+    muted: {128, 128, 128},
+    dim: {102, 102, 102},
     text: nil,
-    thinking_text: :light_black,
-    tool_title: :cyan,
-    tool_output: nil,
+    thinking_text: {128, 128, 128},
+    tool_title: nil,
+    tool_output: {128, 128, 128},
     user_message_text: nil,
     assistant_message_text: nil,
-    input_prompt: :cyan,
+    input_prompt: {138, 190, 183},
     input_text: nil,
-    input_placeholder: :light_black,
+    input_placeholder: {128, 128, 128},
     input_cursor: :black
   }
 
   @light_fg %{
-    accent: :blue,
-    border: :light_black,
-    success: :green,
-    error: :red,
-    warning: :yellow,
-    muted: :light_black,
-    dim: :light_black,
-    text: :black,
-    thinking_text: :light_black,
-    tool_title: :blue,
-    tool_output: :black,
-    user_message_text: :black,
-    assistant_message_text: :black,
-    input_prompt: :blue,
-    input_text: :black,
-    input_placeholder: :light_black,
+    accent: {90, 128, 128},
+    border: {84, 125, 167},
+    success: {88, 132, 88},
+    error: {170, 85, 85},
+    warning: {154, 115, 38},
+    muted: {108, 108, 108},
+    dim: {118, 118, 118},
+    text: nil,
+    thinking_text: {108, 108, 108},
+    tool_title: nil,
+    tool_output: {108, 108, 108},
+    user_message_text: nil,
+    assistant_message_text: nil,
+    input_prompt: {90, 128, 128},
+    input_text: nil,
+    input_placeholder: {108, 108, 108},
     input_cursor: :white
   }
 
   @dark_bg %{
-    selected_bg: {45, 45, 45},
-    user_message_bg: nil,
-    tool_pending_bg: {38, 38, 38},
-    tool_success_bg: {22, 54, 34},
-    tool_error_bg: {70, 24, 24},
-    input_bg: {24, 24, 24},
-    input_cursor_bg: :cyan
+    selected_bg: {58, 58, 74},
+    user_message_bg: {52, 53, 65},
+    tool_pending_bg: {40, 40, 50},
+    tool_success_bg: {40, 50, 40},
+    tool_error_bg: {60, 40, 40},
+    input_bg: {52, 53, 65},
+    input_cursor_bg: {138, 190, 183}
   }
 
   @light_bg %{
-    selected_bg: {230, 230, 230},
-    user_message_bg: nil,
-    tool_pending_bg: {238, 238, 238},
-    tool_success_bg: {218, 245, 226},
-    tool_error_bg: {255, 224, 224},
-    input_bg: {245, 245, 245},
-    input_cursor_bg: :blue
+    selected_bg: {208, 208, 224},
+    user_message_bg: {232, 232, 232},
+    tool_pending_bg: {232, 232, 240},
+    tool_success_bg: {232, 240, 232},
+    tool_error_bg: {240, 232, 232},
+    input_bg: {232, 232, 232},
+    input_cursor_bg: {90, 128, 128}
   }
 
   @symbols %{

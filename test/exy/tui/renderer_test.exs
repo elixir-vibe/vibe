@@ -17,6 +17,6 @@ defmodule Exy.TUI.RendererTest do
     assert Enum.all?(plain_lines, &(String.length(&1) <= 40))
     assert Enum.any?(plain_lines, &String.starts_with?(&1, "You: "))
     assert Enum.any?(plain_lines, &String.starts_with?(&1, "Exy: "))
-    assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.green()))
+    assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.color(4, 4, 2)))
   end
 end
