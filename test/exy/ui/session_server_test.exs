@@ -19,6 +19,28 @@ defmodule Exy.SessionProcessTest do
     assert state.usage.total_tokens == 10
   end
 
+  test "attach returns snapshot cursor and replays missed tail events" do
+    {:ok, server} =
+      Exy.Session.start_link(
+        session_id: "attach-session",
+        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+      )
+
+    :ok = Exy.Session.dispatch(server, {:open_overlay, %{kind: :model_selector}})
+    {:ok, snapshot, cursor} = Exy.Session.attach(server)
+
+    assert [%{kind: :model_selector}] = snapshot.overlays
+    assert cursor == 1
+
+    :ok = Exy.Session.dispatch(server, {:close_overlay, %{}})
+    assert_receive {Exy.Session, :event, %{type: :overlay_closed}}, 500
+
+    {:ok, snapshot, cursor} = Exy.Session.attach(server, self(), after: 1)
+    assert snapshot.overlays == []
+    assert cursor == 2
+    assert_receive {Exy.Session, :event, %{type: :overlay_closed}}, 500
+  end
+
   test "default agent ask options preserve streaming callbacks" do
     on_result = fn _text -> :ok end
     on_thinking = fn _text -> :ok end
