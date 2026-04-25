@@ -6,7 +6,9 @@ defmodule Exy.SessionProcessTest do
       {:ok, %{model: "test-model", usage: %{input_tokens: 4, output_tokens: 6, total_tokens: 10}}}
     end
 
-    {:ok, server} = Exy.Session.start_link(session_id: "ui-session", ask_fun: ask_fun)
+    {:ok, server} =
+      Exy.Session.start_link(persist?: false, session_id: "ui-session", ask_fun: ask_fun)
+
     :ok = Exy.Session.subscribe(server)
     :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
@@ -19,9 +21,28 @@ defmodule Exy.SessionProcessTest do
     assert state.usage.total_tokens == 10
   end
 
+  test "restores snapshot from durable UI events" do
+    session_id = "restore-session-#{System.unique_integer([:positive])}"
+    path = Exy.Session.Store.ui_events_path(session_id)
+    on_exit(fn -> File.rm(path) end)
+
+    {:ok, server} =
+      Exy.Session.start_link(session_id: session_id, ask_fun: fn _text, _opts -> {:ok, "ok"} end)
+
+    :ok = Exy.Session.dispatch(server, {:open_overlay, %{kind: :model_selector}})
+    GenServer.stop(server)
+
+    {:ok, restored} =
+      Exy.Session.start_link(session_id: session_id, ask_fun: fn _text, _opts -> {:ok, "ok"} end)
+
+    assert [%{kind: :model_selector}] = Exy.Session.state(restored).overlays
+    GenServer.stop(restored)
+  end
+
   test "attach returns snapshot cursor and replays missed tail events" do
     {:ok, server} =
       Exy.Session.start_link(
+        persist?: false,
         session_id: "attach-session",
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
@@ -75,6 +96,7 @@ defmodule Exy.SessionProcessTest do
 
     {:ok, server} =
       Exy.Session.start_link(
+        persist?: false,
         session_id: "ui-session",
         ask_fun: ask_fun,
         streaming?: true
@@ -106,6 +128,7 @@ defmodule Exy.SessionProcessTest do
 
     {:ok, server} =
       Exy.Session.start_link(
+        persist?: false,
         session_id: "ui-session",
         ask_fun: ask_fun,
         streaming?: true
@@ -129,7 +152,9 @@ defmodule Exy.SessionProcessTest do
   test "records ask function crashes as assistant errors" do
     ask_fun = fn _text, _opts -> raise ArgumentError, "boom" end
 
-    {:ok, server} = Exy.Session.start_link(session_id: "ui-session", ask_fun: ask_fun)
+    {:ok, server} =
+      Exy.Session.start_link(persist?: false, session_id: "ui-session", ask_fun: ask_fun)
+
     :ok = Exy.Session.subscribe(server)
     :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
@@ -147,6 +172,7 @@ defmodule Exy.SessionProcessTest do
 
     {:ok, server} =
       Exy.Session.start_link(
+        persist?: false,
         session_id: "ui-session",
         ask_fun: ask_fun,
         streaming?: true
@@ -164,7 +190,7 @@ defmodule Exy.SessionProcessTest do
   end
 
   test "supports overlay commands" do
-    {:ok, server} = Exy.Session.start_link(session_id: "ui-session")
+    {:ok, server} = Exy.Session.start_link(persist?: false, session_id: "ui-session")
 
     :ok = Exy.Session.dispatch(server, {:open_overlay, %{kind: :model_selector}})
     assert [%{kind: :model_selector}] = Exy.Session.state(server).overlays

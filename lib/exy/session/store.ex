@@ -4,6 +4,7 @@ defmodule Exy.Session.Store do
   """
 
   alias Exy.Trajectory
+  alias Exy.UI.Event
 
   @spec new_id() :: String.t()
   def new_id do
@@ -29,6 +30,11 @@ defmodule Exy.Session.Store do
     Path.join(dir(), safe_session_id(session_id) <> ".log")
   end
 
+  @spec ui_events_path(String.t()) :: String.t()
+  def ui_events_path(session_id) when is_binary(session_id) do
+    Path.join(dir(), safe_session_id(session_id) <> ".events.jsonl")
+  end
+
   @spec append(Trajectory.t()) :: :ok | {:error, term()}
   def append(%Trajectory{session_id: nil}), do: :ok
 
@@ -52,12 +58,35 @@ defmodule Exy.Session.Store do
     end
   end
 
+  @spec append_ui_event(Event.t(), non_neg_integer()) :: :ok | {:error, term()}
+  def append_ui_event(%Event{} = event, seq) do
+    with :ok <- File.mkdir_p(dir()),
+         line <- Jason.encode!(encode_ui_event(event, seq)) <> "\n" do
+      File.write(ui_events_path(event.session_id), line, [:append])
+    end
+  end
+
+  @spec ui_events(String.t()) :: [{non_neg_integer(), Event.t()}]
+  def ui_events(session_id) when is_binary(session_id) do
+    case File.read(ui_events_path(session_id)) do
+      {:ok, text} ->
+        text
+        |> String.split("\n", trim: true)
+        |> Enum.map(&decode_ui_event/1)
+
+      {:error, :enoent} ->
+        []
+    end
+  end
+
   @spec list() :: [map()]
   def list do
     case File.ls(dir()) do
       {:ok, files} ->
         files
-        |> Enum.filter(&String.ends_with?(&1, ".jsonl"))
+        |> Enum.filter(
+          &(String.ends_with?(&1, ".jsonl") and not String.ends_with?(&1, ".events.jsonl"))
+        )
         |> Enum.map(&session_info/1)
         |> Enum.sort_by(&DateTime.to_unix(&1.updated_at), :desc)
 
@@ -88,6 +117,28 @@ defmodule Exy.Session.Store do
     }
   end
 
+  defp encode_ui_event(%Event{} = event, seq) do
+    %{
+      "seq" => seq,
+      "id" => event.id,
+      "session_id" => event.session_id,
+      "type" => Atom.to_string(event.type),
+      "at" => DateTime.to_iso8601(event.at),
+      "data" => json_safe(event.data)
+    }
+  end
+
+  defp decode_ui_event(line) do
+    with {:ok, map} <- Jason.decode(line),
+         {:ok, at, _offset} <- DateTime.from_iso8601(map["at"]) do
+      {map["seq"],
+       Event.new(String.to_atom(map["type"]), map["session_id"], atomize(map["data"] || %{}),
+         id: map["id"],
+         at: at
+       )}
+    end
+  end
+
   defp decode_event(line) do
     with {:ok, map} <- Jason.decode(line),
          {:ok, at, _offset} <- DateTime.from_iso8601(map["at"]) do
@@ -99,7 +150,7 @@ defmodule Exy.Session.Store do
     end
   end
 
-  defp json_safe(value) when is_atom(value), do: Atom.to_string(value)
+  defp json_safe(value) when is_atom(value), do: %{"$atom" => Atom.to_string(value)}
 
   defp json_safe(value)
        when is_binary(value) or is_number(value) or is_boolean(value) or is_nil(value), do: value
@@ -114,6 +165,8 @@ defmodule Exy.Session.Store do
   end
 
   defp json_safe(value), do: inspect(value, limit: 50)
+
+  defp atomize(%{"$atom" => value}) when is_binary(value), do: String.to_atom(value)
 
   defp atomize(map) when is_map(map),
     do: Map.new(map, fn {key, value} -> {String.to_atom(key), atomize(value)} end)

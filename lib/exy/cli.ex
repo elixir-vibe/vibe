@@ -153,7 +153,14 @@ defmodule Exy.CLI do
       "nohup #{shell_quote(executable)} server start --foreground > #{shell_quote(log_path)} 2>&1 &"
     ])
 
-    wait_for_server(20_000)
+    case wait_for_server(20_000) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Exy.Server.cleanup_metadata()
+        {:error, reason}
+    end
   end
 
   defp shell_quote(value) do

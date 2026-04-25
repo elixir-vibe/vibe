@@ -43,7 +43,8 @@ defmodule Exy.Session do
 
   @impl true
   def init(opts) do
-    state = State.new(opts)
+    persist? = Keyword.get(opts, :persist?, true)
+    {state, event_seq, events_tail} = restore_state(State.new(opts), persist?)
 
     maybe_register_ui_bus(state.session_id)
     PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
@@ -58,8 +59,9 @@ defmodule Exy.Session do
        prompt_task: nil,
        prompt_ref: nil,
        active_agent: nil,
-       event_seq: 0,
-       events_tail: []
+       event_seq: event_seq,
+       events_tail: events_tail,
+       persist?: persist?
      }}
   end
 
@@ -245,6 +247,7 @@ defmodule Exy.Session do
 
   defp emit(state, event) do
     event_seq = state.event_seq + 1
+    if state.persist?, do: Exy.Session.Store.append_ui_event(event, event_seq)
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     ui_state = Reducer.apply_event(state.state, event)
     PluginBridge.dispatch(ui_state, event)
@@ -292,6 +295,15 @@ defmodule Exy.Session do
           Event.new(:notification_added, session_id, %{level: :error, text: inspect(reason)})
         )
     end
+  end
+
+  defp restore_state(state, false), do: {state, 0, []}
+
+  defp restore_state(state, true) do
+    events = Exy.Session.Store.ui_events(state.session_id)
+    ui_state = Reducer.apply_events(state, Enum.map(events, fn {_seq, event} -> event end))
+    event_seq = events |> List.last({0, nil}) |> elem(0)
+    {ui_state, event_seq, Enum.take(events, -200)}
   end
 
   defp replay_events(events, replay_after, pid) do

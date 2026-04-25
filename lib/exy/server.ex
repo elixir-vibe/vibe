@@ -19,7 +19,14 @@ defmodule Exy.Server do
   end
 
   @spec status() :: {:ok, map()} | {:error, term()}
-  def status, do: Metadata.read()
+  def status do
+    with {:ok, %{"node" => node_name} = metadata} <- Metadata.read(),
+         {:ok, node} <- parse_node(node_name),
+         :ok <- ensure_client_distribution() do
+      running? = Node.connect(node)
+      {:ok, Map.put(metadata, "running", running?)}
+    end
+  end
 
   @spec stop() :: :ok | {:error, term()}
   def stop do
@@ -28,12 +35,25 @@ defmodule Exy.Server do
          :ok <- ensure_client_distribution(),
          true <- connect_node(node) do
       _ = :rpc.call(node, :init, :stop, [])
-      Metadata.delete()
+      cleanup_metadata()
       :ok
     else
-      false -> {:error, :not_connected}
-      error -> error
+      {:error, :enoent} ->
+        cleanup_metadata()
+        :ok
+
+      false ->
+        cleanup_metadata()
+        {:error, :not_connected}
+
+      error ->
+        error
     end
+  end
+
+  @spec cleanup_metadata() :: :ok
+  def cleanup_metadata do
+    Metadata.delete()
   end
 
   defp ensure_distribution(name) do

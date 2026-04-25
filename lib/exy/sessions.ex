@@ -20,7 +20,7 @@ defmodule Exy.Sessions do
   def lookup(id) do
     case Registry.lookup(Exy.Registry, {:session, id}) do
       [{pid, _value}] -> {:ok, pid}
-      [] -> {:error, :not_found}
+      [] -> start_stored(id)
     end
   end
 
@@ -34,6 +34,14 @@ defmodule Exy.Sessions do
     stored = Exy.Session.Store.list() |> Enum.map(&Map.put(&1, :live?, false))
     live_ids = MapSet.new(Enum.map(live, & &1.id))
     live ++ Enum.reject(stored, &MapSet.member?(live_ids, &1.id))
+  end
+
+  defp start_stored(id) do
+    if stored?(id), do: start(session_id: id), else: {:error, :not_found}
+  end
+
+  defp stored?(id) do
+    File.exists?(Exy.Session.Store.path(id)) or File.exists?(Exy.Session.Store.ui_events_path(id))
   end
 
   defp via(id), do: {:via, Registry, {Exy.Registry, {:session, id}}}
