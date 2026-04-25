@@ -7,7 +7,7 @@ defmodule Exy.Application do
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: Exy.Registry},
-      {Registry, keys: :unique, name: Jido.Registry},
+      {Jido, name: Jido, otp_app: :exy},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Subagents.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.LSP.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Terminal.Supervisor},

@@ -8,7 +8,6 @@ defmodule Exy.UI.SessionServer do
 
   use GenServer
 
-  alias Exy.LLM
   alias Exy.LLM.Usage
   alias Exy.UI.{Command, Event, Reducer, State}
 
@@ -46,7 +45,7 @@ defmodule Exy.UI.SessionServer do
        state: state,
        ask_fun: Keyword.get(opts, :ask_fun, &default_ask/2),
        llm_opts: Keyword.take(opts, [:model, :system]),
-       streaming?: not Keyword.has_key?(opts, :ask_fun),
+       streaming?: Keyword.get(opts, :streaming?, not Keyword.has_key?(opts, :ask_fun)),
        subscribers: %{}
      }}
   end
@@ -144,13 +143,7 @@ defmodule Exy.UI.SessionServer do
   end
 
   defp record_prompt_result(state, {:ok, response}) do
-    state =
-      if state.state.streaming_message do
-        emit(state, Event.new(:assistant_stream_finished, state.state.session_id, %{}))
-      else
-        data = %{result: response}
-        emit(state, Event.new(:assistant_message_added, state.state.session_id, data))
-      end
+    state = record_successful_response(state, response)
 
     case Usage.from_response(response) do
       nil -> state
@@ -169,6 +162,18 @@ defmodule Exy.UI.SessionServer do
       state,
       Event.new(:assistant_message_added, state.state.session_id, %{error: inspect(reason)})
     )
+  end
+
+  defp record_successful_response(
+         %{state: %{streaming_message: %{text: text}}} = state,
+         _response
+       )
+       when is_binary(text) and text != "" do
+    emit(state, Event.new(:assistant_stream_finished, state.state.session_id, %{}))
+  end
+
+  defp record_successful_response(state, response) do
+    emit(state, Event.new(:assistant_message_added, state.state.session_id, %{result: response}))
   end
 
   defp emit(state, event) do
@@ -311,10 +316,15 @@ defmodule Exy.UI.SessionServer do
   end
 
   defp default_ask(text, opts) do
-    if Keyword.has_key?(opts, :on_result) or Keyword.has_key?(opts, :on_thinking) do
-      LLM.stream(text, opts)
-    else
-      LLM.ask(text, opts)
+    agent_opts = Keyword.take(opts, [:model, :session_id])
+    ask_opts = Keyword.drop(opts, [:model, :on_result, :on_thinking, :on_tool_call, :on_meta])
+
+    with {:ok, agent} <- Exy.start_link(agent_opts) do
+      try do
+        Exy.ask(agent, text, Keyword.put_new(ask_opts, :timeout, 120_000))
+      after
+        if Process.alive?(agent), do: GenServer.stop(agent)
+      end
     end
   end
 end

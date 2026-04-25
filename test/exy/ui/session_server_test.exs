@@ -35,6 +35,27 @@ defmodule Exy.UI.SessionServerTest do
     assert error =~ "boom"
   end
 
+  test "non-streaming ask functions still replace loader with final response" do
+    ask_fun = fn _text, _opts -> {:ok, "done"} end
+
+    {:ok, server} =
+      Exy.UI.SessionServer.start_link(
+        session_id: "ui-session",
+        ask_fun: ask_fun,
+        streaming?: true
+      )
+
+    :ok = Exy.UI.SessionServer.subscribe(server)
+    :ok = Exy.UI.SessionServer.dispatch(server, {:submit_prompt, %{text: "hello"}})
+
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_stream_started}}, 500
+    assert_receive {Exy.UI.SessionServer, :event, %{type: :assistant_message_added}}, 500
+
+    state = Exy.UI.SessionServer.state(server)
+    assert [%{role: :user}, %{role: :assistant, result: "done"}] = state.messages
+    assert is_nil(state.streaming_message)
+  end
+
   test "supports overlay commands" do
     {:ok, server} = Exy.UI.SessionServer.start_link(session_id: "ui-session")
 
