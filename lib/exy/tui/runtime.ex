@@ -23,7 +23,13 @@ defmodule Exy.TUI.Runtime do
         render(tty, loop)
         receive_events(tty, loop)
       after
-        Ghostty.TTY.write(tty, [show_cursor(), IO.ANSI.reset()])
+        Ghostty.TTY.write(tty, [
+          end_synchronized_update(),
+          enable_autowrap(),
+          show_cursor(),
+          IO.ANSI.reset()
+        ])
+
         GenServer.stop(tty)
       end
     end
@@ -65,30 +71,43 @@ defmodule Exy.TUI.Runtime do
     lines = TerminalLoop.render(loop)
     {cursor_row, cursor_column} = TerminalLoop.cursor_position(loop)
 
-    Ghostty.TTY.write(tty, [
+    lines
+    |> render_chunks({cursor_row, cursor_column})
+    |> Enum.each(&Ghostty.TTY.write(tty, &1))
+  end
+
+  @doc false
+  @spec render_chunks([IO.chardata()], {pos_integer(), pos_integer()}) :: [IO.chardata()]
+  def render_chunks(lines, {cursor_row, cursor_column}) do
+    start = [
+      begin_synchronized_update(),
       hide_cursor(),
       disable_autowrap(),
       IO.ANSI.home(),
       IO.ANSI.clear()
-    ])
+    ]
 
-    lines
-    |> Enum.with_index(1)
-    |> Enum.each(fn {line, row} ->
-      Ghostty.TTY.write(tty, [IO.ANSI.cursor(row, 1), IO.ANSI.clear_line(), line])
-    end)
+    rows =
+      lines
+      |> Enum.with_index(1)
+      |> Enum.map(fn {line, row} -> [IO.ANSI.cursor(row, 1), IO.ANSI.clear_line(), line] end)
 
-    Ghostty.TTY.write(tty, [
+    finish = [
       IO.ANSI.cursor(cursor_row, cursor_column),
       enable_autowrap(),
-      show_cursor()
-    ])
+      show_cursor(),
+      end_synchronized_update()
+    ]
+
+    [start | rows] |> Exy.TUI.Lines.append(finish)
   end
 
   defp hide_cursor, do: "\e[?25l"
   defp show_cursor, do: "\e[?25h"
   defp disable_autowrap, do: "\e[?7l"
   defp enable_autowrap, do: "\e[?7h"
+  defp begin_synchronized_update, do: "\e[?2026h"
+  defp end_synchronized_update, do: "\e[?2026l"
 
   defp ensure_interactive_terminal do
     if :prim_tty.isatty(:stdin) do

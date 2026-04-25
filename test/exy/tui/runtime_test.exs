@@ -7,6 +7,20 @@ defmodule Exy.TUI.RuntimeTest do
   @input_timeout_ms 1_000
   @exit_timeout_ms 5_000
 
+  test "render chunks use synchronized full-frame repaint controls" do
+    chunks = Exy.TUI.Runtime.render_chunks(["top", "middle", "bottom"], {2, 3})
+    frame = chunks |> Enum.map_join(&IO.iodata_to_binary/1)
+
+    assert length(chunks) == 5
+    assert frame =~ "\e[?2026h"
+    assert frame =~ "\e[?2026l"
+    assert frame =~ "\e[?7l"
+    assert frame =~ "\e[?7h"
+    assert frame =~ IO.ANSI.cursor(1, 1)
+    assert frame =~ IO.ANSI.cursor(3, 1)
+    assert frame =~ IO.ANSI.cursor(2, 3)
+  end
+
   test "mix exy accepts input in a real PTY and exits with escape" do
     {:ok, terminal} = Ghostty.Terminal.start_link(cols: @cols, rows: @rows)
 
@@ -22,8 +36,10 @@ defmodule Exy.TUI.RuntimeTest do
     try do
       assert {:ok, _output} = wait_for_screen_text(pty, terminal, "Exy", "", @startup_timeout_ms)
 
+      assert {:ok, output} = wait_for_screen_text(pty, terminal, "╰", "", @input_timeout_ms)
+
       Ghostty.PTY.write(pty, "abc")
-      assert {:ok, output} = wait_for_screen_text(pty, terminal, "abc", "", @input_timeout_ms)
+      assert {:ok, output} = wait_for_screen_text(pty, terminal, "abc", output, @input_timeout_ms)
       assert {:ok, _output} = wait_for_screen_text(pty, terminal, "╰", output, @input_timeout_ms)
 
       {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
