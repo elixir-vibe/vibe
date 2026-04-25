@@ -1,5 +1,5 @@
 defmodule Exy.LLM.ModelTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   test "default model is newest ChatGPT Codex model" do
     assert Exy.LLM.Model.default() == "openai_codex:gpt-5.5"

@@ -50,7 +50,8 @@ defmodule Exy.LLM do
     session_id = Keyword.get_lazy(opts, :session_id, &Exy.Session.new_id/0)
 
     request_opts =
-      Keyword.drop(opts, [
+      opts
+      |> Keyword.drop([
         :model,
         :system,
         :session_id,
@@ -60,9 +61,32 @@ defmodule Exy.LLM do
         :on_thinking,
         :on_tool_call
       ])
+      |> maybe_put_codex_credentials(model)
 
     {model, messages, session_id, request_opts}
   end
+
+  defp maybe_put_codex_credentials(opts, "openai_codex:" <> _model) do
+    case Application.get_env(:exy, :openai_codex_credentials) do
+      %{access: access} = credentials when is_binary(access) ->
+        opts
+        |> Keyword.put_new(:access_token, access)
+        |> maybe_put_chatgpt_account_id(credentials)
+
+      _credentials ->
+        opts
+    end
+  end
+
+  defp maybe_put_codex_credentials(opts, _model), do: opts
+
+  defp maybe_put_chatgpt_account_id(opts, %{accountId: account_id}) when is_binary(account_id),
+    do: Keyword.put_new(opts, :chatgpt_account_id, account_id)
+
+  defp maybe_put_chatgpt_account_id(opts, %{account_id: account_id}) when is_binary(account_id),
+    do: Keyword.put_new(opts, :chatgpt_account_id, account_id)
+
+  defp maybe_put_chatgpt_account_id(opts, _credentials), do: opts
 
   defp record_request(prompt, model, session_id) do
     Exy.Trajectory.Store.append(:user_message, %{prompt: prompt, model: model},
@@ -88,6 +112,7 @@ defmodule Exy.LLM do
   def put_codex_credentials(%{access: access} = credentials) when is_binary(access) do
     ReqLLM.put_key(:openai_codex_api_key, access)
     Application.put_env(:exy, :openai_codex_credentials, credentials)
+    Application.put_env(:req_llm, :oauth_file, Path.expand("~/.exy/auth.json"))
     :ok
   end
 end

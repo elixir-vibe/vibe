@@ -174,6 +174,12 @@ defmodule Exy.CLI do
     if key = opts[:api_key] do
       ReqLLM.put_key(:openai_api_key, key)
     end
+
+    if Exy.LLM.Model.resolve(opts) |> String.starts_with?("openai_codex:") do
+      Exy.Auth.Codex.ensure_fresh()
+    end
+
+    :ok
   end
 
   defp agent_opts(opts) do
@@ -189,7 +195,7 @@ defmodule Exy.CLI do
 
   defp session_id(opts), do: opts[:session] || Exy.Session.new_id()
 
-  defp stream?(opts), do: not opts[:no_stream] and opts[:stream] != false
+  defp stream?(opts), do: opts[:no_stream] != true and opts[:stream] != false
 
   defp render_markdown(nil), do: ""
 
