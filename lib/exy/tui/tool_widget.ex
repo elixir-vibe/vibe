@@ -57,7 +57,7 @@ defmodule Exy.TUI.ToolWidget do
     status = status(tool)
 
     text = [
-      Theme.symbol(theme, :tool_icon),
+      Theme.fg(theme, :tool_icon, Theme.symbol(theme, :tool_icon)),
       " ",
       Theme.bold(to_string(name)),
       if(summary in [nil, ""],

@@ -55,6 +55,7 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> List.first()
       |> IO.iodata_to_binary()
 
+    assert line =~ "38;2;178;148;187"
     assert line =~ IO.ANSI.format([:bright, "eval"], true) |> IO.iodata_to_binary()
     refute line =~ "48;2"
   end
