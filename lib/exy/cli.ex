@@ -133,13 +133,17 @@ defmodule Exy.CLI do
 
   defp remote_or_local(function, args) do
     case Exy.Remote.connect() do
-      {:ok, node} -> :rpc.call(node, Exy.Server.RPC, function, args)
-      {:error, _reason} -> apply(Exy.Server.RPC, function, args)
+      {:ok, node} ->
+        :rpc.call(node, Exy.Server.RPC, function, args)
+
+      {:error, _reason} ->
+        {:ok, _apps} = Application.ensure_all_started(:exy)
+        apply(Exy.Server.RPC, function, args)
     end
   end
 
   defp start_background_server do
-    executable = System.find_executable("exy") || List.first(System.argv())
+    executable = executable_path()
 
     Port.open({:spawn_executable, executable}, [
       :binary,
@@ -148,7 +152,36 @@ defmodule Exy.CLI do
       args: ["server", "start", "--foreground"]
     ])
 
-    :ok
+    wait_for_server(2_000)
+  end
+
+  defp executable_path do
+    case :escript.script_name() do
+      path when is_list(path) and path != [] -> List.to_string(path)
+      _other -> System.find_executable("exy") || "exy"
+    end
+  rescue
+    _error -> System.find_executable("exy") || "exy"
+  end
+
+  defp wait_for_server(timeout_ms) do
+    deadline = System.monotonic_time(:millisecond) + timeout_ms
+    wait_for_server_until(deadline)
+  end
+
+  defp wait_for_server_until(deadline) do
+    case Exy.Remote.connect() do
+      {:ok, _node} ->
+        :ok
+
+      {:error, reason} ->
+        if System.monotonic_time(:millisecond) >= deadline do
+          {:error, reason}
+        else
+          Process.sleep(100)
+          wait_for_server_until(deadline)
+        end
+    end
   end
 
   @doc false
@@ -228,6 +261,8 @@ defmodule Exy.CLI do
 
   defp maybe_put_system_prompt(opts, nil), do: opts
   defp maybe_put_system_prompt(opts, system_prompt), do: Keyword.put(opts, :system, system_prompt)
+
+  defp print_result(:ok, opts), do: print_result({:ok, %{ok: true}}, opts)
 
   defp print_result({:ok, results}, opts) when is_list(results) do
     case opts[:mode] do

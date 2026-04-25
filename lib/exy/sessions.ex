@@ -28,7 +28,7 @@ defmodule Exy.Sessions do
   def list do
     live =
       Registry.select(Exy.Registry, [
-        {{{:session, :"$1"}, :"$2", :"$3"}, [], [%{id: :"$1", pid: :"$2", live?: true}]}
+        {{{:session, :"$1"}, :"$2", :"$3"}, [], [%{id: :"$1", live?: true}]}
       ])
 
     stored = Exy.Session.Store.list() |> Enum.map(&Map.put(&1, :live?, false))

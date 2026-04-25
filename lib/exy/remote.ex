@@ -29,7 +29,8 @@ defmodule Exy.Remote do
     if Node.alive?() do
       :ok
     else
-      name = String.to_atom("exy_client_#{System.unique_integer([:positive])}@#{hostname()}")
+      name = String.to_atom("exy_client_#{System.unique_integer([:positive])}@127.0.0.1")
+      ensure_epmd()
 
       case Node.start(name) do
         {:ok, _pid} -> :ok
@@ -48,5 +49,5 @@ defmodule Exy.Remote do
   end
 
   defp parse_node(node_name) when is_binary(node_name), do: {:ok, String.to_atom(node_name)}
-  defp hostname, do: :inet.gethostname() |> elem(1) |> List.to_string()
+  defp ensure_epmd, do: System.cmd("epmd", ["-daemon"])
 end
