@@ -65,17 +65,30 @@ defmodule Exy.TUI.Runtime do
     lines = TerminalLoop.render(loop)
     {cursor_row, cursor_column} = TerminalLoop.cursor_position(loop)
 
-    Ghostty.TTY.write(tty, [hide_cursor(), IO.ANSI.home(), IO.ANSI.clear()])
+    Ghostty.TTY.write(tty, [
+      hide_cursor(),
+      disable_autowrap(),
+      IO.ANSI.home(),
+      IO.ANSI.clear()
+    ])
 
     lines
     |> Enum.with_index(1)
-    |> Enum.each(fn {line, row} -> Ghostty.TTY.write(tty, [IO.ANSI.cursor(row, 1), line]) end)
+    |> Enum.each(fn {line, row} ->
+      Ghostty.TTY.write(tty, [IO.ANSI.cursor(row, 1), IO.ANSI.clear_line(), line])
+    end)
 
-    Ghostty.TTY.write(tty, [IO.ANSI.cursor(cursor_row, cursor_column), show_cursor()])
+    Ghostty.TTY.write(tty, [
+      IO.ANSI.cursor(cursor_row, cursor_column),
+      enable_autowrap(),
+      show_cursor()
+    ])
   end
 
   defp hide_cursor, do: "\e[?25l"
   defp show_cursor, do: "\e[?25h"
+  defp disable_autowrap, do: "\e[?7l"
+  defp enable_autowrap, do: "\e[?7h"
 
   defp ensure_interactive_terminal do
     if :prim_tty.isatty(:stdin) do
