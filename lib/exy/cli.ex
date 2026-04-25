@@ -169,12 +169,20 @@ defmodule Exy.CLI do
   defp attach_session(session_id, opts) do
     case server_rpc(:session_pid, [session_id]) do
       {:ok, session} ->
+        opts = Keyword.put_new(opts, :remote_node, session_node(session))
         tui(opts, session_server: session, session_id: session_id)
 
       {:error, reason} ->
         print_result({:error, reason}, opts)
     end
   end
+
+  defp session_node(session) when is_pid(session) do
+    node = node(session)
+    if node == Node.self(), do: nil, else: node
+  end
+
+  defp session_node(_session), do: nil
 
   defp ensure_server_running(timeout_ms \\ 20_000) do
     case Exy.Remote.connect() do

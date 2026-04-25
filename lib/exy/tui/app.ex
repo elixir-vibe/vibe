@@ -113,7 +113,9 @@ defmodule Exy.TUI.App do
   defp publish_active_sessions(state) do
     case :rpc.call(state.remote_node, Exy.Server.RPC, :active_session_count, []) do
       count when is_integer(count) ->
-        Session.emit_event(
+        count = max(count, minimum_visible_session_count(state))
+
+        Session.emit_transient_event(
           state.ui,
           Exy.UI.Event.new(:active_sessions_updated, Session.state(state.ui).session_id, %{
             count: count
@@ -125,6 +127,10 @@ defmodule Exy.TUI.App do
       _other ->
         %{state | remote_node: nil}
     end
+  end
+
+  defp minimum_visible_session_count(state) do
+    if is_pid(state.ui) and node(state.ui) == state.remote_node, do: 1, else: 0
   end
 
   defp session_server(opts) do

@@ -37,6 +37,10 @@ defmodule Exy.Session do
   @spec emit_event(GenServer.server(), Event.t()) :: :ok
   def emit_event(server, %Event{} = event), do: GenServer.call(server, {:emit_event, event})
 
+  @spec emit_transient_event(GenServer.server(), Event.t()) :: :ok
+  def emit_transient_event(server, %Event{} = event),
+    do: GenServer.call(server, {:emit_transient_event, event})
+
   @doc false
   @spec agent_ask_opts(keyword()) :: keyword()
   def agent_ask_opts(opts), do: Keyword.drop(opts, [:model])
@@ -90,6 +94,10 @@ defmodule Exy.Session do
 
   def handle_call({:emit_event, %Event{} = event}, _from, state) do
     {:reply, :ok, emit(state, event)}
+  end
+
+  def handle_call({:emit_transient_event, %Event{} = event}, _from, state) do
+    {:reply, :ok, emit(state, event, persist?: false)}
   end
 
   @impl true
@@ -247,9 +255,12 @@ defmodule Exy.Session do
     emit(state, Event.new(:assistant_message_added, state.state.session_id, %{result: response}))
   end
 
-  defp emit(state, event) do
+  defp emit(state, event, opts \\ []) do
     event_seq = state.event_seq + 1
-    {events, persistence_failed?} = events_with_persistence_status(state, event, event_seq)
+    persist? = Keyword.get(opts, :persist?, state.persist?)
+
+    {events, persistence_failed?} =
+      events_with_persistence_status(state, event, event_seq, persist?)
 
     Enum.each(events, fn {_seq, event} ->
       Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
@@ -274,11 +285,11 @@ defmodule Exy.Session do
     }
   end
 
-  defp events_with_persistence_status(%{persist?: false} = state, event, event_seq) do
+  defp events_with_persistence_status(state, event, event_seq, false) do
     {[{event_seq, event}], state.persistence_failed?}
   end
 
-  defp events_with_persistence_status(state, event, event_seq) do
+  defp events_with_persistence_status(state, event, event_seq, true) do
     case Exy.Session.Store.append_ui_event(event, event_seq) do
       :ok ->
         {[{event_seq, event}], state.persistence_failed?}

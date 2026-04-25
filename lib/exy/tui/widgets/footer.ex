@@ -32,8 +32,8 @@ defmodule Exy.TUI.Widgets.Footer do
   end
 
   defp sessions_label(nil), do: "server starting"
-  defp sessions_label(1), do: "1 session"
-  defp sessions_label(count), do: "#{count} sessions"
+  defp sessions_label(1), do: "1 active"
+  defp sessions_label(count), do: "#{count} active"
 
   defp plugin_status_line(statuses, _width, _theme) when map_size(statuses) == 0, do: nil
 
