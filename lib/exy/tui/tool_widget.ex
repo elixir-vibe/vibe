@@ -154,10 +154,10 @@ defmodule Exy.TUI.ToolWidget do
   defp value_lines(:output, %{error: error}, width, theme) do
     error
     |> format_error()
-    |> then(&Theme.fg(theme, :error, &1))
-    |> IO.iodata_to_binary()
     |> String.split("\n")
-    |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), line], width) end)
+    |> Enum.flat_map(fn line ->
+      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :error, line)], width)
+    end)
   end
 
   defp value_lines(:output, value, width, theme) do
