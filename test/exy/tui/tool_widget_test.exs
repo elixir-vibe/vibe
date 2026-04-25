@@ -89,7 +89,11 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert Enum.any?(plain, &String.contains?(&1, "… (4 more lines, ctrl+o to expand)"))
+    hint_index =
+      Enum.find_index(plain, &String.contains?(&1, "… (4 more lines, ctrl+o to expand)"))
+
+    assert hint_index
+    assert plain |> Enum.at(hint_index - 1) |> String.trim() == ""
   end
 
   test "does not truncate output when global truncation is off" do

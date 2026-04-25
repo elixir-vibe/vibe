@@ -192,7 +192,9 @@ defmodule Exy.TUI.ToolWidget do
     truncation = TextTruncation.lines(lines, enabled?: Map.get(tool, :truncate?, true), limit: 8)
 
     if truncation.truncated? do
-      Lines.join(truncation.lines, [TextTruncation.hint(truncation.omitted, theme, width)])
+      truncation.lines
+      |> Lines.join([""])
+      |> Lines.join([TextTruncation.hint(truncation.omitted, theme, width)])
     else
       truncation.lines
     end
