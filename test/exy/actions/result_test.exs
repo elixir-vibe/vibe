@@ -3,6 +3,7 @@ defmodule Exy.Actions.ResultTest do
 
   test "normalizes tool errors into serializable successful results" do
     assert {:ok, %{error: "boom"}} = Exy.Actions.Result.run(fn -> {:error, "boom"} end)
+    assert {:ok, %{error: "boom"}} = Exy.Actions.Result.error("boom")
     assert Jason.encode!(%{ok: true, result: %{error: "boom"}})
   end
 
