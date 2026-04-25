@@ -6,6 +6,8 @@ defmodule Mix.Tasks.Exy do
 
   ## Usage
 
+  Installed command:
+
       exy                        # Start server if needed and attach the TUI
       exy [options] [message...]
       exy server start [--foreground]
@@ -15,7 +17,10 @@ defmodule Mix.Tasks.Exy do
       exy sessions
       exy send <session-id> "prompt"
       exy attach <session-id>
-      mix exy                    # Run from a checkout
+
+  From a checkout:
+
+      mix exy
       mix exy [options] [message...]
 
   ## Options
