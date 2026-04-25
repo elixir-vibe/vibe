@@ -156,6 +156,16 @@ defmodule Exy.TUI.WidgetsTest do
     assert length(lines) == 5
   end
 
+  test "textarea cursor before newline renders as a visible cell without consuming the newline" do
+    lines =
+      DSL.textarea(title: "Prompt", value: "hello\nworld", cursor: 5, min_rows: 3)
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(lines, &String.contains?(&1, "hello "))
+    assert Enum.any?(lines, &String.contains?(&1, "world"))
+  end
+
   test "loader widget renders Exy's reusable waiting indicator phases" do
     plain =
       for phase <- 0..3 do

@@ -202,10 +202,21 @@ defmodule Exy.TUI.TerminalLoop do
 
   defp editor_cursor_position(snapshot, editor_start_row) do
     inner_width = max(snapshot.width - 4, 1)
-    left = String.slice(snapshot.editor.text || "", 0, snapshot.editor.cursor || 0)
-    left_width = Width.visible_length(left)
-    row = editor_start_row + 2 + div(left_width, inner_width)
-    column = 3 + rem(left_width, inner_width)
+    text = snapshot.editor.text || ""
+    cursor = snapshot.editor.cursor || 0
+    before_cursor = String.slice(text, 0, cursor)
+    logical_lines = String.split(before_cursor, "\n")
+    current_line = List.last(logical_lines) || ""
+
+    previous_rows =
+      logical_lines
+      |> Enum.drop(-1)
+      |> Enum.map(&(&1 |> Widget.wrap(inner_width) |> length()))
+      |> Enum.sum()
+
+    current_width = Width.visible_length(current_line)
+    row = editor_start_row + 2 + previous_rows + div(current_width, inner_width)
+    column = 3 + rem(current_width, inner_width)
 
     {max(row, 1), max(column, 1)}
   end

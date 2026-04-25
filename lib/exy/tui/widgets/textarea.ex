@@ -44,21 +44,22 @@ defmodule Exy.TUI.Widgets.Textarea do
     cursor = cursor |> max(0) |> min(String.length(content))
     {left, right} = String.split_at(content, cursor)
 
+    {cursor_grapheme, rest} = cursor_grapheme(right, theme)
+
     cursor_part =
-      case String.next_grapheme(right) do
-        nil ->
-          Theme.bg(
-            theme,
-            :input_cursor_bg,
-            Theme.fg(theme, :input_cursor, Theme.symbol(theme, :input_cursor))
-          )
+      Theme.bg(theme, :input_cursor_bg, Theme.fg(theme, :input_cursor, cursor_grapheme))
 
-        {grapheme, _rest} ->
-          Theme.bg(theme, :input_cursor_bg, Theme.fg(theme, :input_cursor, grapheme))
-      end
-
-    rest = if right == "", do: "", else: String.slice(right, 1..-1//1)
     [Theme.fg(theme, :input_text, left), cursor_part, Theme.fg(theme, :input_text, rest)]
+  end
+
+  defp cursor_grapheme("", theme), do: {Theme.symbol(theme, :input_cursor), ""}
+
+  defp cursor_grapheme("\n" <> _rest = right, theme),
+    do: {Theme.symbol(theme, :input_cursor), right}
+
+  defp cursor_grapheme(right, _theme) do
+    {grapheme, rest} = String.next_grapheme(right)
+    {grapheme, rest}
   end
 
   defp pad_rows(lines, min_rows, max_rows) do

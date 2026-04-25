@@ -117,6 +117,16 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert TerminalLoop.cursor_position(loop) == {8, 8}
   end
 
+  test "tracks editor cursor position across prompt newlines" do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 12)
+
+    :ok = TerminalLoop.input(loop, "hello")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter, mods: [:shift]})
+    :ok = TerminalLoop.input(loop, "world")
+
+    assert TerminalLoop.cursor_position(loop) == {9, 8}
+  end
+
   test "tracks resize" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
     assert :ok = TerminalLoop.resize(loop, 100, 30)

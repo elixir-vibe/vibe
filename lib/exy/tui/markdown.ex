@@ -144,12 +144,20 @@ defmodule Exy.TUI.Markdown do
       nodes
       |> Enum.flat_map(&block(&1, max(width - Width.visible_length(prefix), 1), theme))
       |> trim_trailing_blank()
+      |> maybe_keep_list_item_margin(nodes)
 
     case lines do
       [] -> [prefix]
       [first | rest] -> [[prefix, first] | Enum.map(rest, &[indent, &1])]
     end
   end
+
+  defp maybe_keep_list_item_margin(lines, nodes) do
+    if complex_list_item?(nodes), do: Exy.TUI.Lines.append(lines, ""), else: lines
+  end
+
+  defp complex_list_item?([%MDEx.Paragraph{}]), do: false
+  defp complex_list_item?(_nodes), do: true
 
   defp table(rows, width, theme) do
     cells = Enum.map(rows, &table_row(&1, theme))

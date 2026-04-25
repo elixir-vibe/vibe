@@ -74,4 +74,55 @@ defmodule Exy.TUI.MarkdownTest do
     assert Enum.any?(plain, &String.contains?(&1, "[x]"))
     assert Enum.any?(plain, &String.contains?(&1, "[ ] todo"))
   end
+
+  test "renders comprehensive stress fixture without known spacing regressions" do
+    plain =
+      "priv/fixtures/markdown_stress.md"
+      |> File.read!()
+      |> Markdown.render(100, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "Markdown Stress Fixture"))
+    assert Enum.any?(plain, &String.contains?(&1, "[ ] Pending nested task"))
+    refute Enum.any?(plain, &String.contains?(&1, "```"))
+
+    paragraph_index = Enum.find_index(plain, &String.contains?(&1, "This paragraph belongs"))
+    quote_item_index = Enum.find_index(plain, &String.contains?(&1, "2. Ordered item"))
+
+    assert Enum.at(plain, paragraph_index + 1) |> String.trim() == ""
+    assert quote_item_index > paragraph_index + 1
+  end
+
+  test "preserves spacing between complex nested list items" do
+    plain =
+      """
+      1. Ordered item with paragraph
+
+         This paragraph belongs to the ordered item.
+      2. Ordered item with blockquote
+
+         > Quote inside ordered list.
+      3. Ordered item with code
+
+         ```elixir
+         :ok
+         ```
+      """
+      |> Markdown.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    paragraph_index = Enum.find_index(plain, &String.contains?(&1, "This paragraph belongs"))
+    quote_item_index = Enum.find_index(plain, &String.contains?(&1, "2. Ordered item"))
+    quote_index = Enum.find_index(plain, &String.contains?(&1, "Quote inside"))
+    code_item_index = Enum.find_index(plain, &String.contains?(&1, "3. Ordered item"))
+
+    assert Enum.at(plain, paragraph_index + 1) |> String.trim() == ""
+    assert quote_item_index > paragraph_index + 1
+    assert code_item_index > quote_index + 1
+
+    assert Enum.any?(
+             Enum.slice(plain, (quote_index + 1)..(code_item_index - 1)//1),
+             &(String.trim(&1) == "")
+           )
+  end
 end
