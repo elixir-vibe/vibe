@@ -155,7 +155,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         output: %{
           path: "demo.txt",
           message: "Successfully replaced 1 block(s) in demo.txt.",
-          diff: "-1 old\n+1 new"
+          diff: "-1  old\n+1  new"
         }
       }
       |> DSL.tool()
@@ -165,8 +165,8 @@ defmodule Exy.TUI.ToolWidgetTest do
     ansi = IO.iodata_to_binary(lines)
 
     assert Enum.any?(plain, &String.contains?(&1, "Successfully replaced"))
-    assert Enum.any?(plain, &String.contains?(&1, "-1 old"))
-    assert Enum.any?(plain, &String.contains?(&1, "+1 new"))
+    assert Enum.any?(plain, &String.contains?(&1, "-1  old"))
+    assert Enum.any?(plain, &String.contains?(&1, "+1  new"))
     assert ansi =~ "38;2;204;102;102"
     assert ansi =~ "38;2;126;170;115"
   end

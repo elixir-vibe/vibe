@@ -25,7 +25,7 @@ defmodule Exy.FileToolsTest do
 
     assert {:ok, result} = Exy.FileTools.write_file(path, "new\n")
     assert File.read!(path) == "new\n"
-    assert result.diff =~ "+1 new"
+    assert result.diff =~ "+1  new"
   end
 
   test "edits files with exact replacements and returns a diff", %{dir: dir} do
@@ -37,8 +37,8 @@ defmodule Exy.FileToolsTest do
 
     assert File.read!(path) == "one\nTWO\nthree\n"
     assert result.replacements == 1
-    assert result.diff =~ "-2 two"
-    assert result.diff =~ "+2 TWO"
+    assert result.diff =~ "-2  two"
+    assert result.diff =~ "+2  TWO"
   end
 
   test "rejects duplicate exact edit matches", %{dir: dir} do

@@ -202,7 +202,7 @@ defmodule Exy.FileTools do
   defp diff_groups([{:del, lines} | rest], width, old_line, new_line, acc) do
     rendered =
       Enum.with_index(lines, old_line)
-      |> Enum.map(fn {line, number} -> "-#{pad(number, width)} #{line}" end)
+      |> Enum.map(fn {line, number} -> "-#{pad(number, width)}  #{line}" end)
 
     diff_groups(rest, width, old_line + length(lines), new_line, Enum.reverse(rendered, acc))
   end
@@ -210,7 +210,7 @@ defmodule Exy.FileTools do
   defp diff_groups([{:ins, lines} | rest], width, old_line, new_line, acc) do
     rendered =
       Enum.with_index(lines, new_line)
-      |> Enum.map(fn {line, number} -> "+#{pad(number, width)} #{line}" end)
+      |> Enum.map(fn {line, number} -> "+#{pad(number, width)}  #{line}" end)
 
     diff_groups(rest, width, old_line, new_line + length(lines), Enum.reverse(rendered, acc))
   end
@@ -218,7 +218,7 @@ defmodule Exy.FileTools do
   defp context_lines(lines, old_line, new_line, width) do
     rendered =
       Enum.with_index(lines, old_line)
-      |> Enum.map(fn {line, number} -> " #{pad(number, width)} #{line}" end)
+      |> Enum.map(fn {line, number} -> " #{pad(number, width)}  #{line}" end)
 
     {rendered, 0, old_line + length(lines), new_line + length(lines)}
   end
