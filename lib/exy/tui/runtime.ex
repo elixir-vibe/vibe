@@ -18,7 +18,7 @@ defmodule Exy.TUI.Runtime do
 
     with :ok <- ensure_interactive_terminal(),
          {:ok, loop} <- TerminalLoop.start_link(opts),
-         {:ok, tty} <- Ghostty.TTY.start_link(owner: self()) do
+         {:ok, tty} <- Ghostty.TTY.start_link(owner: self(), takeover: true) do
       try do
         render(tty, loop)
         receive_events(tty, loop)
