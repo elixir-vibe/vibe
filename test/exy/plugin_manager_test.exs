@@ -80,13 +80,39 @@ defmodule Exy.PluginManagerTest do
     assert :ok = Exy.Plugin.UI.set_title(session_id, "Exy Test")
 
     state = Exy.UI.SessionServer.state(server)
-    assert state.plugin_widgets["panel"].content == ["one", "two"]
+    assert state.plugin_widgets["panel"].type == :lines
+    assert state.plugin_widgets["panel"].props.content == ["one", "two"]
     assert state.plugin_widgets["panel"].placement == :below_editor
+
+    assert :ok =
+             Exy.Plugin.UI.set_progress(session_id, :indexer,
+               title: "Indexing",
+               current: 12,
+               total: 80,
+               message: "lib/exy/session.ex",
+               placement: :below_editor
+             )
+
+    state = Exy.UI.SessionServer.state(server)
+
+    assert state.plugin_widgets["indexer"] == %Exy.UI.Widget{
+             id: "indexer",
+             type: :progress,
+             placement: :below_editor,
+             props: %{
+               title: "Indexing",
+               current: 12,
+               total: 80,
+               message: "lib/exy/session.ex"
+             }
+           }
+
     assert state.working_message == "indexing"
     assert state.hidden_thinking_label == "hidden thoughts"
     assert state.title == "Exy Test"
 
     assert :ok = Exy.Plugin.UI.clear_widget(session_id, :panel)
+    assert :ok = Exy.Plugin.UI.clear_widget(session_id, :indexer)
     assert :ok = Exy.Plugin.UI.set_status(session_id, :worker, nil)
 
     state = Exy.UI.SessionServer.state(server)

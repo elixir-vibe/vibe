@@ -114,12 +114,16 @@ defmodule Exy.UI.ViewModel do
 
   defp plugin_widgets(widgets) do
     widgets
-    |> Enum.sort_by(fn {key, _widget} -> to_string(key) end)
-    |> Enum.map(fn {key, widget} ->
+    |> Enum.sort_by(fn {id, _widget} -> to_string(id) end)
+    |> Enum.map(fn {_id, widget} ->
+      widget = Exy.UI.Widget.normalize(widget)
+
       %PluginWidget{
-        key: key,
-        content: Map.get(widget, :content, []),
-        placement: Map.get(widget, :placement, :above_editor)
+        id: widget.id,
+        type: widget.type,
+        props: widget.props,
+        placement: widget.placement,
+        version: widget.version
       }
     end)
   end

@@ -6,7 +6,7 @@ defmodule Exy.Plugin.UI do
   renderers decide where/how to show it. Passing `nil` clears the status.
   """
 
-  alias Exy.UI.Bus
+  alias Exy.UI.{Bus, Widget}
 
   @type session_id :: String.t()
   @type status_key :: String.t() | atom()
@@ -20,13 +20,30 @@ defmodule Exy.Plugin.UI do
     Bus.emit(session_id, :plugin_status_updated, %{key: normalize_key(key), text: sanitize(text)})
   end
 
+  @spec set_widget(session_id(), Widget.t()) :: :ok | {:error, :not_found}
+  def set_widget(session_id, %Widget{} = widget) when is_binary(session_id) do
+    Bus.emit(session_id, :plugin_widget_updated, %{widget: widget})
+  end
+
+  @spec set_widget(session_id(), status_key(), [String.t()] | String.t()) ::
+          :ok | {:error, :not_found}
+  def set_widget(session_id, key, content), do: set_widget(session_id, key, content, [])
+
   @spec set_widget(session_id(), status_key(), [String.t()] | String.t(), keyword()) ::
           :ok | {:error, :not_found}
-  def set_widget(session_id, key, content, opts \\ []) when is_binary(session_id) do
+  def set_widget(session_id, key, content, opts) when is_binary(session_id) do
     Bus.emit(session_id, :plugin_widget_updated, %{
-      key: normalize_key(key),
-      content: List.wrap(content),
-      placement: Keyword.get(opts, :placement, :above_editor)
+      widget:
+        Widget.lines(normalize_key(key), content,
+          placement: Keyword.get(opts, :placement, :above_editor)
+        )
+    })
+  end
+
+  @spec set_progress(session_id(), status_key(), keyword()) :: :ok | {:error, :not_found}
+  def set_progress(session_id, key, opts) when is_binary(session_id) do
+    Bus.emit(session_id, :plugin_widget_updated, %{
+      widget: Widget.progress(normalize_key(key), opts)
     })
   end
 

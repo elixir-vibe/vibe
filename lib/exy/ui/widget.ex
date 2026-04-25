@@ -1,0 +1,67 @@
+defmodule Exy.UI.Widget do
+  @moduledoc """
+  Semantic widget state shared by TUI and web renderers.
+  """
+
+  @placements [:above_editor, :below_editor, :sidebar]
+  @types [:lines, :markdown, :status, :panel, :progress, :list]
+
+  @type placement :: :above_editor | :below_editor | :sidebar
+  @type widget_type :: :lines | :markdown | :status | :panel | :progress | :list
+
+  @type t :: %__MODULE__{
+          id: String.t(),
+          type: widget_type(),
+          placement: placement(),
+          props: map(),
+          version: non_neg_integer()
+        }
+
+  @enforce_keys [:id, :type]
+  defstruct [:id, :type, placement: :above_editor, props: %{}, version: 0]
+
+  @spec new(String.t() | atom(), widget_type(), map(), keyword()) :: t()
+  def new(id, type, props \\ %{}, opts \\ []) when type in @types and is_map(props) do
+    placement = Keyword.get(opts, :placement, :above_editor)
+
+    unless placement in @placements do
+      raise ArgumentError, "invalid widget placement: #{inspect(placement)}"
+    end
+
+    %__MODULE__{
+      id: normalize_id(id),
+      type: type,
+      placement: placement,
+      props: props,
+      version: Keyword.get(opts, :version, 0)
+    }
+  end
+
+  @spec lines(String.t() | atom(), [String.t()] | String.t(), keyword()) :: t()
+  def lines(id, content, opts \\ []) do
+    new(id, :lines, %{content: List.wrap(content)}, opts)
+  end
+
+  @spec progress(String.t() | atom(), keyword()) :: t()
+  def progress(id, opts) do
+    props =
+      opts
+      |> Keyword.take([:title, :current, :total, :message])
+      |> Map.new()
+
+    new(id, :progress, props, Keyword.take(opts, [:placement, :version]))
+  end
+
+  @spec normalize(t() | map()) :: t()
+  def normalize(%__MODULE__{} = widget), do: widget
+
+  def normalize(%{id: id, type: type, props: props} = widget) when is_map(props) do
+    new(id, type, props,
+      placement: Map.get(widget, :placement, :above_editor),
+      version: Map.get(widget, :version, 0)
+    )
+  end
+
+  defp normalize_id(id) when is_atom(id), do: Atom.to_string(id)
+  defp normalize_id(id) when is_binary(id), do: id
+end

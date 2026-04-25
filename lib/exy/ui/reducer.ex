@@ -166,8 +166,9 @@ defmodule Exy.UI.Reducer do
     %{state | plugin_statuses: Map.delete(state.plugin_statuses, key)}
   end
 
-  defp reduce(state, %Event{type: :plugin_widget_updated, data: %{key: key} = data}) do
-    %{state | plugin_widgets: Map.put(state.plugin_widgets, key, Map.delete(data, :key))}
+  defp reduce(state, %Event{type: :plugin_widget_updated, data: %{widget: widget}}) do
+    widget = Exy.UI.Widget.normalize(widget)
+    %{state | plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)}
   end
 
   defp reduce(state, %Event{type: :plugin_widget_cleared, data: %{key: key}}) do

@@ -1,2 +1,1 @@
-Indexer
-3 files changed • embeddings warm
+Indexer • 3/8 • embeddings warm

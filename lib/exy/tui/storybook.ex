@@ -109,9 +109,15 @@ defmodule Exy.TUI.Storybook do
 
   def story(:plugin_widget) do
     plugin_widget(%{
-      key: "indexer",
+      id: "indexer",
+      type: :progress,
       placement: :above_editor,
-      content: ["Indexer", "3 files changed • embeddings warm"]
+      props: %{
+        title: "Indexer",
+        current: 3,
+        total: 8,
+        message: "embeddings warm"
+      }
     })
   end
 
