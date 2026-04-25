@@ -57,13 +57,17 @@ defmodule Exy.Agent do
   defp enrich_result_usage(result, _pid), do: result
 
   defp agent_usage(pid) do
-    case Jido.AgentServer.status(pid) do
-      {:ok, status} ->
-        get_in(status.raw_state, [:__strategy__, :usage]) || status.snapshot.details[:usage]
-
-      _other ->
-        nil
+    with true <- Process.alive?(pid), {:ok, status} <- safe_status(pid) do
+      get_in(status.raw_state, [:__strategy__, :usage]) || status.snapshot.details[:usage]
+    else
+      _other -> nil
     end
+  end
+
+  defp safe_status(pid) do
+    Jido.AgentServer.status(pid)
+  catch
+    :exit, _reason -> {:error, :agent_unavailable}
   end
 
   defp configure_model_alias(opts) do

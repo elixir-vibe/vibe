@@ -26,7 +26,9 @@ defmodule Exy.Agent.Streaming do
 
   @spec unregister(pid()) :: :ok
   def unregister(agent_pid) when is_pid(agent_pid) do
-    with {:ok, status} <- Jido.AgentServer.status(agent_pid), true <- table?() do
+    with true <- Process.alive?(agent_pid),
+         {:ok, status} <- safe_status(agent_pid),
+         true <- table?() do
       :ets.delete(@table, status.agent_id)
     end
 
@@ -79,6 +81,12 @@ defmodule Exy.Agent.Streaming do
     {normalize_type(type), text}
   end
 
+  defp safe_status(agent_pid) do
+    Jido.AgentServer.status(agent_pid)
+  catch
+    :exit, _reason -> {:error, :agent_unavailable}
+  end
+
   defp normalize_type(type) when type in [:thinking, "thinking"], do: :thinking
   defp normalize_type(_type), do: :content
 
@@ -103,7 +111,9 @@ defmodule Exy.Agent.Streaming do
   end
 
   defp normalize_result({:ok, result, _effects}), do: unwrap_output(result)
+  defp normalize_result({:ok, result}), do: unwrap_output(result)
   defp normalize_result({:error, reason, _effects}), do: %{error: reason}
+  defp normalize_result({:error, reason}), do: %{error: reason}
   defp normalize_result(result), do: unwrap_output(result)
 
   defp unwrap_output(%{output: output}) when is_binary(output), do: output

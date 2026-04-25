@@ -105,6 +105,19 @@ defmodule Exy.TUI.WidgetsTest do
     assert content =~ IO.ANSI.reset() <> background
   end
 
+  test "assistant errors are padded on an error background" do
+    lines =
+      DSL.message(%{role: :assistant, error: "boom"})
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert lines == [
+             String.duplicate(" ", 40),
+             "  ERROR boom" <> String.duplicate(" ", 28),
+             String.duplicate(" ", 40)
+           ]
+  end
+
   test "input widget renders prompt, value, cursor, and placeholder" do
     focused =
       DSL.input(value: "hello", cursor: 2)

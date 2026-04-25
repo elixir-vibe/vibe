@@ -59,6 +59,27 @@ defmodule Exy.TUI.ToolWidgetTest do
     refute line =~ "48;2"
   end
 
+  test "failed tool output is red and padded" do
+    lines =
+      %{
+        id: "eval-1",
+        name: :elixir_eval,
+        status: :error,
+        args: %{code: "raise \"boom\""},
+        output: %{error: "boom"}
+      }
+      |> DSL.tool()
+      |> Widget.render(80, Theme.default())
+
+    plain = Enum.map(lines, &Width.visible_text/1)
+    ansi = IO.iodata_to_binary(lines)
+
+    assert Enum.any?(plain, &String.contains?(&1, "×"))
+    assert Enum.any?(plain, &String.contains?(&1, "  boom"))
+    assert Enum.all?(plain, &String.starts_with?(&1, " "))
+    assert ansi =~ "38;2;204;102;102"
+  end
+
   test "truncates tool output with reusable shortcut hint" do
     output = Enum.map_join(1..12, "\n", &"line #{&1}")
 

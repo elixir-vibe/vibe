@@ -14,8 +14,9 @@ defmodule Exy.TUI.Widgets.Message do
   def render(%{props: %{error: error}}, width, theme) when is_binary(error) do
     error
     |> to_string()
-    |> Markdown.render(width, theme)
+    |> Markdown.render(max(width - 4, 1), theme)
     |> prefix_first_line(Theme.fg(theme, :error, "ERROR "))
+    |> render_block_lines(width, theme, :tool_error_bg, :error)
   end
 
   def render(%{props: %{role: :assistant} = props}, width, theme) do

@@ -151,6 +151,15 @@ defmodule Exy.TUI.ToolWidget do
     Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
   end
 
+  defp value_lines(:output, %{error: error}, width, theme) do
+    error
+    |> format_error()
+    |> then(&Theme.fg(theme, :error, &1))
+    |> IO.iodata_to_binary()
+    |> String.split("\n")
+    |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), line], width) end)
+  end
+
   defp value_lines(:output, value, width, theme) do
     value
     |> format_value()
@@ -166,6 +175,9 @@ defmodule Exy.TUI.ToolWidget do
       theme
     )
   end
+
+  defp format_error(error) when is_binary(error), do: error
+  defp format_error(error), do: inspect(error, pretty: true, limit: 20)
 
   defp highlight_output(value, theme) do
     {:ok, highlighted} = Lumis.highlight(value, formatter: {:terminal, language: "elixir"})

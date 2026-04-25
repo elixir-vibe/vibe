@@ -43,6 +43,14 @@ defmodule Exy.Agent.StreamingTest do
     Exy.Agent.Streaming.unregister(agent)
   end
 
+  test "unregister tolerates an exited agent" do
+    pid = spawn(fn -> :ok end)
+    ref = Process.monitor(pid)
+    assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+
+    assert :ok = Exy.Agent.Streaming.unregister(pid)
+  end
+
   test "plugin forwards tool lifecycle signals", %{agent: agent, agent_id: agent_id} do
     test_pid = self()
 
@@ -70,6 +78,24 @@ defmodule Exy.Agent.StreamingTest do
 
     assert_receive {:tool_finished,
                     %{id: "call-1", name: "elixir_eval", output: "2", status: :ok}}
+  after
+    Exy.Agent.Streaming.unregister(agent)
+  end
+
+  test "plugin forwards failed tool results", %{agent: agent, agent_id: agent_id} do
+    test_pid = self()
+    Exy.Agent.Streaming.register(agent, on_tool_finished: &send(test_pid, {:tool_finished, &1}))
+
+    signal = %{
+      type: "ai.tool.result",
+      data: %{call_id: "call-1", tool_name: "elixir_eval", result: {:error, "boom", []}}
+    }
+
+    assert {:ok, :continue} =
+             Exy.Agent.Streaming.Plugin.handle_signal(signal, %{agent: %{id: agent_id}})
+
+    assert_receive {:tool_finished,
+                    %{id: "call-1", name: "elixir_eval", output: %{error: "boom"}, status: :error}}
   after
     Exy.Agent.Streaming.unregister(agent)
   end
