@@ -31,30 +31,6 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert plain |> Enum.at(footer_index - 1) |> String.trim() == ""
   end
 
-  test "can scroll back through chat history without scrollbars" do
-    ask = fn text, _opts -> {:ok, Enum.map_join(1..30, "\n", &"line #{&1}: #{text}")} end
-    {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 12, ask_fun: ask)
-
-    :ok = TerminalLoop.input(loop, "hello")
-    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
-    Process.sleep(50)
-
-    bottom = loop |> TerminalLoop.render() |> Enum.map_join("\n", &Width.visible_text/1)
-    assert bottom =~ "line 30: hello"
-    refute bottom =~ "line 1: hello"
-
-    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :page_up})
-    scrolled = loop |> TerminalLoop.render() |> Enum.map_join("\n", &Width.visible_text/1)
-
-    refute scrolled =~ "line 30: hello"
-    assert scrolled =~ "line 23: hello"
-
-    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :page_down})
-    back_at_bottom = loop |> TerminalLoop.render() |> Enum.map_join("\n", &Width.visible_text/1)
-
-    assert back_at_bottom =~ "line 30: hello"
-  end
-
   test "repaints immediately for background UI updates" do
     session_id = "background-ui-#{System.unique_integer([:positive])}"
 

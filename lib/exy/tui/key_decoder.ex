@@ -3,8 +3,7 @@ defmodule Exy.TUI.KeyDecoder do
   Terminal byte-sequence decoder for editor-level keys.
   """
 
-  @type key ::
-          Exy.UI.Editor.key() | :scroll_page_up | :scroll_page_down | :scroll_top | :scroll_bottom
+  @type key :: Exy.UI.Editor.key()
 
   @spec decode_event(Ghostty.KeyEvent.t()) :: [key()]
   def decode_event(%Ghostty.KeyEvent{key: :arrow_left}), do: [:left]
@@ -14,8 +13,6 @@ defmodule Exy.TUI.KeyDecoder do
   def decode_event(%Ghostty.KeyEvent{key: :home}), do: [:home]
   def decode_event(%Ghostty.KeyEvent{key: :end}), do: [:end]
   def decode_event(%Ghostty.KeyEvent{key: :delete}), do: [:delete]
-  def decode_event(%Ghostty.KeyEvent{key: :page_up}), do: [:scroll_page_up]
-  def decode_event(%Ghostty.KeyEvent{key: :page_down}), do: [:scroll_page_down]
   def decode_event(%Ghostty.KeyEvent{key: :backspace}), do: [:backspace]
   def decode_event(%Ghostty.KeyEvent{key: :enter, mods: [:shift]}), do: [:enter]
   def decode_event(%Ghostty.KeyEvent{key: :enter, mods: [:alt]}), do: [:enter]
@@ -24,10 +21,6 @@ defmodule Exy.TUI.KeyDecoder do
   def decode_event(%Ghostty.KeyEvent{key: :escape}), do: [:cancel]
   def decode_event(%Ghostty.KeyEvent{key: :c, mods: [:ctrl]}), do: [:cancel]
   def decode_event(%Ghostty.KeyEvent{key: :o, mods: [:ctrl]}), do: [:toggle_truncation]
-  def decode_event(%Ghostty.KeyEvent{key: :u, mods: [:ctrl]}), do: [:scroll_page_up]
-  def decode_event(%Ghostty.KeyEvent{key: :d, mods: [:ctrl]}), do: [:scroll_page_down]
-  def decode_event(%Ghostty.KeyEvent{key: :home, mods: [:ctrl]}), do: [:scroll_top]
-  def decode_event(%Ghostty.KeyEvent{key: :end, mods: [:ctrl]}), do: [:scroll_bottom]
   def decode_event(%Ghostty.KeyEvent{key: :b, mods: [:alt]}), do: [:word_left]
   def decode_event(%Ghostty.KeyEvent{key: :f, mods: [:alt]}), do: [:word_right]
   def decode_event(%Ghostty.KeyEvent{utf8: utf8}) when is_binary(utf8), do: [{:insert, utf8}]
@@ -45,8 +38,6 @@ defmodule Exy.TUI.KeyDecoder do
   def decode("\e[H"), do: [:home]
   def decode("\e[F"), do: [:end]
   def decode("\e[3~"), do: [:delete]
-  def decode("\e[5~"), do: [:scroll_page_up]
-  def decode("\e[6~"), do: [:scroll_page_down]
   def decode("\u007F"), do: [:backspace]
   def decode("\b"), do: [:backspace]
   def decode("\r"), do: [:submit]
@@ -55,8 +46,6 @@ defmodule Exy.TUI.KeyDecoder do
   def decode("\e"), do: [:cancel]
   def decode(<<3>>), do: [:cancel]
   def decode(<<15>>), do: [:toggle_truncation]
-  def decode(<<21>>), do: [:scroll_page_up]
-  def decode(<<4>>), do: [:scroll_page_down]
 
   def decode(data) when is_binary(data) do
     cond do
