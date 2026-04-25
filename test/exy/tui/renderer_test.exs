@@ -15,8 +15,10 @@ defmodule Exy.TUI.RendererTest do
     plain_lines = Enum.map(lines, &Exy.TUI.Width.visible_text/1)
 
     assert Enum.all?(plain_lines, &(String.length(&1) <= 40))
-    assert Enum.any?(plain_lines, &String.starts_with?(&1, "You: "))
-    assert Enum.any?(plain_lines, &String.starts_with?(&1, "Exy: "))
-    assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.color(4, 4, 2)))
+    assert Enum.any?(plain_lines, &String.starts_with?(&1, " hello"))
+    assert "ok" in plain_lines
+    refute Enum.any?(plain_lines, &String.starts_with?(&1, "You: "))
+    refute Enum.any?(plain_lines, &String.starts_with?(&1, "Exy: "))
+    assert Enum.any?(lines, &(IO.iodata_to_binary(&1) =~ IO.ANSI.color_background(1, 1, 1)))
   end
 end

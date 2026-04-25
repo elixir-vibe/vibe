@@ -15,8 +15,10 @@ defmodule Exy.TUI.Views.ChatTest do
     lines = Chat.render_lines(view, 80, Theme.default())
     plain = Enum.map(lines, &Width.visible_text/1)
 
-    assert "You: hello" in plain
-    assert "Exy: hi" in plain
+    assert " hello                                                                          " in plain
+    assert "hi" in plain
+    refute "You: hello" in plain
+    refute "Exy: hi" in plain
     assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
   end
 end

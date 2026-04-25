@@ -23,6 +23,7 @@ defmodule Exy.TUI.NodeTest do
       |> Widget.render(80, Theme.default())
       |> hd()
 
-    assert Width.visible_text(line) == "You: hello"
+    assert Width.visible_text(line) ==
+             " hello                                                                          "
   end
 end

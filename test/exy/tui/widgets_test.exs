@@ -40,6 +40,29 @@ defmodule Exy.TUI.WidgetsTest do
            )
   end
 
+  test "message widgets use content blocks without speaker labels" do
+    user =
+      DSL.message(%{role: :user, text: "hello"})
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assistant =
+      DSL.message(%{role: :assistant, text: "hi"})
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    thinking =
+      DSL.message(%{role: :assistant, text: ""})
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert user == [" hello                                  "]
+    assert assistant == ["hi"]
+    assert thinking == ["Thinking…"]
+    refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "You:"))
+    refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
+  end
+
   test "input widget renders prompt, value, cursor, and placeholder" do
     focused =
       DSL.input(value: "hello", cursor: 2)

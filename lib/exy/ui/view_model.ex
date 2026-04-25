@@ -97,7 +97,10 @@ defmodule Exy.UI.ViewModel do
   defp streaming_blocks(%{streaming_message: nil}), do: []
 
   defp streaming_blocks(%{streaming_message: message}) do
-    [%AssistantMessage{id: "streaming", text: Map.get(message, :text), at: Map.get(message, :at)}]
+    [
+      %AssistantMessage{id: "streaming", text: Map.get(message, :text), at: Map.get(message, :at)}
+      |> Map.put(:role, :assistant)
+    ]
   end
 
   defp notification_block([]), do: nil
