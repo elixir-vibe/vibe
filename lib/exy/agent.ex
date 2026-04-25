@@ -8,6 +8,7 @@ defmodule Exy.Agent do
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     configure_model_alias(opts)
+    ensure_provider_credentials(opts)
 
     with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
       session_id = Keyword.get(opts, :session_id) || Exy.Session.Store.new_id()
@@ -80,5 +81,12 @@ defmodule Exy.Agent do
       :model_aliases,
       Map.put(current, :exy, Exy.LLM.Model.resolve(opts))
     )
+  end
+
+  defp ensure_provider_credentials(opts) do
+    case Exy.LLM.Model.resolve(opts) do
+      "openai_codex:" <> _model -> Exy.Auth.Codex.ensure_fresh()
+      _model -> :ok
+    end
   end
 end

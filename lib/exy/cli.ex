@@ -126,7 +126,9 @@ defmodule Exy.CLI do
 
     case Exy.Remote.connect() do
       {:ok, _node} ->
-        session_id = opts[:session] || latest_remote_session_id() || new_remote_session_id(opts)
+        session_id =
+          opts[:session] || latest_live_remote_session_id() || new_remote_session_id(opts)
+
         attach_session(session_id, opts)
 
       {:error, _reason} ->
@@ -152,10 +154,9 @@ defmodule Exy.CLI do
     end
   end
 
-  defp latest_remote_session_id do
+  defp latest_live_remote_session_id do
     case server_rpc(:sessions, []) do
-      {:ok, [%{id: id} | _sessions]} -> id
-      {:ok, []} -> nil
+      {:ok, sessions} -> sessions |> Enum.find(& &1[:live?]) |> then(&(&1 && &1.id))
       {:error, _reason} -> nil
     end
   end
