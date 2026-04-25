@@ -107,19 +107,31 @@ defmodule Exy.TUI.Runtime do
   defp render(_tty, loop) do
     lines = TerminalLoop.render(loop)
     {cursor_row, cursor_column} = TerminalLoop.cursor_position(loop)
+    start_row = max(cursor_row - editor_cursor_row(lines), 1)
 
-    write_output(render_frame(lines, {cursor_row, cursor_column}))
+    write_output(render_frame(lines, {cursor_row, cursor_column}, start_row))
+  end
+
+  defp editor_cursor_row(lines) do
+    bottom_index =
+      Enum.find_index(lines, &(Exy.TUI.Width.visible_text(&1) |> String.starts_with?("╰"))) ||
+        length(lines) - 1
+
+    max(bottom_index - 1, 1)
   end
 
   @doc "Builds a complete synchronized terminal repaint frame."
-  @spec render_frame([IO.chardata()], {pos_integer(), pos_integer()}) :: IO.chardata()
-  def render_frame(lines, cursor) do
-    render_chunks(lines, cursor)
+  @spec render_frame([IO.chardata()], {pos_integer(), pos_integer()}, pos_integer()) ::
+          IO.chardata()
+  def render_frame(lines, cursor, start_row \\ 1) do
+    render_chunks(lines, cursor, start_row)
   end
 
   @doc "Builds ordered repaint chunks used by `render_frame/2` and regression tests."
-  @spec render_chunks([IO.chardata()], {pos_integer(), pos_integer()}) :: [IO.chardata()]
-  def render_chunks(lines, {cursor_row, cursor_column}) do
+  @spec render_chunks([IO.chardata()], {pos_integer(), pos_integer()}, pos_integer()) :: [
+          IO.chardata()
+        ]
+  def render_chunks(lines, {cursor_row, cursor_column}, start_row \\ 1) do
     start = [
       begin_synchronized_update(),
       hide_cursor(),
@@ -130,7 +142,7 @@ defmodule Exy.TUI.Runtime do
 
     rows =
       lines
-      |> Enum.with_index(1)
+      |> Enum.with_index(start_row)
       |> Enum.map(fn {line, row} -> [IO.ANSI.cursor(row, 1), IO.ANSI.clear_line(), line] end)
 
     finish = [

@@ -9,16 +9,34 @@ defmodule Exy.TUI.RuntimeTest do
 
   test "render frame uses synchronized full-frame repaint controls" do
     frame =
-      Exy.TUI.Runtime.render_frame(["top", "middle", "bottom"], {2, 3})
+      Exy.TUI.Runtime.render_frame(["top", "middle", "bottom"], {4, 3}, 2)
       |> IO.iodata_to_binary()
 
     assert frame =~ "\e[?2026h"
     assert frame =~ "\e[?2026l"
     assert frame =~ "\e[?7l"
     assert frame =~ "\e[?7h"
-    assert frame =~ IO.ANSI.cursor(1, 1)
-    assert frame =~ IO.ANSI.cursor(3, 1)
-    assert frame =~ IO.ANSI.cursor(2, 3)
+    assert frame =~ IO.ANSI.cursor(2, 1)
+    assert frame =~ IO.ANSI.cursor(4, 1)
+    assert frame =~ IO.ANSI.cursor(4, 3)
+  end
+
+  test "render frame can pin the prompt to the bottom rows" do
+    assert {:ok, terminal} = Ghostty.Terminal.start_link(cols: @cols, rows: @rows)
+    {lines, cursor} = rendered_textarea("")
+    start_row = @rows - length(lines) + 1
+
+    Ghostty.Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor, start_row))
+
+    {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+    render_state = Ghostty.Terminal.render_state(terminal)
+    screen_lines = String.split(screen, "\n")
+
+    assert Enum.at(screen_lines, start_row - 1) |> String.starts_with?("~/")
+    assert Enum.at(screen_lines, start_row) |> String.starts_with?("╭")
+    assert List.last(screen_lines) |> String.starts_with?("╰")
+    assert {render_state.cursor.y + 1, render_state.cursor.x + 1} == cursor
+    refute Enum.any?(Enum.slice(screen_lines, 0, start_row - 1), &String.contains?(&1, "Prompt"))
   end
 
   test "render frame leaves terminal content and cursor stable after every typed character" do
