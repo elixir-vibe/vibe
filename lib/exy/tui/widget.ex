@@ -61,7 +61,7 @@ defmodule Exy.TUI.Widget do
     if Width.visible_length(line) <= width do
       line
     else
-      line |> Width.visible_text() |> String.graphemes() |> Enum.take(width) |> Enum.join()
+      Width.take(line, width)
     end
   end
 
@@ -138,11 +138,7 @@ defmodule Exy.TUI.Widget do
         word_wrap(line, width)
 
       true ->
-        line
-        |> Width.visible_text()
-        |> String.graphemes()
-        |> Enum.chunk_every(width)
-        |> Enum.map(&Enum.join/1)
+        Width.chunks(line, width)
     end
   end
 
@@ -173,11 +169,7 @@ defmodule Exy.TUI.Widget do
     if String.trim(part) == "" or Width.visible_length(part) <= width do
       [part]
     else
-      part
-      |> Width.visible_text()
-      |> String.graphemes()
-      |> Enum.chunk_every(width)
-      |> Enum.map(&Enum.join/1)
+      Width.chunks(part, width)
     end
   end
 end

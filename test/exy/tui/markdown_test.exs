@@ -108,6 +108,28 @@ defmodule Exy.TUI.MarkdownTest do
            |> Enum.any?(&String.starts_with?(&1, "╭"))
   end
 
+  test "pads emoji table cells by terminal width" do
+    plain =
+      """
+      | Emoji | Text |
+      |---|---|
+      | 🚀 | rocket |
+      | ⚗️ | alembic |
+      | 東 | CJK |
+      """
+      |> Markdown.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    table_lines = Enum.filter(plain, &String.starts_with?(&1, "│"))
+
+    assert Enum.map(table_lines, &Width.visible_length/1) ==
+             List.duplicate(19, length(table_lines))
+
+    assert Enum.any?(table_lines, &String.contains?(&1, "│ 🚀    │ rocket"))
+    assert Enum.any?(table_lines, &String.contains?(&1, "│ ⚗️    │ alembic"))
+    assert Enum.any?(table_lines, &String.contains?(&1, "│ 東    │ CJK"))
+  end
+
   test "wraps long table cells instead of silently truncating them" do
     plain =
       """

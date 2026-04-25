@@ -14,13 +14,13 @@ defmodule Exy.TUI.Widgets.Truncate do
       Width.visible_length(IO.iodata_to_binary(content)) <= target ->
         [Widget.fit_line(content, target)]
 
-      IO.iodata_length(suffix) >= target ->
+      Width.visible_length(suffix) >= target ->
         [Widget.fit_line(suffix, target)]
 
       true ->
         [
           Widget.fit_line(
-            [Widget.fit_line(content, target - IO.iodata_length(suffix)), suffix],
+            [Widget.fit_line(content, target - Width.visible_length(suffix)), suffix],
             target
           )
         ]
