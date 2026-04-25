@@ -29,12 +29,20 @@ defmodule Exy.UI.ViewModelTest do
     assert Exy.UI.ViewModel.from_state(state).footer.usage.total_tokens == 13
   end
 
-  test "streaming assistant block keeps assistant role before first token" do
+  test "keeps tool calls between surrounding assistant text blocks" do
     state =
       Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")
       |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "s1", %{}))
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_delta, "s1", %{text: "Before."}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:tool_started, "s1", %{id: "tool-1", name: "elixir_eval"})
+      )
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_delta, "s1", %{text: "After."}))
 
-    assert [%{__struct__: Exy.UI.Block.AssistantMessage, role: :assistant, text: ""}] =
-             Exy.UI.ViewModel.from_state(state).body
+    assert [
+             %Exy.UI.Block.AssistantMessage{text: "Before."},
+             %Exy.UI.Block.ToolCall{id: "tool-1"},
+             %Exy.UI.Block.AssistantMessage{text: "After."}
+           ] = Exy.UI.ViewModel.from_state(state).body
   end
 end

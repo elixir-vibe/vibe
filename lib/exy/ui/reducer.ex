@@ -40,33 +40,22 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :assistant_stream_started, at: at}) do
-    %{
-      state
-      | streaming_message: %{role: :assistant, text: "", thinking: "", at: at},
-        status: :working
-    }
+  defp reduce(state, %Event{type: :assistant_stream_started}) do
+    %{state | streaming_message: %{role: :assistant, text: "", thinking: ""}, status: :working}
   end
 
-  defp reduce(state, %Event{type: :assistant_delta, data: %{text: text}}) do
+  defp reduce(state, %Event{type: :assistant_delta, at: at, data: %{text: text}}) do
     state
-    |> update_streaming(:text, text)
+    |> append_streaming_delta(:text, text, at)
     |> update_usage_preview(:output_tokens, estimate_tokens(text))
   end
 
-  defp reduce(state, %Event{type: :assistant_thinking_delta, data: %{text: text}}) do
-    update_streaming(state, :thinking, text)
+  defp reduce(state, %Event{type: :assistant_thinking_delta, at: at, data: %{text: text}}) do
+    append_streaming_delta(state, :thinking, text, at)
   end
 
-  defp reduce(state, %Event{type: :assistant_stream_finished, at: at}) do
-    message = Map.put(state.streaming_message || %{role: :assistant, text: "", at: at}, :at, at)
-
-    %{
-      state
-      | messages: Lists.append(state.messages, message),
-        streaming_message: nil,
-        status: :idle
-    }
+  defp reduce(state, %Event{type: :assistant_stream_finished}) do
+    %{state | streaming_message: nil, status: :idle}
   end
 
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
@@ -81,14 +70,26 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_started, data: %{id: id} = data}) do
+  defp reduce(state, %Event{type: :tool_started, at: at, data: %{id: id} = data}) do
     tool = data |> Map.put_new(:status, :running) |> Map.put_new(:expanded?, false)
-    %{state | pending_tools: Map.put(state.pending_tools, id, tool), status: :working}
+    tool_message = tool |> Map.put(:role, :tool) |> Map.put(:at, at)
+
+    %{
+      state
+      | messages: Lists.append(state.messages, tool_message),
+        pending_tools: Map.put(state.pending_tools, id, tool),
+        status: :working
+    }
   end
 
   defp reduce(state, %Event{type: :tool_finished, data: %{id: id} = data}) do
     pending_tools = Map.update(state.pending_tools, id, data, &Map.merge(&1, data))
-    %{state | pending_tools: pending_tools}
+
+    %{
+      state
+      | messages: update_tool_message(state.messages, id, data),
+        pending_tools: pending_tools
+    }
   end
 
   defp reduce(state, %Event{type: :truncation_toggled}) do
@@ -234,10 +235,29 @@ defmodule Exy.UI.Reducer do
   defp clamp_selection(_selected, 0), do: 0
   defp clamp_selection(selected, count), do: selected |> max(0) |> min(count - 1)
 
-  defp update_streaming(state, key, delta) do
-    message = state.streaming_message || %{role: :assistant, text: "", thinking: ""}
-    updated = Map.update(message, key, delta, &(&1 <> delta))
-    %{state | streaming_message: updated, status: :working}
+  defp append_streaming_delta(state, key, delta, at) do
+    {messages, message} = append_or_update_assistant_segment(state.messages, key, delta, at)
+    %{state | messages: messages, streaming_message: message, status: :working}
+  end
+
+  defp append_or_update_assistant_segment(messages, key, delta, at) do
+    case List.pop_at(messages, -1) do
+      {%{role: :assistant, streaming?: true} = message, rest} ->
+        updated = Map.update(message, key, delta, &(&1 <> delta))
+        {Lists.append(rest, updated), updated}
+
+      {_last, _rest} ->
+        message = %{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
+        updated = Map.update(message, key, delta, &(&1 <> delta))
+        {Lists.append(messages, updated), updated}
+    end
+  end
+
+  defp update_tool_message(messages, id, data) do
+    Enum.map(messages, fn
+      %{role: :tool, id: ^id} = tool -> Map.merge(tool, data)
+      message -> message
+    end)
   end
 
   defp update_usage_preview(state, key, count) do

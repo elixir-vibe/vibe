@@ -70,5 +70,35 @@ defmodule Exy.UI.ReducerTest do
     assert [%{kind: :session_selector}] = state.overlays
     assert state.pending_tools["tool-1"].name == "elixir_eval"
     assert state.pending_tools["tool-1"].status == :ok
+    assert %{role: :tool, id: "tool-1", status: :ok} = List.last(state.messages)
+  end
+
+  test "keeps assistant text and tool calls in chronological order" do
+    state =
+      Exy.UI.State.new(session_id: "ui-test")
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:assistant_delta, "ui-test", %{text: "Before."})
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:tool_started, "ui-test", %{
+          id: "tool-1",
+          name: "elixir_eval",
+          args: %{code: "1 + 1"}
+        })
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:tool_finished, "ui-test", %{id: "tool-1", status: :ok, output: "2"})
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:assistant_delta, "ui-test", %{text: "After."})
+      )
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_finished, "ui-test", %{}))
+
+    assert [
+             %{role: :assistant, text: "Before."},
+             %{role: :tool, id: "tool-1", output: "2"},
+             %{role: :assistant, text: "After."}
+           ] = state.messages
   end
 end

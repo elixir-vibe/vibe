@@ -29,11 +29,7 @@ defmodule Exy.UI.ViewModel do
   @spec from_state(Exy.UI.State.t()) :: t()
   def from_state(state) do
     %{
-      body:
-        state
-        |> message_blocks()
-        |> Lists.join(streaming_blocks(state))
-        |> Lists.join(tool_blocks(state)),
+      body: state |> message_blocks() |> Lists.join(loader_blocks(state)),
       footer: %Footer{
         cwd: state.cwd,
         model: state.model,
@@ -62,6 +58,7 @@ defmodule Exy.UI.ViewModel do
       case message.role do
         :user -> %UserMessage{id: id, text: message.text, at: message.at}
         :assistant -> assistant_block(id, message)
+        :tool -> tool_block(message, state)
       end
       |> Map.put(:role, message.role)
     end)
@@ -97,13 +94,19 @@ defmodule Exy.UI.ViewModel do
 
   defp content_text(_content), do: nil
 
-  defp streaming_blocks(%{streaming_message: nil}), do: []
+  defp loader_blocks(%{streaming_message: nil}), do: []
 
-  defp streaming_blocks(%{streaming_message: message}) do
-    [
-      %AssistantMessage{id: "streaming", text: Map.get(message, :text), at: Map.get(message, :at)}
-      |> Map.put(:role, :assistant)
-    ]
+  defp loader_blocks(state) do
+    case List.last(state.messages) do
+      %{role: :assistant, text: text} when is_binary(text) and text != "" ->
+        []
+
+      _message ->
+        [
+          %AssistantMessage{id: "streaming", text: "", at: state.streaming_message[:at]}
+          |> Map.put(:role, :assistant)
+        ]
+    end
   end
 
   defp notification_block([]), do: nil
@@ -121,19 +124,15 @@ defmodule Exy.UI.ViewModel do
     end)
   end
 
-  defp tool_blocks(state) do
-    state.pending_tools
-    |> Map.values()
-    |> Enum.map(fn tool ->
-      %ToolCall{
-        id: tool.id,
-        name: Map.get(tool, :name),
-        status: Map.get(tool, :status),
-        args: Map.get(tool, :args),
-        output: Map.get(tool, :output),
-        expanded?: Map.get(tool, :expanded?, false),
-        truncate?: state.truncate?
-      }
-    end)
+  defp tool_block(tool, state) do
+    %ToolCall{
+      id: tool.id,
+      name: Map.get(tool, :name),
+      status: Map.get(tool, :status),
+      args: Map.get(tool, :args),
+      output: Map.get(tool, :output),
+      expanded?: Map.get(tool, :expanded?, false),
+      truncate?: state.truncate?
+    }
   end
 end
