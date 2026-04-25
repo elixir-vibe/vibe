@@ -98,7 +98,12 @@ defmodule Exy.TUI.Theme do
   }
 
   @spec default() :: t()
-  def default, do: dark()
+  def default do
+    case System.get_env("EXY_THEME") do
+      value when value in [nil, "", "auto"] -> auto()
+      value -> named(value)
+    end
+  end
 
   @spec dark() :: t()
   def dark, do: %__MODULE__{name: "dark", fg: @dark_fg, bg: @dark_bg, symbols: @symbols}
@@ -107,14 +112,24 @@ defmodule Exy.TUI.Theme do
   def light, do: %__MODULE__{name: "light", fg: @light_fg, bg: @light_bg, symbols: @symbols}
 
   @spec named(atom() | String.t() | nil) :: t()
-  def named(nil), do: default()
-  def named(:default), do: default()
+  def named(nil), do: dark()
+  def named(:default), do: dark()
   def named(:dark), do: dark()
   def named(:light), do: light()
-  def named("default"), do: default()
+  def named("default"), do: dark()
   def named("dark"), do: dark()
   def named("light"), do: light()
-  def named(_name), do: default()
+  def named("auto"), do: auto()
+  def named(_name), do: dark()
+
+  @spec auto() :: t()
+  def auto do
+    case terminal_background() do
+      :light -> light()
+      :dark -> dark()
+      :unknown -> system_appearance_theme()
+    end
+  end
 
   @spec fg(t(), atom(), iodata()) :: IO.chardata()
   def fg(%__MODULE__{} = theme, key, text), do: apply_color(Map.get(theme.fg, key), :fg, text)
@@ -139,6 +154,56 @@ defmodule Exy.TUI.Theme do
     text
     |> IO.iodata_to_binary()
     |> then(&Regex.replace(~r/\e\[[0-9;]*[A-Za-z]/, &1, ""))
+  end
+
+  defp terminal_background do
+    System.get_env("COLORFGBG")
+    |> parse_colorfgbg_background()
+    |> terminal_color_luma()
+  end
+
+  defp parse_colorfgbg_background(nil), do: nil
+  defp parse_colorfgbg_background(""), do: nil
+
+  defp parse_colorfgbg_background(colorfgbg) do
+    colorfgbg
+    |> String.split([";", ":"])
+    |> List.last()
+    |> parse_integer()
+  end
+
+  defp parse_integer(nil), do: nil
+
+  defp parse_integer(value) do
+    case Integer.parse(value) do
+      {integer, ""} -> integer
+      _other -> nil
+    end
+  end
+
+  defp terminal_color_luma(nil), do: :unknown
+  defp terminal_color_luma(color) when color in 0..6, do: :dark
+  defp terminal_color_luma(color) when color in [7, 15], do: :light
+  defp terminal_color_luma(color) when color in 8..14, do: :dark
+  defp terminal_color_luma(color) when color in 232..243, do: :dark
+  defp terminal_color_luma(color) when color in 244..255, do: :light
+
+  defp terminal_color_luma(color) when color in 16..231 do
+    index = color - 16
+    red = div(index, 36)
+    green = div(rem(index, 36), 6)
+    blue = rem(index, 6)
+
+    if red * 299 + green * 587 + blue * 114 >= 2_500, do: :light, else: :dark
+  end
+
+  defp terminal_color_luma(_color), do: :unknown
+
+  defp system_appearance_theme do
+    case System.get_env("AppleInterfaceStyle") do
+      "Dark" -> dark()
+      _other -> dark()
+    end
   end
 
   defp apply_color(nil, _target, text), do: text
