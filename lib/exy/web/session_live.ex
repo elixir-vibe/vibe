@@ -1,11 +1,10 @@
 defmodule Exy.Web.SessionLive do
   @moduledoc """
-  Minimal LiveView-compatible session surface.
+  Minimal LiveView-shaped session surface.
 
-  The module intentionally avoids a compile-time Phoenix dependency while keeping
-  callback shapes compatible with a future `use Phoenix.LiveView` wrapper. It
-  consumes the same server-owned `Exy.Session.attach/3` snapshots and semantic UI
-  events as the TUI.
+  The module intentionally avoids a compile-time Phoenix dependency. It consumes
+  the same server-owned `Exy.Session.attach/3` snapshots and semantic UI events
+  as the TUI.
   """
 
   alias Exy.UI.{Reducer, State, ViewModel}

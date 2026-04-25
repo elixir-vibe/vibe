@@ -33,11 +33,6 @@ defmodule Exy.Session.Store do
   @spec ui_events_path(String.t()) :: String.t()
   def ui_events_path(session_id) when is_binary(session_id), do: path(session_id)
 
-  @spec legacy_ui_events_path(String.t()) :: String.t()
-  def legacy_ui_events_path(session_id) when is_binary(session_id) do
-    Path.join(dir(), safe_session_id(session_id) <> ".events.jsonl")
-  end
-
   @spec append(Trajectory.t()) :: :ok | {:error, term()}
   def append(%Trajectory{session_id: nil}), do: :ok
 
@@ -101,7 +96,6 @@ defmodule Exy.Session.Store do
       {:ok, files} ->
         files
         |> Enum.filter(&String.ends_with?(&1, ".jsonl"))
-        |> Enum.reject(&String.ends_with?(&1, ".events.jsonl"))
         |> Enum.map(&session_info/1)
         |> Enum.sort_by(&DateTime.to_unix(&1.updated_at), :desc)
 
@@ -178,8 +172,7 @@ defmodule Exy.Session.Store do
   end
 
   defp ui_event_paths(session_id) do
-    [ui_events_path(session_id), legacy_ui_events_path(session_id)]
-    |> Enum.uniq()
+    [ui_events_path(session_id)]
   end
 
   defp decode_ui_event_line(line) do

@@ -32,7 +32,6 @@ defmodule Exy.SessionTest do
     assert :ok = Exy.Session.Store.append_ui_event(ui_event, 1)
 
     assert File.exists?(Exy.Session.Store.path(session_id))
-    refute File.exists?(Exy.Session.Store.legacy_ui_events_path(session_id))
 
     assert [%{id: ^session_id, path: path, message_count: 1, first_message: "hello"}] =
              Exy.Session.Store.list()
