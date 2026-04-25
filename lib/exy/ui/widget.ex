@@ -22,7 +22,7 @@ defmodule Exy.UI.Widget do
 
   @spec new(String.t() | atom(), widget_type(), map(), keyword()) :: t()
   def new(id, type, props \\ %{}, opts \\ []) when type in @types and is_map(props) do
-    placement = Keyword.get(opts, :placement, :above_editor)
+    placement = opts |> Keyword.get(:placement, :above_editor) |> normalize_placement()
 
     unless placement in @placements do
       raise ArgumentError, "invalid widget placement: #{inspect(placement)}"
@@ -60,12 +60,34 @@ defmodule Exy.UI.Widget do
   @spec normalize(t() | map()) :: t()
   def normalize(%__MODULE__{} = widget), do: widget
 
-  def normalize(%{id: id, type: type, props: props} = widget) when is_map(props) do
-    new(id, type, props,
-      placement: Map.get(widget, :placement, :above_editor),
-      version: Map.get(widget, :version, 0)
+  def normalize(widget) when is_map(widget) do
+    id = Map.get(widget, :id) || Map.fetch!(widget, "id")
+    type = Map.get(widget, :type) || Map.fetch!(widget, "type")
+    props = Map.get(widget, :props) || Map.get(widget, "props") || %{}
+
+    new(normalize_id(id), normalize_type(type), props,
+      placement: Map.get(widget, :placement) || Map.get(widget, "placement") || :above_editor,
+      version: Map.get(widget, :version) || Map.get(widget, "version") || 0
     )
   end
+
+  defp normalize_type(type) when is_binary(type) do
+    case Enum.find(@types, &(Atom.to_string(&1) == type)) do
+      nil -> type
+      atom -> atom
+    end
+  end
+
+  defp normalize_type(type), do: type
+
+  defp normalize_placement(placement) when is_binary(placement) do
+    case Enum.find(@placements, &(Atom.to_string(&1) == placement)) do
+      nil -> placement
+      atom -> atom
+    end
+  end
+
+  defp normalize_placement(placement), do: placement
 
   defp normalize_id(id) when is_atom(id), do: Atom.to_string(id)
   defp normalize_id(id) when is_binary(id), do: id

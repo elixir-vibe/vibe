@@ -146,11 +146,8 @@ defmodule Exy.CLI do
 
   defp ensure_server_running do
     case Exy.Remote.connect() do
-      {:ok, _node} ->
-        :ok
-
-      {:error, _reason} ->
-        if(escript?(), do: start_background_server(), else: {:error, :not_escript})
+      {:ok, _node} -> :ok
+      {:error, _reason} -> start_background_server()
     end
   end
 
@@ -199,18 +196,6 @@ defmodule Exy.CLI do
 
   defp shell_quote(value) do
     "'" <> String.replace(value, "'", "'\\''") <> "'"
-  end
-
-  defp escript? do
-    case :escript.script_name() do
-      path when is_list(path) and path != [] ->
-        Path.basename(List.to_string(path)) not in ["mix", "mix.bat"]
-
-      _other ->
-        false
-    end
-  rescue
-    _error -> false
   end
 
   defp background_server_command do

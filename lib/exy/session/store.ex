@@ -147,6 +147,7 @@ defmodule Exy.Session.Store do
       {:ok, files} ->
         files
         |> Enum.filter(&String.ends_with?(&1, ".jsonl"))
+        |> Enum.reject(&String.ends_with?(&1, ".events.jsonl"))
         |> Enum.map(&session_info/1)
         |> Enum.sort_by(&DateTime.to_unix(&1.updated_at), :desc)
 
