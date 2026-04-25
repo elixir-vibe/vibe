@@ -23,12 +23,16 @@ defmodule Exy.TUI.RuntimeTest do
       assert {:ok, _output} = wait_for_screen_text(pty, terminal, "Exy", "", @startup_timeout_ms)
 
       Ghostty.PTY.write(pty, "abc")
-      assert {:ok, _output} = wait_for_screen_text(pty, terminal, "abc", "", @input_timeout_ms)
+      assert {:ok, output} = wait_for_screen_text(pty, terminal, "abc", "", @input_timeout_ms)
+      assert {:ok, _output} = wait_for_screen_text(pty, terminal, "╰", output, @input_timeout_ms)
 
       {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
       render_state = Ghostty.Terminal.render_state(terminal)
 
       refute String.contains?(screen, "BREAK:")
+      assert String.contains?(screen, "╰")
+      assert String.contains?(screen, "╯")
+      assert Enum.any?(String.split(screen, "\n"), &String.ends_with?(&1, "│"))
       assert render_state.cursor.visible
 
       Ghostty.PTY.write(pty, <<27>>)

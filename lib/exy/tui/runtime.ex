@@ -65,14 +65,13 @@ defmodule Exy.TUI.Runtime do
     lines = TerminalLoop.render(loop)
     {cursor_row, cursor_column} = TerminalLoop.cursor_position(loop)
 
-    Ghostty.TTY.write(tty, [
-      hide_cursor(),
-      IO.ANSI.home(),
-      IO.ANSI.clear(),
-      Enum.intersperse(lines, "\r\n"),
-      IO.ANSI.cursor(cursor_row, cursor_column),
-      show_cursor()
-    ])
+    Ghostty.TTY.write(tty, [hide_cursor(), IO.ANSI.home(), IO.ANSI.clear()])
+
+    lines
+    |> Enum.with_index(1)
+    |> Enum.each(fn {line, row} -> Ghostty.TTY.write(tty, [IO.ANSI.cursor(row, 1), line]) end)
+
+    Ghostty.TTY.write(tty, [IO.ANSI.cursor(cursor_row, cursor_column), show_cursor()])
   end
 
   defp hide_cursor, do: "\e[?25l"
