@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Section do
 
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.{Theme, Width}
+  alias Exy.TUI.{Theme, Widget, Width}
 
   @impl true
   def render(%{props: %{title: title}, children: children}, width, theme) do
@@ -13,12 +13,12 @@ defmodule Exy.TUI.Widgets.Section do
 
   defp section_header(title, width, theme) do
     title = IO.iodata_to_binary(title)
-    line_len = max(width - Width.visible_length(title) - 1, 0)
+    line_len = width - Width.visible_length(title) - 1
 
     [
       Theme.fg(theme, :accent, title),
       " ",
-      Theme.fg(theme, :border, String.duplicate(Theme.symbol(theme, :section_line), line_len))
+      Theme.fg(theme, :border, Widget.repeat(Theme.symbol(theme, :section_line), line_len))
     ]
   end
 end

@@ -113,7 +113,7 @@ defmodule Exy.TUI.Markdown do
 
   defp render_list_item(nodes, bullet, width, theme) do
     prefix = [Theme.fg(theme, :accent, bullet), " "]
-    indent = String.duplicate(" ", Width.visible_length(prefix))
+    indent = Widget.spaces(Width.visible_length(prefix))
 
     lines =
       nodes

@@ -26,7 +26,7 @@ defmodule Exy.TUI.Widgets.Horizontal do
       |> Enum.map(fn lines ->
         Enum.at(lines, row, "") |> Widget.fit_line(column_width) |> Widget.pad_line(column_width)
       end)
-      |> Enum.intersperse(String.duplicate(" ", gap))
+      |> Enum.intersperse(Widget.spaces(gap))
       |> Widget.fit_line(width)
     end
   end

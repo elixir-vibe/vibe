@@ -50,19 +50,16 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   defp render_block_lines(lines, width, theme, bg_key, fg_key) do
-    blank = block_line("", width, theme, bg_key, fg_key)
+    opts = [fg: fg_key, padding_left: 2]
+    blank = Widget.background_line("", width, theme, bg_key, opts)
 
     [
       blank
       | Exy.TUI.Lines.append(
-          Enum.map(lines, &block_line(&1, width, theme, bg_key, fg_key)),
+          Enum.map(lines, &Widget.background_line(&1, width, theme, bg_key, opts)),
           blank
         )
     ]
-  end
-
-  defp block_line(line, width, theme, bg_key, fg_key) do
-    Widget.background_line(line, width, theme, bg_key, fg: fg_key, padding_left: 2)
   end
 
   defp prefix_first_line([first | rest], prefix), do: [[prefix, first] | rest]

@@ -65,10 +65,16 @@ defmodule Exy.TUI.Widget do
     end
   end
 
+  @spec repeat(IO.chardata(), integer()) :: IO.chardata()
+  def repeat(content, count), do: List.duplicate(content, max(count, 0))
+
+  @spec spaces(integer()) :: String.t()
+  def spaces(count), do: IO.iodata_to_binary(repeat(" ", count))
+
   @spec pad_line(IO.chardata(), non_neg_integer()) :: line()
   def pad_line(line, width) do
     line = fit_line(line, width)
-    [line, String.duplicate(" ", max(width - Width.visible_length(line), 0))]
+    [line, spaces(width - Width.visible_length(line))]
   end
 
   @spec background_line(IO.chardata(), pos_integer(), Theme.t(), atom(), keyword()) :: line()
@@ -81,13 +87,7 @@ defmodule Exy.TUI.Widget do
     content_width = Width.visible_length(content)
     remaining = max(width - padding_left - content_width, 0)
 
-    [
-      background,
-      String.duplicate(" ", padding_left),
-      content,
-      String.duplicate(" ", remaining),
-      reset
-    ]
+    [background, spaces(padding_left), content, spaces(remaining), reset]
   end
 
   @spec frame_line(IO.chardata(), pos_integer(), Theme.t()) :: line()
@@ -110,11 +110,7 @@ defmodule Exy.TUI.Widget do
     minimum_gap = 2
 
     if Width.visible_length(left) + minimum_gap + Width.visible_length(right) <= width do
-      [
-        left,
-        String.duplicate(" ", width - Width.visible_length(left) - Width.visible_length(right)),
-        right
-      ]
+      [left, spaces(width - Width.visible_length(left) - Width.visible_length(right)), right]
     else
       fit_line([left, "  ", right], width)
     end
