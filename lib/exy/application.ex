@@ -25,8 +25,13 @@ defmodule Exy.Application do
     Supervisor.start_link(children, strategy: :one_for_one, name: Exy.Supervisor)
   end
 
-  defp configure_dependency_logging do
+  @doc false
+  def configure_dependency_logging do
+    Logger.put_application_level(:jido, :warning)
     Logger.put_application_level(:jido_action, :warning)
+    Logger.put_application_level(:jido_ai, :warning)
+    Logger.put_application_level(:jido_signal, :warning)
+    Logger.put_application_level(:req_llm, :warning)
 
     Application.put_env(:jido, :telemetry,
       log_level: :error,

@@ -15,6 +15,7 @@ defmodule Exy.MixProject do
       source_url: @source_url,
       package: package(),
       aliases: aliases(),
+      escript: escript(),
       dialyzer: [
         plt_file: {:no_warn, "_build/dev/dialyxir_plt.plt"},
         plt_add_apps: [:mix, :credo, :ex_dna, :ex_slop]
@@ -36,6 +37,26 @@ defmodule Exy.MixProject do
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
       files: ~w(lib priv test mix.exs mix.lock README.md AGENTS.md .formatter.exs .gitignore)
+    ]
+  end
+
+  defp escript do
+    [
+      main_module: Exy.CLI.Escript,
+      name: "exy",
+      app: nil,
+      include_priv_for: [
+        :exy,
+        :tzdata,
+        :llm_db,
+        :mdex,
+        :lumis,
+        :oxc,
+        :ghostty,
+        :quickbeam,
+        :pythonx
+      ],
+      strip_beams: [keep: ["Docs"]]
     ]
   end
 

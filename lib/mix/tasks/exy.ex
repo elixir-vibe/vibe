@@ -2,11 +2,13 @@ defmodule Mix.Tasks.Exy do
   @shortdoc "Launch Exy, the minimal BEAM-native coding agent"
 
   @moduledoc """
-  Launches Exy from Mix.
+  Launches Exy.
 
   ## Usage
 
-      mix exy                    # Start the interactive TUI
+      exy                        # Start the interactive TUI when installed
+      exy [options] [message...]
+      mix exy                    # Run from a checkout
       mix exy [options] [message...]
 
   ## Options
@@ -34,12 +36,12 @@ defmodule Mix.Tasks.Exy do
 
   ## Examples
 
-      mix exy
-      mix exy -p "Inspect runtime info with elixir_eval"
-      mix exy --model anthropic:claude-sonnet-4-5-20250929 "Review this project"
-      mix exy --login codex
-      mix exy --compact --keep-recent 20
-      mix exy --eval "Exy.OTP.runtime_info()"
+      exy
+      exy -p "Inspect runtime info with elixir_eval"
+      exy --model anthropic:claude-sonnet-4-5-20250929 "Review this project"
+      exy --login codex
+      exy --compact --keep-recent 20
+      exy --eval "Exy.OTP.runtime_info()"
   """
 
   use Mix.Task

@@ -14,6 +14,25 @@ Or run from this repository:
 mix exy --help
 ```
 
+Install a local `exy` executable from a checkout:
+
+```bash
+mix escript.install --force
+```
+
+Make sure Mix's escript directory is on your `PATH` (Mix prints the exact install path; commonly `~/.mix/escripts`):
+
+```bash
+export PATH="$HOME/.mix/escripts:$PATH"
+```
+
+Then run:
+
+```bash
+exy --help
+exy
+```
+
 Exy keeps the model-facing tool surface small:
 
 - `read`

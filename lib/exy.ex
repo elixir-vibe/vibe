@@ -17,7 +17,11 @@ defmodule Exy do
   @type agent_ref :: pid() | atom() | {:via, module(), term()}
 
   @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []), do: Exy.Agent.start_link(opts)
+  def start_link(opts \\ []) do
+    Exy.Application.configure_dependency_logging()
+    Application.ensure_all_started(:exy)
+    Exy.Agent.start_link(opts)
+  end
 
   @spec ask(agent_ref(), String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(agent, prompt, opts \\ []), do: Exy.Agent.ask_sync(agent, prompt, opts)

@@ -32,7 +32,7 @@ defmodule Exy.CLI do
 
     cond do
       invalid != [] ->
-        Enum.each(invalid, fn {flag, _} -> Mix.shell().error("Unknown option: #{flag}") end)
+        Enum.each(invalid, fn {flag, _} -> shell_error("Unknown option: #{flag}") end)
         {:error, :invalid_args}
 
       opts[:help] ->
@@ -70,8 +70,17 @@ defmodule Exy.CLI do
     end
   end
 
-  defp parse(argv) do
+  @doc false
+  def parse(argv) do
     OptionParser.parse(argv, strict: @switches, aliases: @aliases)
+  end
+
+  defp shell_error(message) do
+    if Code.ensure_loaded?(Mix) and function_exported?(Mix, :shell, 0) do
+      Mix.shell().error(message)
+    else
+      IO.puts(:stderr, message)
+    end
   end
 
   defp login(provider), do: Exy.Auth.login(provider)
@@ -86,12 +95,13 @@ defmodule Exy.CLI do
   end
 
   defp ask("", _opts) do
-    Mix.shell().error("No prompt provided. Run `mix exy --help` for usage.")
+    shell_error("No prompt provided. Run `mix exy --help` for usage.")
     {:error, :missing_prompt}
   end
 
   defp ask(prompt, opts) do
     configure_api_key(opts)
+    Exy.Application.configure_dependency_logging()
     session_id = session_id(opts)
 
     result =
@@ -116,6 +126,7 @@ defmodule Exy.CLI do
 
   defp tui(opts) do
     configure_api_key(opts)
+    Exy.Application.configure_dependency_logging()
 
     runtime_opts =
       [session_id: session_id(opts), model: Exy.LLM.Model.resolve(opts)]
@@ -128,7 +139,7 @@ defmodule Exy.CLI do
         :ok
 
       {:error, reason} ->
-        Mix.shell().error("Cannot start Exy TUI: #{reason}")
+        shell_error("Cannot start Exy TUI: #{reason}")
         {:error, reason}
     end
   end
@@ -157,7 +168,7 @@ defmodule Exy.CLI do
   defp print_result({:error, reason}, opts) do
     case opts[:mode] do
       "json" -> IO.puts(Jason.encode!(%{ok: false, error: inspect(reason)}, pretty: true))
-      _ -> Mix.shell().error(inspect(reason))
+      _ -> shell_error(inspect(reason))
     end
 
     {:error, reason}
