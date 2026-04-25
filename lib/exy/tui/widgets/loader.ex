@@ -6,15 +6,17 @@ defmodule Exy.TUI.Widgets.Loader do
   alias Exy.TUI.Theme
 
   @default_label "Thinking"
-  @glyphs ["✦", "⋰", "⋱", "✧"]
+  @frames ["✦", "⋰", "⋱", "✧"]
 
   @impl true
   def render(%{props: props}, _width, theme) do
     label = Map.get(props, :label, @default_label)
-    [[art(theme), " ", Theme.italic(Theme.fg(theme, :thinking_text, [label, "…"]))]]
+    phase = Map.get(props, :phase, 0)
+    [[art(theme, phase), " ", Theme.italic(Theme.fg(theme, :thinking_text, [label, "…"]))]]
   end
 
-  defp art(theme) do
-    Theme.fg(theme, :accent, Enum.intersperse(@glyphs, " "))
+  defp art(theme, phase) do
+    frame = Enum.at(@frames, rem(phase, length(@frames)))
+    Theme.fg(theme, :accent, frame)
   end
 end

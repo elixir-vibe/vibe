@@ -8,7 +8,7 @@ defmodule Exy.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Exy.TUI.{App, DSL, KeyDecoder, Renderer, Theme, Widget, Width}
+  alias Exy.TUI.{App, DSL, KeyDecoder, Lines, Renderer, Theme, Widget, Width}
   alias Exy.UI.ViewModel
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -46,6 +46,8 @@ defmodule Exy.TUI.TerminalLoop do
        app: app,
        output: Keyword.get(opts, :output, :stdio),
        event_target: Keyword.get(opts, :event_target),
+       loader_phase: 0,
+       loader_timer: nil,
        theme: Keyword.get_lazy(opts, :theme, &Theme.default/0)
      }}
   end
@@ -91,7 +93,18 @@ defmodule Exy.TUI.TerminalLoop do
   def handle_info({App, :event, event}, state) do
     notify_event_target(state, event)
     paint(state)
-    {:noreply, state}
+    {:noreply, maybe_start_loader_timer(state)}
+  end
+
+  def handle_info(:loader_tick, state) do
+    if working?(state) do
+      state = %{state | loader_phase: state.loader_phase + 1, loader_timer: nil}
+      notify_event_target(state, :loader_tick)
+      paint(state)
+      {:noreply, maybe_start_loader_timer(state)}
+    else
+      {:noreply, %{state | loader_timer: nil}}
+    end
   end
 
   def handle_info(_message, state), do: {:noreply, state}
@@ -110,13 +123,34 @@ defmodule Exy.TUI.TerminalLoop do
 
   defp render_lines(state) do
     snapshot = App.snapshot(state.app)
-    view = ViewModel.from_state(snapshot.ui)
+    view = snapshot.ui |> ViewModel.from_state() |> apply_loader_phase(state.loader_phase)
     editor = render_editor(snapshot, state.theme)
 
     body =
       view |> Renderer.render(snapshot.width, state.theme) |> fit_body(snapshot.height, editor)
 
-    Exy.TUI.Lines.join(body, editor)
+    Lines.join(body, editor)
+  end
+
+  defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
+    if working?(state) do
+      %{state | loader_timer: Process.send_after(self(), :loader_tick, 120)}
+    else
+      state
+    end
+  end
+
+  defp maybe_start_loader_timer(state), do: state
+
+  defp working?(state), do: App.snapshot(state.app).ui.status == :working
+
+  defp apply_loader_phase(view, phase) do
+    Map.update!(view, :body, fn blocks ->
+      Enum.map(blocks, fn
+        %{id: "streaming", role: :assistant} = block -> Map.put(block, :loader_phase, phase)
+        block -> block
+      end)
+    end)
   end
 
   defp fit_body(body, height, editor) when is_integer(height) do

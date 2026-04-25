@@ -56,9 +56,14 @@ defmodule Exy.TUI.WidgetsTest do
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert user == [" hello" <> String.duplicate(" ", 34)]
+    assert user == [
+             String.duplicate(" ", 40),
+             "  hello" <> String.duplicate(" ", 33),
+             String.duplicate(" ", 40)
+           ]
+
     assert assistant == ["hi"]
-    assert thinking == ["✦ ⋰ ⋱ ✧ Thinking…"]
+    assert thinking == ["✦ Thinking…"]
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "You:"))
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
   end
@@ -90,13 +95,15 @@ defmodule Exy.TUI.WidgetsTest do
     assert length(lines) == 5
   end
 
-  test "loader widget renders Exy's reusable waiting indicator" do
+  test "loader widget renders Exy's reusable waiting indicator phases" do
     plain =
-      DSL.loader(label: "Working")
-      |> Widget.render(40, Theme.default())
-      |> Enum.map(&Width.visible_text/1)
+      for phase <- 0..3 do
+        DSL.loader(label: "Working", phase: phase)
+        |> Widget.render(40, Theme.default())
+        |> Enum.map(&Width.visible_text/1)
+      end
 
-    assert plain == ["✦ ⋰ ⋱ ✧ Working…"]
+    assert plain == [["✦ Working…"], ["⋰ Working…"], ["⋱ Working…"], ["✧ Working…"]]
   end
 
   test "layout primitives render boxes, padding, horizontal rows, spacers, and truncation" do

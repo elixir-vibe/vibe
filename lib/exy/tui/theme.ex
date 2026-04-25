@@ -49,7 +49,7 @@ defmodule Exy.TUI.Theme do
     thinking_text: {108, 108, 108},
     tool_title: nil,
     tool_output: {108, 108, 108},
-    user_message_text: nil,
+    user_message_text: {45, 45, 45},
     assistant_message_text: nil,
     input_prompt: {90, 128, 128},
     input_text: nil,

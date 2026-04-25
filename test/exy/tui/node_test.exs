@@ -17,12 +17,16 @@ defmodule Exy.TUI.NodeTest do
   end
 
   test "renders semantic message blocks" do
-    line =
+    lines =
       %{role: :user, text: "hello"}
       |> DSL.message()
       |> Widget.render(80, Theme.default())
-      |> hd()
+      |> Enum.map(&Width.visible_text/1)
 
-    assert Width.visible_text(line) == " hello" <> String.duplicate(" ", 74)
+    assert lines == [
+             String.duplicate(" ", 80),
+             "  hello" <> String.duplicate(" ", 73),
+             String.duplicate(" ", 80)
+           ]
   end
 end

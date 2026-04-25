@@ -19,9 +19,7 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   def render(%{props: %{role: :assistant} = props}, width, theme) do
-    props
-    |> Map.get(:text)
-    |> render_assistant(width, theme)
+    render_assistant(Map.get(props, :text), width, theme, Map.get(props, :loader_phase, 0))
   end
 
   def render(%{props: %{text: text}}, width, theme) do
@@ -29,25 +27,31 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   defp render_user(text, width, theme) do
-    inner_width = max(width - 2, 1)
+    inner_width = max(width - 4, 1)
+    blank = user_message_line("", width, theme)
 
-    text
-    |> to_string()
-    |> Markdown.render(inner_width, theme)
-    |> Enum.map(fn line ->
-      line = Theme.fg(theme, :user_message_text, line)
+    lines =
+      text
+      |> to_string()
+      |> Markdown.render(inner_width, theme)
+      |> Enum.map(&user_message_line(&1, width, theme))
 
-      [" ", line]
-      |> Widget.pad_line(width)
-      |> then(&Theme.bg(theme, :user_message_bg, &1))
-    end)
+    [blank | Exy.TUI.Lines.append(lines, blank)]
   end
 
-  defp render_assistant(text, width, theme) do
+  defp user_message_line(line, width, theme) do
+    line = Theme.fg(theme, :user_message_text, line)
+
+    ["  ", line]
+    |> Widget.pad_line(width)
+    |> then(&Theme.bg(theme, :user_message_bg, &1))
+  end
+
+  defp render_assistant(text, width, theme, loader_phase) do
     text = text |> to_string() |> String.trim()
 
     if text == "" do
-      Loader.render(%{props: %{label: "Thinking"}}, width, theme)
+      Loader.render(%{props: %{label: "Thinking", phase: loader_phase}}, width, theme)
     else
       Markdown.render(text, width, theme)
     end
