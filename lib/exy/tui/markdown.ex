@@ -71,10 +71,11 @@ defmodule Exy.TUI.Markdown do
 
     body =
       literal
-      |> highlight_code(language, theme)
       |> String.trim_trailing("\n")
       |> String.split("\n")
-      |> Enum.flat_map(fn line -> Widget.wrap(["  ", line], width) end)
+      |> Enum.flat_map(fn line ->
+        Widget.wrap(["  ", highlight_code(line, language, theme)], width)
+      end)
 
     header |> join_lines(body) |> join_lines([border]) |> append_blank()
   end

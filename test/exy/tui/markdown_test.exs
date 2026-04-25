@@ -47,6 +47,13 @@ defmodule Exy.TUI.MarkdownTest do
     assert rendered =~ "\e[38;2;"
   end
 
+  test "renders blank highlighted code lines" do
+    lines = Markdown.render("```elixir\n\n:ok\n```", 80, Theme.default())
+    plain = Enum.map(lines, &Width.visible_text/1)
+
+    assert Enum.any?(plain, &(String.trim(&1) == ":ok"))
+  end
+
   test "renders partial streaming markdown with temporary closures" do
     doc = Markdown.new_stream() |> Markdown.put_chunk("**bo")
 
