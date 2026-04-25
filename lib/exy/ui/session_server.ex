@@ -33,6 +33,10 @@ defmodule Exy.UI.SessionServer do
   @spec emit_event(GenServer.server(), Event.t()) :: :ok
   def emit_event(server, %Event{} = event), do: GenServer.call(server, {:emit_event, event})
 
+  @doc false
+  @spec agent_ask_opts(keyword()) :: keyword()
+  def agent_ask_opts(opts), do: Keyword.drop(opts, [:model])
+
   @impl true
   def init(opts) do
     state = State.new(opts)
@@ -317,7 +321,7 @@ defmodule Exy.UI.SessionServer do
 
   defp default_ask(text, opts) do
     agent_opts = Keyword.take(opts, [:model, :session_id])
-    ask_opts = Keyword.drop(opts, [:model, :on_result, :on_thinking, :on_tool_call, :on_meta])
+    ask_opts = agent_ask_opts(opts)
 
     with {:ok, agent} <- Exy.start_link(agent_opts) do
       try do

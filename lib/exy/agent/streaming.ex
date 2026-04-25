@@ -1,0 +1,84 @@
+defmodule Exy.Agent.Streaming do
+  @moduledoc false
+
+  use GenServer
+
+  @table :exy_agent_streaming_callbacks
+
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+
+  @spec register(pid(), keyword()) :: :ok
+  def register(agent_pid, opts) when is_pid(agent_pid) do
+    callbacks = callbacks(opts)
+
+    if map_size(callbacks) == 0 do
+      :ok
+    else
+      with {:ok, status} <- Jido.AgentServer.status(agent_pid) do
+        ensure_table!()
+        :ets.insert(@table, {status.agent_id, callbacks})
+      end
+
+      :ok
+    end
+  end
+
+  @spec unregister(pid()) :: :ok
+  def unregister(agent_pid) when is_pid(agent_pid) do
+    with {:ok, status} <- Jido.AgentServer.status(agent_pid), true <- table?() do
+      :ets.delete(@table, status.agent_id)
+    end
+
+    :ok
+  end
+
+  @spec dispatch(String.t(), map()) :: :ok
+  def dispatch(agent_id, data) when is_binary(agent_id) and is_map(data) do
+    with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
+      data
+      |> chunk()
+      |> maybe_dispatch(callbacks)
+    end
+
+    :ok
+  end
+
+  @impl true
+  def init(_opts) do
+    ensure_table!()
+    {:ok, %{}}
+  end
+
+  defp callbacks(opts) do
+    %{}
+    |> maybe_put_callback(:content, Keyword.get(opts, :on_result))
+    |> maybe_put_callback(:thinking, Keyword.get(opts, :on_thinking))
+  end
+
+  defp maybe_put_callback(callbacks, key, callback) when is_function(callback, 1),
+    do: Map.put(callbacks, key, callback)
+
+  defp maybe_put_callback(callbacks, _key, _callback), do: callbacks
+
+  defp chunk(data) do
+    type = Map.get(data, :chunk_type) || Map.get(data, "chunk_type") || :content
+    text = Map.get(data, :delta) || Map.get(data, "delta") || ""
+    {normalize_type(type), text}
+  end
+
+  defp normalize_type(type) when type in [:thinking, "thinking"], do: :thinking
+  defp normalize_type(_type), do: :content
+
+  defp maybe_dispatch({_type, ""}, _callbacks), do: :ok
+  defp maybe_dispatch({type, text}, callbacks), do: callbacks[type] && callbacks[type].(text)
+
+  defp ensure_table! do
+    case :ets.whereis(@table) do
+      :undefined -> :ets.new(@table, [:named_table, :public, read_concurrency: true])
+      _table -> @table
+    end
+  end
+
+  defp table?, do: :ets.whereis(@table) != :undefined
+end

@@ -9,5 +9,6 @@ defmodule Exy.Agent.Coding do
     name: "exy_coding_agent",
     model: :exy,
     tools: [Exy.Actions.Eval, Exy.Actions.AST, Exy.Actions.LSP],
+    plugins: [Exy.Agent.Streaming.Plugin],
     system_prompt: @system_prompt
 end

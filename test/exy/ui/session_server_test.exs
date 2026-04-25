@@ -19,6 +19,26 @@ defmodule Exy.UI.SessionServerTest do
     assert state.usage.total_tokens == 10
   end
 
+  test "default agent ask options preserve streaming callbacks" do
+    on_result = fn _text -> :ok end
+    on_thinking = fn _text -> :ok end
+
+    opts =
+      Exy.UI.SessionServer.agent_ask_opts(
+        model: "test-model",
+        session_id: "ui-session",
+        on_result: on_result,
+        on_thinking: on_thinking,
+        timeout: 123
+      )
+
+    refute Keyword.has_key?(opts, :model)
+    assert opts[:session_id] == "ui-session"
+    assert opts[:on_result] == on_result
+    assert opts[:on_thinking] == on_thinking
+    assert opts[:timeout] == 123
+  end
+
   test "updates token preview from streaming callbacks before final usage" do
     ask_fun = fn _text, opts ->
       opts[:on_result].("streaming text")

@@ -17,6 +17,7 @@ defmodule Exy.Application do
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Plugin.Supervisor},
       Exy.UI.Bus,
       Exy.Session.Processes,
+      Exy.Agent.Streaming,
       Exy.Trajectory.Store,
       Exy.Plugin.Manager
     ]
