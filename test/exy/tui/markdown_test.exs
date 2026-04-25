@@ -75,6 +75,22 @@ defmodule Exy.TUI.MarkdownTest do
     assert Enum.any?(plain, &String.contains?(&1, "[ ] todo"))
   end
 
+  test "streaming table does not render top border until a delimiter row arrives" do
+    only_header = Markdown.new_stream() |> Markdown.put_chunk("| A | B | C |\n")
+
+    assert only_header
+           |> Markdown.render_stream(80, Theme.default())
+           |> Enum.map(&Width.visible_text/1)
+           |> Enum.all?(&(not String.starts_with?(&1, "╭")))
+
+    with_delimiter = Markdown.put_chunk(only_header, "|---|---|---|\n")
+
+    assert with_delimiter
+           |> Markdown.render_stream(80, Theme.default())
+           |> Enum.map(&Width.visible_text/1)
+           |> Enum.any?(&String.starts_with?(&1, "╭"))
+  end
+
   test "renders comprehensive stress fixture without known spacing regressions" do
     plain =
       "priv/fixtures/markdown_stress.md"
