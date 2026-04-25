@@ -7,11 +7,11 @@ defmodule Exy.TUI.RuntimeTest do
   @input_timeout_ms 1_000
   @exit_timeout_ms 5_000
 
-  test "render chunks use synchronized full-frame repaint controls" do
-    chunks = Exy.TUI.Runtime.render_chunks(["top", "middle", "bottom"], {2, 3})
-    frame = chunks |> Enum.map_join(&IO.iodata_to_binary/1)
+  test "render frame uses synchronized full-frame repaint controls" do
+    frame =
+      Exy.TUI.Runtime.render_frame(["top", "middle", "bottom"], {2, 3})
+      |> IO.iodata_to_binary()
 
-    assert length(chunks) == 5
     assert frame =~ "\e[?2026h"
     assert frame =~ "\e[?2026l"
     assert frame =~ "\e[?7l"
@@ -19,6 +19,28 @@ defmodule Exy.TUI.RuntimeTest do
     assert frame =~ IO.ANSI.cursor(1, 1)
     assert frame =~ IO.ANSI.cursor(3, 1)
     assert frame =~ IO.ANSI.cursor(2, 3)
+  end
+
+  test "render frame leaves terminal content and cursor stable after every typed character" do
+    assert {:ok, terminal} = Ghostty.Terminal.start_link(cols: @cols, rows: @rows)
+    text = "hello world this is a long prompt that wraps across textarea rows"
+
+    Enum.reduce(String.graphemes(text), "", fn grapheme, typed ->
+      typed = typed <> grapheme
+      {lines, cursor} = rendered_textarea(typed)
+
+      Ghostty.Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor))
+
+      {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+      render_state = Ghostty.Terminal.render_state(terminal)
+
+      assert_textarea_shape!(screen)
+      assert String.contains?(screen, typed)
+      assert render_state.cursor.visible
+      assert {render_state.cursor.y + 1, render_state.cursor.x + 1} == cursor
+
+      typed
+    end)
   end
 
   test "mix exy accepts input in a real PTY and exits with escape" do
@@ -36,19 +58,15 @@ defmodule Exy.TUI.RuntimeTest do
     try do
       assert {:ok, _output} = wait_for_screen_text(pty, terminal, "Exy", "", @startup_timeout_ms)
 
-      assert {:ok, output} = wait_for_screen_text(pty, terminal, "╰", "", @input_timeout_ms)
+      assert {:ok, output} = wait_for_screen_text(pty, terminal, "╯", "", @input_timeout_ms)
 
-      Ghostty.PTY.write(pty, "abc")
-      assert {:ok, output} = wait_for_screen_text(pty, terminal, "abc", output, @input_timeout_ms)
-      assert {:ok, _output} = wait_for_screen_text(pty, terminal, "╰", output, @input_timeout_ms)
+      type_and_assert_stable_frames(pty, terminal, "abc wraps across the prompt", output)
 
       {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
       render_state = Ghostty.Terminal.render_state(terminal)
 
       refute String.contains?(screen, "BREAK:")
-      assert String.contains?(screen, "╰")
-      assert String.contains?(screen, "╯")
-      assert Enum.any?(String.split(screen, "\n"), &String.ends_with?(&1, "│"))
+      assert_textarea_shape!(screen)
       assert render_state.cursor.visible
 
       Ghostty.PTY.write(pty, <<27>>)
@@ -56,6 +74,50 @@ defmodule Exy.TUI.RuntimeTest do
     after
       if Process.alive?(pty), do: Ghostty.PTY.close(pty)
     end
+  end
+
+  defp type_and_assert_stable_frames(pty, terminal, text, output) do
+    text
+    |> String.graphemes()
+    |> Enum.reduce({"", output}, fn grapheme, {typed, output} ->
+      typed = typed <> grapheme
+      Ghostty.PTY.write(pty, grapheme)
+
+      assert {:ok, output} = wait_for_screen_text(pty, terminal, typed, output, @input_timeout_ms)
+      assert {:ok, output} = wait_for_screen_text(pty, terminal, "╯", output, @input_timeout_ms)
+
+      {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+      assert_textarea_shape!(screen)
+      assert String.contains?(screen, typed)
+
+      {typed, output}
+    end)
+    |> elem(1)
+  end
+
+  defp rendered_textarea(text) do
+    {:ok, loop} =
+      Exy.TUI.TerminalLoop.start_link(
+        width: @cols,
+        height: @rows,
+        output: false,
+        ask_fun: fn _prompt -> "" end
+      )
+
+    Exy.TUI.TerminalLoop.input(loop, text)
+    {Exy.TUI.TerminalLoop.render(loop), Exy.TUI.TerminalLoop.cursor_position(loop)}
+  end
+
+  defp assert_textarea_shape!(screen) do
+    lines = String.split(screen, "\n")
+
+    top = Enum.find(lines, &String.starts_with?(&1, "╭"))
+    bottom = Enum.find(lines, &String.starts_with?(&1, "╰"))
+    body = Enum.filter(lines, &(String.starts_with?(&1, "│") and String.ends_with?(&1, "│")))
+
+    assert top && String.ends_with?(top, "╮")
+    assert bottom && String.ends_with?(bottom, "╯")
+    assert length(body) >= 3
   end
 
   defp wait_for_screen_text(pty, terminal, text, output, timeout) do
