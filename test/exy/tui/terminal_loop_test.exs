@@ -26,6 +26,38 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "Prompt"))
   end
 
+  test "repaints immediately for background UI updates" do
+    session_id = "background-ui-#{System.unique_integer([:positive])}"
+
+    {:ok, output} = StringIO.open("")
+
+    {:ok, _loop} =
+      TerminalLoop.start_link(output: output, width: 60, height: 12, session_id: session_id)
+
+    assert :ok = Exy.Plugin.UI.set_status(session_id, :indexer, "indexing")
+    assert {:ok, contents} = wait_for_output(output, "indexing")
+    assert contents =~ "indexing"
+  end
+
+  test "loader advances from background ticks without input" do
+    session_id = "loader-ui-#{System.unique_integer([:positive])}"
+
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 60,
+        height: 12,
+        session_id: session_id,
+        event_target: self()
+      )
+
+    assert :ok = Exy.UI.Bus.emit(session_id, :assistant_stream_started, %{})
+    assert_receive {TerminalLoop, :event, :loader_tick}, 300
+
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+    assert Enum.any?(plain, &(&1 in ["⋰ Thinking…", "⋱ Thinking…", "✧ Thinking…", "✦ Thinking…"]))
+  end
+
   test "notifies event target for asynchronous UI updates" do
     ask = fn _text, _opts -> {:ok, "done"} end
 
@@ -44,6 +76,28 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert_receive {TerminalLoop, :event, %{type: :prompt_submitted}}, 100
     assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 100
     assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 100
+  end
+
+  defp wait_for_output(output, text) do
+    deadline = System.monotonic_time(:millisecond) + 500
+    do_wait_for_output(output, text, deadline)
+  end
+
+  defp do_wait_for_output(output, text, deadline) do
+    {_input, contents} = StringIO.contents(output)
+
+    if contents =~ text do
+      {:ok, contents}
+    else
+      remaining = deadline - System.monotonic_time(:millisecond)
+
+      if remaining > 0 do
+        Process.sleep(10)
+        do_wait_for_output(output, text, deadline)
+      else
+        {:error, contents}
+      end
+    end
   end
 
   test "tracks editor cursor position inside the prompt" do
