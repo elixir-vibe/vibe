@@ -39,11 +39,12 @@ defmodule Exy.CLI do
       invalid == [] and match?(["server" | _], args) ->
         server_command(tl(args), opts)
 
-      invalid == [] and match?(["new" | _], args) ->
+      invalid == [] and match?([command | _] when command in ["new", "n"], args) ->
         new_session(opts)
 
-      invalid == [] and match?(["sessions" | _], args) ->
-        sessions_command(tl(args), opts)
+      invalid == [] and match?([command | _] when command in ["sessions", "ls"], args) ->
+        [_command | rest] = args
+        sessions_command(rest, opts)
 
       invalid == [] and match?(["send", _session_id | _], args) ->
         ["send", session_id | prompt_parts] = args
@@ -53,11 +54,11 @@ defmodule Exy.CLI do
           opts
         )
 
-      invalid == [] and match?(["attach"], args) ->
+      invalid == [] and match?([command] when command in ["attach", "a"], args) ->
         attach_default_session(opts)
 
-      invalid == [] and match?(["attach", _session_id], args) ->
-        ["attach", session_id] = args
+      invalid == [] and match?([command, _session_id] when command in ["attach", "a"], args) ->
+        [_command, session_id] = args
         attach_session(session_id, opts)
 
       true ->

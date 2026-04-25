@@ -13,12 +13,12 @@ defmodule Mix.Tasks.Exy do
       exy server start [--foreground]
       exy server status
       exy server stop
-      exy new
-      exy sessions [--all] [--live] [--failed] [--limit n]
+      exy new                    # Alias: exy n
+      exy sessions [--all] [--live] [--failed] [--limit n]  # Alias: exy ls
       exy sessions prune --empty
       exy send <session-id> "prompt"
-      exy attach                 # Attach latest live session or create a fresh TUI session
-      exy attach <session-id>
+      exy attach                 # Alias: exy a
+      exy attach <session-id>    # Alias: exy a <session-id>
 
   From a checkout:
 
@@ -61,9 +61,10 @@ defmodule Mix.Tasks.Exy do
       exy --compact --keep-recent 20
       exy --eval "Exy.OTP.runtime_info()"
       exy new --mode json
+      exy ls --limit 5
       exy send 20260425-120000-abcd "Use eval to inspect System.version()"
-      exy attach
-      exy attach 20260425-120000-abcd
+      exy a
+      exy a 20260425-120000-abcd
   """
 
   use Mix.Task
