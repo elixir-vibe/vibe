@@ -87,7 +87,7 @@ defmodule Exy.TUI.App do
 
   @impl true
   def handle_info(:active_sessions_tick, state) do
-    publish_active_sessions(state)
+    state = publish_active_sessions(state)
     timer = Process.send_after(self(), :active_sessions_tick, 1_000)
     {:noreply, %{state | active_sessions_timer: timer}}
   end
@@ -103,7 +103,12 @@ defmodule Exy.TUI.App do
 
   def handle_info(_message, state), do: {:noreply, state}
 
-  defp publish_active_sessions(%{remote_node: nil}), do: :ok
+  defp publish_active_sessions(%{remote_node: nil} = state) do
+    case Exy.Remote.connect() do
+      {:ok, node} -> publish_active_sessions(%{state | remote_node: node})
+      {:error, _reason} -> state
+    end
+  end
 
   defp publish_active_sessions(state) do
     case :rpc.call(state.remote_node, Exy.Server.RPC, :active_session_count, []) do
@@ -115,8 +120,10 @@ defmodule Exy.TUI.App do
           })
         )
 
+        state
+
       _other ->
-        :ok
+        %{state | remote_node: nil}
     end
   end
 
