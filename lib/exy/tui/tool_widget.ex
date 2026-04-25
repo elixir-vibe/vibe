@@ -11,6 +11,9 @@ defmodule Exy.TUI.ToolWidget do
   @callback render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
 
   @renderers %{
+    read: Exy.TUI.Widgets.Tools.Read,
+    write: Exy.TUI.Widgets.Tools.Write,
+    edit: Exy.TUI.Widgets.Tools.Edit,
     elixir_eval: Exy.TUI.Widgets.Tools.Eval,
     elixir_ast: Exy.TUI.Widgets.Tools.AST,
     elixir_lsp: Exy.TUI.Widgets.Tools.LSP
@@ -35,7 +38,7 @@ defmodule Exy.TUI.ToolWidget do
     sections =
       []
       |> maybe_append_params(tool, inner_width, theme, opts)
-      |> append_section(:output, output(tool), inner_width, theme, tool)
+      |> append_output(tool, inner_width, theme, opts)
 
     [title | sections]
     |> Enum.map(&margin_line(&1, width))
@@ -130,6 +133,18 @@ defmodule Exy.TUI.ToolWidget do
       append_section(lines, :params, params(tool), width, theme, tool)
     else
       lines
+    end
+  end
+
+  defp append_output(lines, tool, width, theme, opts) do
+    case Keyword.get(opts, :output_lines) do
+      nil ->
+        append_section(lines, :output, output(tool), width, theme, tool)
+
+      output_lines ->
+        lines
+        |> Lines.join([""])
+        |> Lines.join(maybe_truncate(output_lines, :output, tool, width, theme))
     end
   end
 

@@ -116,6 +116,53 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Enum.any?(plain, &String.contains?(&1, "line 12"))
   end
 
+  test "renders read output as highlighted code" do
+    lines =
+      %{
+        id: "read-1",
+        name: :read,
+        status: :ok,
+        args: %{path: "lib/demo.ex"},
+        output: %{path: "lib/demo.ex", content: "IO.puts(:ok)", language: "elixir"}
+      }
+      |> DSL.tool()
+      |> Widget.render(80, Theme.default())
+
+    plain = Enum.map(lines, &Width.visible_text/1)
+    ansi = IO.iodata_to_binary(lines)
+
+    assert Enum.any?(plain, &String.contains?(&1, "read"))
+    assert Enum.any?(plain, &String.contains?(&1, "lib/demo.ex"))
+    assert Enum.any?(plain, &String.contains?(&1, "IO.puts(:ok)"))
+    assert ansi =~ "\e[38;2;"
+  end
+
+  test "renders edit diffs with diff widget colors" do
+    lines =
+      %{
+        id: "edit-1",
+        name: :edit,
+        status: :ok,
+        args: %{path: "demo.txt"},
+        output: %{
+          path: "demo.txt",
+          message: "Successfully replaced 1 block(s) in demo.txt.",
+          diff: "-1 old\n+1 new"
+        }
+      }
+      |> DSL.tool()
+      |> Widget.render(80, Theme.default())
+
+    plain = Enum.map(lines, &Width.visible_text/1)
+    ansi = IO.iodata_to_binary(lines)
+
+    assert Enum.any?(plain, &String.contains?(&1, "Successfully replaced"))
+    assert Enum.any?(plain, &String.contains?(&1, "-1 old"))
+    assert Enum.any?(plain, &String.contains?(&1, "+1 new"))
+    assert ansi =~ "38;2;204;102;102"
+    assert ansi =~ "38;2;126;170;115"
+  end
+
   test "dispatches AST and LSP widgets" do
     ast =
       DSL.tool(%{

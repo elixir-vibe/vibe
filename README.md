@@ -38,7 +38,7 @@ Everything else is normal Elixir callable from `elixir_eval`:
 - `Exy.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
 - `Exy.SelfPatch` — validated development hot-compile helpers
 - `Exy.LLM` — direct ReqLLM calls
-- `Exy.Agent` / `Exy.Agent.Coding` — Jido.AI ReAct agent over Exy's three Elixir tools
+- `Exy.Agent` / `Exy.Agent.Coding` — Jido.AI ReAct agent over Exy's coding tools
 - `Exy.Auth` / `Exy.Auth.Codex` — behaviour-based auth providers and ChatGPT/Codex OAuth
 - `Exy.Plugin` — behaviour-based plugin hooks discovered from `Exy.Plugins.*`
 - `Exy.UI` — UI-neutral event/state/command layer for TUI and future LiveView clients
