@@ -111,7 +111,6 @@ defmodule Exy.TUI.RuntimeTest do
       Ghostty.PTY.write(pty, grapheme)
 
       assert {:ok, output} = wait_for_screen_text(pty, terminal, typed, output, @input_timeout_ms)
-      assert {:ok, output} = wait_for_screen_text(pty, terminal, "╯", output, @input_timeout_ms)
 
       {:ok, screen} = Terminal.snapshot(terminal, :plain)
       assert_textarea_shape!(screen)

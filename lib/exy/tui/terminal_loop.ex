@@ -30,8 +30,14 @@ defmodule Exy.TUI.TerminalLoop do
   @spec render(GenServer.server()) :: [IO.chardata()]
   def render(server), do: GenServer.call(server, :render)
 
+  @spec render_full(GenServer.server()) :: [IO.chardata()]
+  def render_full(server), do: GenServer.call(server, :render_full)
+
   @spec cursor_position(GenServer.server()) :: {pos_integer(), pos_integer()}
   def cursor_position(server), do: GenServer.call(server, :cursor_position)
+
+  @spec full_cursor_position(GenServer.server()) :: {pos_integer(), pos_integer()}
+  def full_cursor_position(server), do: GenServer.call(server, :full_cursor_position)
 
   @spec viewport_height(GenServer.server()) :: pos_integer()
   def viewport_height(server), do: GenServer.call(server, :viewport_height)
@@ -81,8 +87,16 @@ defmodule Exy.TUI.TerminalLoop do
     {:reply, render_lines(state), state}
   end
 
+  def handle_call(:render_full, _from, state) do
+    {:reply, render_full_lines(state), state}
+  end
+
   def handle_call(:cursor_position, _from, state) do
     {:reply, calculate_cursor_position(state), state}
+  end
+
+  def handle_call(:full_cursor_position, _from, state) do
+    {:reply, calculate_full_cursor_position(state), state}
   end
 
   def handle_call(:viewport_height, _from, state) do
@@ -123,15 +137,28 @@ defmodule Exy.TUI.TerminalLoop do
 
   defp render_lines(state) do
     snapshot = App.snapshot(state.app)
-    view = snapshot.ui |> ViewModel.from_state() |> apply_loader_phase(state.loader_phase)
     editor = render_editor(snapshot, state.theme)
 
-    body =
-      view
-      |> Renderer.render(snapshot.width, state.theme)
-      |> fit_body(snapshot.height, editor)
+    state
+    |> render_body(snapshot)
+    |> fit_body(snapshot.height, editor)
+    |> Lines.join(editor)
+  end
 
-    Lines.join(body, editor)
+  defp render_full_lines(state) do
+    snapshot = App.snapshot(state.app)
+    editor = render_editor(snapshot, state.theme)
+
+    state
+    |> render_body(snapshot)
+    |> Lines.join(editor)
+  end
+
+  defp render_body(state, snapshot) do
+    snapshot.ui
+    |> ViewModel.from_state()
+    |> apply_loader_phase(state.loader_phase)
+    |> Renderer.render(snapshot.width, state.theme)
   end
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
@@ -164,6 +191,16 @@ defmodule Exy.TUI.TerminalLoop do
     snapshot = App.snapshot(state.app)
     editor = render_editor(snapshot, state.theme)
     editor_start_row = max(snapshot.height - length(editor), 0)
+    editor_cursor_position(snapshot, editor_start_row)
+  end
+
+  defp calculate_full_cursor_position(state) do
+    snapshot = App.snapshot(state.app)
+    editor_start_row = state |> render_body(snapshot) |> length()
+    editor_cursor_position(snapshot, editor_start_row)
+  end
+
+  defp editor_cursor_position(snapshot, editor_start_row) do
     inner_width = max(snapshot.width - 4, 1)
     left = String.slice(snapshot.editor.text || "", 0, snapshot.editor.cursor || 0)
     left_width = Width.visible_length(left)
