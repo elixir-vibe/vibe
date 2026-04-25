@@ -15,6 +15,11 @@
 - `mix exy` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
 - For Mix task help, use Mix's built-in help rendering (`@moduledoc` + `Mix.Tasks.Help`) instead of hand-rolled CLI help formatters.
 - TUI rendering should stay semantic and iodata-first; avoid raw markdown markers/fences when rendering Markdown widgets.
+- Use shared TUI layout helpers (`Widget.pad_line/2`, `Widget.background_line/5`, `Widget.spaces/1`, `Widget.repeat/2`, `Widget.join_sides/3`) instead of ad-hoc `String.duplicate/2` width math in widgets.
+- Message blocks should use full-width padded backgrounds; nested Markdown/ANSI styling must remain visually transparent to the parent background.
+- Preserve vertical rhythm in chat: blank space between message blocks and between chat history and the footer/status line; do not insert a gap between footer and prompt.
+- Loader/working indicators should be driven by BEAM events/timers and repaint immediately without waiting for keyboard input; plugins/background workers must update UI through `Exy.UI.Bus` / semantic events.
+- Keep dark theme message backgrounds muted and colorful, not bright; light theme message text must set explicit dark foregrounds on light backgrounds.
 - Use MDEx streaming documents for partial LLM Markdown and Lumis terminal highlighting for fenced code blocks instead of hand-rolled parsers/highlighters.
 - Storybook output is a visual regression surface; inspect it after changing TUI/Markdown rendering, not just tests.
 - Prefer `IO.ANSI` or established terminal libraries over raw ANSI escape strings. If a raw terminal control sequence is unavoidable, isolate it behind a small named adapter and document why no library API is available.
