@@ -124,12 +124,13 @@ defmodule Exy.CLI do
   defp attach_default_session(opts) do
     configure_api_key(opts)
 
-    case ensure_server_running(2_000) do
-      :ok ->
+    case Exy.Remote.connect() do
+      {:ok, _node} ->
         session_id = opts[:session] || latest_remote_session_id() || new_remote_session_id(opts)
         attach_session(session_id, opts)
 
       {:error, _reason} ->
+        launch_background_server()
         tui(opts)
     end
   end
@@ -176,13 +177,7 @@ defmodule Exy.CLI do
   end
 
   defp start_background_server(timeout_ms \\ 20_000) do
-    log_path = Path.expand("~/.exy/server.out")
-    File.mkdir_p!(Path.dirname(log_path))
-
-    System.cmd("/bin/sh", [
-      "-c",
-      "nohup #{background_server_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null &"
-    ])
+    launch_background_server()
 
     case wait_for_server(timeout_ms) do
       :ok ->
@@ -192,6 +187,21 @@ defmodule Exy.CLI do
         Exy.Server.cleanup_metadata()
         {:error, reason}
     end
+  end
+
+  defp launch_background_server do
+    log_path = Path.expand("~/.exy/server.out")
+    File.mkdir_p!(Path.dirname(log_path))
+
+    command = "exec #{background_server_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null"
+
+    :erlang.open_port({:spawn_executable, "/bin/sh"}, [
+      :binary,
+      :nouse_stdio,
+      {:args, ["-c", command]}
+    ])
+
+    :ok
   end
 
   defp shell_quote(value) do
