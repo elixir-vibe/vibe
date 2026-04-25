@@ -65,6 +65,23 @@ defmodule Exy.TUI.MarkdownTest do
     assert plain =~ "bo"
   end
 
+  test "does not render trailing quoted blank lines at the end of blockquotes" do
+    plain =
+      "> quote\n\nnext"
+      |> Markdown.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    quote_index = Enum.find_index(plain, &String.contains?(&1, "quote"))
+    next_index = Enum.find_index(plain, &(&1 == "next"))
+
+    assert Enum.at(plain, quote_index + 1) == ""
+
+    refute Enum.any?(
+             Enum.slice(plain, (quote_index + 1)..(next_index - 1)//1),
+             &(String.trim(&1) == "│")
+           )
+  end
+
   test "renders task list items, including incomplete streaming task markers" do
     plain =
       "- [x]\n- [ ] todo"

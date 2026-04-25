@@ -83,6 +83,7 @@ defmodule Exy.TUI.Markdown do
   defp block(%MDEx.BlockQuote{nodes: nodes}, width, theme) do
     nodes
     |> Enum.flat_map(&block(&1, max(width - 2, 1), theme))
+    |> trim_trailing_blank()
     |> Enum.map(&[Theme.fg(theme, :border, "│ "), Theme.fg(theme, :thinking_text, &1)])
     |> append_blank()
   end

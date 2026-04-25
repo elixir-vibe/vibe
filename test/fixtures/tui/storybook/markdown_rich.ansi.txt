@@ -5,7 +5,6 @@ Exy renders [1mbold[0m, [3mitalic[0m, [38;2;220;224;230minline code[0m[0m
 quotes, lists, code blocks, and tables.
 
 [38;2;74;78;88m│ [0m[0m[38;2;150;154;164mStreaming Markdown is parsed with MDEx, so partial LLM chunks stay renderable.[0m[0m
-[38;2;74;78;88m│ [0m[0m[38;2;150;154;164m[0m[0m
 
 [38;2;178;148;187m•[0m[0m semantic TUI state
 [38;2;178;148;187m•[0m[0m ANSI themed output
