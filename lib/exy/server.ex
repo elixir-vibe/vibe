@@ -20,11 +20,19 @@ defmodule Exy.Server do
 
   @spec status() :: {:ok, map()} | {:error, term()}
   def status do
-    with {:ok, %{"node" => node_name} = metadata} <- Metadata.read(),
-         {:ok, node} <- parse_node(node_name),
-         :ok <- ensure_client_distribution() do
-      running? = Node.connect(node)
-      {:ok, Map.put(metadata, "running", running?)}
+    case Metadata.read() do
+      {:ok, %{"node" => node_name} = metadata} ->
+        with {:ok, node} <- parse_node(node_name),
+             :ok <- ensure_client_distribution() do
+          running? = Node.connect(node)
+          {:ok, Map.put(metadata, "running", running?)}
+        end
+
+      {:error, :enoent} ->
+        {:ok, %{running: false, metadata_path: Metadata.path(), reason: :not_started}}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

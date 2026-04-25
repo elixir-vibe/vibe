@@ -179,18 +179,12 @@ defmodule Exy.CLI do
   end
 
   defp start_background_server do
-    with {:ok, executable} <- executable_path() do
-      do_start_background_server(executable)
-    end
-  end
-
-  defp do_start_background_server(executable) do
     log_path = Path.expand("~/.exy/server.out")
     File.mkdir_p!(Path.dirname(log_path))
 
     System.cmd("/bin/sh", [
       "-c",
-      "nohup #{shell_quote(executable)} server start --foreground > #{shell_quote(log_path)} 2>&1 &"
+      "nohup #{background_server_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null &"
     ])
 
     case wait_for_server(20_000) do
@@ -219,23 +213,31 @@ defmodule Exy.CLI do
     _error -> false
   end
 
-  defp executable_path do
+  defp background_server_command do
     case :escript.script_name() do
       path when is_list(path) and path != [] ->
         path = path |> List.to_string() |> Path.expand()
-        if Path.basename(path) in ["mix", "mix.bat"], do: find_installed_exy(), else: {:ok, path}
+
+        if Path.basename(path) in ["mix", "mix.bat"] do
+          "sh -c #{shell_quote("cd #{shell_quote(File.cwd!())} && #{shell_quote(path)} exy server start --foreground")}"
+        else
+          "#{shell_quote(path)} server start --foreground"
+        end
 
       _other ->
-        find_installed_exy()
+        installed_exy_command()
     end
   rescue
-    _error -> find_installed_exy()
+    _error -> installed_exy_command()
   end
 
-  defp find_installed_exy do
+  defp installed_exy_command do
     case System.find_executable("exy") do
-      nil -> {:error, :exy_executable_not_found}
-      path -> {:ok, path}
+      nil ->
+        "sh -c #{shell_quote("cd #{shell_quote(File.cwd!())} && mix exy server start --foreground")}"
+
+      path ->
+        "#{shell_quote(path)} server start --foreground"
     end
   end
 
