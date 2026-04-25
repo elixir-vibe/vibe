@@ -2,9 +2,9 @@ defmodule Exy.Auth.Provider do
   @moduledoc """
   Behaviour for authentication providers.
 
-  Providers own their login/refresh protocol and token-to-LLM wiring. `Exy.Auth`
-  handles persistence and dispatch so additional sign-in options can be added
-  without changing callers.
+  Providers own protocol-specific login/refresh and token-to-LLM wiring. Shared
+  storage/callback plumbing lives outside providers so additional sign-in options
+  can be added without duplicating persistence code.
   """
 
   @type credentials :: map()

@@ -26,7 +26,7 @@ defmodule Exy.Actions.Read do
   def run(params, _context) do
     params = JSONSpec.atomize(@schema, params)
 
-    Exy.Actions.Result.run(fn ->
+    Exy.Actions.ToolResult.run(fn ->
       Exy.FileTools.read_file(params.path,
         limit_lines: Map.get(params, :limit_lines, 2_000),
         limit_bytes: Map.get(params, :limit_bytes, Exy.ToolOutput.default_max_bytes())

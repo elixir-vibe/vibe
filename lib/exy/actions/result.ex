@@ -1,31 +1,18 @@
 defmodule Exy.Actions.Result do
   @moduledoc false
 
-  @type raw_result :: {:ok, term()} | {:error, term()} | term()
-  @type tool_result :: {:ok, term()}
+  @type t :: {:ok, term()} | {:error, term()}
 
-  @spec run((-> raw_result())) :: tool_result()
+  @spec run((-> t() | term())) :: t()
   def run(fun) when is_function(fun, 0) do
-    fun.()
-    |> to_tool_result()
+    case fun.() do
+      {:ok, _result} = ok -> ok
+      {:error, _reason} = error -> error
+      result -> {:ok, result}
+    end
   rescue
-    error -> Exception.format(:error, error, __STACKTRACE__) |> error_result()
+    error -> {:error, Exception.format(:error, error, __STACKTRACE__)}
   catch
-    kind, reason -> Exception.format(kind, reason, __STACKTRACE__) |> error_result()
+    kind, reason -> {:error, Exception.format(kind, reason, __STACKTRACE__)}
   end
-
-  @spec ok(term()) :: tool_result()
-  def ok(result), do: {:ok, result}
-
-  @spec error(term()) :: tool_result()
-  def error(error), do: error |> format_error() |> error_result()
-
-  defp to_tool_result({:ok, result}), do: ok(result)
-  defp to_tool_result({:error, error}), do: error(error)
-  defp to_tool_result(result), do: ok(result)
-
-  defp error_result(message), do: ok(%{error: Exy.ToolOutput.limit_text(message)})
-
-  defp format_error(error) when is_binary(error), do: error
-  defp format_error(error), do: inspect(error, pretty: true, limit: 20)
 end

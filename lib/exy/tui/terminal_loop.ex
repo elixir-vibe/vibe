@@ -44,7 +44,7 @@ defmodule Exy.TUI.TerminalLoop do
 
   @impl true
   def init(opts) do
-    {:ok, app} = App.start_link(opts)
+    {:ok, app} = app(opts)
     :ok = App.subscribe(app, self())
 
     {:ok,
@@ -122,6 +122,13 @@ defmodule Exy.TUI.TerminalLoop do
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp app(opts) do
+    case Keyword.fetch(opts, :app) do
+      {:ok, app} -> {:ok, app}
+      :error -> App.start_link(opts)
+    end
+  end
 
   defp notify_event_target(%{event_target: nil}, _event), do: :ok
 

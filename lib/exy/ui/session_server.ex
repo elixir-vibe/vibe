@@ -9,7 +9,7 @@ defmodule Exy.UI.SessionServer do
   use GenServer
 
   alias Exy.LLM.Usage
-  alias Exy.UI.{Command, Event, Reducer, State}
+  alias Exy.UI.{Command, Event, PluginBridge, PromptRunner, Reducer, SlashCommands, State}
 
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})
 
@@ -42,12 +42,12 @@ defmodule Exy.UI.SessionServer do
     state = State.new(opts)
 
     maybe_register_ui_bus(state.session_id)
-    dispatch_plugin_lifecycle(:session_started, %{}, state)
+    PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
 
     {:ok,
      %{
        state: state,
-       ask_fun: Keyword.get(opts, :ask_fun, &default_ask/2),
+       ask_fun: Keyword.get(opts, :ask_fun, &PromptRunner.default_ask/2),
        llm_opts: Keyword.take(opts, [:model, :system]),
        streaming?: Keyword.get(opts, :streaming?, not Keyword.has_key?(opts, :ask_fun)),
        subscribers: %{},
@@ -121,8 +121,7 @@ defmodule Exy.UI.SessionServer do
 
     {ask_opts, state} = ask_options(state, parent, ref, session_id)
 
-    {:ok, task} =
-      Task.start(fn -> send(parent, {:prompt_result, ref, safe_ask(ask_fun, text, ask_opts)}) end)
+    {:ok, task} = PromptRunner.start(ask_fun, text, ask_opts, parent, ref)
 
     %{state | prompt_task: task, prompt_ref: ref, active_agent: nil}
   end
@@ -189,14 +188,7 @@ defmodule Exy.UI.SessionServer do
   defp cancel_prompt(%{prompt_task: nil} = state), do: state
 
   defp cancel_prompt(state) do
-    if is_pid(state.active_agent) and Process.alive?(state.active_agent) do
-      _ = Exy.Agent.Coding.cancel(state.active_agent, reason: :user_cancelled)
-      GenServer.stop(state.active_agent, :normal, 100)
-    end
-
-    if is_pid(state.prompt_task) and Process.alive?(state.prompt_task) do
-      Process.exit(state.prompt_task, :kill)
-    end
+    PromptRunner.cancel(state.active_agent, state.prompt_task)
 
     state
     |> Map.merge(%{prompt_task: nil, prompt_ref: nil, active_agent: nil})
@@ -240,33 +232,9 @@ defmodule Exy.UI.SessionServer do
   defp emit(state, event) do
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     ui_state = Reducer.apply_event(state.state, event)
-    dispatch_plugin_event(ui_state, event)
+    PluginBridge.dispatch(ui_state, event)
     %{state | state: ui_state}
   end
-
-  defp dispatch_plugin_event(ui_state, event) do
-    dispatch_plugin_lifecycle(event.type, event.data, ui_state, plugin_event?(event.type))
-  end
-
-  defp dispatch_plugin_lifecycle(type, data, ui_state, enabled? \\ true) do
-    if enabled? and Process.whereis(Exy.Plugin.Manager) do
-      context = %{session_id: ui_state.session_id, cwd: ui_state.cwd, model: ui_state.model}
-
-      Task.Supervisor.start_child(Exy.UI.PluginTaskSupervisor, fn ->
-        Exy.Plugin.Manager.dispatch(type, data, context)
-      end)
-    end
-
-    :ok
-  end
-
-  defp plugin_event?(:plugin_status_updated), do: false
-  defp plugin_event?(:plugin_status_cleared), do: false
-  defp plugin_event?(:plugin_widget_updated), do: false
-  defp plugin_event?(:plugin_widget_cleared), do: false
-  defp plugin_event?(:notification_added), do: false
-  defp plugin_event?(:notification_expired), do: false
-  defp plugin_event?(_type), do: true
 
   defp normalize_command(%Command{} = command), do: command
   defp normalize_command(type) when is_atom(type), do: Command.new(type)
@@ -274,57 +242,20 @@ defmodule Exy.UI.SessionServer do
   defp normalize_command({type, data}) when is_atom(type) and is_map(data),
     do: Command.new(type, data)
 
-  defp run_slash_command("clear", _args, state) do
-    emit(state, Event.new(:messages_cleared, state.state.session_id, %{}))
-  end
-
-  defp run_slash_command("compact", _args, state) do
-    run_compaction(state)
-  end
-
-  defp run_slash_command(command, _args, state) do
-    case slash_selector(command, state.state) do
-      nil ->
-        emit(
-          state,
-          Event.new(:notification_added, state.state.session_id, %{
-            level: :warning,
-            text: "unknown command: /#{command}"
-          })
-        )
-
-      selector ->
-        emit(state, Event.new(:selector_opened, state.state.session_id, selector))
+  defp run_slash_command(command, args, state) do
+    case SlashCommands.handle(command, args, state.state) do
+      {:events, events} -> Enum.reduce(events, state, &emit(&2, &1))
+      :compact -> run_compaction(state)
     end
   end
 
-  defp run_selector_action(%{selector: :model_selector, item: model}, state)
-       when is_binary(model) do
-    emit(state, Event.new(:model_selected, state.state.session_id, %{model: model}))
+  defp run_selector_action(data, state) do
+    case SlashCommands.selector_action(data, state.state) do
+      {:events, events} -> Enum.reduce(events, state, &emit(&2, &1))
+      {:command, command} -> run_slash_command(command, "", state)
+      :ignore -> state
+    end
   end
-
-  defp run_selector_action(%{selector: :session_selector, item: session_id}, state)
-       when is_binary(session_id) do
-    emit(state, Event.new(:session_selected, state.state.session_id, %{session_id: session_id}))
-  end
-
-  defp run_selector_action(%{selector: :skill_selector, item: skill}, state)
-       when is_binary(skill) do
-    emit(
-      state,
-      Event.new(:notification_added, state.state.session_id, %{
-        level: :info,
-        text: "selected skill: #{skill}"
-      })
-    )
-  end
-
-  defp run_selector_action(%{selector: :command_palette, item: command}, state)
-       when is_binary(command) do
-    run_slash_command(command, "", state)
-  end
-
-  defp run_selector_action(_data, state), do: state
 
   defp run_compaction(state) do
     session_id = state.state.session_id
@@ -342,62 +273,7 @@ defmodule Exy.UI.SessionServer do
     end
   end
 
-  defp slash_selector("model", ui_state) do
-    %{kind: :model_selector, title: "Model", items: [ui_state.model], selected: 0, limit: 8}
-  end
-
-  defp slash_selector("session", _ui_state) do
-    items = Exy.Session.list() |> Enum.map(& &1.id)
-    %{kind: :session_selector, title: "Session", items: items, selected: 0, limit: 8}
-  end
-
-  defp slash_selector("skill", _ui_state) do
-    items = Exy.Skill.list() |> Enum.map(& &1.name)
-    %{kind: :skill_selector, title: "Skill", items: items, selected: 0, limit: 8}
-  end
-
-  defp slash_selector("commands", _ui_state) do
-    %{
-      kind: :command_palette,
-      title: "Commands",
-      items: ["model", "session", "skill", "clear", "compact"],
-      selected: 0,
-      limit: 8
-    }
-  end
-
-  defp slash_selector(_command, _ui_state), do: nil
-
   defp maybe_register_ui_bus(session_id) do
     if Process.whereis(Exy.UI.Bus), do: Exy.UI.Bus.register(session_id, self()), else: :ok
   end
-
-  defp safe_ask(ask_fun, text, opts) do
-    ask_fun.(text, opts)
-  rescue
-    exception -> {:error, Exception.format(:error, exception, __STACKTRACE__)}
-  catch
-    kind, reason -> {:error, Exception.format(kind, reason, __STACKTRACE__)}
-  end
-
-  defp default_ask(text, opts) do
-    agent_opts = Keyword.take(opts, [:model, :session_id])
-    ask_opts = opts |> agent_ask_opts() |> Keyword.delete(:stream_owner)
-
-    with {:ok, agent} <- Exy.start_link(agent_opts) do
-      notify_stream_owner(opts[:stream_owner], agent)
-
-      try do
-        Exy.ask(agent, text, Keyword.put_new(ask_opts, :timeout, 120_000))
-      after
-        if Process.alive?(agent), do: GenServer.stop(agent)
-      end
-    end
-  end
-
-  defp notify_stream_owner({owner, ref}, agent) when is_pid(owner) and is_reference(ref) do
-    send(owner, {:active_agent, ref, agent})
-  end
-
-  defp notify_stream_owner(_owner, _agent), do: :ok
 end

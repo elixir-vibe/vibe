@@ -18,7 +18,7 @@ defmodule Exy.MixProject do
       escript: escript(),
       dialyzer: [
         plt_file: {:no_warn, "_build/dev/dialyxir_plt.plt"},
-        plt_add_apps: [:mix, :credo, :ex_dna, :ex_slop]
+        plt_add_apps: [:mix, :credo, :ex_dna, :ex_slop, :reach]
       ]
     ]
   end

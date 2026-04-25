@@ -44,17 +44,21 @@ defmodule Exy.Script do
          ) do
       {:ok, runtime} ->
         try do
-          with source <- File.read!(path),
-               {:ok, result} <-
-                 Runtime.evaluate(runtime, source,
-                   timeout: Keyword.get(opts, :timeout, 120_000),
-                   file: path
-                 ) do
-            %{
-              status: result.status,
-              exit_status: if(result.status == :ok, do: 0, else: 1),
-              output: result.output <> inspect_value(result)
-            }
+          source = File.read!(path)
+
+          case Runtime.evaluate(runtime, source,
+                 timeout: Keyword.get(opts, :timeout, 120_000),
+                 file: path
+               ) do
+            {:ok, result} ->
+              %{
+                status: result.status,
+                exit_status: if(result.status == :ok, do: 0, else: 1),
+                output: result.output <> inspect_value(result)
+              }
+
+            {:error, reason} ->
+              %{status: :error, exit_status: nil, output: inspect(reason)}
           end
         after
           Runtime.stop(runtime)

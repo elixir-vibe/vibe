@@ -13,15 +13,13 @@ defmodule Exy.TUI.Widgets.Tools.FileMutation do
     end)
   end
 
+  def output_lines(%{message: message, change: %{diff: diff}}, width, theme)
+      when is_binary(diff) do
+    output_diff(message, diff, width, theme)
+  end
+
   def output_lines(%{message: message, diff: diff}, width, theme) when is_binary(diff) do
-    message_lines = Widget.wrap([Widget.spaces(2), Theme.fg(theme, :muted, message)], width)
-
-    diff_lines =
-      DSL.diff(text: diff)
-      |> Widget.render(max(width - 2, 1), theme)
-      |> Enum.map(&[Widget.spaces(2), &1])
-
-    message_lines |> Lines.join([""]) |> Lines.join(diff_lines)
+    output_diff(message, diff, width, theme)
   end
 
   def output_lines(value, width, theme) do
@@ -31,6 +29,17 @@ defmodule Exy.TUI.Widgets.Tools.FileMutation do
     |> Enum.flat_map(fn line ->
       Widget.wrap([Widget.spaces(2), Theme.fg(theme, :tool_output, line)], width)
     end)
+  end
+
+  defp output_diff(message, diff, width, theme) do
+    message_lines = Widget.wrap([Widget.spaces(2), Theme.fg(theme, :muted, message)], width)
+
+    diff_lines =
+      DSL.diff(text: diff)
+      |> Widget.render(max(width - 2, 1), theme)
+      |> Enum.map(&[Widget.spaces(2), &1])
+
+    message_lines |> Lines.join([""]) |> Lines.join(diff_lines)
   end
 
   defp format_error(error) when is_binary(error), do: error

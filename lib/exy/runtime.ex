@@ -23,7 +23,11 @@ defmodule Exy.Runtime do
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     module = runtime_module(opts)
-    module.start_link(Keyword.delete(opts, :runtime))
+
+    case module.start_link(Keyword.delete(opts, :runtime)) do
+      {:ok, runtime} -> {:ok, {module, runtime}}
+      other -> other
+    end
   end
 
   @spec evaluate(locator(), String.t(), keyword()) :: {:ok, eval_result()} | {:error, term()}

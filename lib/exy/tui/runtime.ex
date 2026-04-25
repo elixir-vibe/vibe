@@ -3,7 +3,7 @@ defmodule Exy.TUI.Runtime do
   Startable terminal runtime for Exy's interactive TUI.
   """
 
-  alias Exy.TUI.{TerminalLoop, TerminalPainter}
+  alias Exy.TUI.{RuntimeSupervisor, TerminalLoop, TerminalPainter}
   alias IO.ANSI
 
   @spec run(keyword()) :: :ok | {:error, term()}
@@ -17,15 +17,21 @@ defmodule Exy.TUI.Runtime do
       |> Keyword.put(:output, false)
       |> Keyword.put(:event_target, self())
 
+    runtime_id = make_ref()
+    opts = Keyword.put(opts, :runtime_id, runtime_id)
+
     with :ok <- ensure_interactive_terminal(),
-         {:ok, loop} <- TerminalLoop.start_link(opts),
+         {:ok, supervisor} <- RuntimeSupervisor.start_link(opts),
          {:ok, tty} <- Ghostty.TTY.start_link(owner: self(), takeover: true) do
+      loop = RuntimeSupervisor.name(runtime_id, TerminalLoop)
+
       try do
         painter = render(loop, TerminalPainter.new(columns, rows))
         receive_events(tty, loop, nil, painter)
       after
         write_output(TerminalPainter.cleanup())
         GenServer.stop(tty)
+        Supervisor.stop(supervisor)
       end
     end
   end

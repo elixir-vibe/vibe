@@ -11,7 +11,8 @@ defmodule Exy.Auth.Codex do
   @redirect_uri "http://localhost:1455/auth/callback"
   @scope "openid profile email offline_access"
   @claim_path "https://api.openai.com/auth"
-  @auth_path Path.expand("~/.exy/auth.json")
+  alias Exy.Auth.Codex.CallbackServer
+  alias Exy.Auth.Store
 
   @impl Exy.Auth.Provider
   def id, do: "openai-codex"
@@ -24,17 +25,20 @@ defmodule Exy.Auth.Codex do
     state = random_urlsafe(24)
     url = authorize_url(challenge, state, Keyword.get(opts, :originator, "exy"))
 
-    with {:ok, server} <- start_callback_server(state) do
+    with {:ok, server} <- CallbackServer.start_link(state) do
       maybe_open_browser(url, opts)
       IO.puts("Open this URL to sign in with ChatGPT/Codex:\n\n#{url}\n")
       IO.puts("Waiting on #{@redirect_uri} ...")
 
-      code = wait_for_code(server, Keyword.get(opts, :timeout, 180_000)) || prompt_code(state)
-      stop_server(server)
+      code =
+        CallbackServer.wait_for_code(server, Keyword.get(opts, :timeout, 180_000)) ||
+          prompt_code(state)
+
+      CallbackServer.stop(server)
 
       with {:ok, credentials} <- exchange_code(code, verifier),
            {:ok, credentials} <- attach_account_id(credentials) do
-        save(id(), credentials)
+        Store.save(id(), credentials)
         put_credentials(credentials)
         {:ok, credentials}
       end
@@ -67,13 +71,8 @@ defmodule Exy.Auth.Codex do
 
   @spec load(String.t()) :: {:ok, map()} | {:error, :not_found | term()}
   def load(provider) do
-    with {:ok, text} <- File.read(@auth_path),
-         {:ok, json} <- Jason.decode(text),
-         credentials when is_map(credentials) <- Map.get(json, provider) do
+    with {:ok, credentials} <- Store.load(provider) do
       {:ok, atomize_keys(credentials)}
-    else
-      nil -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -90,7 +89,7 @@ defmodule Exy.Auth.Codex do
     with {:ok, credentials} <- load() do
       if Map.get(credentials, :expires, 0) < System.system_time(:millisecond) + 60_000 do
         with {:ok, refreshed} <- refresh(credentials) do
-          save(id(), refreshed)
+          Store.save(id(), refreshed)
           put_credentials(refreshed)
           {:ok, refreshed}
         end
@@ -170,87 +169,6 @@ defmodule Exy.Auth.Codex do
     @authorize_url <> "?" <> query
   end
 
-  defp start_callback_server(state) do
-    parent = self()
-
-    pid =
-      spawn_link(fn ->
-        {:ok, listen} =
-          :gen_tcp.listen(1455, [
-            :binary,
-            active: false,
-            packet: :raw,
-            reuseaddr: true,
-            ip: {127, 0, 0, 1}
-          ])
-
-        send(parent, {:codex_server_ready, self()})
-        accept_once(listen, parent, state)
-      end)
-
-    receive do
-      {:codex_server_ready, ^pid} -> {:ok, pid}
-    after
-      2_000 -> {:error, :callback_server_timeout}
-    end
-  rescue
-    exception -> {:error, exception}
-  end
-
-  defp accept_once(listen, parent, state) do
-    case :gen_tcp.accept(listen, 180_000) do
-      {:ok, socket} ->
-        {:ok, request} = :gen_tcp.recv(socket, 0, 5_000)
-        {status, body, code} = parse_callback(request, state)
-
-        response =
-          "HTTP/1.1 #{status}\r\ncontent-type: text/html; charset=utf-8\r\ncontent-length: #{byte_size(body)}\r\n\r\n#{body}"
-
-        :gen_tcp.send(socket, response)
-        :gen_tcp.close(socket)
-        :gen_tcp.close(listen)
-        if code, do: send(parent, {:codex_code, code})
-
-      _ ->
-        :gen_tcp.close(listen)
-    end
-  end
-
-  defp parse_callback(request, state) do
-    [request_line | _] = String.split(request, "\r\n", parts: 2)
-
-    with ["GET", target | _] <- String.split(request_line, " "),
-         %URI{path: "/auth/callback", query: query} <- URI.parse(target),
-         params <- URI.decode_query(query || ""),
-         true <- params["state"] == state,
-         code when is_binary(code) <- params["code"] do
-      {"200 OK",
-       "<html><body>OpenAI authentication completed. You can close this window.</body></html>",
-       code}
-    else
-      _ -> {"400 Bad Request", "<html><body>OpenAI authentication failed.</body></html>", nil}
-    end
-  end
-
-  defp wait_for_code(server, timeout) do
-    ref = Process.monitor(server)
-
-    receive do
-      {:codex_code, code} ->
-        Process.demonitor(ref, [:flush])
-        code
-
-      {:DOWN, ^ref, :process, ^server, _reason} ->
-        nil
-    after
-      timeout ->
-        Process.demonitor(ref, [:flush])
-        nil
-    end
-  end
-
-  defp stop_server(pid) when is_pid(pid), do: Process.exit(pid, :normal)
-
   defp prompt_code(state) do
     input = IO.gets("Paste authorization code or redirect URL: ") |> to_string() |> String.trim()
     parse_authorization_input(input, state)
@@ -280,18 +198,6 @@ defmodule Exy.Auth.Codex do
         true -> :noop
       end
     end
-  end
-
-  defp save(provider, credentials) do
-    File.mkdir_p!(Path.dirname(@auth_path))
-
-    auth =
-      case File.read(@auth_path) do
-        {:ok, text} -> Jason.decode!(text)
-        _ -> %{}
-      end
-
-    File.write!(@auth_path, Jason.encode!(Map.put(auth, provider, credentials), pretty: true))
   end
 
   defp account_id(jwt) do

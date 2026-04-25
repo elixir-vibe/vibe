@@ -50,7 +50,20 @@ defmodule Exy.Checks do
   def run(:reach, opts) do
     paths = Keyword.get(opts, :paths, ["lib/**/*.ex"])
     files = paths |> Enum.flat_map(&Path.wildcard/1) |> Enum.sort()
-    %{name: :reach, status: :ok, details: %{files: length(files)}}
+
+    errors =
+      Enum.flat_map(files, fn file ->
+        case reach_file_to_graph(file) do
+          {:ok, graph} ->
+            if graph_node_count(graph) > 0, do: [], else: [%{file: file, reason: :empty_graph}]
+
+          {:error, reason} ->
+            [%{file: file, reason: reason}]
+        end
+      end)
+
+    status = if errors == [], do: :ok, else: :error
+    %{name: :reach, status: status, details: %{files: length(files), errors: errors}}
   end
 
   def run(name, _opts), do: %{name: name, status: :error, details: {:unknown_check, name}}
@@ -94,6 +107,11 @@ defmodule Exy.Checks do
       details: %{issues: Enum.map(issues, &issue_to_map/1), output: output}
     }
   end
+
+  defp graph_node_count(graph), do: graph |> reach_nodes() |> length()
+
+  defp reach_file_to_graph(file), do: Reach.file_to_graph(file)
+  defp reach_nodes(graph), do: Reach.nodes(graph)
 
   defp ex_slop_check(opts) do
     {:ok, _apps} = Application.ensure_all_started(:credo)

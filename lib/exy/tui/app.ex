@@ -32,8 +32,8 @@ defmodule Exy.TUI.App do
 
   @impl true
   def init(opts) do
-    {:ok, ui} = SessionServer.start_link(opts)
-    {:ok, editor} = EditorServer.start_link(history: Keyword.get(opts, :history, []))
+    {:ok, ui} = session_server(opts)
+    {:ok, editor} = editor_server(opts)
     :ok = SessionServer.subscribe(ui, self())
 
     {:ok,
@@ -91,6 +91,20 @@ defmodule Exy.TUI.App do
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp session_server(opts) do
+    case Keyword.fetch(opts, :session_server) do
+      {:ok, server} -> {:ok, server}
+      :error -> SessionServer.start_link(opts)
+    end
+  end
+
+  defp editor_server(opts) do
+    case Keyword.fetch(opts, :editor_server) do
+      {:ok, server} -> {:ok, server}
+      :error -> EditorServer.start_link(history: Keyword.get(opts, :history, []))
+    end
+  end
 
   defp selector_open?(state), do: not is_nil(SessionServer.state(state.ui).selector)
 

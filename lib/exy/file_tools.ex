@@ -34,14 +34,14 @@ defmodule Exy.FileTools do
          :ok <- File.mkdir_p(Path.dirname(absolute)) do
       old = if File.exists?(absolute), do: File.read!(absolute), else: ""
       File.write!(absolute, content)
-      diff = diff(old, content)
+      change = change(path, old, content)
 
       {:ok,
        %{
          path: path,
          message: write_message(path, old),
-         diff: diff,
-         first_changed_line: first_changed_line(diff)
+         change: change,
+         first_changed_line: first_changed_line(change.diff)
        }}
     end
   rescue
@@ -54,20 +54,22 @@ defmodule Exy.FileTools do
          {:ok, original} <- File.read(absolute),
          {:ok, edited, count} <- apply_edits(path, original, edits) do
       File.write!(absolute, edited)
-      diff = diff(original, edited)
+      change = change(path, original, edited)
 
       {:ok,
        %{
          path: path,
          message: "Successfully replaced #{count} block(s) in #{path}.",
-         diff: diff,
+         change: change,
          replacements: count,
-         first_changed_line: first_changed_line(diff)
+         first_changed_line: first_changed_line(change.diff)
        }}
     end
   rescue
     error -> {:error, Exception.message(error)}
   end
+
+  defp change(path, old, new), do: %{path: path, old: old, new: new, diff: diff(old, new)}
 
   @spec diff(String.t(), String.t()) :: String.t()
   def diff(old, new) when is_binary(old) and is_binary(new) do

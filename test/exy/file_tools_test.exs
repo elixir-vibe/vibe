@@ -25,7 +25,7 @@ defmodule Exy.FileToolsTest do
 
     assert {:ok, result} = Exy.FileTools.write_file("sample.txt", "new\n", root: dir)
     assert File.read!(path) == "new\n"
-    assert result.diff =~ "+1  new"
+    assert result.change.diff =~ "+1  new"
   end
 
   test "edits files with exact replacements and returns a diff", %{dir: dir} do
@@ -39,8 +39,22 @@ defmodule Exy.FileToolsTest do
 
     assert File.read!(path) == "one\nTWO\nthree\n"
     assert result.replacements == 1
-    assert result.diff =~ "-2  two"
-    assert result.diff =~ "+2  TWO"
+    assert result.change.diff =~ "-2  two"
+    assert result.change.diff =~ "+2  TWO"
+  end
+
+  test "rejects symlinks that resolve outside the workspace", %{dir: dir} do
+    outside = Path.join(System.tmp_dir!(), "exy-outside-#{System.unique_integer([:positive])}")
+    File.mkdir_p!(outside)
+    File.write!(Path.join(outside, "secret.txt"), "secret")
+    File.ln_s!(outside, Path.join(dir, "link"))
+
+    try do
+      assert {:error, error} = Exy.FileTools.read_file("link/secret.txt", root: dir)
+      assert error =~ "resolves outside workspace"
+    after
+      File.rm_rf(outside)
+    end
   end
 
   test "rejects paths that escape the workspace", %{dir: dir} do

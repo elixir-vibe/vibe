@@ -20,6 +20,8 @@ defmodule Exy.Actions.Write do
   def run(params, _context) do
     params = JSONSpec.atomize(@schema, params)
 
-    Exy.Actions.Result.run(fn -> Exy.FileTools.write_file(params.path, params.content) end)
+    Exy.Actions.ToolResult.run(fn ->
+      Exy.FileTools.write_file(params.path, params.content)
+    end)
   end
 end

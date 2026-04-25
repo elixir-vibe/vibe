@@ -10,7 +10,14 @@ defmodule Exy.UI.EditorServer do
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     {server_opts, init_opts} = Keyword.split(opts, [:name])
-    :gen_statem.start_link(__MODULE__, init_opts, server_opts)
+
+    case Keyword.fetch(server_opts, :name) do
+      {:ok, name} ->
+        :gen_statem.start_link(name, __MODULE__, init_opts, Keyword.delete(server_opts, :name))
+
+      :error ->
+        :gen_statem.start_link(__MODULE__, init_opts, server_opts)
+    end
   end
 
   @spec key(pid() | atom(), Editor.key()) :: [Editor.command()]
