@@ -74,6 +74,24 @@ defmodule Exy.TUI.WidgetsTest do
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
   end
 
+  test "background line helper pads and preserves parent background across nested resets" do
+    line =
+      Exy.TUI.Widget.background_line(
+        Theme.bold("bold"),
+        12,
+        Theme.default(),
+        :assistant_message_bg,
+        padding_left: 2
+      )
+      |> IO.iodata_to_binary()
+
+    background = IO.iodata_to_binary(Theme.bg_start(Theme.default(), :assistant_message_bg))
+
+    assert Width.visible_text(line) == "  bold" <> String.duplicate(" ", 6)
+    assert line =~ background <> "  "
+    assert line =~ IO.ANSI.reset() <> background
+  end
+
   test "message background survives nested markdown ANSI resets" do
     [blank, content, _blank] =
       DSL.message(%{role: :assistant, text: "**bold** normal"})

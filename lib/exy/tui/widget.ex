@@ -71,6 +71,25 @@ defmodule Exy.TUI.Widget do
     [line, String.duplicate(" ", max(width - Width.visible_length(line), 0))]
   end
 
+  @spec background_line(IO.chardata(), pos_integer(), Theme.t(), atom(), keyword()) :: line()
+  def background_line(content, width, theme, bg_key, opts \\ []) do
+    padding_left = Keyword.get(opts, :padding_left, 0)
+    fg_key = Keyword.get(opts, :fg)
+    background = IO.iodata_to_binary(Theme.bg_start(theme, bg_key))
+    reset = Theme.reset()
+    content = content |> maybe_fg(theme, fg_key) |> preserve_background(background)
+    content_width = Width.visible_length(content)
+    remaining = max(width - padding_left - content_width, 0)
+
+    [
+      background,
+      String.duplicate(" ", padding_left),
+      content,
+      String.duplicate(" ", remaining),
+      reset
+    ]
+  end
+
   @spec frame_line(IO.chardata(), pos_integer(), Theme.t()) :: line()
   def frame_line(content, width, theme) do
     inner_width = max(width - 4, 0)
@@ -99,6 +118,15 @@ defmodule Exy.TUI.Widget do
     else
       fit_line([left, "  ", right], width)
     end
+  end
+
+  defp maybe_fg(content, _theme, nil), do: content
+  defp maybe_fg(content, theme, fg_key), do: Theme.fg(theme, fg_key, content)
+
+  defp preserve_background(content, background) do
+    content
+    |> IO.iodata_to_binary()
+    |> String.replace(Theme.reset(), Theme.reset() <> background)
   end
 
   defp widget!(type), do: Map.fetch!(@widgets, type)

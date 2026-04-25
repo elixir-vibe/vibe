@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Message do
 
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.{Markdown, Theme}
+  alias Exy.TUI.{Markdown, Theme, Widget}
   alias Exy.TUI.Widgets.Loader
 
   @impl true
@@ -62,22 +62,7 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   defp block_line(line, width, theme, bg_key, fg_key) do
-    background = IO.iodata_to_binary(Theme.bg_start(theme, bg_key))
-    reset = IO.ANSI.reset()
-
-    content =
-      line |> then(&Theme.fg(theme, fg_key, &1)) |> keep_background_after_resets(background)
-
-    content_width = Exy.TUI.Width.visible_length(line)
-    right_padding = String.duplicate(" ", max(width - content_width - 2, 0))
-
-    [background, "  ", content, right_padding, reset]
-  end
-
-  defp keep_background_after_resets(content, background) do
-    content
-    |> IO.iodata_to_binary()
-    |> String.replace(IO.ANSI.reset(), IO.ANSI.reset() <> background)
+    Widget.background_line(line, width, theme, bg_key, fg: fg_key, padding_left: 2)
   end
 
   defp prefix_first_line([first | rest], prefix), do: [[prefix, first] | rest]
