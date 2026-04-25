@@ -4,6 +4,7 @@ defmodule Exy.TUI.Widgets.Message do
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Markdown, Theme, Widget}
+  alias Exy.TUI.Widgets.Loader
 
   @impl true
   def render(%{props: %{role: :user, text: text}}, width, theme) do
@@ -46,7 +47,7 @@ defmodule Exy.TUI.Widgets.Message do
     text = text |> to_string() |> String.trim()
 
     if text == "" do
-      [Theme.italic(Theme.fg(theme, :thinking_text, "Thinking…"))]
+      Loader.render(%{props: %{label: "Thinking"}}, width, theme)
     else
       Markdown.render(text, width, theme)
     end

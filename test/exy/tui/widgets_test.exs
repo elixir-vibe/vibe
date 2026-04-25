@@ -56,9 +56,9 @@ defmodule Exy.TUI.WidgetsTest do
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert user == [" hello                                  "]
+    assert user == [" hello" <> String.duplicate(" ", 34)]
     assert assistant == ["hi"]
-    assert thinking == ["Thinking…"]
+    assert thinking == ["✦ ⋰ ⋱ ✧ Thinking…"]
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "You:"))
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
   end
@@ -88,6 +88,15 @@ defmodule Exy.TUI.WidgetsTest do
     assert Enum.any?(lines, &String.contains?(&1, "hello"))
     assert Enum.any?(lines, &String.contains?(&1, "world"))
     assert length(lines) == 5
+  end
+
+  test "loader widget renders Exy's reusable waiting indicator" do
+    plain =
+      DSL.loader(label: "Working")
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert plain == ["✦ ⋰ ⋱ ✧ Working…"]
   end
 
   test "layout primitives render boxes, padding, horizontal rows, spacers, and truncation" do

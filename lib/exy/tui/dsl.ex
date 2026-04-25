@@ -31,6 +31,9 @@ defmodule Exy.TUI.DSL do
   @spec message(map() | struct()) :: Node.t()
   def message(message), do: node(:message, to_props(message))
 
+  @spec loader(keyword() | map()) :: Node.t()
+  def loader(props \\ []), do: node(:loader, Map.new(props))
+
   @spec tool(map() | struct()) :: Node.t()
   def tool(tool), do: node(:tool, to_props(tool))
 

@@ -23,7 +23,6 @@ defmodule Exy.TUI.NodeTest do
       |> Widget.render(80, Theme.default())
       |> hd()
 
-    assert Width.visible_text(line) ==
-             " hello                                                                          "
+    assert Width.visible_text(line) == " hello" <> String.duplicate(" ", 74)
   end
 end

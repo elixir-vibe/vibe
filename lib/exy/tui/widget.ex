@@ -15,6 +15,7 @@ defmodule Exy.TUI.Widget do
     text: Exy.TUI.Widgets.Text,
     markdown: Exy.TUI.Widgets.Markdown,
     message: Exy.TUI.Widgets.Message,
+    loader: Exy.TUI.Widgets.Loader,
     tool: Exy.TUI.Widgets.Tool,
     section: Exy.TUI.Widgets.Section,
     status: Exy.TUI.Widgets.Status,

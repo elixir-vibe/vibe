@@ -15,7 +15,7 @@ defmodule Exy.TUI.Views.ChatTest do
     lines = Chat.render_lines(view, 80, Theme.default())
     plain = Enum.map(lines, &Width.visible_text/1)
 
-    assert " hello                                                                          " in plain
+    assert (" hello" <> String.duplicate(" ", 74)) in plain
     assert "hi" in plain
     refute "You: hello" in plain
     refute "Exy: hi" in plain
