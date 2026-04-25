@@ -32,18 +32,8 @@ defmodule Exy.Runtime.Standalone do
     cwd = Keyword.get(opts, :cwd, File.cwd!())
     env = Keyword.get(opts, :env, %{})
 
-    port =
-      Port.open({:spawn_executable, executable}, [
-        :binary,
-        :exit_status,
-        :stderr_to_stdout,
-        {:line, 1_048_576},
-        args: child_args(),
-        cd: cwd,
-        env: normalize_env(env)
-      ])
-
-    {:ok, %{port: port, next_id: 1, requests: %{}}}
+    runtime = %{executable: executable, cwd: cwd, env: env}
+    {:ok, Map.merge(runtime, %{port: open_port(runtime), next_id: 1, requests: %{}})}
   end
 
   @impl true
@@ -97,12 +87,17 @@ defmodule Exy.Runtime.Standalone do
       )
     end
 
-    {:noreply, %{state | requests: requests}}
+    state = %{state | requests: requests}
+    state = restart_runtime(state, {:request_timeout, id})
+    {:noreply, state}
   end
 
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
-    {:noreply, fail_all(state, {:runtime_exited, status})}
+    state = fail_all(state, {:runtime_exited, status})
+    {:noreply, %{state | port: open_port(state)}}
   end
+
+  def handle_info({_port, {:exit_status, _status}}, state), do: {:noreply, state}
 
   @impl true
   def terminate(_reason, state) do
@@ -225,6 +220,32 @@ defmodule Exy.Runtime.Standalone do
     end)
 
     %{state | requests: %{}}
+  end
+
+  defp restart_runtime(state, reason) do
+    state
+    |> close_port()
+    |> fail_all({:runtime_restarted, reason})
+    |> then(&%{&1 | port: open_port(&1)})
+  end
+
+  defp open_port(runtime) do
+    Port.open({:spawn_executable, runtime.executable}, [
+      :binary,
+      :exit_status,
+      :stderr_to_stdout,
+      {:line, 1_048_576},
+      args: child_args(),
+      cd: runtime.cwd,
+      env: normalize_env(runtime.env)
+    ])
+  end
+
+  defp close_port(state) do
+    if Port.info(state.port), do: Port.close(state.port)
+    state
+  rescue
+    _ -> state
   end
 
   defp encode(term), do: term |> :erlang.term_to_binary() |> Base.encode64()

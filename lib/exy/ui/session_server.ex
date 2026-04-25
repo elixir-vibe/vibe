@@ -239,8 +239,9 @@ defmodule Exy.UI.SessionServer do
 
   defp emit(state, event) do
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
-    dispatch_plugin_event(state.state, event)
-    %{state | state: Reducer.apply_event(state.state, event)}
+    ui_state = Reducer.apply_event(state.state, event)
+    dispatch_plugin_event(ui_state, event)
+    %{state | state: ui_state}
   end
 
   defp dispatch_plugin_event(ui_state, event) do
@@ -250,7 +251,10 @@ defmodule Exy.UI.SessionServer do
   defp dispatch_plugin_lifecycle(type, data, ui_state, enabled? \\ true) do
     if enabled? and Process.whereis(Exy.Plugin.Manager) do
       context = %{session_id: ui_state.session_id, cwd: ui_state.cwd, model: ui_state.model}
-      Task.start(fn -> Exy.Plugin.Manager.dispatch(type, data, context) end)
+
+      Task.Supervisor.start_child(Exy.UI.PluginTaskSupervisor, fn ->
+        Exy.Plugin.Manager.dispatch(type, data, context)
+      end)
     end
 
     :ok

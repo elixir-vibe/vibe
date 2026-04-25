@@ -8,7 +8,7 @@ defmodule Exy.FileTools do
 
   @spec read_file(String.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
   def read_file(path, opts \\ []) when is_binary(path) do
-    with {:ok, absolute} <- resolve(path),
+    with {:ok, absolute} <- resolve(path, opts),
          {:ok, stat} <- File.stat(absolute),
          :ok <- ensure_regular(stat),
          {:ok, content} <- File.read(absolute) do
@@ -28,9 +28,9 @@ defmodule Exy.FileTools do
     end
   end
 
-  @spec write_file(String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  def write_file(path, content) when is_binary(path) and is_binary(content) do
-    with {:ok, absolute} <- resolve(path),
+  @spec write_file(String.t(), String.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
+  def write_file(path, content, opts \\ []) when is_binary(path) and is_binary(content) do
+    with {:ok, absolute} <- resolve(path, opts),
          :ok <- File.mkdir_p(Path.dirname(absolute)) do
       old = if File.exists?(absolute), do: File.read!(absolute), else: ""
       File.write!(absolute, content)
@@ -48,9 +48,9 @@ defmodule Exy.FileTools do
     error -> {:error, Exception.message(error)}
   end
 
-  @spec edit_file(String.t(), [edit() | map()]) :: {:ok, map()} | {:error, String.t()}
-  def edit_file(path, edits) when is_binary(path) and is_list(edits) do
-    with {:ok, absolute} <- resolve(path),
+  @spec edit_file(String.t(), [edit() | map()], keyword()) :: {:ok, map()} | {:error, String.t()}
+  def edit_file(path, edits, opts \\ []) when is_binary(path) and is_list(edits) do
+    with {:ok, absolute} <- resolve(path, opts),
          {:ok, original} <- File.read(absolute),
          {:ok, edited, count} <- apply_edits(path, original, edits) do
       File.write!(absolute, edited)
@@ -82,10 +82,7 @@ defmodule Exy.FileTools do
     |> Enum.join("\n")
   end
 
-  defp resolve(path) do
-    expanded = Path.expand(path, File.cwd!())
-    {:ok, expanded}
-  end
+  defp resolve(path, opts), do: Exy.Workspace.resolve(path, opts)
 
   defp ensure_regular(%File.Stat{type: :regular}), do: :ok
   defp ensure_regular(%File.Stat{type: type}), do: {:error, "not a regular file: #{type}"}

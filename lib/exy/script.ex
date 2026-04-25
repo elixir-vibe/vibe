@@ -38,27 +38,33 @@ defmodule Exy.Script do
   end
 
   defp run_in_standalone(path, opts) do
-    with {:ok, runtime} <-
-           Runtime.start_link(
-             cwd: Keyword.get(opts, :cwd, File.cwd!()),
-             env: Keyword.get(opts, :env, %{})
-           ),
-         source <- File.read!(path),
-         {:ok, result} <-
-           Runtime.evaluate(runtime, source,
-             timeout: Keyword.get(opts, :timeout, 120_000),
-             file: path
-           ) do
-      Runtime.stop(runtime)
+    case Runtime.start_link(
+           cwd: Keyword.get(opts, :cwd, File.cwd!()),
+           env: Keyword.get(opts, :env, %{})
+         ) do
+      {:ok, runtime} ->
+        try do
+          with source <- File.read!(path),
+               {:ok, result} <-
+                 Runtime.evaluate(runtime, source,
+                   timeout: Keyword.get(opts, :timeout, 120_000),
+                   file: path
+                 ) do
+            %{
+              status: result.status,
+              exit_status: if(result.status == :ok, do: 0, else: 1),
+              output: result.output <> inspect_value(result)
+            }
+          end
+        after
+          Runtime.stop(runtime)
+        end
 
-      %{
-        status: result.status,
-        exit_status: if(result.status == :ok, do: 0, else: 1),
-        output: result.output <> inspect_value(result)
-      }
-    else
-      {:error, reason} -> %{status: :error, exit_status: nil, output: inspect(reason)}
+      {:error, reason} ->
+        %{status: :error, exit_status: nil, output: inspect(reason)}
     end
+  rescue
+    exception -> %{status: :error, exit_status: nil, output: Exception.message(exception)}
   end
 
   defp run_os_process(path, opts) do

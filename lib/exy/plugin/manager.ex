@@ -41,9 +41,13 @@ defmodule Exy.Plugin.Manager do
 
   @impl true
   def handle_call({:load, module, opts}, _from, state) do
-    case start_plugin(module, opts) do
-      {:ok, entry} -> {:reply, :ok, put_plugin(state, module, entry)}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+    if Map.has_key?(state.plugins, module) do
+      {:reply, {:error, :already_loaded}, state}
+    else
+      case start_plugin(module, opts) do
+        {:ok, entry} -> {:reply, :ok, put_plugin(state, module, entry)}
+        {:error, reason} -> {:reply, {:error, reason}, state}
+      end
     end
   end
 
@@ -76,7 +80,14 @@ defmodule Exy.Plugin.Manager do
         true -> []
       end
 
-    Enum.reduce_while(children, {:ok, []}, &start_child(module, &1, &2))
+    case Enum.reduce_while(children, {:ok, []}, &start_child(module, &1, &2)) do
+      {:ok, children} ->
+        {:ok, children}
+
+      {:error, reason, children} ->
+        Enum.each(children, &DynamicSupervisor.terminate_child(Exy.Plugin.Supervisor, &1))
+        {:error, reason}
+    end
   end
 
   defp start_child(module, child_spec, {:ok, children}) do
@@ -88,8 +99,10 @@ defmodule Exy.Plugin.Manager do
       {:ok, pid, _info} when is_pid(pid) -> {:cont, {:ok, [pid | children]}}
       :ignore -> {:cont, {:ok, children}}
       {:error, {:already_started, pid}} -> {:cont, {:ok, [pid | children]}}
-      {:error, reason} -> {:halt, {:error, reason}}
+      {:error, reason} -> {:halt, {:error, reason, children}}
     end
+  rescue
+    exception -> {:halt, {:error, exception, children}}
   end
 
   defp normalize_child_spec(_module, child_spec) when is_map(child_spec), do: child_spec

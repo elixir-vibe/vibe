@@ -44,24 +44,30 @@ defmodule Exy.UI.Bus do
   def set_status(session_id, key, text), do: Exy.Plugin.UI.set_status(session_id, key, text)
 
   @impl true
-  def init(_opts), do: {:ok, %{sessions: %{}, monitors: %{}}}
+  def init(_opts), do: {:ok, %{sessions: %{}, monitors: %{}, session_refs: %{}}}
 
   @impl true
   def handle_call({:register, session_id, server}, _from, state) do
+    state = demonitor_session(state, session_id)
     ref = Process.monitor(server)
-    sessions = Map.put(state.sessions, session_id, server)
-    monitors = Map.put(state.monitors, ref, session_id)
-    {:reply, :ok, %{state | sessions: sessions, monitors: monitors}}
+
+    {:reply, :ok,
+     %{
+       state
+       | sessions: Map.put(state.sessions, session_id, server),
+         monitors: Map.put(state.monitors, ref, {session_id, server}),
+         session_refs: Map.put(state.session_refs, session_id, ref)
+     }}
   end
 
   def handle_call({:unregister, session_id, server}, _from, state) do
-    sessions =
+    state =
       case Map.get(state.sessions, session_id) do
-        ^server -> Map.delete(state.sessions, session_id)
-        _ -> state.sessions
+        ^server -> demonitor_session(state, session_id) |> delete_session(session_id)
+        _other -> state
       end
 
-    {:reply, :ok, %{state | sessions: sessions}}
+    {:reply, :ok, state}
   end
 
   def handle_call({:server, session_id}, _from, state) do
@@ -73,8 +79,45 @@ defmodule Exy.UI.Bus do
 
   @impl true
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
-    {session_id, monitors} = Map.pop(state.monitors, ref)
-    sessions = if session_id, do: Map.delete(state.sessions, session_id), else: state.sessions
-    {:noreply, %{state | sessions: sessions, monitors: monitors}}
+    case Map.pop(state.monitors, ref) do
+      {{session_id, server}, monitors} ->
+        state = %{state | monitors: monitors}
+
+        state =
+          if Map.get(state.sessions, session_id) == server do
+            delete_session(state, session_id)
+          else
+            state
+          end
+
+        {:noreply, state}
+
+      {nil, _monitors} ->
+        {:noreply, state}
+    end
+  end
+
+  defp demonitor_session(state, session_id) do
+    case Map.fetch(state.session_refs, session_id) do
+      {:ok, ref} ->
+        Process.demonitor(ref, [:flush])
+
+        %{
+          state
+          | monitors: Map.delete(state.monitors, ref),
+            session_refs: Map.delete(state.session_refs, session_id)
+        }
+
+      :error ->
+        state
+    end
+  end
+
+  defp delete_session(state, session_id) do
+    %{
+      state
+      | sessions: Map.delete(state.sessions, session_id),
+        session_refs: Map.delete(state.session_refs, session_id)
+    }
   end
 end

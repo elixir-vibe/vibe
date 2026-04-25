@@ -13,6 +13,14 @@ defmodule Exy.PluginManagerTest do
     end
   end
 
+  defmodule PlainWorker do
+    use GenServer
+
+    def start_link(opts), do: GenServer.start_link(__MODULE__, opts)
+    @impl true
+    def init(opts), do: {:ok, opts}
+  end
+
   defmodule BackgroundPlugin do
     use Exy.Plugin
 
@@ -21,6 +29,18 @@ defmodule Exy.PluginManagerTest do
 
     @impl true
     def children(_state, context), do: [{StatusWorker, [session_id: context.session_id]}]
+  end
+
+  defmodule PartialFailurePlugin do
+    use Exy.Plugin
+
+    @impl true
+    def children(_state, _context) do
+      [
+        {PlainWorker, []},
+        {Module.concat(__MODULE__, MissingWorker), []}
+      ]
+    end
   end
 
   defmodule EventPlugin do
@@ -74,6 +94,24 @@ defmodule Exy.PluginManagerTest do
     assert state.plugin_statuses == %{}
 
     assert :ok = Exy.Plugin.Manager.unload(BackgroundPlugin)
+  end
+
+  test "loading an already loaded plugin returns an error" do
+    assert :ok = Exy.Plugin.Manager.load(EventPlugin, session_id: "duplicate-plugin")
+
+    assert {:error, :already_loaded} =
+             Exy.Plugin.Manager.load(EventPlugin, session_id: "duplicate-plugin")
+
+    assert :ok = Exy.Plugin.Manager.unload(EventPlugin)
+  end
+
+  test "partial child startup failure cleans up already started children" do
+    before = DynamicSupervisor.which_children(Exy.Plugin.Supervisor)
+
+    assert {:error, _reason} =
+             Exy.Plugin.Manager.load(PartialFailurePlugin, session_id: "partial-failure")
+
+    assert DynamicSupervisor.which_children(Exy.Plugin.Supervisor) == before
   end
 
   test "plugins observe session lifecycle events and update status bar" do

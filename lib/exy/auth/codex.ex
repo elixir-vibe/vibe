@@ -233,11 +233,19 @@ defmodule Exy.Auth.Codex do
   end
 
   defp wait_for_code(server, timeout) do
+    ref = Process.monitor(server)
+
     receive do
-      {:codex_code, code} -> code
-      {:DOWN, _ref, :process, ^server, _reason} -> nil
+      {:codex_code, code} ->
+        Process.demonitor(ref, [:flush])
+        code
+
+      {:DOWN, ^ref, :process, ^server, _reason} ->
+        nil
     after
-      timeout -> nil
+      timeout ->
+        Process.demonitor(ref, [:flush])
+        nil
     end
   end
 
@@ -304,5 +312,16 @@ defmodule Exy.Auth.Codex do
     Base.url_decode64!(value <> padding, padding: true)
   end
 
-  defp atomize_keys(map), do: Map.new(map, fn {k, v} -> {String.to_atom(k), v} end)
+  defp atomize_keys(map) do
+    map
+    |> Map.take(["access", "refresh", "expires", "accountId", "account_id", "type"])
+    |> Map.new(fn
+      {"access", value} -> {:access, value}
+      {"refresh", value} -> {:refresh, value}
+      {"expires", value} -> {:expires, value}
+      {"accountId", value} -> {:accountId, value}
+      {"account_id", value} -> {:account_id, value}
+      {"type", value} -> {:type, value}
+    end)
+  end
 end

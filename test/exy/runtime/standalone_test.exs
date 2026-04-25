@@ -8,6 +8,18 @@ defmodule Exy.Runtime.StandaloneTest do
     assert :ok = Exy.Runtime.stop(runtime)
   end
 
+  test "timeout restarts child evaluator so future evals are not stuck" do
+    assert {:ok, runtime} = Exy.Runtime.start_link()
+
+    assert {:ok, %{status: :timeout}} =
+             Exy.Runtime.evaluate(runtime, "Process.sleep(5_000)", timeout: 50)
+
+    assert {:ok, %{status: :ok, value: 2}} =
+             Exy.Runtime.evaluate(runtime, "1 + 1", timeout: 1_000)
+
+    assert :ok = Exy.Runtime.stop(runtime)
+  end
+
   test "captures IO away from protocol output" do
     assert {:ok, runtime} = Exy.Runtime.start_link()
 
