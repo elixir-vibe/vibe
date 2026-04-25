@@ -14,6 +14,7 @@
 - Auth, plugins, runtimes, and providers should be behaviour-based so future implementations can be added without changing callers.
 - `mix exy` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
 - For Mix task help, use Mix's built-in help rendering (`@moduledoc` + `Mix.Tasks.Help`) instead of hand-rolled CLI help formatters.
+- Use `OptionParser` or Mix/Elixir built-ins for argv parsing and switch detection; avoid ad-hoc manual flag scans.
 - TUI rendering should stay semantic and iodata-first; avoid raw markdown markers/fences when rendering Markdown widgets.
 - Use shared TUI layout helpers (`Widget.pad_line/2`, `Widget.background_line/5`, `Widget.spaces/1`, `Widget.repeat/2`, `Widget.join_sides/3`) instead of ad-hoc `String.duplicate/2` width math in widgets.
 - Message blocks should use full-width padded backgrounds; nested Markdown/ANSI styling must remain visually transparent to the parent background.

@@ -268,7 +268,9 @@ defmodule Exy.Checks do
   end
 
   defp add_mute_exit_status(argv) do
-    if "--mute-exit-status" in argv, do: argv, else: ["--mute-exit-status" | argv]
+    {opts, _args, _invalid} = OptionParser.parse(argv, strict: [mute_exit_status: :boolean])
+
+    if opts[:mute_exit_status], do: argv, else: ["--mute-exit-status" | argv]
   end
 
   defp capture_io(fun) do
