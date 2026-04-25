@@ -97,7 +97,7 @@ defmodule Exy.UI.SessionServer do
 
     {ask_opts, state} = ask_options(state, parent, session_id)
 
-    Task.start(fn -> send(parent, {:prompt_result, ask_fun.(text, ask_opts)}) end)
+    Task.start(fn -> send(parent, {:prompt_result, safe_ask(ask_fun, text, ask_opts)}) end)
 
     state
   end
@@ -300,6 +300,14 @@ defmodule Exy.UI.SessionServer do
 
   defp maybe_register_ui_bus(session_id) do
     if Process.whereis(Exy.UI.Bus), do: Exy.UI.Bus.register(session_id, self()), else: :ok
+  end
+
+  defp safe_ask(ask_fun, text, opts) do
+    ask_fun.(text, opts)
+  rescue
+    exception -> {:error, Exception.format(:error, exception, __STACKTRACE__)}
+  catch
+    kind, reason -> {:error, Exception.format(kind, reason, __STACKTRACE__)}
   end
 
   defp default_ask(text, opts) do

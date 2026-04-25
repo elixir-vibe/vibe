@@ -115,11 +115,11 @@ defmodule Exy.CLI do
   defp tui(opts) do
     configure_api_key(opts)
 
-    case Exy.TUI.Runtime.run(
-           session_id: session_id(opts),
-           model: Exy.LLM.Model.resolve(opts),
-           system: opts[:system_prompt]
-         ) do
+    runtime_opts =
+      [session_id: session_id(opts), model: Exy.LLM.Model.resolve(opts)]
+      |> maybe_put_system_prompt(opts[:system_prompt])
+
+    case Exy.TUI.Runtime.run(runtime_opts) do
       :ok ->
         :ok
 
@@ -128,6 +128,9 @@ defmodule Exy.CLI do
         {:error, reason}
     end
   end
+
+  defp maybe_put_system_prompt(opts, nil), do: opts
+  defp maybe_put_system_prompt(opts, system_prompt), do: Keyword.put(opts, :system, system_prompt)
 
   defp print_result({:ok, results}, opts) when is_list(results) do
     case opts[:mode] do
