@@ -6,7 +6,7 @@ defmodule Exy.TUI.RuntimeTest do
 
   @cols 100
   @rows 30
-  @startup_timeout_ms 10_000
+  @startup_timeout_ms 20_000
   @input_timeout_ms 1_000
   @exit_timeout_ms 5_000
 
@@ -63,6 +63,61 @@ defmodule Exy.TUI.RuntimeTest do
 
       typed
     end)
+  end
+
+  test "mix exy attach renders a persisted session in a real PTY" do
+    session_dir =
+      Path.join(System.tmp_dir!(), "exy-attach-pty-#{System.unique_integer([:positive])}")
+
+    session_id = "attach-pty"
+    File.mkdir_p!(session_dir)
+
+    previous = Application.get_env(:exy, :session_dir)
+    Application.put_env(:exy, :session_dir, session_dir)
+
+    try do
+      event =
+        Exy.UI.Event.new(:user_message_added, session_id, %{text: "hello from attached session"})
+
+      assert :ok = Exy.Session.Store.append_ui_event(event, 1)
+    after
+      if previous,
+        do: Application.put_env(:exy, :session_dir, previous),
+        else: Application.delete_env(:exy, :session_dir)
+    end
+
+    {:ok, terminal} = Terminal.start_link(cols: @cols, rows: @rows)
+
+    {:ok, pty} =
+      Ghostty.PTY.start_link(
+        cmd: "/bin/sh",
+        args: [
+          "-lc",
+          "cd #{File.cwd!()} && EXY_SESSION_DIR=#{shell_quote(session_dir)} mix exy attach #{session_id}"
+        ],
+        cols: @cols,
+        rows: @rows,
+        reader_start_timeout: 5_000
+      )
+
+    try do
+      assert {:ok, _output} =
+               wait_for_screen_text(
+                 pty,
+                 terminal,
+                 "hello from attached session",
+                 "",
+                 @startup_timeout_ms
+               )
+
+      Ghostty.PTY.write(pty, <<3>>)
+      Process.sleep(50)
+      Ghostty.PTY.write(pty, <<3>>)
+      assert {:exit, 0, _output} = wait_for_exit("", @exit_timeout_ms)
+    after
+      if Process.alive?(pty), do: Ghostty.PTY.close(pty)
+      File.rm_rf(session_dir)
+    end
   end
 
   test "mix exy accepts input in a real PTY, escape cancels, and double ctrl-c exits" do
@@ -195,6 +250,10 @@ defmodule Exy.TUI.RuntimeTest do
     after
       remaining_timeout(deadline) -> {:error, {:exit_timeout, output}}
     end
+  end
+
+  defp shell_quote(value) do
+    "'" <> String.replace(value, "'", "'\\''") <> "'"
   end
 
   defp remaining_timeout(deadline) do

@@ -42,6 +42,11 @@ defmodule Exy.UI.Widget do
     new(id, :lines, %{content: List.wrap(content)}, opts)
   end
 
+  @spec markdown(String.t() | atom(), String.t(), keyword()) :: t()
+  def markdown(id, content, opts \\ []) when is_binary(content) do
+    new(id, :markdown, %{content: content}, opts)
+  end
+
   @spec progress(String.t() | atom(), keyword()) :: t()
   def progress(id, opts) do
     props =

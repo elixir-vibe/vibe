@@ -6,6 +6,12 @@ defmodule Exy.TUI.Widgets.PluginWidget do
   alias Exy.TUI.Widget
 
   @impl true
+  def render(%{props: %{type: :markdown, props: props}}, width, theme) do
+    props
+    |> Map.get(:content, "")
+    |> Exy.TUI.Markdown.render(width, theme)
+  end
+
   def render(%{props: %{type: :progress, props: props}}, width, _theme) do
     title = Map.get(props, :title, "Progress")
     current = Map.get(props, :current, 0)

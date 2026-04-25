@@ -39,6 +39,28 @@ defmodule Exy.SessionProcessTest do
     GenServer.stop(restored)
   end
 
+  test "attach can replay missed events from durable log before in-memory tail" do
+    session_id = "durable-replay-#{System.unique_integer([:positive])}"
+    path = Exy.Session.Store.path(session_id)
+    on_exit(fn -> File.rm(path) end)
+
+    {:ok, server} =
+      Exy.Session.start_link(session_id: session_id, ask_fun: fn _text, _opts -> {:ok, "ok"} end)
+
+    for index <- 1..205 do
+      :ok =
+        Exy.Session.emit_event(
+          server,
+          Exy.UI.Event.new(:notification_added, session_id, %{id: index, text: "n#{index}"})
+        )
+    end
+
+    {:ok, _snapshot, 205} = Exy.Session.attach(server, self(), after: 1)
+    assert_receive {Exy.Session, :event, %{data: %{id: 2}}}
+    assert_receive {Exy.Session, :event, %{data: %{id: 3}}}
+    GenServer.stop(server)
+  end
+
   test "attach returns snapshot cursor and replays missed tail events" do
     {:ok, server} =
       Exy.Session.start_link(

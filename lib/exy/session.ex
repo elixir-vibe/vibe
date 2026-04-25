@@ -78,7 +78,7 @@ defmodule Exy.Session do
     ref = Process.monitor(pid)
     state = %{state | subscribers: Map.put(state.subscribers, ref, pid)}
     replay_after = Keyword.get(opts, :after, state.event_seq)
-    replay_events(state.events_tail, replay_after, pid)
+    replay_events(state, replay_after, pid)
     {:reply, {:ok, state.state, state.event_seq}, state}
   end
 
@@ -283,7 +283,13 @@ defmodule Exy.Session do
 
   defp run_compaction(state) do
     session_id = state.state.session_id
-    state = emit(state, Event.new(:status_changed, session_id, %{status: :compacting}))
+    tokens_before = estimate_tokens(state.state.messages)
+
+    state =
+      emit(
+        state,
+        Event.new(:context_compaction_started, session_id, %{tokens_before: tokens_before})
+      )
 
     case Exy.Context.compact(session_id: session_id) do
       {:ok, %{summary: summary}} ->
@@ -297,6 +303,23 @@ defmodule Exy.Session do
     end
   end
 
+  defp estimate_tokens(messages) do
+    messages
+    |> Enum.map_join("\n", fn message ->
+      message
+      |> Map.take([:text, :result, :error])
+      |> Map.values()
+      |> Enum.find(& &1)
+      |> token_text()
+    end)
+    |> String.length()
+    |> div(4)
+  end
+
+  defp token_text(nil), do: ""
+  defp token_text(value) when is_binary(value), do: value
+  defp token_text(value), do: inspect(value, limit: 20)
+
   defp restore_state(state, false), do: {state, 0, []}
 
   defp restore_state(state, true) do
@@ -306,11 +329,22 @@ defmodule Exy.Session do
     {ui_state, event_seq, Enum.take(events, -200)}
   end
 
-  defp replay_events(events, replay_after, pid) do
-    events
-    |> Enum.filter(fn {seq, _event} -> seq > replay_after end)
-    |> Enum.each(fn {_seq, event} -> send(pid, {__MODULE__, :event, event}) end)
+  defp replay_events(state, replay_after, pid) do
+    events =
+      if durable_replay?(state, replay_after) do
+        Exy.Session.Store.ui_events_after(state.state.session_id, replay_after)
+      else
+        Enum.filter(state.events_tail, fn {seq, _event} -> seq > replay_after end)
+      end
+
+    Enum.each(events, fn {_seq, event} -> send(pid, {__MODULE__, :event, event}) end)
   end
+
+  defp durable_replay?(%{persist?: false}, _replay_after), do: false
+  defp durable_replay?(%{events_tail: []}, _replay_after), do: false
+
+  defp durable_replay?(%{events_tail: [{oldest_seq, _event} | _events]}, replay_after),
+    do: replay_after < oldest_seq
 
   defp remember_event(events, seq, event),
     do: events |> Exy.Lists.append({seq, event}) |> Enum.take(-200)

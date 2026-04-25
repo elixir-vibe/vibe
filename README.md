@@ -33,6 +33,8 @@ exy --help
 exy
 ```
 
+By default, `exy` behaves like a small tmux-style client: it starts the Exy background server when needed, creates or resumes the latest server-owned session, and attaches the TUI. Closing the TUI detaches the client; the server-owned session remains available for later `exy attach`.
+
 Exy keeps the model-facing tool surface small:
 
 - `read`
@@ -105,6 +107,13 @@ Exy.Session.list()
 
 # CLI / Mix task
 #   mix exy
+#   exy server start
+#   exy server status
+#   exy server stop
+#   exy new
+#   exy sessions
+#   exy send <session-id> "Inspect runtime info"
+#   exy attach <session-id>
 #   mix exy -p "Inspect runtime info"
 #   mix exy --eval "Exy.OTP.runtime_info()"
 #   mix exy --compact --keep-recent 20
@@ -140,11 +149,11 @@ Exy.Script.run_string("x = 1 + 2", runtime: :standalone)
 Exy.Python.run("x = 1 + 2\nx", %{})
 Exy.JS.run("1 + 2")
 
-# UI-neutral session state for TUI and future LiveView clients
-{:ok, ui} = Exy.UI.SessionServer.start_link()
-Exy.UI.SessionServer.subscribe(ui)
-Exy.UI.SessionServer.dispatch(ui, {:open_overlay, %{kind: :session_selector}})
-Exy.UI.SessionServer.state(ui)
+# UI-neutral session state for TUI and LiveView-compatible clients
+{:ok, ui} = Exy.Session.start_link()
+{:ok, snapshot, cursor} = Exy.Session.attach(ui)
+Exy.Session.dispatch(ui, {:open_overlay, %{kind: :session_selector}})
+Exy.Session.state(ui)
 
 # Ghostty terminal panes and snapshots
 {:ok, pane} = Exy.Terminal.Pane.start_link(cmd: "/bin/sh")
@@ -153,6 +162,32 @@ Exy.Terminal.Pane.snapshot(pane)
 Exy.Terminal.Snapshot.from_ansi("\\e[32mok\\e[0m\\r\\n")
 
 # Semantic TUI theming maps to ANSI now and CSS variables later
-view = Exy.UI.SessionServer.state(ui) |> Exy.UI.ViewModel.from_state()
+view = Exy.Session.state(ui) |> Exy.UI.ViewModel.from_state()
 Exy.TUI.Renderer.render(view, 100, Exy.TUI.Theme.default())
 ```
+
+## Server sessions
+
+Server mode keeps canonical session state in supervised BEAM processes. TUI clients, scripts, and the future web client attach to those sessions over Erlang distribution.
+
+```bash
+exy server start          # start background server
+exy server status         # check metadata and distribution reachability
+exy server stop           # stop the server
+exy new                   # create a server-owned session
+exy sessions              # list live and persisted sessions
+exy send <id> "prompt"    # send work without attaching a TUI
+exy attach <id>           # attach a TUI client
+```
+
+Runtime files:
+
+```text
+~/.exy/server.cookie      # Exy-specific Erlang distribution cookie
+~/.exy/server.json        # server node metadata
+~/.exy/server.out         # background server log
+~/.exy/sessions/<id>.jsonl # canonical append-only session log
+~/.exy/sessions/<id>.log   # dependency/session log output
+```
+
+The JSONL session log stores typed entries, including semantic UI events, so `Exy.Session.attach/3` can rebuild snapshots and replay missed events from durable state.

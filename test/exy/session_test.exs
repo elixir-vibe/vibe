@@ -20,7 +20,7 @@ defmodule Exy.SessionTest do
     {:ok, session_dir: session_dir}
   end
 
-  test "JSONL persists trajectory events" do
+  test "JSONL persists trajectory and UI events in one canonical file" do
     session_id = "test-session"
     Exy.Trajectory.Store.append(:user_message, %{prompt: "hello"}, session_id: session_id)
 
@@ -28,8 +28,15 @@ defmodule Exy.SessionTest do
       session_id: session_id
     )
 
+    ui_event = Exy.UI.Event.new(:user_message_added, session_id, %{text: "hello"})
+    assert :ok = Exy.Session.Store.append_ui_event(ui_event, 1)
+
     assert File.exists?(Exy.Session.Store.path(session_id))
-    assert [%{id: ^session_id, path: path}] = Exy.Session.Store.list()
+    refute File.exists?(Exy.Session.Store.legacy_ui_events_path(session_id))
+
+    assert [%{id: ^session_id, path: path, message_count: 1, first_message: "hello"}] =
+             Exy.Session.Store.list()
+
     assert path == Exy.Session.Store.path(session_id)
 
     assert [user, usage] = Exy.Session.Store.events(session_id)
@@ -37,5 +44,9 @@ defmodule Exy.SessionTest do
     assert user.data.prompt == "hello"
     assert usage.type == :llm_usage
     assert usage.data.total_tokens == 5
+
+    assert [{1, restored_event}] = Exy.Session.Store.ui_events(session_id)
+    assert restored_event.type == :user_message_added
+    assert restored_event.data.text == "hello"
   end
 end

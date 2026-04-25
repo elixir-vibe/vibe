@@ -95,7 +95,7 @@ defmodule Exy.CLI do
         ask(prompt, opts)
 
       true ->
-        tui(opts)
+        attach_default_session(opts)
     end
   end
 
@@ -121,6 +121,19 @@ defmodule Exy.CLI do
     print_result(remote_or_local(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]), opts)
   end
 
+  defp attach_default_session(opts) do
+    configure_api_key(opts)
+
+    case ensure_server_running() do
+      :ok ->
+        session_id = opts[:session] || latest_remote_session_id() || new_remote_session_id(opts)
+        attach_session(session_id, opts)
+
+      {:error, _reason} ->
+        tui(opts)
+    end
+  end
+
   defp attach_session(session_id, opts) do
     case remote_or_local(:session_pid, [session_id]) do
       {:ok, session} ->
@@ -128,6 +141,31 @@ defmodule Exy.CLI do
 
       {:error, reason} ->
         print_result({:error, reason}, opts)
+    end
+  end
+
+  defp ensure_server_running do
+    case Exy.Remote.connect() do
+      {:ok, _node} ->
+        :ok
+
+      {:error, _reason} ->
+        if(escript?(), do: start_background_server(), else: {:error, :not_escript})
+    end
+  end
+
+  defp latest_remote_session_id do
+    case remote_or_local(:sessions, []) do
+      {:ok, [%{id: id} | _sessions]} -> id
+      {:ok, []} -> nil
+      {:error, _reason} -> nil
+    end
+  end
+
+  defp new_remote_session_id(opts) do
+    case remote_or_local(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]) do
+      {:ok, %{id: id}} -> id
+      {:error, reason} -> raise "cannot create Exy session: #{inspect(reason)}"
     end
   end
 
@@ -143,8 +181,12 @@ defmodule Exy.CLI do
   end
 
   defp start_background_server do
-    executable = executable_path()
+    with {:ok, executable} <- executable_path() do
+      do_start_background_server(executable)
+    end
+  end
 
+  defp do_start_background_server(executable) do
     log_path = Path.expand("~/.exy/server.out")
     File.mkdir_p!(Path.dirname(log_path))
 
@@ -167,13 +209,36 @@ defmodule Exy.CLI do
     "'" <> String.replace(value, "'", "'\\''") <> "'"
   end
 
-  defp executable_path do
+  defp escript? do
     case :escript.script_name() do
-      path when is_list(path) and path != [] -> path |> List.to_string() |> Path.expand()
-      _other -> System.find_executable("exy") || "exy"
+      path when is_list(path) and path != [] ->
+        Path.basename(List.to_string(path)) not in ["mix", "mix.bat"]
+
+      _other ->
+        false
     end
   rescue
-    _error -> System.find_executable("exy") || "exy"
+    _error -> false
+  end
+
+  defp executable_path do
+    case :escript.script_name() do
+      path when is_list(path) and path != [] ->
+        path = path |> List.to_string() |> Path.expand()
+        if Path.basename(path) in ["mix", "mix.bat"], do: find_installed_exy(), else: {:ok, path}
+
+      _other ->
+        find_installed_exy()
+    end
+  rescue
+    _error -> find_installed_exy()
+  end
+
+  defp find_installed_exy do
+    case System.find_executable("exy") do
+      nil -> {:error, :exy_executable_not_found}
+      path -> {:ok, path}
+    end
   end
 
   defp wait_for_server(timeout_ms) do
@@ -278,7 +343,7 @@ defmodule Exy.CLI do
 
   defp print_result({:ok, results}, opts) when is_list(results) do
     case opts[:mode] do
-      "json" -> IO.puts(Jason.encode!(%{ok: true, results: results}, pretty: true))
+      "json" -> IO.puts(Jason.encode!(json_safe(%{ok: true, results: results}), pretty: true))
       _ -> IO.puts(render_result(results))
     end
 
@@ -287,7 +352,7 @@ defmodule Exy.CLI do
 
   defp print_result({:ok, result}, opts) do
     case opts[:mode] do
-      "json" -> IO.puts(Jason.encode!(%{ok: true, result: result}, pretty: true))
+      "json" -> IO.puts(Jason.encode!(json_safe(%{ok: true, result: result}), pretty: true))
       _ -> IO.puts(render_result(result))
     end
 
@@ -296,12 +361,24 @@ defmodule Exy.CLI do
 
   defp print_result({:error, reason}, opts) do
     case opts[:mode] do
-      "json" -> IO.puts(Jason.encode!(%{ok: false, error: inspect(reason)}, pretty: true))
-      _ -> shell_error(inspect(reason))
+      "json" ->
+        IO.puts(Jason.encode!(json_safe(%{ok: false, error: inspect(reason)}), pretty: true))
+
+      _ ->
+        shell_error(inspect(reason))
     end
 
     {:error, reason}
   end
+
+  defp json_safe(%DateTime{} = value), do: DateTime.to_iso8601(value)
+  defp json_safe(%_{} = value), do: value |> Map.from_struct() |> json_safe()
+
+  defp json_safe(map) when is_map(map),
+    do: Map.new(map, fn {key, value} -> {key, json_safe(value)} end)
+
+  defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
+  defp json_safe(value), do: value
 
   defp render_result(results) when is_list(results),
     do: Enum.map_join(results, "\n", &inspect(&1, pretty: true, limit: 20))

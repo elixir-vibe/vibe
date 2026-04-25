@@ -6,8 +6,15 @@ defmodule Mix.Tasks.Exy do
 
   ## Usage
 
-      exy                        # Start the interactive TUI when installed
+      exy                        # Start server if needed and attach the TUI
       exy [options] [message...]
+      exy server start [--foreground]
+      exy server status
+      exy server stop
+      exy new
+      exy sessions
+      exy send <session-id> "prompt"
+      exy attach <session-id>
       mix exy                    # Run from a checkout
       mix exy [options] [message...]
 
@@ -28,7 +35,7 @@ defmodule Mix.Tasks.Exy do
     * `--checks` - Run Exy validation gates.
     * `--codex-usage` - Show Codex subscription usage via Codex app-server RPC.
     * `--session <id>` - Continue or name a persisted JSONL session.
-    * `--sessions` - List persisted sessions.
+    * `--sessions` - List persisted sessions. Prefer `exy sessions` for server-aware listings.
     * `--timeout <ms>` - Request/eval timeout.
     * `--login codex` - Sign in with ChatGPT/Codex OAuth.
     * `--help`, `-h` - Show this help.
@@ -42,6 +49,9 @@ defmodule Mix.Tasks.Exy do
       exy --login codex
       exy --compact --keep-recent 20
       exy --eval "Exy.OTP.runtime_info()"
+      exy new --mode json
+      exy send 20260425-120000-abcd "Use eval to inspect System.version()"
+      exy attach 20260425-120000-abcd
   """
 
   use Mix.Task

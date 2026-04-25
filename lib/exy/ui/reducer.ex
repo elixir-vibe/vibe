@@ -137,9 +137,42 @@ defmodule Exy.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{type: :context_compaction_started, data: data}) do
+    widget =
+      Exy.UI.Widget.progress(:context_compaction,
+        title: "Compacting context",
+        current: Map.get(data, :tokens_before, 0),
+        total: Map.get(data, :tokens_before, 0),
+        message: "Summarizing conversation history",
+        placement: :above_editor
+      )
+
+    %{
+      state
+      | status: :compacting,
+        plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)
+    }
+  end
+
   defp reduce(state, %Event{type: :context_compaction_finished, data: data}) do
-    notice = %{level: :success, text: Map.get(data, :summary, "context compacted")}
-    %{state | notifications: Lists.append(state.notifications, notice), status: :idle}
+    summary = Map.get(data, :summary, "context compacted")
+    notice = %{level: :success, text: summary}
+
+    widget =
+      Exy.UI.Widget.markdown(:context_compaction_summary, summary,
+        placement: :above_editor,
+        version: System.unique_integer([:positive])
+      )
+
+    %{
+      state
+      | notifications: Lists.append(state.notifications, notice),
+        status: :idle,
+        plugin_widgets:
+          state.plugin_widgets
+          |> Map.delete("context_compaction")
+          |> Map.put(widget.id, widget)
+    }
   end
 
   defp reduce(state, %Event{type: :overlay_opened, data: data}) do
