@@ -47,7 +47,8 @@ defmodule Exy.TUI.RuntimeTest do
       typed = typed <> grapheme
       {lines, cursor} = rendered_textarea(typed)
 
-      Ghostty.Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor))
+      start_row = @rows - length(lines) + 1
+      Ghostty.Terminal.write(terminal, Exy.TUI.Runtime.render_frame(lines, cursor, start_row))
 
       {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
       render_state = Ghostty.Terminal.render_state(terminal)

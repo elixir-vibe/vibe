@@ -33,6 +33,9 @@ defmodule Exy.TUI.TerminalLoop do
   @spec cursor_position(GenServer.server()) :: {pos_integer(), pos_integer()}
   def cursor_position(server), do: GenServer.call(server, :cursor_position)
 
+  @spec viewport_height(GenServer.server()) :: pos_integer()
+  def viewport_height(server), do: GenServer.call(server, :viewport_height)
+
   @impl true
   def init(opts) do
     {:ok, app} = App.start_link(opts)
@@ -78,6 +81,10 @@ defmodule Exy.TUI.TerminalLoop do
 
   def handle_call(:cursor_position, _from, state) do
     {:reply, calculate_cursor_position(state), state}
+  end
+
+  def handle_call(:viewport_height, _from, state) do
+    {:reply, App.snapshot(state.app).height, state}
   end
 
   @impl true

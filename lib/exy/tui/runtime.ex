@@ -107,17 +107,9 @@ defmodule Exy.TUI.Runtime do
   defp render(_tty, loop) do
     lines = TerminalLoop.render(loop)
     {cursor_row, cursor_column} = TerminalLoop.cursor_position(loop)
-    start_row = max(cursor_row - editor_cursor_row(lines), 1)
+    start_row = max(TerminalLoop.viewport_height(loop) - length(lines) + 1, 1)
 
     write_output(render_frame(lines, {cursor_row, cursor_column}, start_row))
-  end
-
-  defp editor_cursor_row(lines) do
-    bottom_index =
-      Enum.find_index(lines, &(Exy.TUI.Width.visible_text(&1) |> String.starts_with?("╰"))) ||
-        length(lines) - 1
-
-    max(bottom_index - 1, 1)
   end
 
   @doc "Builds a complete synchronized terminal repaint frame."
