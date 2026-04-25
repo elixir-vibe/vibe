@@ -90,9 +90,8 @@ defmodule Exy.TUI.Markdown do
   defp block(%MDEx.List{nodes: items, list_type: type}, width, theme) do
     items
     |> Enum.with_index(1)
-    |> Enum.flat_map(fn {%MDEx.ListItem{nodes: nodes}, index} ->
-      bullet = if type == :ordered, do: "#{index}.", else: Theme.symbol(theme, :status_icon)
-      render_list_item(nodes, bullet, width, theme)
+    |> Enum.flat_map(fn {item, index} ->
+      render_list_item_node(item, type, index, width, theme)
     end)
     |> append_blank()
   end
@@ -111,6 +110,31 @@ defmodule Exy.TUI.Markdown do
     do: Widget.wrap(literal, width) |> Enum.map(&Theme.fg(theme, :text, &1))
 
   defp block(_node, _width, _theme), do: []
+
+  defp render_list_item_node(
+         %MDEx.TaskItem{nodes: nodes, checked: checked},
+         _type,
+         _index,
+         width,
+         theme
+       ) do
+    marker = if checked, do: "[x]", else: "[ ]"
+    render_list_item(nodes, marker, width, theme)
+  end
+
+  defp render_list_item_node(%MDEx.ListItem{nodes: nodes}, type, index, width, theme) do
+    bullet = if type == :ordered, do: "#{index}.", else: Theme.symbol(theme, :status_icon)
+    render_list_item(nodes, bullet, width, theme)
+  end
+
+  defp render_list_item_node(%{nodes: nodes}, type, index, width, theme) when is_list(nodes) do
+    bullet = if type == :ordered, do: "#{index}.", else: Theme.symbol(theme, :status_icon)
+    render_list_item(nodes, bullet, width, theme)
+  end
+
+  defp render_list_item_node(node, _type, _index, width, theme) do
+    block(node, width, theme)
+  end
 
   defp render_list_item(nodes, bullet, width, theme) do
     prefix = [Theme.fg(theme, :accent, bullet), " "]

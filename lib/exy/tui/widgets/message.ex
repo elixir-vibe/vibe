@@ -8,23 +8,27 @@ defmodule Exy.TUI.Widgets.Message do
 
   @impl true
   def render(%{props: %{role: :user, text: text}}, width, theme) do
-    render_user(text, width, theme)
+    safe_render(width, theme, fn -> render_user(text, width, theme) end)
   end
 
   def render(%{props: %{error: error}}, width, theme) when is_binary(error) do
-    error
-    |> to_string()
-    |> Markdown.render(max(width - 4, 1), theme)
-    |> prefix_first_line(Theme.fg(theme, :error, "ERROR "))
-    |> render_block_lines(width, theme, :tool_error_bg, :error)
+    safe_render(width, theme, fn ->
+      error
+      |> to_string()
+      |> Markdown.render(max(width - 4, 1), theme)
+      |> prefix_first_line(Theme.fg(theme, :error, "ERROR "))
+      |> render_block_lines(width, theme, :tool_error_bg, :error)
+    end)
   end
 
   def render(%{props: %{role: :assistant} = props}, width, theme) do
-    render_assistant(Map.get(props, :text), width, theme, Map.get(props, :loader_phase, 0))
+    safe_render(width, theme, fn ->
+      render_assistant(Map.get(props, :text), width, theme, Map.get(props, :loader_phase, 0))
+    end)
   end
 
   def render(%{props: %{text: text}}, width, theme) do
-    render_user(text, width, theme)
+    safe_render(width, theme, fn -> render_user(text, width, theme) end)
   end
 
   defp render_user(text, width, theme) do
@@ -61,6 +65,22 @@ defmodule Exy.TUI.Widgets.Message do
           blank
         )
     ]
+  end
+
+  defp safe_render(width, theme, fun) do
+    fun.()
+  rescue
+    error -> render_failure(width, theme, Exception.format(:error, error, __STACKTRACE__))
+  catch
+    kind, reason -> render_failure(width, theme, Exception.format(kind, reason, __STACKTRACE__))
+  end
+
+  defp render_failure(width, theme, error) do
+    error
+    |> String.split("\n")
+    |> Enum.flat_map(&Widget.wrap(Theme.fg(theme, :error, &1), max(width - 4, 1)))
+    |> prefix_first_line(Theme.fg(theme, :error, "RENDER ERROR "))
+    |> render_block_lines(width, theme, :tool_error_bg, :error)
   end
 
   defp prefix_first_line([first | rest], prefix), do: [[prefix, first] | rest]

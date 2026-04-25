@@ -64,4 +64,14 @@ defmodule Exy.TUI.MarkdownTest do
 
     assert plain =~ "bo"
   end
+
+  test "renders task list items, including incomplete streaming task markers" do
+    plain =
+      "- [x]\n- [ ] todo"
+      |> Markdown.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "[x]"))
+    assert Enum.any?(plain, &String.contains?(&1, "[ ] todo"))
+  end
 end

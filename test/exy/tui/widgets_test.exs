@@ -118,6 +118,17 @@ defmodule Exy.TUI.WidgetsTest do
            ]
   end
 
+  test "message renderer failures degrade to error blocks" do
+    node = DSL.message(%{role: :assistant, text: ""})
+
+    lines =
+      %{node | props: Map.put(node.props, :loader_phase, :not_a_number)}
+      |> Widget.render(60, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(lines, &String.contains?(&1, "RENDER ERROR"))
+  end
+
   test "input widget renders prompt, value, cursor, and placeholder" do
     focused =
       DSL.input(value: "hello", cursor: 2)
