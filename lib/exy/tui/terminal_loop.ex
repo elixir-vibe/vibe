@@ -48,24 +48,27 @@ defmodule Exy.TUI.TerminalLoop do
        event_target: Keyword.get(opts, :event_target),
        loader_phase: 0,
        loader_timer: nil,
+       scroll_offset: 0,
        theme: Keyword.get_lazy(opts, :theme, &Theme.default/0)
      }}
   end
 
   @impl true
   def handle_call({:input, data}, _from, state) do
-    data
-    |> KeyDecoder.decode()
-    |> Enum.each(&App.key(state.app, &1))
+    state =
+      data
+      |> KeyDecoder.decode()
+      |> Enum.reduce(state, &handle_decoded_key/2)
 
     paint(state)
     {:reply, :ok, state}
   end
 
   def handle_call({:input_key, event}, _from, state) do
-    event
-    |> KeyDecoder.decode_event()
-    |> Enum.each(&App.key(state.app, &1))
+    state =
+      event
+      |> KeyDecoder.decode_event()
+      |> Enum.reduce(state, &handle_decoded_key/2)
 
     paint(state)
     {:reply, :ok, state}
@@ -129,7 +132,7 @@ defmodule Exy.TUI.TerminalLoop do
     body =
       view
       |> Renderer.render(snapshot.width, state.theme)
-      |> fit_body(snapshot.height, editor)
+      |> fit_body(snapshot.height, editor, state.scroll_offset)
 
     Lines.join(body, editor)
   end
@@ -155,10 +158,51 @@ defmodule Exy.TUI.TerminalLoop do
     end)
   end
 
-  defp fit_body(body, height, editor) when is_integer(height) do
-    body_lines = max(height - length(editor), 1)
-    Enum.take(body, -body_lines)
+  defp handle_decoded_key(:scroll_page_up, state), do: scroll(state, page_size(state))
+  defp handle_decoded_key(:scroll_page_down, state), do: scroll(state, -page_size(state))
+  defp handle_decoded_key(:scroll_top, state), do: scroll(state, :top)
+  defp handle_decoded_key(:scroll_bottom, state), do: %{state | scroll_offset: 0}
+
+  defp handle_decoded_key(key, state) do
+    App.key(state.app, key)
+    maybe_reset_scroll(state, key)
   end
+
+  defp scroll(state, :top), do: %{state | scroll_offset: max_scroll_offset(state)}
+
+  defp scroll(state, delta) do
+    offset = (state.scroll_offset + delta) |> max(0) |> min(max_scroll_offset(state))
+    %{state | scroll_offset: offset}
+  end
+
+  defp maybe_reset_scroll(state, :submit), do: %{state | scroll_offset: 0}
+  defp maybe_reset_scroll(state, {:insert, _text}), do: %{state | scroll_offset: 0}
+  defp maybe_reset_scroll(state, {:paste, _text}), do: %{state | scroll_offset: 0}
+  defp maybe_reset_scroll(state, _key), do: state
+
+  defp page_size(state) do
+    snapshot = App.snapshot(state.app)
+    max(snapshot.height - length(render_editor(snapshot, state.theme)) - 1, 1)
+  end
+
+  defp max_scroll_offset(state) do
+    snapshot = App.snapshot(state.app)
+    view = snapshot.ui |> ViewModel.from_state() |> apply_loader_phase(state.loader_phase)
+    editor = render_editor(snapshot, state.theme)
+    body = Renderer.render(view, snapshot.width, state.theme)
+    max(length(body) - body_line_count(snapshot.height, editor), 0)
+  end
+
+  defp fit_body(body, height, editor, scroll_offset) when is_integer(height) do
+    count = body_line_count(height, editor)
+    max_offset = max(length(body) - count, 0)
+    offset = min(scroll_offset, max_offset)
+    start = max(length(body) - count - offset, 0)
+
+    Enum.slice(body, start, count)
+  end
+
+  defp body_line_count(height, editor), do: max(height - length(editor), 1)
 
   defp calculate_cursor_position(state) do
     snapshot = App.snapshot(state.app)

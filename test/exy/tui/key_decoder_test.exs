@@ -16,6 +16,13 @@ defmodule Exy.TUI.KeyDecoderTest do
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :backspace}) == [:backspace]
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :escape}) == [:cancel]
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :c, mods: [:ctrl]}) == [:cancel]
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :page_up}) == [:scroll_page_up]
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :page_down}) == [:scroll_page_down]
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :u, mods: [:ctrl]}) == [:scroll_page_up]
+
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :d, mods: [:ctrl]}) == [
+             :scroll_page_down
+           ]
 
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :o, mods: [:ctrl]}) == [
              :toggle_truncation
@@ -31,7 +38,11 @@ defmodule Exy.TUI.KeyDecoderTest do
     assert KeyDecoder.decode("\e\r") == [:enter]
 
     assert :backspace |> key_bytes() |> KeyDecoder.decode() == [:backspace]
+    assert KeyDecoder.decode("\e[5~") == [:scroll_page_up]
+    assert KeyDecoder.decode("\e[6~") == [:scroll_page_down]
     assert KeyDecoder.decode(<<15>>) == [:toggle_truncation]
+    assert KeyDecoder.decode(<<21>>) == [:scroll_page_up]
+    assert KeyDecoder.decode(<<4>>) == [:scroll_page_down]
   end
 
   test "decodes printable input and paste" do
