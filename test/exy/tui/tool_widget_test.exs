@@ -39,10 +39,24 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert Enum.any?(plain, &String.contains?(&1, "timeout 1000ms"))
-    assert Enum.any?(plain, &String.contains?(&1, "File.cwd!()"))
+    header = List.first(plain)
+    assert String.contains?(header, "File.cwd!() 1s")
+    refute String.contains?(header, "timeout")
+    refute String.contains?(header, "1000ms")
     refute Enum.any?(plain, &String.contains?(&1, "%{output:"))
     assert Enum.any?(plain, &String.contains?(&1, ~s("/tmp")))
+  end
+
+  test "tool title is bold without status background" do
+    line =
+      %{id: "eval-1", name: :elixir_eval, status: :ok, args: %{code: "1 + 1"}, output: "2"}
+      |> DSL.tool()
+      |> Widget.render(80, Theme.default())
+      |> List.first()
+      |> IO.iodata_to_binary()
+
+    assert line =~ IO.ANSI.format([:bright, "elixir_eval"], true) |> IO.iodata_to_binary()
+    refute line =~ "48;2"
   end
 
   test "truncates tool output with reusable shortcut hint" do

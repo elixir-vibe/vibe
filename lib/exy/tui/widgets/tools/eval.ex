@@ -25,11 +25,17 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   defp timeout_summary(tool) do
     case Map.get(tool, :args) || %{} do
-      %{timeout: timeout} -> "timeout #{timeout}ms"
-      %{"timeout" => timeout} -> "timeout #{timeout}ms"
+      %{timeout: timeout} -> format_timeout(timeout)
+      %{"timeout" => timeout} -> format_timeout(timeout)
       _args -> nil
     end
   end
+
+  defp format_timeout(timeout) when is_integer(timeout) and rem(timeout, 1000) == 0,
+    do: "#{div(timeout, 1000)}s"
+
+  defp format_timeout(timeout) when is_integer(timeout), do: "#{Float.round(timeout / 1000, 1)}s"
+  defp format_timeout(timeout), do: to_string(timeout)
 
   defp code_from_args(%{code: code}), do: code
   defp code_from_args(%{"code" => code}), do: code

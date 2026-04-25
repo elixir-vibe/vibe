@@ -51,17 +51,17 @@ defmodule Exy.TUI.ToolWidget do
     text = [
       Theme.symbol(theme, :tool_icon),
       " ",
-      to_string(name),
-      if(action in [nil, ""], do: "", else: [" ", Theme.fg(theme, :muted, action)]),
+      Theme.bold(to_string(name)),
       if(summary in [nil, ""],
         do: "",
         else: [Theme.symbol(theme, :separator), Theme.fg(theme, :dim, summary)]
       ),
+      if(action in [nil, ""], do: "", else: [" ", Theme.fg(theme, :muted, action)]),
       "  ",
       status_icon(status, theme)
     ]
 
-    theme |> Theme.fg(:tool_title, text) |> status_bg(status, theme)
+    Theme.fg(theme, :tool_title, text)
   end
 
   @doc false
