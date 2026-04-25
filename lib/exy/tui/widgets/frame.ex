@@ -8,11 +8,11 @@ defmodule Exy.TUI.Widgets.Frame do
     horizontal = Theme.symbol(theme, :dialog_horizontal)
     content_width = max(width - 2, 0)
 
-    Theme.fg(theme, :border, [
-      Theme.symbol(theme, left_key),
+    [
+      Theme.fg(theme, :border, Theme.symbol(theme, left_key)),
       border_content(theme, horizontal, content_width, title),
-      Theme.symbol(theme, right_key)
-    ])
+      Theme.fg(theme, :border, Theme.symbol(theme, right_key))
+    ]
   end
 
   @spec line(IO.chardata(), pos_integer(), Theme.t()) :: IO.chardata()
@@ -27,8 +27,8 @@ defmodule Exy.TUI.Widgets.Frame do
     |> Enum.map(&line(&1, width, theme))
   end
 
-  defp border_content(_theme, horizontal, width, nil) do
-    String.duplicate(horizontal, width)
+  defp border_content(theme, horizontal, width, nil) do
+    Theme.fg(theme, :border, String.duplicate(horizontal, width))
   end
 
   defp border_content(theme, horizontal, width, title) do
@@ -37,9 +37,9 @@ defmodule Exy.TUI.Widgets.Frame do
     remaining = max(width - title_width, 0)
 
     [
-      String.duplicate(horizontal, div(remaining, 2)),
+      Theme.fg(theme, :border, String.duplicate(horizontal, div(remaining, 2))),
       title,
-      String.duplicate(horizontal, remaining - div(remaining, 2))
+      Theme.fg(theme, :border, String.duplicate(horizontal, remaining - div(remaining, 2)))
     ]
   end
 end
