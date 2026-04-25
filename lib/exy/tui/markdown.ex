@@ -17,7 +17,7 @@ defmodule Exy.TUI.Markdown do
 
   @spec render_stream(stream_state(), pos_integer(), Theme.t()) :: [IO.chardata()]
   def render_stream(document, width, theme \\ Theme.default()) do
-    document |> MDEx.Document.run() |> render_document(width, theme)
+    document |> MDEx.Document.run() |> render_document(width, theme, streaming?: true)
   end
 
   @spec render(String.t(), pos_integer(), Theme.t()) :: [IO.chardata()]
@@ -28,9 +28,11 @@ defmodule Exy.TUI.Markdown do
   end
 
   @spec render_document(MDEx.Document.t(), pos_integer(), Theme.t()) :: [IO.chardata()]
-  def render_document(%MDEx.Document{nodes: nodes}, width, theme) do
+  def render_document(document, width, theme, opts \\ [])
+
+  def render_document(%MDEx.Document{nodes: nodes}, width, theme, opts) do
     nodes
-    |> Enum.flat_map(&block(&1, width, theme))
+    |> Enum.flat_map(&block(&1, width, theme, opts))
     |> trim_trailing_blank()
     |> case do
       [] -> [""]
@@ -38,7 +40,7 @@ defmodule Exy.TUI.Markdown do
     end
   end
 
-  defp block(%MDEx.Heading{level: 1, nodes: nodes}, width, theme) do
+  defp block(%MDEx.Heading{level: 1, nodes: nodes}, width, theme, _opts) do
     title = theme |> Theme.fg(:accent, inline(nodes, theme)) |> Theme.bold()
 
     underline =
@@ -47,15 +49,15 @@ defmodule Exy.TUI.Markdown do
     Widget.wrap(title, width) |> join_lines([underline, ""])
   end
 
-  defp block(%MDEx.Heading{nodes: nodes}, width, theme) do
+  defp block(%MDEx.Heading{nodes: nodes}, width, theme, _opts) do
     title = theme |> Theme.fg(:accent, inline(nodes, theme)) |> Theme.bold()
     Widget.wrap(title, width) |> append_blank()
   end
 
-  defp block(%MDEx.Paragraph{nodes: nodes}, width, theme),
+  defp block(%MDEx.Paragraph{nodes: nodes}, width, theme, _opts),
     do: inline(nodes, theme) |> Widget.wrap(width) |> append_blank()
 
-  defp block(%MDEx.CodeBlock{literal: literal, info: info}, width, theme) do
+  defp block(%MDEx.CodeBlock{literal: literal, info: info}, width, theme, _opts) do
     language = if info in [nil, ""], do: nil, else: String.trim(info)
     line = Theme.symbol(theme, :section_line)
     border = Theme.fg(theme, :border, String.duplicate(line, width))
@@ -80,70 +82,72 @@ defmodule Exy.TUI.Markdown do
     header |> join_lines(body) |> join_lines([border]) |> append_blank()
   end
 
-  defp block(%MDEx.BlockQuote{nodes: nodes}, width, theme) do
+  defp block(%MDEx.BlockQuote{nodes: nodes}, width, theme, opts) do
     nodes
-    |> Enum.flat_map(&block(&1, max(width - 2, 1), theme))
+    |> Enum.flat_map(&block(&1, max(width - 2, 1), theme, opts))
     |> trim_trailing_blank()
     |> Enum.map(&[Theme.fg(theme, :border, "│ "), Theme.fg(theme, :thinking_text, &1)])
     |> append_blank()
   end
 
-  defp block(%MDEx.List{nodes: items, list_type: type}, width, theme) do
+  defp block(%MDEx.List{nodes: items, list_type: type}, width, theme, opts) do
     items
     |> Enum.with_index(1)
     |> Enum.flat_map(fn {item, index} ->
-      render_list_item_node(item, type, index, width, theme)
+      render_list_item_node(item, type, index, width, theme, opts)
     end)
     |> append_blank()
   end
 
-  defp block(%MDEx.Table{nodes: rows}, width, theme),
-    do: table(rows, width, theme) |> append_blank()
+  defp block(%MDEx.Table{nodes: rows}, width, theme, opts),
+    do: table(rows, width, theme, opts) |> append_blank()
 
-  defp block(%MDEx.ThematicBreak{}, width, theme) do
+  defp block(%MDEx.ThematicBreak{}, width, theme, _opts) do
     [Theme.fg(theme, :border, String.duplicate(Theme.symbol(theme, :section_line), width)), ""]
   end
 
-  defp block(%{nodes: nodes}, width, theme) when is_list(nodes),
-    do: Enum.flat_map(nodes, &block(&1, width, theme))
+  defp block(%{nodes: nodes}, width, theme, opts) when is_list(nodes),
+    do: Enum.flat_map(nodes, &block(&1, width, theme, opts))
 
-  defp block(%{literal: literal}, width, theme) when is_binary(literal),
+  defp block(%{literal: literal}, width, theme, _opts) when is_binary(literal),
     do: Widget.wrap(literal, width) |> Enum.map(&Theme.fg(theme, :text, &1))
 
-  defp block(_node, _width, _theme), do: []
+  defp block(_node, _width, _theme, _opts), do: []
 
   defp render_list_item_node(
          %MDEx.TaskItem{nodes: nodes, checked: checked},
          _type,
          _index,
          width,
-         theme
+         theme,
+         opts
        ) do
     marker = if checked, do: "[x]", else: "[ ]"
-    render_list_item(nodes, marker, width, theme)
+    render_list_item(nodes, marker, width, theme, opts)
   end
 
-  defp render_list_item_node(%MDEx.ListItem{nodes: nodes}, type, index, width, theme) do
+  defp render_list_item_node(%MDEx.ListItem{nodes: nodes}, type, index, width, theme, opts) do
     bullet = if type == :ordered, do: "#{index}.", else: Theme.symbol(theme, :status_icon)
-    render_list_item(nodes, bullet, width, theme)
+    render_list_item(nodes, bullet, width, theme, opts)
   end
 
-  defp render_list_item_node(%{nodes: nodes}, type, index, width, theme) when is_list(nodes) do
+  defp render_list_item_node(%{nodes: nodes}, type, index, width, theme, opts)
+       when is_list(nodes) do
     bullet = if type == :ordered, do: "#{index}.", else: Theme.symbol(theme, :status_icon)
-    render_list_item(nodes, bullet, width, theme)
+    render_list_item(nodes, bullet, width, theme, opts)
   end
 
-  defp render_list_item_node(node, _type, _index, width, theme) do
-    block(node, width, theme)
+  defp render_list_item_node(node, _type, _index, width, theme, opts) do
+    block(node, width, theme, opts)
   end
 
-  defp render_list_item(nodes, bullet, width, theme) do
+  defp render_list_item(nodes, bullet, width, theme, opts) do
     prefix = [Theme.fg(theme, :accent, bullet), " "]
     indent = Widget.spaces(Width.visible_length(prefix))
 
     lines =
       nodes
-      |> Enum.flat_map(&block(&1, max(width - Width.visible_length(prefix), 1), theme))
+      |> Enum.flat_map(&block(&1, max(width - Width.visible_length(prefix), 1), theme, opts))
       |> trim_trailing_blank()
       |> maybe_keep_list_item_margin(nodes)
 
@@ -160,11 +164,11 @@ defmodule Exy.TUI.Markdown do
   defp complex_list_item?([%MDEx.Paragraph{}]), do: false
   defp complex_list_item?(_nodes), do: true
 
-  defp table(rows, _width, _theme) when length(rows) < 2, do: []
+  defp table(rows, _width, _theme, _opts) when length(rows) < 2, do: []
 
-  defp table(rows, width, theme) do
+  defp table(rows, width, theme, opts) do
     cells = Enum.map(rows, &table_row(&1, theme))
-    widths = column_widths(cells, width)
+    widths = column_widths(cells, width, opts)
 
     rows =
       cells
@@ -187,7 +191,15 @@ defmodule Exy.TUI.Markdown do
   defp table_row(%MDEx.TableRow{nodes: cells}, theme),
     do: Enum.map(cells, &inline(Map.get(&1, :nodes, []), theme))
 
-  defp column_widths(rows, width) do
+  defp column_widths(rows, width, opts) do
+    if opts[:streaming?] do
+      streaming_column_widths(rows, width)
+    else
+      compact_column_widths(rows, width)
+    end
+  end
+
+  defp compact_column_widths(rows, width) do
     columns = rows |> Enum.map(&length/1) |> Enum.max(fn -> 0 end)
     border_width = max(columns - 1, 0) * 3 + 4
     available = max(width - border_width, columns)
@@ -199,6 +211,17 @@ defmodule Exy.TUI.Markdown do
       |> Enum.max(fn -> 1 end)
       |> min(max(div(available, max(columns, 1)), 1))
     end)
+  end
+
+  defp streaming_column_widths(rows, width) do
+    columns = rows |> Enum.map(&length/1) |> Enum.max(fn -> 0 end)
+    border_width = max(columns - 1, 0) * 3 + 4
+    available = max(width - border_width, columns)
+    base = max(div(available, max(columns, 1)), 1)
+    extra = rem(available, max(columns, 1))
+
+    0..max(columns - 1, 0)
+    |> Enum.map(fn index -> base + if(index < extra, do: 1, else: 0) end)
   end
 
   defp highlight_code(code, nil, theme), do: Theme.fg(theme, :tool_output, code)

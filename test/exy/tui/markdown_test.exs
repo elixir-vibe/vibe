@@ -108,6 +108,28 @@ defmodule Exy.TUI.MarkdownTest do
            |> Enum.any?(&String.starts_with?(&1, "╭"))
   end
 
+  test "streaming table border width stays stable as wider rows arrive" do
+    document =
+      Markdown.new_stream()
+      |> Markdown.put_chunk("| A | B | C |\n")
+      |> Markdown.put_chunk("|---|---|---|\n")
+
+    first_top = streaming_table_top(document)
+
+    second_top =
+      document
+      |> Markdown.put_chunk("| short | medium | long |\n")
+      |> streaming_table_top()
+
+    third_top =
+      document
+      |> Markdown.put_chunk("| much wider content | medium | long |\n")
+      |> streaming_table_top()
+
+    assert first_top == second_top
+    assert second_top == third_top
+  end
+
   test "renders comprehensive stress fixture without known spacing regressions" do
     plain = render_stress_fixture(120)
 
@@ -149,6 +171,13 @@ defmodule Exy.TUI.MarkdownTest do
 
       document
     end)
+  end
+
+  defp streaming_table_top(document) do
+    document
+    |> Markdown.render_stream(80, Theme.default())
+    |> Enum.map(&Width.visible_text/1)
+    |> Enum.find(&String.starts_with?(&1, "╭"))
   end
 
   defp render_stress_fixture(width) do
