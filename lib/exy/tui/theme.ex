@@ -59,8 +59,8 @@ defmodule Exy.TUI.Theme do
 
   @dark_bg %{
     selected_bg: {58, 58, 90},
-    user_message_bg: {34, 48, 88},
-    assistant_message_bg: {28, 62, 48},
+    user_message_bg: {26, 32, 56},
+    assistant_message_bg: {24, 42, 36},
     tool_pending_bg: {40, 40, 50},
     tool_success_bg: {40, 50, 40},
     tool_error_bg: {60, 40, 40},
