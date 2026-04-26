@@ -5,7 +5,8 @@ defmodule Exy.Remote do
 
   @spec connect() :: {:ok, node()} | {:error, term()}
   def connect do
-    with {:ok, %{"node" => node_name}} <- Metadata.read(),
+    with {:ok, %{"node" => node_name} = metadata} <- Metadata.read(),
+         :ok <- verify_build(metadata),
          {:ok, node} <- parse_node(node_name),
          :ok <- ensure_distribution(),
          true <- Node.connect(node) do
@@ -15,6 +16,12 @@ defmodule Exy.Remote do
       error -> error
     end
   end
+
+  defp verify_build(%{"build_id" => build_id} = metadata) when is_binary(build_id) do
+    if build_id == Exy.Build.id(), do: :ok, else: {:error, {:stale_server, metadata}}
+  end
+
+  defp verify_build(metadata), do: {:error, {:stale_server, metadata}}
 
   defp ensure_distribution do
     cookie = Cookie.get()

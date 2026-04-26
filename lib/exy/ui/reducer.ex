@@ -5,7 +5,7 @@ defmodule Exy.UI.Reducer do
 
   alias Exy.Model.Usage
   alias Exy.Support.Lists
-  alias Exy.UI.{Event, State}
+  alias Exy.UI.{Event, Notification, Selector, State}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
   def apply_event(%State{} = state, %Event{} = event) do
@@ -198,11 +198,11 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :notification_added, data: data}) do
-    %{state | notifications: Lists.append(state.notifications, data)}
+    %{state | notifications: Lists.append(state.notifications, Notification.new(data))}
   end
 
   defp reduce(state, %Event{type: :notification_expired, data: %{id: id}}) do
-    %{state | notifications: Enum.reject(state.notifications, &(&1[:id] == id || &1["id"] == id))}
+    %{state | notifications: Enum.reject(state.notifications, &(notification_id(&1) == id))}
   end
 
   defp reduce(state, %Event{type: :active_sessions_updated, data: %{count: count}}) do
@@ -239,12 +239,12 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :selector_opened, data: data}) do
-    selector = data |> Map.put_new(:selected, 0) |> Map.put_new(:items, [])
+    selector = Selector.new(data)
 
     %{
       state
       | selector: selector,
-        overlays: Lists.append(state.overlays, Map.put(selector, :kind, :selector))
+        overlays: Lists.append(state.overlays, Selector.overlay(selector))
     }
   end
 
@@ -271,21 +271,25 @@ defmodule Exy.UI.Reducer do
 
   defp move_selector(nil, _direction), do: nil
 
-  defp move_selector(selector, direction) do
-    count = length(Map.get(selector, :items, []))
-    selected = Map.get(selector, :selected, 0)
-    Map.put(selector, :selected, clamp_selection(selected + direction, count))
-  end
+  defp move_selector(%Selector{} = selector, direction), do: Selector.move(selector, direction)
+
+  defp move_selector(selector, direction),
+    do: selector |> Selector.new() |> Selector.move(direction)
 
   defp update_selector_overlay(overlays, direction) do
     Enum.map(overlays, fn
-      %{kind: :selector} = overlay -> move_selector(overlay, direction)
-      overlay -> overlay
+      %{kind: :selector} = overlay ->
+        overlay |> Selector.new() |> Selector.move(direction) |> Selector.overlay()
+
+      overlay ->
+        overlay
     end)
   end
 
-  defp clamp_selection(_selected, 0), do: 0
-  defp clamp_selection(selected, count), do: selected |> max(0) |> min(count - 1)
+  defp notification_id(%Notification{id: id}), do: id
+  defp notification_id(%{id: id}), do: id
+  defp notification_id(%{"id" => id}), do: id
+  defp notification_id(_notification), do: nil
 
   defp append_streaming_delta(state, key, delta, at) do
     {messages, message} = append_or_update_assistant_segment(state.messages, key, delta, at)

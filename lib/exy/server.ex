@@ -90,7 +90,8 @@ defmodule Exy.Server do
       node: Atom.to_string(name),
       cookie_path: Cookie.path(),
       pid: System.pid(),
-      version: version(),
+      version: Exy.Build.version(),
+      build_id: Exy.Build.id(),
       started_at: DateTime.utc_now() |> DateTime.to_iso8601()
     })
   end
@@ -99,8 +100,6 @@ defmodule Exy.Server do
     user = System.get_env("USER") || "user"
     String.to_atom("exy_server_#{user}@127.0.0.1")
   end
-
-  defp version, do: :exy |> Application.spec(:vsn) |> to_string()
 
   defp ensure_client_distribution do
     if Node.alive?() do
