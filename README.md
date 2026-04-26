@@ -18,8 +18,8 @@ Exy is an OTP application, terminal client, background session server, and codin
 - Semantic UI state shared by TUI and future LiveView clients.
 - Ghostty-backed TTY/PTY integration.
 - Tmux-like background server and attachable sessions.
-- Append-only canonical session storage under `~/.exy/sessions`.
-- Local telemetry recorder under `~/.exy/telemetry` with `Exy.Telemetry` self-inspection APIs.
+- Local SQLite storage at `~/.exy/exy.db` for sessions, UI events, eval state, subagent jobs/schedules, memory, telemetry, and imports.
+- Local telemetry recorder with `Exy.Telemetry` self-inspection APIs.
 - Plugin system with supervised background children, semantic UI updates, and plugin-registered slash commands.
 - Iodata-first terminal widgets, Markdown rendering, and dark/light themes.
 
@@ -78,6 +78,14 @@ exy attach <session-id>
 exy a <session-id>
 ```
 
+Storage commands:
+
+```bash
+exy storage migrate
+exy storage status
+exy storage import pi <path>
+```
+
 Scriptable/non-interactive commands remain available through flags such as:
 
 ```bash
@@ -117,13 +125,12 @@ Typing `/` opens generic autocomplete. Plugins can contribute commands by return
 Exy keeps runtime state under `~/.exy` by default. Set `EXY_HOME` to isolate a test/dev instance.
 
 ```text
+~/.exy/exy.db                 # SQLite database for durable Exy state
 ~/.exy/auth.json              # ChatGPT/Codex OAuth credentials
 ~/.exy/server.cookie          # Exy-specific Erlang distribution cookie
 ~/.exy/server.json            # server node metadata
 ~/.exy/server.out             # background server log
-~/.exy/sessions/<id>.jsonl    # canonical append-only session log
 ~/.exy/sessions/<id>.log      # dependency/session log output
-~/.exy/telemetry/events.jsonl # local telemetry events
 ~/.exy/skills                 # skill files
 ```
 
@@ -131,8 +138,8 @@ Environment overrides:
 
 ```bash
 EXY_HOME=/tmp/exy-dev
+EXY_DB_PATH=/tmp/exy-dev/exy.db
 EXY_SESSION_DIR=/tmp/exy-sessions
-EXY_TELEMETRY_DIR=/tmp/exy-telemetry
 ```
 
 ## Elixir APIs for agents
@@ -151,13 +158,42 @@ Exy.Session.list()
 Exy.Session.active_count()
 ```
 
-Durable session data:
+Durable session data is backed by local SQLite storage:
 
 ```elixir
 Exy.Session.Store.list()
 Exy.Session.Store.ui_events("work")
 Exy.Session.Store.trajectory(session_id: "work")
 ```
+
+### Storage
+
+Most durable state lives in local SQLite through Ecto schemas, migrations, and `Exy.Repo`:
+
+- sessions and UI events
+- trajectory events
+- eval state snapshots
+- subagent jobs and schedules
+- curated memory
+- telemetry events
+- import records
+
+The default database path is `~/.exy/exy.db`; override it with `EXY_DB_PATH`.
+
+```elixir
+Exy.Paths.database()
+Exy.Storage.status()
+Exy.Storage.migrate!()
+Exy.Storage.Import.import_path("pi", "/path/to/pi-session-or-dir")
+```
+
+```bash
+exy storage migrate
+exy storage status
+exy storage import pi /path/to/pi-session-or-dir
+```
+
+User-editable config and runtime bootstrap files remain plain files, including agent profiles, auth files, server metadata, server cookie, and per-session dependency logs.
 
 ### Telemetry/self-inspection
 
@@ -263,7 +299,7 @@ Exy.Subagents.scheduled()
 Exy.Subagents.unschedule(schedule.id)
 ```
 
-The local scheduler uses OTP timers and persists schedule definitions under `~/.exy/subagents/schedules.jsonl`; missed runs are skipped by default. A scheduler backend boundary is planned so hosted/Phoenix deployments can use Oban later without changing the public API.
+The local scheduler uses OTP timers and persists schedule definitions in SQLite; missed runs are skipped by default. A scheduler backend boundary is planned so hosted/Phoenix deployments can use Oban later without changing the public API.
 
 ### Memory
 
@@ -374,5 +410,5 @@ Exy.SelfPatch.deployment_gate()
 4. Use LSP for diagnostics/navigation and runtime eval for OTP state.
 5. Subagents, plugins, sessions, terminal panes, and background work are OTP processes.
 6. UI state is semantic; terminal rendering is an adapter.
-7. Persist durable state as typed append-only events.
+7. Persist durable state with Ecto schemas/migrations and typed semantic events.
 8. Self-improvement changes skills/helpers first, runtime core only with tests and validation.
