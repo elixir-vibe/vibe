@@ -91,6 +91,20 @@ defmodule Exy.Storage do
   def normalize_datetime(%DateTime{} = datetime),
     do: datetime |> DateTime.to_unix(:microsecond) |> DateTime.from_unix!(:microsecond)
 
+  @spec checkpoint!() :: :ok
+  def checkpoint! do
+    ensure!()
+    Ecto.Adapters.SQL.query!(Exy.Repo, "PRAGMA wal_checkpoint(TRUNCATE)", [])
+    :ok
+  end
+
+  @spec vacuum!() :: :ok
+  def vacuum! do
+    ensure!()
+    Ecto.Adapters.SQL.query!(Exy.Repo, "VACUUM", [])
+    checkpoint!()
+  end
+
   @spec status() :: map()
   def status do
     ensure!()

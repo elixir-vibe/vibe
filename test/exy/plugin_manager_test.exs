@@ -107,7 +107,8 @@ defmodule Exy.PluginManagerTest do
   test "plugins can expose eval API modules" do
     assert :ok = Exy.Plugin.Manager.load(APIPlugin, session_id: "plugin-api")
 
-    assert [api] = Exy.Plugin.Manager.apis()
+    api = Enum.find(Exy.Plugin.Manager.apis(), &(&1.name == :fixture_search))
+    assert api
     assert api.name == :fixture_search
     assert api.module == Exy.Test.PluginManagerFixtures.SearchAPI
     assert api.alias == Search

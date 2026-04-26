@@ -6,6 +6,7 @@ defmodule Exy.CLI.Parser do
     version: :boolean,
     model: :string,
     role: :string,
+    cwd: :string,
     api_key: :string,
     system_prompt: :string,
     mode: :string,
@@ -26,6 +27,7 @@ defmodule Exy.CLI.Parser do
     all: :boolean,
     live: :boolean,
     failed: :boolean,
+    include_tools: :boolean,
     limit: :integer
   ]
 

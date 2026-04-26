@@ -38,6 +38,7 @@ defmodule Exy.TUI.App do
     {:ok, _snapshot, _cursor} = Session.attach(ui, self())
     remote_node = Keyword.get(opts, :remote_node)
     active_sessions_timer = Process.send_after(self(), :active_sessions_tick, 0)
+    server_migration_timer = maybe_schedule_server_migration(opts)
 
     {:ok,
      %{
@@ -49,7 +50,8 @@ defmodule Exy.TUI.App do
        autocomplete: nil,
        subscribers: %{},
        remote_node: remote_node,
-       active_sessions_timer: active_sessions_timer
+       active_sessions_timer: active_sessions_timer,
+       server_migration_timer: server_migration_timer
      }}
   end
 
@@ -95,6 +97,11 @@ defmodule Exy.TUI.App do
   end
 
   @impl true
+  def handle_info(:server_migration_tick, state) do
+    state = maybe_migrate_to_remote_session(state)
+    {:noreply, state}
+  end
+
   def handle_info(:active_sessions_tick, state) do
     state = publish_active_sessions(state)
     timer = Process.send_after(self(), :active_sessions_tick, 1_000)
@@ -138,6 +145,47 @@ defmodule Exy.TUI.App do
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp maybe_schedule_server_migration(opts) do
+    if Keyword.get(opts, :start_server_async, false),
+      do: Process.send_after(self(), :server_migration_tick, 500),
+      else: nil
+  end
+
+  defp maybe_migrate_to_remote_session(%{remote_node: node} = state) when not is_nil(node),
+    do: state
+
+  defp maybe_migrate_to_remote_session(state) do
+    current = Session.state(state.ui)
+
+    with {:ok, node} <- Exy.Remote.connect(),
+         {:ok, %{id: session_id}} <-
+           Exy.Remote.Session.start(
+             session_id: current.session_id,
+             cwd: current.cwd,
+             model: current.model
+           ),
+         {:ok, remote_session} <- Exy.Remote.Session.lookup(session_id),
+         :ok <- Session.detach(state.ui, self()),
+         {:ok, _snapshot, _cursor} <- Session.attach(remote_session, self()) do
+      Session.dispatch(
+        remote_session,
+        Command.new(:notification_added, %{level: :info, text: "attached to background server"})
+      )
+
+      %{
+        state
+        | ui: remote_session,
+          remote_node: node,
+          autocomplete: nil,
+          server_migration_timer: nil
+      }
+    else
+      _reason ->
+        timer = Process.send_after(self(), :server_migration_tick, 1_000)
+        %{state | server_migration_timer: timer}
+    end
+  end
 
   defp notify_subscribers(state, event) do
     Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)

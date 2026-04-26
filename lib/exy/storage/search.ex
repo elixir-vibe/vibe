@@ -3,7 +3,7 @@ defmodule Exy.Storage.Search do
 
   import Ecto.Query
 
-  alias Exy.Storage.Schema.{MemoryFTS, UIEventFTS}
+  alias Exy.Storage.Schema.{MemoryFTS, Session, UIEventFTS}
   alias Exy.Storage.Search.Result
 
   @spec query(String.t(), keyword()) :: {:ok, [Result.t()]} | {:error, term()}
@@ -74,19 +74,27 @@ defmodule Exy.Storage.Search do
   defp search_sessions(fts_query, opts) do
     limit = Keyword.get(opts, :limit, 10)
     session_id = Keyword.get(opts, :session_id)
-    roles = opts |> Keyword.get(:roles, [:user, :assistant]) |> Enum.map(&to_string/1)
+    cwd = Keyword.get(opts, :cwd)
+
+    roles =
+      opts
+      |> Keyword.get(:roles, default_roles(opts))
+      |> Enum.map(&to_string/1)
 
     UIEventFTS
-    |> where([row], fragment("ui_events_fts MATCH ?", ^fts_query))
-    |> where([row], row.role in ^roles)
+    |> join(:inner, [row], session in Session, on: session.id == row.session_id)
+    |> where([row, _session], fragment("ui_events_fts MATCH ?", ^fts_query))
+    |> where([row, _session], row.role in ^roles)
     |> where_session(session_id)
-    |> order_by([row], fragment("bm25(ui_events_fts)"))
+    |> where_cwd(cwd)
+    |> order_by([row, _session], fragment("bm25(ui_events_fts)"))
     |> limit(^limit)
-    |> select([row], %{
+    |> select([row, session], %{
       session_id: row.session_id,
       event_id: row.event_id,
       seq: row.seq,
       role: row.role,
+      cwd: session.cwd,
       at: row.at,
       text: row.text,
       rank: fragment("bm25(ui_events_fts)"),
@@ -119,8 +127,19 @@ defmodule Exy.Storage.Search do
     |> Enum.map(&memory_result/1)
   end
 
+  defp default_roles(opts) do
+    if Keyword.get(opts, :include_tools, false),
+      do: [:user, :assistant, :tool],
+      else: [:user, :assistant]
+  end
+
   defp where_session(query, nil), do: query
-  defp where_session(query, session_id), do: where(query, [row], row.session_id == ^session_id)
+
+  defp where_session(query, session_id),
+    do: where(query, [row, _session], row.session_id == ^session_id)
+
+  defp where_cwd(query, nil), do: query
+  defp where_cwd(query, cwd), do: where(query, [_row, session], like(session.cwd, ^"%#{cwd}%"))
 
   defp where_memory_scopes(query, []), do: query
 
@@ -140,12 +159,17 @@ defmodule Exy.Storage.Search do
       source: :session,
       id: row.event_id,
       owner_id: row.session_id,
-      title: "session:#{row.session_id}",
+      title: row.cwd || "session:#{row.session_id}",
       text: row.text,
       snippet: row.snippet,
       rank: row.rank,
       at: parse_datetime(row.at),
-      metadata: %{session_id: row.session_id, seq: row.seq, role: role_atom(row.role)}
+      metadata: %{
+        session_id: row.session_id,
+        seq: row.seq,
+        role: role_atom(row.role),
+        cwd: row.cwd
+      }
     }
   end
 
@@ -184,6 +208,7 @@ defmodule Exy.Storage.Search do
 
   defp role_atom("user"), do: :user
   defp role_atom("assistant"), do: :assistant
+  defp role_atom("tool"), do: :tool
   defp role_atom(role), do: role
 
   defp parse_datetime(nil), do: nil

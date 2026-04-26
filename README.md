@@ -85,7 +85,10 @@ exy storage migrate
 exy storage status
 exy storage fts status
 exy storage fts rebuild
-exy storage search <query>
+exy storage fts optimize
+exy storage checkpoint
+exy storage vacuum
+exy storage search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
 exy storage import pi <path>
 ```
 
@@ -191,7 +194,10 @@ Exy.Storage.migrate!()
 Exy.Storage.Import.import_path("pi", "/path/to/pi-session-or-dir")
 Exy.Storage.FTS.status()
 Exy.Storage.FTS.rebuild()
-Exy.Storage.Search.query("sqlite migration", scopes: [:sessions, :memory])
+Exy.Storage.FTS.optimize()
+Exy.Storage.checkpoint!()
+Exy.Storage.vacuum!()
+Exy.Storage.Search.query("sqlite migration", scopes: [:sessions, :memory], cwd: "exy")
 ```
 
 ```bash
@@ -199,7 +205,10 @@ exy storage migrate
 exy storage status
 exy storage fts status
 exy storage fts rebuild
-exy storage search "sqlite migration"
+exy storage fts optimize
+exy storage checkpoint
+exy storage vacuum
+exy storage search "sqlite migration" --cwd exy
 exy storage import pi /path/to/pi-session-or-dir
 ```
 
@@ -369,11 +378,15 @@ defmodule MyPlugin.HelloCommand do
 end
 ```
 
-Plugin APIs are discoverable and pre-aliased in eval sessions:
+Plugin APIs are discoverable and pre-aliased in eval sessions. Built-in WebSearch exposes a pipeable Exa-backed `Web` API when `EXA_API_KEY` is set:
 
 ```elixir
 Exy.Plugin.Manager.apis()
 Hello.some_function("input")
+
+Web.search("ecto sqlite fts", num_results: 5, highlights: true)
+|> Web.filter_domain("hexdocs.pm")
+|> Web.format()
 ```
 
 Plugins can update renderer-neutral UI state:

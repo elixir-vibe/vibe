@@ -21,7 +21,10 @@ defmodule Mix.Tasks.Exy do
       exy storage status
       exy storage fts status
       exy storage fts rebuild
-      exy storage search <query>
+      exy storage fts optimize
+      exy storage checkpoint
+      exy storage vacuum
+      exy storage search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
       exy storage import pi <path>
       exy attach                 # Alias: exy a
       exy attach <session-id>    # Alias: exy a <session-id>

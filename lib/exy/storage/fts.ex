@@ -80,6 +80,23 @@ defmodule Exy.Storage.FTS do
     :ok
   end
 
+  @spec optimize() :: :ok
+  def optimize do
+    Ecto.Adapters.SQL.query!(
+      Exy.Repo,
+      "INSERT INTO ui_events_fts(ui_events_fts) VALUES('optimize')",
+      []
+    )
+
+    Ecto.Adapters.SQL.query!(
+      Exy.Repo,
+      "INSERT INTO memories_fts(memories_fts) VALUES('optimize')",
+      []
+    )
+
+    :ok
+  end
+
   @spec status() :: map()
   def status do
     %{
@@ -113,7 +130,7 @@ defmodule Exy.Storage.FTS do
             session_id: event.session_id,
             event_id: event.event_id,
             seq: event.seq,
-            role: Map.fetch!(@message_types, type),
+            role: event_role(type, data),
             at: DateTime.to_iso8601(event.at),
             text: text
           }
@@ -125,6 +142,10 @@ defmodule Exy.Storage.FTS do
   end
 
   defp ui_event_fts_row(_event), do: []
+
+  defp event_role("assistant_message_added", %{import_role: "tool"}), do: "tool"
+  defp event_role("assistant_message_added", %{"import_role" => "tool"}), do: "tool"
+  defp event_role(type, _data), do: Map.fetch!(@message_types, type)
 
   defp text_from_data(%{"text" => text}) when is_binary(text), do: text
   defp text_from_data(%{text: text}) when is_binary(text), do: text

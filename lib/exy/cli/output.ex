@@ -79,7 +79,7 @@ defmodule Exy.CLI.Output do
         ". ",
         to_string(result.source),
         " ",
-        result.owner_id || "-",
+        search_result_location(result),
         " #",
         to_string(result.metadata[:seq] || result.id),
         "\n",
@@ -87,6 +87,16 @@ defmodule Exy.CLI.Output do
       ]
       |> IO.iodata_to_binary()
     end)
+  end
+
+  defp search_result_location(result) do
+    cwd = result.metadata[:cwd]
+
+    cond do
+      is_binary(cwd) and cwd != "" -> Path.basename(cwd) <> " " <> result.owner_id
+      result.owner_id -> result.owner_id
+      true -> "-"
+    end
   end
 
   defp highlight_search_snippet(text) do

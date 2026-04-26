@@ -58,7 +58,7 @@ defmodule Exy.CLI.Sessions do
 
       {:error, _reason} ->
         Server.launch_background()
-        Runner.tui(opts)
+        Runner.tui(opts, start_server_async: true)
     end
   end
 

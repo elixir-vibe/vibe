@@ -71,7 +71,7 @@ defmodule Exy.Storage.Import.Pi do
          %{"type" => "message", "message" => %{"role" => role} = message} = entry
        ) do
     event_type = if role == "user", do: :user_message_added, else: :assistant_message_added
-    data = message_data(event_type, message)
+    data = message_data(event_type, message, role)
     event = build_event(session_id, seq + 1, event_type, data, entry["timestamp"])
     {seq + 1, [{seq + 1, event} | events]}
   end
@@ -115,10 +115,26 @@ defmodule Exy.Storage.Import.Pi do
     Event.new(type, session_id, data, id: "pi-#{session_id}-#{seq}", at: at)
   end
 
-  defp message_data(:user_message_added, message), do: %{text: content_text(message["content"])}
-
-  defp message_data(:assistant_message_added, message),
+  defp message_data(:user_message_added, message, _role),
     do: %{text: content_text(message["content"])}
+
+  defp message_data(:assistant_message_added, message, "toolResult"),
+    do: %{text: content_text(message["content"]), import_role: "tool"}
+
+  defp message_data(:assistant_message_added, message, _role),
+    do: %{text: assistant_text(message["content"])}
+
+  defp assistant_text(content) when is_list(content) do
+    content
+    |> Enum.filter(fn
+      %{"type" => "text"} -> true
+      part when is_binary(part) -> true
+      _part -> false
+    end)
+    |> content_text()
+  end
+
+  defp assistant_text(content), do: content_text(content)
 
   defp content_text(content) when is_binary(content), do: content
 

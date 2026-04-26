@@ -24,6 +24,34 @@ defmodule Exy.Storage.SearchTest do
     assert result.metadata.seq == 1
   end
 
+  test "filters session search by cwd and excludes imported tools by default" do
+    Exy.Session.Store.ensure_session("project-a", ~U[2026-01-01 00:00:00Z], cwd: "/tmp/project-a")
+    Exy.Session.Store.ensure_session("project-b", ~U[2026-01-01 00:00:00Z], cwd: "/tmp/project-b")
+
+    :ok =
+      Exy.Session.Store.append_ui_events([
+        {1,
+         Event.new(:assistant_message_added, "project-a", %{text: "needle conversation"},
+           at: ~U[2026-01-01 00:00:01Z]
+         )},
+        {1,
+         Event.new(:assistant_message_added, "project-b", %{text: "needle conversation"},
+           at: ~U[2026-01-01 00:00:02Z]
+         )},
+        {2,
+         Event.new(
+           :assistant_message_added,
+           "project-b",
+           %{text: "needle tool dump", import_role: "tool"},
+           at: ~U[2026-01-01 00:00:03Z]
+         )}
+      ])
+
+    assert [%{owner_id: "project-a"}] = Exy.Session.search("needle", cwd: "project-a")
+    assert [] = Exy.Session.search("dump")
+    assert [%{metadata: %{role: :tool}}] = Exy.Session.search("dump", include_tools: true)
+  end
+
   test "rebuilds FTS indexes from persisted data" do
     assert {:ok, memory} = Exy.Memory.add(:global, "Run mix ci before commits")
 
