@@ -49,6 +49,36 @@ defmodule Exy.Eval.EvaluatorTest do
     assert {:ok, ~s("WIND")} = Exy.Eval.run("upcase(\"wind\")", session_id: session_id)
   end
 
+  test "lists, forgets, and resets session eval state", %{session_id: session_id} do
+    assert {:ok, _output} = Exy.Eval.run(~s(query = "weather"), session_id: session_id)
+    assert {:ok, _output} = Exy.Eval.run(~s(count = 2), session_id: session_id)
+
+    assert {:ok, bindings} = Exy.Eval.bindings(session_id)
+
+    assert %{name: :query, type: :binary, preview: ~s("weather")} =
+             Enum.find(bindings, &(&1.name == :query))
+
+    assert %{name: :count, type: :integer, bytes: bytes} =
+             Enum.find(bindings, &(&1.name == :count))
+
+    assert bytes > 0
+
+    assert :ok = Exy.Eval.forget(session_id, [:query])
+    assert {:error, error} = Exy.Eval.run(~s(query), session_id: session_id)
+    assert error =~ "cannot compile file"
+    assert {:ok, "2"} = Exy.Eval.run(~s(count), session_id: session_id)
+
+    stop_evaluator(session_id)
+    assert {:error, error} = Exy.Eval.run(~s(query), session_id: session_id)
+    assert error =~ "cannot compile file"
+    assert {:ok, "2"} = Exy.Eval.run(~s(count), session_id: session_id)
+
+    assert :ok = Exy.Eval.reset(session_id)
+    assert {:ok, []} = Exy.Eval.bindings(session_id)
+    assert {:error, error} = Exy.Eval.run(~s(count), session_id: session_id)
+    assert error =~ "cannot compile file"
+  end
+
   test "preloads plugin API aliases into session evaluators", %{session_id: session_id} do
     assert :ok = Exy.Plugin.Manager.load(APIPlugin, session_id: session_id)
 

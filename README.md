@@ -201,6 +201,9 @@ Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
 ```elixir
 Exy.Eval.run(~s(query = "weather in washington"), session_id: session_id)
 Exy.Eval.run(~s(query <> " tomorrow"), session_id: session_id)
+Exy.Eval.bindings(session_id)
+Exy.Eval.forget(session_id, [:query])
+Exy.Eval.reset(session_id)
 Exy.Eval.once("Exy.OTP.runtime_info()")
 
 {:ok, runtime} = Exy.Runtime.Standalone.start_link()

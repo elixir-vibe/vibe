@@ -14,6 +14,12 @@ defmodule Exy.Eval.Evaluator do
             persist?: true
 
   @type result :: {:ok, String.t()} | {:error, String.t()}
+  @type binding_info :: %{
+          name: atom(),
+          type: atom() | module(),
+          bytes: non_neg_integer(),
+          preview: String.t()
+        }
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
@@ -24,6 +30,15 @@ defmodule Exy.Eval.Evaluator do
   @spec evaluate(GenServer.server(), String.t()) :: result()
   def evaluate(server, code) when is_binary(code),
     do: GenServer.call(server, {:evaluate, code}, :infinity)
+
+  @spec bindings(GenServer.server()) :: [binding_info()]
+  def bindings(server), do: GenServer.call(server, :bindings)
+
+  @spec forget(GenServer.server(), [atom()]) :: :ok
+  def forget(server, names) when is_list(names), do: GenServer.call(server, {:forget, names})
+
+  @spec reset(GenServer.server()) :: :ok
+  def reset(server), do: GenServer.call(server, :reset)
 
   @impl true
   def init(opts) do
@@ -46,6 +61,29 @@ defmodule Exy.Eval.Evaluator do
   def handle_call({:evaluate, code}, _from, state) do
     {reply, state} = eval_with_captured_io(code, state)
     {:reply, reply, state}
+  end
+
+  def handle_call(:bindings, _from, state) do
+    {:reply, Enum.map(state.binding, &binding_info/1), state}
+  end
+
+  def handle_call({:forget, names}, _from, state) do
+    names = MapSet.new(names)
+
+    state = %{
+      state
+      | binding: Enum.reject(state.binding, fn {name, _value} -> MapSet.member?(names, name) end),
+        env: prune_env_vars(state.env, names)
+    }
+
+    persist_bindings(state)
+    {:reply, :ok, state}
+  end
+
+  def handle_call(:reset, _from, state) do
+    state = %{state | binding: [], env: initial_env()}
+    persist_bindings(state)
+    {:reply, :ok, state}
   end
 
   defp eval_with_captured_io(code, state) do
@@ -75,7 +113,7 @@ defmodule Exy.Eval.Evaluator do
           {result, binding, env} =
             Code.eval_quoted_with_env(quoted, state.binding, env, prune_binding: true)
 
-          state = %{state | binding: binding, env: env}
+          state = %{state | binding: merge_binding(state.binding, binding), env: env}
           persist_bindings(state)
           {true, result, state}
         end)
@@ -84,6 +122,11 @@ defmodule Exy.Eval.Evaluator do
     catch
       kind, reason -> {false, Exception.format(kind, reason, __STACKTRACE__), state}
     end
+  end
+
+  defp merge_binding(previous, current) do
+    current_names = MapSet.new(current, &elem(&1, 0))
+    current ++ Enum.reject(previous, fn {name, _value} -> MapSet.member?(current_names, name) end)
   end
 
   defp persist_bindings(%{persist?: false}), do: :ok
@@ -117,6 +160,40 @@ defmodule Exy.Eval.Evaluator do
   end
 
   defp eval_file(session_id), do: "exy://session/#{session_id}/eval"
+
+  defp binding_info({name, value}) do
+    %{
+      name: name,
+      type: value_type(value),
+      bytes: value_bytes(value),
+      preview: value |> inspect(@inspect_opts) |> ToolOutput.limit_text()
+    }
+  end
+
+  defp value_type(%module{}), do: module
+  defp value_type(value) when is_binary(value), do: :binary
+  defp value_type(value) when is_atom(value), do: :atom
+  defp value_type(value) when is_boolean(value), do: :boolean
+  defp value_type(value) when is_integer(value), do: :integer
+  defp value_type(value) when is_float(value), do: :float
+  defp value_type(value) when is_list(value), do: :list
+  defp value_type(value) when is_tuple(value), do: :tuple
+  defp value_type(value) when is_map(value), do: :map
+  defp value_type(value) when is_function(value), do: :function
+  defp value_type(value) when is_pid(value), do: :pid
+  defp value_type(value) when is_port(value), do: :port
+  defp value_type(value) when is_reference(value), do: :reference
+  defp value_type(_value), do: :term
+
+  defp value_bytes(value), do: value |> :erlang.term_to_binary() |> byte_size()
+
+  defp prune_env_vars(env, names) do
+    Map.update!(env, :versioned_vars, fn versioned_vars ->
+      Map.reject(versioned_vars, fn {{name, _context}, _version} ->
+        MapSet.member?(names, name)
+      end)
+    end)
+  end
 
   defp capture_io(fun) do
     {:ok, io} = StringIO.open("")

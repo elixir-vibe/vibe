@@ -28,6 +28,29 @@ defmodule Exy.Eval do
     evaluate_with_timeout(code, session_id, false, opts)
   end
 
+  @spec bindings(String.t()) :: {:ok, [Evaluator.binding_info()]} | {:error, String.t()}
+  def bindings(session_id) when is_binary(session_id) do
+    with {:ok, evaluator} <- evaluator(session_id, true) do
+      {:ok, Evaluator.bindings(evaluator)}
+    end
+  end
+
+  @spec forget(String.t(), [atom() | String.t()] | atom() | String.t()) ::
+          :ok | {:error, String.t()}
+  def forget(session_id, names) when is_binary(session_id) do
+    with {:ok, names} <- normalize_names(names),
+         {:ok, evaluator} <- evaluator(session_id, true) do
+      Evaluator.forget(evaluator, names)
+    end
+  end
+
+  @spec reset(String.t()) :: :ok | {:error, String.t()}
+  def reset(session_id) when is_binary(session_id) do
+    with {:ok, evaluator} <- evaluator(session_id, true) do
+      Evaluator.reset(evaluator)
+    end
+  end
+
   defp evaluate_with_timeout(code, session_id, persist?, opts) do
     timeout = Keyword.get(opts, :timeout, 30_000)
     caller = self()
@@ -59,6 +82,29 @@ defmodule Exy.Eval do
     with {:ok, evaluator} <- evaluator(session_id, persist?) do
       Evaluator.evaluate(evaluator, code)
     end
+  end
+
+  defp normalize_names(names) when is_atom(names) or is_binary(names),
+    do: normalize_names([names])
+
+  defp normalize_names(names) when is_list(names) do
+    names
+    |> Enum.reduce_while({:ok, []}, fn
+      name, {:ok, acc} when is_atom(name) ->
+        {:cont, {:ok, [name | acc]}}
+
+      name, {:ok, acc} when is_binary(name) ->
+        {:cont, {:ok, [String.to_existing_atom(name) | acc]}}
+
+      name, {:ok, _acc} ->
+        {:halt, {:error, "invalid binding name: #{inspect(name)}"}}
+    end)
+    |> case do
+      {:ok, names} -> {:ok, Enum.reverse(names)}
+      error -> error
+    end
+  rescue
+    ArgumentError -> {:error, "unknown binding name"}
   end
 
   defp evaluator(session_id, persist?) do

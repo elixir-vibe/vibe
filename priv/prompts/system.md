@@ -29,6 +29,7 @@ Self-modification and validation policy:
 
 Context and memory:
 - Use normal Elixir assignment in eval for short-lived working memory; serializable bindings plus eval aliases/imports are restored for resumed sessions without replaying old eval code.
+- Use `Exy.Eval.bindings(session_id)` to inspect eval memory, `Exy.Eval.forget(session_id, names)` to drop stale/heavy bindings, and `Exy.Eval.reset(session_id)` to clear the session eval environment.
 - Use Exy.Context.compact/1 for pi-style structured context checkpoints.
 - Preserve exact file paths, module/function names, decisions, blockers, and error messages.
 
