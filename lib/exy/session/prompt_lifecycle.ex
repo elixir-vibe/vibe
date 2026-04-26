@@ -21,7 +21,7 @@ defmodule Exy.Session.PromptLifecycle do
     ask_fun = state.ask_fun
     parent = self()
     ref = make_ref()
-    context = %{session_id: session_id}
+    context = %{session_id: session_id, cwd: state.state.cwd}
     Exy.Memory.Manager.on_turn_start(length(state.state.messages), text, context)
     prompt_text = prompt_with_memory(text, context)
 
@@ -106,10 +106,17 @@ defmodule Exy.Session.PromptLifecycle do
     do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
 
   defp prompt_with_memory(text, context) do
-    case Exy.Memory.Manager.prefetch(text, context) do
-      "" -> text
-      memory -> text <> "\n\n" <> memory
-    end
+    [text, Exy.Memory.Manager.prefetch(text, context), recalled_history(text, context)]
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join("\n\n")
+  end
+
+  defp recalled_history(text, context) do
+    Exy.Context.recall(text,
+      cwd: Map.get(context, :cwd),
+      exclude_session_id: Map.get(context, :session_id),
+      limit: 3
+    )
   end
 
   defp record_successful_response(

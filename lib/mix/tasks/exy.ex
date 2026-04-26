@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Exy do
       exy storage vacuum
       exy search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
       exy storage search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
-      exy storage import pi <path>
+      exy storage import pi <path> [--no-fts] [--rebuild-fts] [--batch-size N]
       exy attach                 # Alias: exy a
       exy attach <session-id>    # Alias: exy a <session-id>
 

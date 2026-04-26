@@ -48,8 +48,30 @@ defmodule Exy.Storage.SearchTest do
       ])
 
     assert [%{owner_id: "project-a"}] = Exy.Session.search("needle", cwd: "project-a")
+    assert [] = Exy.Session.search("needle", cwd: "project-a", exclude_session_id: "project-a")
     assert [] = Exy.Session.search("dump")
     assert [%{metadata: %{role: :tool}}] = Exy.Session.search("dump", include_tools: true)
+  end
+
+  test "formats recalled history context from search results" do
+    Exy.Session.Store.ensure_session("recall-a", ~U[2026-01-01 00:00:00Z],
+      cwd: "/tmp/recall-project"
+    )
+
+    :ok =
+      Event.new(
+        :assistant_message_added,
+        "recall-a",
+        %{text: "Use the blue Figma token for primary buttons"},
+        at: ~U[2026-01-01 00:00:01Z]
+      )
+      |> Exy.Session.Store.append_ui_event(1)
+
+    block = Exy.Context.recall("Figma token", cwd: "recall-project", limit: 1)
+
+    assert block =~ "<recalled-history>"
+    assert block =~ "Use the blue Figma token"
+    assert block =~ "recall-project"
   end
 
   test "rebuilds FTS indexes from persisted data" do

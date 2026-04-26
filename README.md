@@ -90,7 +90,7 @@ exy storage checkpoint
 exy storage vacuum
 exy search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
 exy storage search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
-exy storage import pi <path>
+exy storage import pi <path> [--no-fts] [--rebuild-fts] [--batch-size N]
 ```
 
 Scriptable/non-interactive commands remain available through flags such as:
@@ -192,13 +192,14 @@ The default database path is `~/.exy/exy.db`; override it with `EXY_DB_PATH`.
 Exy.Paths.database()
 Exy.Storage.status()
 Exy.Storage.migrate!()
-Exy.Storage.Import.import_path("pi", "/path/to/pi-session-or-dir")
+Exy.Storage.Import.import_path("pi", "/path/to/pi-session-or-dir", progress: &IO.inspect/1)
 Exy.Storage.FTS.status()
 Exy.Storage.FTS.rebuild()
 Exy.Storage.FTS.optimize()
 Exy.Storage.checkpoint!()
 Exy.Storage.vacuum!()
 Exy.Storage.Search.query("sqlite migration", scopes: [:sessions, :memory], cwd: "exy")
+Exy.Context.recall("sqlite migration", cwd: "exy", limit: 3)
 ```
 
 ```bash
@@ -210,7 +211,7 @@ exy storage fts optimize
 exy storage checkpoint
 exy storage vacuum
 exy storage search "sqlite migration" --cwd exy
-exy storage import pi /path/to/pi-session-or-dir
+exy storage import pi /path/to/pi-session-or-dir --batch-size 25
 ```
 
 User-editable config and runtime bootstrap files remain plain files, including agent profiles, auth files, server metadata, server cookie, and per-session dependency logs.

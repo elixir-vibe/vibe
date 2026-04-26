@@ -25,7 +25,7 @@ defmodule Exy.CLI.Storage do
   end
 
   def command(["fts", "rebuild"], opts) do
-    Output.print(run(fn -> Exy.Storage.FTS.rebuild() end), opts)
+    Output.print(run(fn -> Exy.Storage.FTS.rebuild(progress: progress_fun(opts)) end), opts)
   end
 
   def command(["fts", "optimize"], opts) do
@@ -47,16 +47,72 @@ defmodule Exy.CLI.Storage do
   end
 
   def command(["import", source, path], opts) do
-    Output.print(Exy.Storage.Import.import_path(source, path), opts)
+    Output.print(Exy.Storage.Import.import_path(source, path, import_opts(opts)), opts)
   end
 
   def command(_args, _opts) do
     Output.error(
-      "Usage: exy storage migrate|status|checkpoint|vacuum|fts status|fts rebuild|fts optimize|search <query>|import pi <path>"
+      "Usage: exy storage migrate|status|checkpoint|vacuum|fts status|fts rebuild|fts optimize|search <query>|import pi <path> [--no-fts] [--rebuild-fts] [--batch-size N]"
     )
 
     {:error, :invalid_storage_command}
   end
+
+  defp import_opts(opts) do
+    [
+      index?: opts[:no_fts] != true,
+      rebuild_fts?: opts[:no_fts] != true or opts[:rebuild_fts] == true,
+      progress: progress_fun(opts),
+      progress_interval: opts[:batch_size] || 50
+    ]
+  end
+
+  defp progress_fun(opts) do
+    if opts[:mode] == "json" do
+      nil
+    else
+      &print_progress/1
+    end
+  end
+
+  defp print_progress(%{phase: :scan, total: total}),
+    do: IO.puts(:stderr, "import: found #{total} JSONL files")
+
+  defp print_progress(%{phase: :import} = event) do
+    IO.puts(
+      :stderr,
+      "import: #{event.current}/#{event.total} files, #{event.imported} imported, #{event.skipped} skipped, #{event.events} events, #{event.errors} errors"
+    )
+  end
+
+  defp print_progress(%{phase: :fts_rebuild}), do: IO.puts(:stderr, "import: rebuilding FTS")
+  defp print_progress(%{phase: :fts_optimize}), do: IO.puts(:stderr, "import: optimizing FTS")
+
+  defp print_progress(%{phase: :fts_rebuild_start} = event),
+    do:
+      IO.puts(
+        :stderr,
+        "fts: rebuilding #{event.ui_events} ui events and #{event.memories} memories"
+      )
+
+  defp print_progress(%{phase: :fts_ui_events, indexed: indexed}),
+    do: IO.puts(:stderr, "fts: indexed #{indexed} ui events")
+
+  defp print_progress(%{phase: :fts_memories, indexed: indexed}),
+    do: IO.puts(:stderr, "fts: indexed #{indexed} memories")
+
+  defp print_progress(%{phase: :fts_rebuild_done} = event),
+    do:
+      IO.puts(:stderr, "fts: rebuilt #{event.ui_events} ui events and #{event.memories} memories")
+
+  defp print_progress(%{phase: :done} = event),
+    do:
+      IO.puts(
+        :stderr,
+        "import: done, #{event.imported} imported, #{event.skipped} skipped, #{event.events} events"
+      )
+
+  defp print_progress(_event), do: :ok
 
   defp search_roles(opts) do
     cond do

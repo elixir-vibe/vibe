@@ -7,7 +7,7 @@ defmodule Exy.Context do
   preserve critical file paths and errors, and append read/modified file lists.
   """
 
-  alias Exy.Context.{Compactor, Serializer}
+  alias Exy.Context.{Compactor, Recall, Serializer}
   alias Exy.Trajectory
 
   @type compact_result :: Compactor.compact_result()
@@ -25,6 +25,9 @@ defmodule Exy.Context do
 
   @spec turn_prefix_summary([Trajectory.t()], keyword()) :: {:ok, String.t()} | {:error, term()}
   def turn_prefix_summary(events, opts \\ []), do: Compactor.turn_prefix_summary(events, opts)
+
+  @spec recall(String.t(), keyword()) :: String.t()
+  def recall(query, opts \\ []), do: Recall.block(query, opts)
 
   @spec serialize([Trajectory.t()]) :: String.t()
   def serialize(events), do: Serializer.serialize(events)

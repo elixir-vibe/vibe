@@ -3,6 +3,7 @@ defmodule Exy.Storage.FTS do
 
   import Ecto.Query
 
+  alias Exy.Repo
   alias Exy.Storage.Schema.{Memory, MemoryFTS, UIEvent, UIEventFTS}
 
   @message_types %{
@@ -54,15 +55,29 @@ defmodule Exy.Storage.FTS do
     :ok
   end
 
-  @spec rebuild() :: :ok
-  def rebuild do
+  @spec rebuild(keyword()) :: :ok
+  def rebuild(opts \\ []) do
     clear()
-    rebuild_ui_events(0)
-    rebuild_memories("")
+
+    progress(opts, %{
+      phase: :fts_rebuild_start,
+      ui_events: Repo.aggregate(UIEvent, :count),
+      memories: Repo.aggregate(Memory, :count)
+    })
+
+    rebuild_ui_events(0, 0, opts)
+    rebuild_memories("", 0, opts)
+
+    progress(opts, %{
+      phase: :fts_rebuild_done,
+      ui_events: Repo.aggregate(UIEventFTS, :count),
+      memories: Repo.aggregate(MemoryFTS, :count)
+    })
+
     :ok
   end
 
-  defp rebuild_ui_events(last_id) do
+  defp rebuild_ui_events(last_id, indexed, opts) do
     rows =
       UIEvent
       |> where([event], event.id > ^last_id)
@@ -79,11 +94,13 @@ defmodule Exy.Storage.FTS do
         |> Enum.flat_map(&ui_event_fts_row/1)
         |> insert_ui_event_fts_rows()
 
-        rows |> List.last() |> Map.fetch!(:id) |> rebuild_ui_events()
+        indexed = indexed + length(rows)
+        progress(opts, %{phase: :fts_ui_events, indexed: indexed})
+        rows |> List.last() |> Map.fetch!(:id) |> rebuild_ui_events(indexed, opts)
     end
   end
 
-  defp rebuild_memories(last_id) do
+  defp rebuild_memories(last_id, indexed, opts) do
     rows =
       Memory
       |> where([memory], memory.id > ^last_id)
@@ -100,7 +117,9 @@ defmodule Exy.Storage.FTS do
         |> Enum.map(&memory_fts_row/1)
         |> insert_memory_fts_rows()
 
-        rows |> List.last() |> Map.fetch!(:id) |> rebuild_memories()
+        indexed = indexed + length(rows)
+        progress(opts, %{phase: :fts_memories, indexed: indexed})
+        rows |> List.last() |> Map.fetch!(:id) |> rebuild_memories(indexed, opts)
     end
   end
 
@@ -118,6 +137,13 @@ defmodule Exy.Storage.FTS do
     rows
     |> Enum.chunk_every(1_000)
     |> Enum.each(&Exy.Repo.insert_all(MemoryFTS, &1))
+  end
+
+  defp progress(opts, event) do
+    case Keyword.get(opts, :progress) do
+      fun when is_function(fun, 1) -> fun.(event)
+      _progress -> :ok
+    end
   end
 
   defp memory_fts_row(%Memory{} = memory) do
@@ -150,8 +176,8 @@ defmodule Exy.Storage.FTS do
   @spec status() :: map()
   def status do
     %{
-      ui_events: Exy.Repo.aggregate(UIEventFTS, :count),
-      memories: Exy.Repo.aggregate(MemoryFTS, :count)
+      ui_events: Repo.aggregate(UIEventFTS, :count),
+      memories: Repo.aggregate(MemoryFTS, :count)
     }
   end
 

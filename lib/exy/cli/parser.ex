@@ -28,7 +28,10 @@ defmodule Exy.CLI.Parser do
     live: :boolean,
     failed: :boolean,
     include_tools: :boolean,
-    limit: :integer
+    limit: :integer,
+    no_fts: :boolean,
+    rebuild_fts: :boolean,
+    batch_size: :integer
   ]
 
   @aliases [h: :help, v: :version, p: :print]

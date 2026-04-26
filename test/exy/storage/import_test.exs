@@ -54,6 +54,48 @@ defmodule Exy.Storage.ImportTest do
 
     assert [%{id: "pi-session", message_count: 2, first_message: "hello", cwd: ^dir}] =
              Exy.Session.Store.list()
+  end
+
+  test "directory import reports progress and can defer FTS indexing" do
+    dir = Path.join(System.tmp_dir!(), "exy-pi-import-#{System.unique_integer([:positive])}")
+    File.mkdir_p!(dir)
+    file = Path.join(dir, "session.jsonl")
+
+    entries = [
+      %{
+        type: "session",
+        version: 1,
+        id: "pi-progress",
+        timestamp: "2026-01-01T00:00:00.000Z",
+        cwd: dir
+      },
+      %{
+        type: "message",
+        timestamp: "2026-01-01T00:00:01.000Z",
+        message: %{role: "user", content: "progress needle"}
+      }
+    ]
+
+    File.write!(file, Enum.map_join(entries, "\n", &Jason.encode!/1) <> "\n")
+
+    parent = self()
+    progress = fn event -> send(parent, {:progress, event}) end
+
+    assert {:ok, %{imported: 1, events: 1, fts_rebuilt: false}} =
+             Exy.Storage.Import.pi_path(dir,
+               index?: false,
+               rebuild_fts?: false,
+               progress: progress,
+               progress_interval: 1
+             )
+
+    assert_receive {:progress, %{phase: :scan, total: 1}}
+    assert_receive {:progress, %{phase: :import, current: 1, imported: 1, events: 1}}
+    assert_receive {:progress, %{phase: :done, imported: 1, events: 1}}
+
+    assert [] = Exy.Session.search("progress needle")
+    assert :ok = Exy.Storage.FTS.rebuild()
+    assert [%{owner_id: "pi-progress"}] = Exy.Session.search("progress needle")
   after
     File.rm_rf(Path.join(System.tmp_dir!(), "exy-pi-import-*"))
   end

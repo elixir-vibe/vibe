@@ -74,6 +74,7 @@ defmodule Exy.Storage.Search do
   defp search_sessions(fts_query, opts) do
     limit = Keyword.get(opts, :limit, 10)
     session_id = Keyword.get(opts, :session_id)
+    exclude_session_id = Keyword.get(opts, :exclude_session_id)
     cwd = Keyword.get(opts, :cwd)
 
     roles =
@@ -86,6 +87,7 @@ defmodule Exy.Storage.Search do
     |> where([row, _session], fragment("ui_events_fts MATCH ?", ^fts_query))
     |> where([row, _session], row.role in ^roles)
     |> where_session(session_id)
+    |> where_not_session(exclude_session_id)
     |> where_cwd(cwd)
     |> order_by([row, _session], fragment("bm25(ui_events_fts)"))
     |> limit(^limit)
@@ -137,6 +139,11 @@ defmodule Exy.Storage.Search do
 
   defp where_session(query, session_id),
     do: where(query, [row, _session], row.session_id == ^session_id)
+
+  defp where_not_session(query, nil), do: query
+
+  defp where_not_session(query, session_id),
+    do: where(query, [row, _session], row.session_id != ^session_id)
 
   defp where_cwd(query, nil), do: query
   defp where_cwd(query, cwd), do: where(query, [_row, session], like(session.cwd, ^"%#{cwd}%"))

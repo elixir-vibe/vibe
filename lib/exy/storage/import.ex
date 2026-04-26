@@ -7,19 +7,34 @@ defmodule Exy.Storage.Import do
     "pi" => Exy.Storage.Import.Pi
   }
 
-  @spec import_path(atom() | String.t(), String.t()) :: {:ok, map()} | {:error, term()}
-  def import_path(source, path) when is_atom(source),
-    do: import_path(Atom.to_string(source), path)
+  @spec import_path(atom() | String.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  def import_path(source, path, opts \\ [])
 
-  def import_path(source, path) when is_binary(source) do
+  def import_path(source, path, opts) when is_atom(source),
+    do: import_path(Atom.to_string(source), path, opts)
+
+  def import_path(source, path, opts) when is_binary(source) do
     case Map.fetch(@providers, source) do
-      {:ok, importer} -> importer.import_path(path)
-      :error -> {:error, {:unknown_import_source, source}}
+      {:ok, importer} ->
+        import_with_opts(importer, path, opts)
+
+      :error ->
+        {:error, {:unknown_import_source, source}}
     end
   end
 
-  @spec pi_path(String.t()) :: {:ok, map()} | {:error, term()}
-  def pi_path(path), do: import_path("pi", path)
+  defp import_with_opts(importer, path, opts) do
+    Code.ensure_loaded(importer)
+
+    if function_exported?(importer, :import_path, 2) do
+      importer.import_path(path, opts)
+    else
+      importer.import_path(path)
+    end
+  end
+
+  @spec pi_path(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  def pi_path(path, opts \\ []), do: import_path("pi", path, opts)
 
   @spec providers() :: %{String.t() => module()}
   def providers, do: @providers
