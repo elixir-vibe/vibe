@@ -49,6 +49,10 @@ defmodule Exy.CLI.Output do
   defp json_safe(value), do: value
 
   defp render([]), do: "No results."
+
+  defp render([%Exy.Storage.Search.Result{} | _rest] = results),
+    do: render_search_results(results)
+
   defp render([%Exy.Subagents.JobInfo{} | _rest] = jobs), do: render_jobs(jobs)
   defp render([%Exy.Subagents.Schedule{} | _rest] = schedules), do: render_schedules(schedules)
   defp render([%{id: _id} | _rest] = sessions), do: render_sessions(sessions)
@@ -63,6 +67,31 @@ defmodule Exy.CLI.Output do
   defp render(%{output: output}), do: output
   defp render(result) when is_binary(result), do: render_markdown(result)
   defp render(result), do: inspect(result, pretty: true, limit: 50)
+
+  defp render_search_results(results) do
+    results
+    |> Enum.with_index(1)
+    |> Enum.map_join("\n\n", fn {result, index} ->
+      [
+        Integer.to_string(index),
+        ". ",
+        to_string(result.source),
+        " ",
+        result.owner_id || "-",
+        " #",
+        to_string(result.metadata[:seq] || result.id),
+        "\n",
+        highlight_search_snippet(result.snippet || result.text)
+      ]
+      |> IO.iodata_to_binary()
+    end)
+  end
+
+  defp highlight_search_snippet(text) do
+    text
+    |> String.replace("<mark>", "[")
+    |> String.replace("</mark>", "]")
+  end
 
   defp render_jobs(jobs) do
     header = "STATUS   ID          ROLE        CHILD SESSION              TASK"
