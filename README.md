@@ -91,7 +91,13 @@ exy storage vacuum
 exy search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
 exy storage search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
 exy storage import pi <path> [--no-fts] [--rebuild-fts] [--batch-size N]
+exy skill list
+exy skill show <name>
+exy skill apis
+exy skill from-session <session-id> <name>
 ```
+
+Executable skills are trusted local `.skill.exs` files discovered from `priv/skills`, `./skills`, `./.exy/skills`, and `~/.exy/skills`. They combine Markdown guidance with Elixir helper functions exposed to eval through `Exy.Plugin.API` aliases.
 
 Scriptable/non-interactive commands remain available through flags such as:
 

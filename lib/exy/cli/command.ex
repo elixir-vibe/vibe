@@ -13,6 +13,7 @@ defmodule Exy.CLI.Command do
     Commands.Sessions,
     Commands.Storage,
     Commands.Search,
+    Commands.Skill,
     Commands.Subagents,
     Commands.Send,
     Commands.Attach

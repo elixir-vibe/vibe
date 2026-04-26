@@ -31,7 +31,8 @@ defmodule Exy.CLI.Parser do
     limit: :integer,
     no_fts: :boolean,
     rebuild_fts: :boolean,
-    batch_size: :integer
+    batch_size: :integer,
+    overwrite: :boolean
   ]
 
   @aliases [h: :help, v: :version, p: :print]

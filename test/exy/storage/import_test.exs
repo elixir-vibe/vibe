@@ -3,6 +3,8 @@ defmodule Exy.Storage.ImportTest do
 
   setup do
     Exy.Session.Store.clear()
+    Exy.Storage.ensure!()
+    Exy.Repo.delete_all(Exy.Storage.Schema.Import)
     :ok
   end
 
