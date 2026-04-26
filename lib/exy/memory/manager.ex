@@ -3,6 +3,8 @@ defmodule Exy.Memory.Manager do
 
   use GenServer
 
+  alias Exy.Support.Lists
+
   defstruct providers: []
 
   @type provider_entry :: %{module: module(), state: term(), external?: boolean()}
@@ -156,10 +158,7 @@ defmodule Exy.Memory.Manager do
     Enum.each(providers, &apply_provider(&1, callback, args))
   end
 
-  defp append_provider(providers, provider) do
-    [provider | Enum.reverse(providers)]
-    |> Enum.reverse()
-  end
+  defp append_provider(providers, provider), do: Lists.append(providers, provider)
 
   defp apply_provider(provider, callback, args) do
     apply(provider.module, callback, append_arg(args, provider.state))
@@ -167,8 +166,5 @@ defmodule Exy.Memory.Manager do
     _exception -> nil
   end
 
-  defp append_arg(args, arg) do
-    [arg | Enum.reverse(args)]
-    |> Enum.reverse()
-  end
+  defp append_arg(args, arg), do: Lists.append(args, arg)
 end

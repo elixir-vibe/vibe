@@ -102,11 +102,13 @@ defmodule Exy.Subagents.Job do
 
     if state.session, do: Session.unlock(state.session, job.id)
 
-    Exy.Session.Store.append_trajectory(:subagent_finished, Map.from_struct(job),
+    job_data = Map.from_struct(job)
+
+    Exy.Session.Store.append_trajectory(:subagent_finished, job_data,
       session_id: job.parent_session_id || job.child_session_id
     )
 
-    emit_parent_event(job, :subagent_finished, Map.from_struct(job))
+    emit_parent_event(job, :subagent_finished, job_data)
 
     if job.parent_session_id do
       Exy.Memory.Manager.on_delegation(job.task, result_text(job), %{
