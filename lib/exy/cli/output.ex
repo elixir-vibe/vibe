@@ -1,6 +1,8 @@
 defmodule Exy.CLI.Output do
   @moduledoc false
 
+  alias IO.ANSI
+
   @spec print(term(), keyword()) :: :ok | {:error, term()}
   def print(:ok, opts), do: print({:ok, %{ok: true}}, opts)
 
@@ -89,8 +91,9 @@ defmodule Exy.CLI.Output do
 
   defp highlight_search_snippet(text) do
     text
-    |> String.replace("<mark>", "[")
-    |> String.replace("</mark>", "]")
+    |> String.replace("…", "...")
+    |> String.replace("<mark>", ANSI.yellow() <> ANSI.bright())
+    |> String.replace("</mark>", ANSI.reset())
   end
 
   defp render_jobs(jobs) do

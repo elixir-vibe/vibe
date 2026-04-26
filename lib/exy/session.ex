@@ -93,6 +93,13 @@ defmodule Exy.Session do
     restoring? = Keyword.get(opts, :restoring?, false)
     {state, event_seq, events_tail} = restore_state(State.new(opts), persist?, restoring?)
 
+    if persist?,
+      do:
+        Exy.Session.Store.ensure_session(state.session_id, DateTime.utc_now(),
+          cwd: state.cwd,
+          model: state.model
+        )
+
     maybe_register_ui_bus(state.session_id)
     unless restoring?, do: PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
 

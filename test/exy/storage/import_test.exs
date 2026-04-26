@@ -52,7 +52,7 @@ defmodule Exy.Storage.ImportTest do
              {3, %{type: :model_selected, data: %{model: "openai:gpt-4o"}}}
            ] = Exy.Session.Store.ui_events("pi-session")
 
-    assert [%{id: "pi-session", message_count: 2, first_message: "hello"}] =
+    assert [%{id: "pi-session", message_count: 2, first_message: "hello", cwd: ^dir}] =
              Exy.Session.Store.list()
   after
     File.rm_rf(Path.join(System.tmp_dir!(), "exy-pi-import-*"))

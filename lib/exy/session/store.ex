@@ -244,19 +244,23 @@ defmodule Exy.Session.Store do
   @spec list() :: [map()]
   def list, do: Listing.list()
 
-  @spec ensure_session(String.t(), DateTime.t()) :: :ok
-  def ensure_session(session_id, at \\ DateTime.utc_now()) do
+  @spec ensure_session(String.t(), DateTime.t(), keyword()) :: :ok
+  def ensure_session(session_id, at \\ DateTime.utc_now(), attrs \\ []) do
     Exy.Storage.ensure!()
     at = Exy.Storage.normalize_datetime(at)
+    attrs = Keyword.take(attrs, [:cwd, :model])
 
-    %Session{id: session_id, started_at: at, updated_at: at}
+    %Session{}
+    |> Map.merge(Map.new([id: session_id, started_at: at, updated_at: at] ++ attrs))
     |> Exy.Repo.insert(
-      on_conflict: [set: [updated_at: at]],
+      on_conflict: [set: [updated_at: at] ++ present_attrs(attrs)],
       conflict_target: :id
     )
 
     :ok
   end
+
+  defp present_attrs(attrs), do: Enum.reject(attrs, fn {_key, value} -> is_nil(value) end)
 
   defp ui_event_row(%Event{} = event, seq) do
     encoded = Codec.encode_ui_event(event, seq)

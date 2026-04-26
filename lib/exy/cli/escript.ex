@@ -3,7 +3,7 @@ defmodule Exy.CLI.Escript do
 
   @version Mix.Project.config()[:version]
   def main(argv) do
-    {opts, _args, _invalid} = Exy.CLI.parse(argv)
+    %{opts: opts} = Exy.CLI.parse(argv)
 
     cond do
       opts[:help] -> print_help()

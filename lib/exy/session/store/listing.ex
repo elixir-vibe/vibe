@@ -56,6 +56,7 @@ defmodule Exy.Session.Store.Listing do
       size: 0,
       created_at: nil,
       updated_at: session.updated_at,
+      cwd: session.cwd,
       message_count: session.message_count || 0,
       first_message: session.first_message_preview,
       last_message_preview: session.last_message_preview,

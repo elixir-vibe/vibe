@@ -46,7 +46,7 @@ defmodule Exy.Storage.Import.Pi do
          {:ok, header} <- header(entries) do
       session_id = Map.fetch!(header, "id")
       at = parse_datetime(header["timestamp"]) || DateTime.utc_now()
-      Exy.Session.Store.ensure_session(session_id, at)
+      Exy.Session.Store.ensure_session(session_id, at, cwd: header["cwd"])
 
       {count, events} =
         entries

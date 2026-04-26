@@ -17,6 +17,12 @@ defmodule Mix.Tasks.Exy do
       exy sessions [--all] [--live] [--failed] [--limit n]  # Alias: exy ls
       exy sessions prune --empty
       exy send <session-id> "prompt"
+      exy storage migrate
+      exy storage status
+      exy storage fts status
+      exy storage fts rebuild
+      exy storage search <query>
+      exy storage import pi <path>
       exy attach                 # Alias: exy a
       exy attach <session-id>    # Alias: exy a <session-id>
 
@@ -41,7 +47,7 @@ defmodule Mix.Tasks.Exy do
     * `--keep-recent <n>` - Events to keep when compacting. Defaults to `12`.
     * `--checks` - Run Exy validation gates.
     * `--codex-usage` - Show Codex subscription usage via Codex app-server RPC.
-    * `--session <id>` - Continue or name a persisted JSONL session.
+    * `--session <id>` - Continue or name a persisted session.
     * `--sessions` - List persisted sessions. Prefer `exy sessions` for server-aware listings.
     * `--all` - With `exy sessions`, include empty/internal historical sessions.
     * `--live` - With `exy sessions`, show only live sessions.
@@ -63,6 +69,7 @@ defmodule Mix.Tasks.Exy do
       exy new --mode json
       exy ls --limit 5
       exy send 20260425-120000-abcd "Use eval to inspect System.version()"
+      exy storage search "figma variable"
       exy a
       exy a 20260425-120000-abcd
   """

@@ -1,0 +1,58 @@
+defmodule Exy.CLI.Commands.Default do
+  @moduledoc false
+
+  alias Exy.CLI.{Output, Runner, Sessions}
+
+  @version Mix.Project.config()[:version]
+
+  @spec run([String.t()], keyword()) :: :ok | {:error, term()}
+  def run(args, opts) do
+    cond do
+      opts[:help] ->
+        Mix.Tasks.Help.run(["exy"])
+        :ok
+
+      opts[:version] ->
+        IO.puts(@version)
+        :ok
+
+      opts[:login] ->
+        Exy.Auth.login(opts[:login])
+
+      code = opts[:eval] ->
+        Output.print(Exy.Eval.once(code, timeout: opts[:timeout] || 30_000), opts)
+
+      opts[:compact] ->
+        compact(opts)
+
+      opts[:checks] ->
+        Output.print(Exy.Code.Checks.run_all(), opts)
+
+      opts[:codex_usage] ->
+        Output.print(Exy.Auth.Codex.usage_limits(), opts)
+
+      opts[:sessions] ->
+        Output.print({:ok, Exy.Session.Store.list()}, opts)
+
+      opts[:print] == true or args != [] ->
+        args
+        |> Enum.join(" ")
+        |> Runner.ask(opts)
+
+      true ->
+        Sessions.attach_default(opts)
+    end
+  end
+
+  defp compact(opts) do
+    opts =
+      opts
+      |> maybe_put(:keep_recent, opts[:keep_recent])
+      |> maybe_put(:model, opts[:model])
+
+    Output.print(Exy.Context.compact(opts), opts)
+  end
+
+  defp maybe_put(opts, _key, nil), do: opts
+  defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
+end
