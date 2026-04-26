@@ -1,6 +1,8 @@
 defmodule Exy.CLI do
   @moduledoc false
 
+  alias Exy.CLI.Output
+
   @version Mix.Project.config()[:version]
 
   @switches [
@@ -51,7 +53,7 @@ defmodule Exy.CLI do
       invalid == [] and match?(["send", _session_id | _], args) ->
         ["send", session_id | prompt_parts] = args
 
-        print_result(
+        Output.print(
           server_call(fn ->
             Exy.Remote.Session.send_prompt(session_id, Enum.join(prompt_parts, " "))
           end),
@@ -73,7 +75,7 @@ defmodule Exy.CLI do
   defp main_options(opts, args, invalid) do
     cond do
       invalid != [] ->
-        Enum.each(invalid, fn {flag, _} -> shell_error("Unknown option: #{flag}") end)
+        Enum.each(invalid, fn {flag, _} -> Output.error("Unknown option: #{flag}") end)
         {:error, :invalid_args}
 
       opts[:help] ->
@@ -88,19 +90,19 @@ defmodule Exy.CLI do
         login(opts[:login])
 
       code = opts[:eval] ->
-        print_result(Exy.Eval.run(code, timeout: opts[:timeout] || 30_000), opts)
+        Output.print(Exy.Eval.run(code, timeout: opts[:timeout] || 30_000), opts)
 
       opts[:compact] ->
         compact(opts)
 
       opts[:checks] ->
-        print_result(Exy.Code.Checks.run_all(), opts)
+        Output.print(Exy.Code.Checks.run_all(), opts)
 
       opts[:codex_usage] ->
-        print_result(Exy.Auth.Codex.usage_limits(), opts)
+        Output.print(Exy.Auth.Codex.usage_limits(), opts)
 
       opts[:sessions] ->
-        print_result({:ok, Exy.Session.Store.list()}, opts)
+        Output.print({:ok, Exy.Session.Store.list()}, opts)
 
       opts[:print] == true or args != [] ->
         prompt = Enum.join(args, " ")
@@ -117,48 +119,49 @@ defmodule Exy.CLI do
     if opts[:foreground] do
       Exy.Server.start(foreground: true)
     else
-      print_result(start_background_server(), opts)
+      Output.print(start_background_server(), opts)
     end
   end
 
-  defp server_command(["status"], opts), do: print_result(Exy.Server.status(), opts)
-  defp server_command(["stop"], opts), do: print_result(Exy.Server.stop(), opts)
+  defp server_command(["status"], opts), do: Output.print(Exy.Server.status(), opts)
+  defp server_command(["stop"], opts), do: Output.print(Exy.Server.stop(), opts)
 
   defp server_command(_args, _opts) do
-    shell_error("Usage: exy server start [--foreground] | status | stop")
+    Output.error("Usage: exy server start [--foreground] | status | stop")
     {:error, :invalid_server_command}
   end
 
   defp sessions_command(["prune", "--empty"], opts) do
-    print_result(prune_empty_sessions(), opts)
+    Output.print(prune_empty_sessions(), opts)
   end
 
   defp sessions_command(["prune"], _opts) do
-    shell_error("Usage: exy sessions prune --empty")
+    Output.error("Usage: exy sessions prune --empty")
     {:error, :invalid_sessions_command}
   end
 
   defp sessions_command([], opts) do
     case server_call(&Exy.Remote.Session.list/0) do
-      {:ok, sessions} -> print_result({:ok, filter_sessions(sessions, opts)}, opts)
-      error -> print_result(error, opts)
+      {:ok, sessions} -> Output.print({:ok, filter_sessions(sessions, opts)}, opts)
+      error -> Output.print(error, opts)
     end
   end
 
   defp sessions_command(_args, _opts) do
-    shell_error("Usage: exy sessions [--all] [--live] [--failed] [--limit n] | prune --empty")
+    Output.error("Usage: exy sessions [--all] [--live] [--failed] [--limit n] | prune --empty")
+
     {:error, :invalid_sessions_command}
   end
 
   defp new_session_tui(opts) do
     case server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end) do
       {:ok, %{id: session_id}} -> attach_session(session_id, opts)
-      other -> print_result(other, opts)
+      other -> Output.print(other, opts)
     end
   end
 
   defp new_session(opts) do
-    print_result(
+    Output.print(
       server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end),
       opts
     )
@@ -187,7 +190,7 @@ defmodule Exy.CLI do
         tui(opts, session_server: session, session_id: session_id)
 
       {:error, reason} ->
-        print_result({:error, reason}, opts)
+        Output.print({:error, reason}, opts)
     end
   end
 
@@ -382,14 +385,6 @@ defmodule Exy.CLI do
     OptionParser.parse(argv, strict: @switches, aliases: @aliases)
   end
 
-  defp shell_error(message) do
-    if Code.ensure_loaded?(Mix) and function_exported?(Mix, :shell, 0) do
-      Mix.shell().error(message)
-    else
-      IO.puts(:stderr, message)
-    end
-  end
-
   defp login(provider), do: Exy.Auth.login(provider)
 
   defp compact(opts) do
@@ -398,11 +393,11 @@ defmodule Exy.CLI do
       |> maybe_put(:keep_recent, opts[:keep_recent])
       |> maybe_put(:model, opts[:model])
 
-    print_result(Exy.Context.compact(opts), opts)
+    Output.print(Exy.Context.compact(opts), opts)
   end
 
   defp ask("", _opts) do
-    shell_error("No prompt provided. Run `mix exy --help` for usage.")
+    Output.error("No prompt provided. Run `mix exy --help` for usage.")
     {:error, :missing_prompt}
   end
 
@@ -428,7 +423,7 @@ defmodule Exy.CLI do
         end
       end)
 
-    print_result(result, opts)
+    Output.print(result, opts)
   end
 
   defp tui(opts, runtime_extra \\ []) do
@@ -448,92 +443,13 @@ defmodule Exy.CLI do
         :ok
 
       {:error, reason} ->
-        shell_error("Cannot start Exy TUI: #{reason}")
+        Output.error("Cannot start Exy TUI: #{reason}")
         {:error, reason}
     end
   end
 
   defp maybe_put_system_prompt(opts, nil), do: opts
   defp maybe_put_system_prompt(opts, system_prompt), do: Keyword.put(opts, :system, system_prompt)
-
-  defp print_result(:ok, opts), do: print_result({:ok, %{ok: true}}, opts)
-
-  defp print_result({:ok, results}, opts) when is_list(results) do
-    case opts[:mode] do
-      "json" -> IO.puts(Jason.encode!(json_safe(%{ok: true, results: results}), pretty: true))
-      _ -> IO.puts(render_result(results))
-    end
-
-    :ok
-  end
-
-  defp print_result({:ok, result}, opts) do
-    case opts[:mode] do
-      "json" -> IO.puts(Jason.encode!(json_safe(%{ok: true, result: result}), pretty: true))
-      _ -> IO.puts(render_result(result))
-    end
-
-    :ok
-  end
-
-  defp print_result({:error, reason}, opts) do
-    case opts[:mode] do
-      "json" ->
-        IO.puts(Jason.encode!(json_safe(%{ok: false, error: inspect(reason)}), pretty: true))
-
-      _ ->
-        shell_error(inspect(reason))
-    end
-
-    {:error, reason}
-  end
-
-  defp json_safe(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp json_safe(%_{} = value), do: value |> Map.from_struct() |> json_safe()
-
-  defp json_safe(map) when is_map(map),
-    do: Map.new(map, fn {key, value} -> {key, json_safe(value)} end)
-
-  defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
-  defp json_safe(value), do: value
-
-  defp render_result([]), do: "No results."
-  defp render_result([%{id: _id} | _rest] = sessions), do: render_sessions(sessions)
-
-  defp render_result(results) when is_list(results),
-    do: Enum.map_join(results, "\n", &inspect(&1, pretty: true, limit: 20))
-
-  defp render_result(%ReqLLM.Response{} = response),
-    do: response |> ReqLLM.Response.text() |> render_markdown()
-
-  defp render_result(%{summary: summary}), do: render_markdown(summary)
-  defp render_result(%{output: output}), do: output
-  defp render_result(result) when is_binary(result), do: render_markdown(result)
-  defp render_result(result), do: inspect(result, pretty: true, limit: 50)
-
-  defp render_sessions(sessions) do
-    header = "UPDATED              LIVE STATUS  ID                         PREVIEW"
-
-    rows =
-      Enum.map(sessions, fn session ->
-        updated = session[:updated_at] |> format_updated_at() |> String.pad_trailing(19)
-        live = if session[:live?], do: "yes ", else: "no  "
-        status = session[:status] |> to_string() |> String.pad_trailing(7)
-        id = session[:id] |> to_string() |> String.slice(0, 26) |> String.pad_trailing(26)
-        preview = session[:last_message_preview] || session[:first_message] || ""
-        "#{updated}  #{live} #{status} #{id} #{preview}"
-      end)
-
-    Enum.join([header | rows], "\n")
-  end
-
-  defp format_updated_at(%DateTime{} = updated_at),
-    do: Calendar.strftime(updated_at, "%Y-%m-%d %H:%M")
-
-  defp format_updated_at(updated_at) when is_binary(updated_at),
-    do: String.slice(updated_at, 0, 16)
-
-  defp format_updated_at(_updated_at), do: "-"
 
   defp configure_api_key(opts) do
     if key = opts[:api_key] do
@@ -561,21 +477,6 @@ defmodule Exy.CLI do
   defp session_id(opts), do: opts[:session] || Exy.Session.Store.new_id()
 
   defp stream?(opts), do: opts[:no_stream] != true and opts[:stream] != false
-
-  defp render_markdown(nil), do: ""
-
-  defp render_markdown(text) do
-    text
-    |> Exy.TUI.Markdown.render(terminal_width(), Exy.TUI.Theme.default())
-    |> Enum.map_join("\n", &IO.iodata_to_binary/1)
-  end
-
-  defp terminal_width do
-    case :io.columns() do
-      {:ok, columns} -> columns
-      _ -> 100
-    end
-  end
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
