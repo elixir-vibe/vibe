@@ -59,13 +59,8 @@ defmodule Exy.Context.Serializer do
   end
 
   defp serialize_event(%Trajectory{type: :tool_call, data: data}) do
-    name =
-      Map.get(data, :name) || Map.get(data, "name") || Map.get(data, :action) ||
-        Map.get(data, "action")
-
-    args =
-      Map.get(data, :args) || Map.get(data, "args") ||
-        Map.drop(data, [:name, "name", :result, "result"])
+    name = Map.get(data, :name) || Map.get(data, :action)
+    args = Map.get(data, :args) || Map.drop(data, [:name, :result])
 
     "[Assistant tool call]: #{name}(#{inspect(args, limit: 20)})"
   end
@@ -85,8 +80,8 @@ defmodule Exy.Context.Serializer do
   defp file_paths(events, actions) do
     events
     |> Enum.flat_map(fn event ->
-      action = get_in(event.data, [:action]) || get_in(event.data, ["action"])
-      path = get_in(event.data, [:path]) || get_in(event.data, ["path"])
+      action = get_in(event.data, [:action])
+      path = get_in(event.data, [:path])
 
       if action in actions and is_binary(path), do: [path], else: []
     end)

@@ -78,8 +78,8 @@ defmodule Exy.Agent.Streaming do
   defp maybe_put_callback(callbacks, _key, _callback), do: callbacks
 
   defp chunk(data) do
-    type = Map.get(data, :chunk_type) || Map.get(data, "chunk_type") || :content
-    text = Map.get(data, :delta) || Map.get(data, "delta") || ""
+    type = Map.get(data, :chunk_type, :content)
+    text = Map.get(data, :delta, "")
     {normalize_type(type), text}
   end
 
@@ -89,7 +89,7 @@ defmodule Exy.Agent.Streaming do
     :exit, _reason -> {:error, :agent_unavailable}
   end
 
-  defp normalize_type(type) when type in [:thinking, "thinking"], do: :thinking
+  defp normalize_type(:thinking), do: :thinking
   defp normalize_type(_type), do: :content
 
   defp maybe_dispatch_delta({_type, ""}, _callbacks), do: :ok

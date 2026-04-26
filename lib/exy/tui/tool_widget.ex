@@ -96,25 +96,22 @@ defmodule Exy.TUI.ToolWidget do
   def status_bg(text, status, theme) when status in [:ok, "ok", :success, "success"],
     do: Theme.bg(theme, :tool_success_bg, text)
 
-  def status_bg(text, status, theme) when status in [:error, "error"],
+  def status_bg(text, :error, theme),
     do: Theme.bg(theme, :tool_error_bg, text)
 
   def status_bg(text, _status, theme), do: Theme.bg(theme, :tool_pending_bg, text)
 
   def status(tool), do: tool |> Map.get(:status, :running) |> normalize_status()
 
-  def status_icon(status, theme) when status in [:ok, "ok", :success, "success"],
+  def status_icon(status, theme) when status in [:ok, :success],
     do: Theme.fg(theme, :success, Theme.symbol(theme, :success_icon))
 
-  def status_icon(status, theme) when status in [:error, "error"],
+  def status_icon(:error, theme),
     do: Theme.fg(theme, :error, Theme.symbol(theme, :error_icon))
 
   def status_icon(_status, theme), do: Theme.fg(theme, :muted, Theme.symbol(theme, :running_icon))
 
-  def params(tool),
-    do:
-      Map.get(tool, :args) || Map.get(tool, "args") || Map.get(tool, :params) ||
-        Map.get(tool, "params")
+  def params(tool), do: Map.get(tool, :args) || Map.get(tool, :params)
 
   def output(tool) do
     tool
@@ -125,13 +122,9 @@ defmodule Exy.TUI.ToolWidget do
   def format_value(value) when is_binary(value), do: value
   def format_value(value), do: inspect(value, pretty: true, limit: 20)
 
-  defp raw_output(tool),
-    do:
-      Map.get(tool, :output) || Map.get(tool, "output") || Map.get(tool, :result) ||
-        Map.get(tool, "result")
+  defp raw_output(tool), do: Map.get(tool, :output) || Map.get(tool, :result)
 
   defp unwrap_output(%{output: output}), do: output
-  defp unwrap_output(%{"output" => output}), do: output
   defp unwrap_output(output), do: output
 
   defp maybe_append_params(lines, tool, width, theme, opts) do
@@ -249,7 +242,7 @@ defmodule Exy.TUI.ToolWidget do
     |> block(width, theme, summary: "render failed", params?: false)
   end
 
-  defp tool_name(tool), do: Map.get(tool, :name) || Map.get(tool, "name")
+  defp tool_name(tool), do: Map.get(tool, :name)
 
   defp normalize_name(name) when is_atom(name), do: name
 
@@ -264,6 +257,5 @@ defmodule Exy.TUI.ToolWidget do
   defp normalize_name(_name), do: nil
 
   defp normalize_status(:success), do: :ok
-  defp normalize_status("success"), do: :ok
   defp normalize_status(status), do: status
 end

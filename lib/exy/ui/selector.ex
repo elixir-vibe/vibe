@@ -11,16 +11,17 @@ defmodule Exy.UI.Selector do
 
   defstruct [:kind, :title, :limit, items: [], selected: 0]
 
-  @spec new(map() | keyword()) :: t()
+  @spec new(t() | map() | keyword()) :: t()
+  def new(%__MODULE__{} = selector), do: selector
   def new(fields) when is_list(fields), do: fields |> Map.new() |> new()
 
-  def new(fields) when is_map(fields) do
+  def new(%{kind: kind} = fields) do
     %__MODULE__{
-      kind: Map.get(fields, :kind) || Map.get(fields, "kind"),
-      title: Map.get(fields, :title) || Map.get(fields, "title"),
-      items: Map.get(fields, :items) || Map.get(fields, "items") || [],
-      selected: Map.get(fields, :selected) || Map.get(fields, "selected") || 0,
-      limit: Map.get(fields, :limit) || Map.get(fields, "limit")
+      kind: kind,
+      title: Map.get(fields, :title),
+      items: Map.get(fields, :items, []),
+      selected: Map.get(fields, :selected, 0),
+      limit: Map.get(fields, :limit)
     }
   end
 

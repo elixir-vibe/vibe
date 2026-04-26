@@ -60,14 +60,10 @@ defmodule Exy.UI.Widget do
   @spec normalize(t() | map()) :: t()
   def normalize(%__MODULE__{} = widget), do: widget
 
-  def normalize(widget) when is_map(widget) do
-    id = Map.get(widget, :id) || Map.fetch!(widget, "id")
-    type = Map.get(widget, :type) || Map.fetch!(widget, "type")
-    props = Map.get(widget, :props) || Map.get(widget, "props") || %{}
-
-    new(normalize_id(id), normalize_type(type), props,
-      placement: Map.get(widget, :placement) || Map.get(widget, "placement") || :above_editor,
-      version: Map.get(widget, :version) || Map.get(widget, "version") || 0
+  def normalize(%{id: id, type: type} = widget) do
+    new(normalize_id(id), normalize_type(type), Map.get(widget, :props, %{}),
+      placement: Map.get(widget, :placement, :above_editor),
+      version: Map.get(widget, :version, 0)
     )
   end
 

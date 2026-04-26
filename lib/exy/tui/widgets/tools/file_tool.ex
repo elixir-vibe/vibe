@@ -8,10 +8,8 @@ defmodule Exy.TUI.Widgets.Tools.FileTool do
     do: path_from_args(tool) || path_from_result(result) || ToolWidget.compact_summary(tool)
 
   defp path_from_args(%{args: %{path: path}}), do: path
-  defp path_from_args(%{args: %{"path" => path}}), do: path
   defp path_from_args(_tool), do: nil
 
   defp path_from_result(%{path: path}), do: path
-  defp path_from_result(%{"path" => path}), do: path
   defp path_from_result(_result), do: nil
 end

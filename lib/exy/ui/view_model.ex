@@ -90,7 +90,6 @@ defmodule Exy.UI.ViewModel do
     content
     |> Enum.map(fn
       %{type: :text, text: text} -> text
-      %{type: "text", text: text} -> text
       %{text: text} -> text
       _ -> nil
     end)

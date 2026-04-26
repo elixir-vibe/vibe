@@ -19,7 +19,6 @@ defmodule Exy.TUI.Widgets.Tools.AST do
   defp action(tool) do
     case Map.get(tool, :args) do
       %{action: action} -> to_string(action)
-      %{"action" => action} -> to_string(action)
       _ -> nil
     end
   end

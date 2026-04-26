@@ -288,7 +288,6 @@ defmodule Exy.UI.Reducer do
 
   defp notification_id(%Notification{id: id}), do: id
   defp notification_id(%{id: id}), do: id
-  defp notification_id(%{"id" => id}), do: id
   defp notification_id(_notification), do: nil
 
   defp append_streaming_delta(state, key, delta, at) do

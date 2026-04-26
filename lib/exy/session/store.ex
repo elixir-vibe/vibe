@@ -368,7 +368,7 @@ defmodule Exy.Session.Store do
          at: at,
          data: data
        }) do
-    text = Map.get(data, :prompt) || Map.get(data, "prompt") || ""
+    text = Map.get(data, :prompt, "")
     [Event.new(:user_message_added, session_id, %{text: text}, at: at)]
   end
 
@@ -379,11 +379,9 @@ defmodule Exy.Session.Store do
          data: data
        }) do
     payload =
-      cond do
-        Map.has_key?(data, :error) -> %{error: Map.get(data, :error)}
-        Map.has_key?(data, "error") -> %{error: Map.get(data, "error")}
-        true -> %{result: Map.get(data, :result) || Map.get(data, "result") || data}
-      end
+      if Map.has_key?(data, :error),
+        do: %{error: Map.get(data, :error)},
+        else: %{result: Map.get(data, :result) || data}
 
     [Event.new(:assistant_message_added, session_id, payload, at: at)]
   end

@@ -6,16 +6,16 @@ defmodule Exy.UI.Notification do
 
   defstruct [:id, :level, :text]
 
-  @spec new(map() | keyword() | String.t()) :: t()
+  @spec new(t() | map() | keyword() | String.t()) :: t()
+  def new(%__MODULE__{} = notification), do: notification
   def new(text) when is_binary(text), do: %__MODULE__{text: text, level: :info}
-
   def new(fields) when is_list(fields), do: fields |> Map.new() |> new()
 
   def new(fields) when is_map(fields) do
     %__MODULE__{
-      id: Map.get(fields, :id) || Map.get(fields, "id"),
-      level: Map.get(fields, :level) || Map.get(fields, "level") || :info,
-      text: Map.get(fields, :text) || Map.get(fields, "text") || ""
+      id: Map.get(fields, :id),
+      level: Map.get(fields, :level, :info),
+      text: Map.get(fields, :text, "")
     }
   end
 end
