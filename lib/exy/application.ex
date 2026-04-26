@@ -9,6 +9,7 @@ defmodule Exy.Application do
 
     children = [
       {Registry, keys: :unique, name: Exy.Registry},
+      Exy.Telemetry,
       {Jido, name: Jido, otp_app: :exy},
       Exy.Jido,
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Subagents.Supervisor},

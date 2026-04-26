@@ -47,7 +47,12 @@ defmodule Exy.Plugin.Manager do
     if Map.has_key?(state.plugins, module) do
       {:reply, {:error, :already_loaded}, state}
     else
-      case start_plugin(module, opts) do
+      result =
+        Exy.Telemetry.span([:exy, :plugin, :load], %{plugin: module}, fn ->
+          start_plugin(module, opts)
+        end)
+
+      case result do
         {:ok, entry} -> {:reply, :ok, put_plugin(state, module, entry)}
         {:error, reason} -> {:reply, {:error, reason}, state}
       end
@@ -71,8 +76,19 @@ defmodule Exy.Plugin.Manager do
   end
 
   def handle_call({:dispatch, event, context}, _from, state) do
-    {result, state} = do_dispatch(Map.to_list(state.plugins), event, context, state, [])
+    {result, state} =
+      Exy.Telemetry.span([:exy, :plugin, :dispatch], dispatch_metadata(event, context), fn ->
+        do_dispatch(Map.to_list(state.plugins), event, context, state, [])
+      end)
+
     {:reply, result, state}
+  end
+
+  defp dispatch_metadata(event, context) do
+    %{
+      event_type: Map.get(event, :type),
+      session_id: Map.get(context, :session_id)
+    }
   end
 
   defp start_plugin(module, opts) do

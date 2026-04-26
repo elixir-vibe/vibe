@@ -37,7 +37,8 @@ defmodule Exy.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib priv test mix.exs mix.lock README.md AGENTS.md .formatter.exs .gitignore)
+      files:
+        ~w(config lib priv test mix.exs mix.lock README.md AGENTS.md .formatter.exs .gitignore)
     ]
   end
 
@@ -73,6 +74,9 @@ defmodule Exy.MixProject do
       {:yaml_elixir, "~> 2.12"},
       {:req, "~> 0.5"},
       {:req_llm, "~> 1.10"},
+      {:opentelemetry_api, "~> 1.5"},
+      {:opentelemetry, "~> 1.7"},
+      {:opentelemetry_telemetry, "~> 1.1"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_dna, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.3.1", only: [:dev, :test], runtime: false},

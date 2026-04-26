@@ -129,7 +129,12 @@ defmodule Exy.Session do
   end
 
   def handle_call({:dispatch, %Command{} = command}, _from, state) do
-    {:reply, :ok, handle_command(command, state)}
+    state =
+      Exy.Telemetry.span([:exy, :session, :command], command_metadata(command, state), fn ->
+        handle_command(command, state)
+      end)
+
+    {:reply, :ok, state}
   end
 
   def handle_call({:emit_event, %Event{} = event}, _from, state) do
@@ -351,6 +356,14 @@ defmodule Exy.Session do
 
         {events, true}
     end
+  end
+
+  defp command_metadata(%Command{} = command, state) do
+    %{
+      session_id: state.state.session_id,
+      command: command.type,
+      status: state.state.status
+    }
   end
 
   defp normalize_command(%Command{} = command), do: command

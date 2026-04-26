@@ -25,6 +25,15 @@ defmodule Exy.Paths do
       Path.join(home(), "sessions")
   end
 
+  @spec telemetry_dir() :: String.t()
+  def telemetry_dir do
+    System.get_env("EXY_TELEMETRY_DIR") || Application.get_env(:exy, :telemetry_dir) ||
+      Path.join(home(), "telemetry")
+  end
+
+  @spec telemetry_events() :: String.t()
+  def telemetry_events, do: Path.join(telemetry_dir(), "events.jsonl")
+
   @spec skills_dir() :: String.t()
   def skills_dir, do: Path.join(home(), "skills")
 end

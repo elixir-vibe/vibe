@@ -46,7 +46,8 @@ defmodule Exy.Agent.StreamingTest do
   test "unregister tolerates an exited agent" do
     pid = spawn(fn -> :ok end)
     ref = Process.monitor(pid)
-    assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+    assert_receive {:DOWN, ^ref, :process, ^pid, reason}
+    assert reason in [:normal, :noproc]
 
     assert :ok = Exy.Agent.Streaming.unregister(pid)
   end
