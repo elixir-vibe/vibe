@@ -149,21 +149,22 @@ defmodule Exy.Session.Store do
     :ok
   end
 
-  @spec append_eval_bindings(Code.binding(), keyword()) :: :ok | {:error, term()}
-  def append_eval_bindings(binding, opts) when is_list(binding) do
+  @spec append_eval_state(Code.binding(), Macro.Env.t(), keyword()) :: :ok | {:error, term()}
+  def append_eval_state(binding, %Macro.Env{} = env, opts) when is_list(binding) do
     session_id = Keyword.fetch!(opts, :session_id)
 
     with :ok <- File.mkdir_p(dir()),
-         line <- Jason.encode!(eval_binding_entry(session_id, binding)) <> "\n" do
+         {:ok, entry} <- eval_state_entry(session_id, binding, env),
+         line <- Jason.encode!(entry) <> "\n" do
       File.write(path(session_id), line, [:append])
     end
   end
 
-  @spec eval_bindings(String.t()) :: Code.binding()
-  def eval_bindings(session_id) when is_binary(session_id) do
+  @spec eval_state(String.t()) :: %{binding: Code.binding(), env: Macro.Env.t()} | nil
+  def eval_state(session_id) when is_binary(session_id) do
     session_id
     |> path()
-    |> read_eval_bindings_file()
+    |> read_eval_state_file()
   end
 
   @spec append_ui_event(Event.t(), non_neg_integer()) :: :ok | {:error, term()}
@@ -283,19 +284,18 @@ defmodule Exy.Session.Store do
     }
   end
 
-  defp eval_binding_entry(session_id, binding) do
-    %{
-      "entry_type" => "eval_binding",
-      "session_id" => session_id,
-      "at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "bindings" => encode_eval_bindings(binding)
-    }
-  end
+  defp eval_state_entry(session_id, binding, env) do
+    snapshot = %{binding: binding, env: env}
 
-  defp encode_eval_bindings(binding) do
-    Map.new(binding, fn {name, value} ->
-      {Atom.to_string(name), value |> :erlang.term_to_binary() |> Base.encode64()}
-    end)
+    {:ok,
+     %{
+       "entry_type" => "eval_state",
+       "session_id" => session_id,
+       "at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+       "state" => snapshot |> :erlang.term_to_binary() |> Base.encode64()
+     }}
+  rescue
+    exception -> {:error, exception}
   end
 
   defp encode_ui_event(%Event{} = event, seq) do
@@ -321,15 +321,15 @@ defmodule Exy.Session.Store do
     end
   end
 
-  defp read_eval_bindings_file(path) do
+  defp read_eval_state_file(path) do
     case File.read(path) do
       {:ok, text} ->
         text
         |> String.split("\n", trim: true)
-        |> Enum.reduce([], &decode_eval_binding_line/2)
+        |> Enum.reduce(nil, &decode_eval_state_line/2)
 
       {:error, :enoent} ->
-        []
+        nil
     end
   end
 
@@ -353,25 +353,22 @@ defmodule Exy.Session.Store do
     [ui_events_path(session_id)]
   end
 
-  defp decode_eval_binding_line(line, acc) do
-    with {:ok, %{"entry_type" => "eval_binding", "bindings" => bindings}} <- Jason.decode(line),
-         {:ok, binding} <- decode_eval_bindings(bindings) do
-      binding
+  defp decode_eval_state_line(line, acc) do
+    with {:ok, %{"entry_type" => "eval_state", "state" => encoded}} <- Jason.decode(line),
+         {:ok, state} <- decode_eval_state(encoded) do
+      state
     else
       _ -> acc
     end
   end
 
-  defp decode_eval_bindings(bindings) when is_map(bindings) do
-    bindings
-    |> Enum.reduce_while({:ok, []}, fn {name, encoded}, {:ok, acc} ->
-      with {:ok, binary} <- Base.decode64(encoded),
-           value <- :erlang.binary_to_term(binary, [:safe]) do
-        {:cont, {:ok, [{String.to_atom(name), value} | acc]}}
-      else
-        _ -> {:halt, :error}
-      end
-    end)
+  defp decode_eval_state(encoded) do
+    with {:ok, binary} <- Base.decode64(encoded),
+         %{binding: binding, env: %Macro.Env{} = env} <- :erlang.binary_to_term(binary, [:safe]) do
+      {:ok, %{binding: binding, env: env}}
+    else
+      _ -> :error
+    end
   rescue
     _exception -> :error
   end

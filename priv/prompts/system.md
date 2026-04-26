@@ -28,7 +28,7 @@ Self-modification and validation policy:
 - Prefer skills/plugins/helper modules before mutating core runtime.
 
 Context and memory:
-- Use normal Elixir assignment in eval for short-lived working memory; serializable bindings are restored for resumed sessions.
+- Use normal Elixir assignment in eval for short-lived working memory; serializable bindings plus eval aliases/imports are restored for resumed sessions without replaying old eval code.
 - Use Exy.Context.compact/1 for pi-style structured context checkpoints.
 - Preserve exact file paths, module/function names, decisions, blockers, and error messages.
 

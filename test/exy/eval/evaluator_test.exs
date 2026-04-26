@@ -30,7 +30,13 @@ defmodule Exy.Eval.EvaluatorTest do
     assert output =~ "map"
   end
 
-  test "restores serializable bindings for resumed sessions", %{session_id: session_id} do
+  test "restores serializable eval state for resumed sessions", %{session_id: session_id} do
+    assert {:ok, _output} =
+             Exy.Eval.run(~s(alias String, as: S), session_id: session_id)
+
+    assert {:ok, _output} =
+             Exy.Eval.run(~s(import String, only: [upcase: 1]), session_id: session_id)
+
     assert {:ok, _output} =
              Exy.Eval.run(~s(query = "weather in washington"), session_id: session_id)
 
@@ -38,6 +44,9 @@ defmodule Exy.Eval.EvaluatorTest do
 
     assert {:ok, ~s("weather in washington tomorrow")} =
              Exy.Eval.run(~s(query <> " tomorrow"), session_id: session_id)
+
+    assert {:ok, ~s("RAIN")} = Exy.Eval.run("S.upcase(\"rain\")", session_id: session_id)
+    assert {:ok, ~s("WIND")} = Exy.Eval.run("upcase(\"wind\")", session_id: session_id)
   end
 
   test "preloads plugin API aliases into session evaluators", %{session_id: session_id} do

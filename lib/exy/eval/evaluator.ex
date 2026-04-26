@@ -31,11 +31,13 @@ defmodule Exy.Eval.Evaluator do
 
     persist? = Keyword.get(opts, :persist?, true)
 
+    {binding, env} = initial_context(session_id, persist?)
+
     {:ok,
      %__MODULE__{
        session_id: session_id,
-       binding: if(persist?, do: Store.eval_bindings(session_id), else: []),
-       env: initial_env(),
+       binding: binding,
+       env: env,
        persist?: persist?
      }}
   end
@@ -87,10 +89,18 @@ defmodule Exy.Eval.Evaluator do
   defp persist_bindings(%{persist?: false}), do: :ok
 
   defp persist_bindings(state) do
-    state.binding
-    |> Enum.filter(fn {_name, value} -> serializable_term?(value) end)
-    |> Store.append_eval_bindings(session_id: state.session_id)
+    binding = Enum.filter(state.binding, fn {_name, value} -> serializable_term?(value) end)
+    Store.append_eval_state(binding, state.env, session_id: state.session_id)
   end
+
+  defp initial_context(session_id, true) do
+    case Store.eval_state(session_id) do
+      %{binding: binding, env: %Macro.Env{} = env} -> {binding, plugin_env(env)}
+      nil -> {[], initial_env()}
+    end
+  end
+
+  defp initial_context(_session_id, false), do: {[], initial_env()}
 
   defp initial_env do
     {_result, _binding, env} =

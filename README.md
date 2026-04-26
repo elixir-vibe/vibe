@@ -196,7 +196,7 @@ Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
 
 ### Runtime/eval helpers
 
-`eval` is stateful when called with a session id. Normal Elixir variables and aliases persist for that session. Use `Exy.Eval.once/2` for explicit one-off evaluation.
+`eval` is stateful when called with a session id. Normal Elixir variables, aliases, imports, and requires persist for that session. Serializable eval state is snapshotted to the canonical session log and restored without replaying old eval code. Use `Exy.Eval.once/2` for explicit one-off evaluation.
 
 ```elixir
 Exy.Eval.run(~s(query = "weather in washington"), session_id: session_id)
