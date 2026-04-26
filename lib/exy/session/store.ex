@@ -33,6 +33,7 @@ defmodule Exy.Session.Store do
     "selector_confirmed" => :selector_confirmed,
     "selector_moved" => :selector_moved,
     "selector_opened" => :selector_opened,
+    "session_new_requested" => :session_new_requested,
     "session_selected" => :session_selected,
     "slash_command_submitted" => :slash_command_submitted,
     "status_changed" => :status_changed,

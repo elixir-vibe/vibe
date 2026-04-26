@@ -7,6 +7,8 @@ defmodule Exy.UI.SlashCommands do
   @commands [
     %{value: "/sessions", label: "/sessions", detail: "Browse and resume stored sessions"},
     %{value: "/session", label: "/session", detail: "Browse stored sessions"},
+    %{value: "/new", label: "/new", detail: "Start a new session"},
+    %{value: "/attach", label: "/attach", detail: "Attach by session id"},
     %{value: "/model", label: "/model", detail: "Choose model"},
     %{value: "/skill", label: "/skill", detail: "Choose skill"},
     %{value: "/clear", label: "/clear", detail: "Clear visible messages"},
@@ -27,6 +29,20 @@ defmodule Exy.UI.SlashCommands do
     do: {:events, [Event.new(:messages_cleared, ui_state.session_id, %{})]}
 
   def handle("compact", _args, _ui_state), do: :compact
+
+  def handle(command, _args, ui_state) when command in ["new", "n"] do
+    {:events, [Event.new(:session_new_requested, ui_state.session_id, %{})]}
+  end
+
+  def handle(command, args, ui_state) when command in ["attach", "a"] do
+    case String.trim(args) do
+      "" ->
+        handle("sessions", "", ui_state)
+
+      session_id ->
+        {:events, [Event.new(:session_selected, ui_state.session_id, %{session_id: session_id})]}
+    end
+  end
 
   def handle(command, _args, ui_state) do
     case selector(command, ui_state) do
@@ -71,6 +87,9 @@ defmodule Exy.UI.SlashCommands do
      ]}
   end
 
+  def selector_action(%{selector: :command_palette, item: "/" <> command}, _ui_state),
+    do: {:command, command}
+
   def selector_action(%{selector: :command_palette, item: command}, _ui_state)
       when is_binary(command),
       do: {:command, command}
@@ -114,16 +133,19 @@ defmodule Exy.UI.SlashCommands do
   defp selector(_command, _ui_state), do: nil
 
   defp session_label(session) do
-    preview = session.first_message || session.last_message_preview || "empty session"
+    preview =
+      Map.get(session, :first_message) || Map.get(session, :last_message_preview) ||
+        "empty session"
+
     marker = if Map.get(session, :live?), do: "● ", else: "  "
     marker <> preview
   end
 
   defp session_detail(session) do
     [
-      short_id(session.id),
-      relative_time(session.updated_at),
-      message_count(session.message_count)
+      short_id(Map.get(session, :id)),
+      relative_time(Map.get(session, :updated_at)),
+      message_count(Map.get(session, :message_count))
     ]
     |> Enum.reject(&(&1 in [nil, ""]))
     |> Enum.join("  ")

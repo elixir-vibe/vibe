@@ -101,8 +101,35 @@ defmodule Exy.TUI.App do
     {:noreply, %{state | active_sessions_timer: timer}}
   end
 
+  def handle_info(
+        {Session, :event, %{type: :session_selected, data: %{session_id: session_id}} = event},
+        state
+      ) do
+    notify_subscribers(state, event)
+
+    state =
+      case switch_session(state, session_id) do
+        {:ok, state} -> state
+        {:error, reason} -> notify_session_switch_failed(state, session_id, reason)
+      end
+
+    {:noreply, %{state | events: [event | state.events]}}
+  end
+
+  def handle_info({Session, :event, %{type: :session_new_requested} = event}, state) do
+    notify_subscribers(state, event)
+
+    state =
+      case start_new_session(state) do
+        {:ok, state} -> state
+        {:error, reason} -> notify_session_switch_failed(state, "new", reason)
+      end
+
+    {:noreply, %{state | events: [event | state.events]}}
+  end
+
   def handle_info({Session, :event, event}, state) do
-    Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
+    notify_subscribers(state, event)
     {:noreply, %{state | events: [event | state.events]}}
   end
 
@@ -111,6 +138,40 @@ defmodule Exy.TUI.App do
   end
 
   def handle_info(_message, state), do: {:noreply, state}
+
+  defp notify_subscribers(state, event) do
+    Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
+  end
+
+  defp switch_session(state, session_id) do
+    with {:ok, session} <- Session.lookup(session_id),
+         :ok <- Session.detach(state.ui, self()),
+         {:ok, _snapshot, _cursor} <- Session.attach(session, self()) do
+      {:ok, %{state | ui: session, autocomplete: nil}}
+    end
+  end
+
+  defp start_new_session(state) do
+    current = Session.state(state.ui)
+
+    with {:ok, session} <- Session.start_link(cwd: current.cwd, model: current.model),
+         :ok <- Session.detach(state.ui, self()),
+         {:ok, _snapshot, _cursor} <- Session.attach(session, self()) do
+      {:ok, %{state | ui: session, autocomplete: nil}}
+    end
+  end
+
+  defp notify_session_switch_failed(state, session_id, reason) do
+    Session.dispatch(
+      state.ui,
+      Command.new(:notification_added, %{
+        level: :error,
+        text: "could not attach #{session_id}: #{inspect(reason)}"
+      })
+    )
+
+    state
+  end
 
   defp publish_active_sessions(%{remote_node: nil} = state) do
     case Exy.Remote.connect() do

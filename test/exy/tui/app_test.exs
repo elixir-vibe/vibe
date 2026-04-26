@@ -40,6 +40,28 @@ defmodule Exy.TUI.AppTest do
     assert App.snapshot(app).ui.selector == nil
   end
 
+  test "new slash command switches to a fresh session" do
+    {:ok, app} = App.start_link()
+    old_session = App.snapshot(app).ui.session_id
+
+    :ok = App.key(app, {:insert, "/new"})
+    :ok = App.key(app, :submit)
+    Process.sleep(20)
+
+    assert App.snapshot(app).ui.session_id != old_session
+  end
+
+  test "attach slash command switches to an existing session" do
+    {:ok, target} = Exy.Session.start(session_id: "attach-target", persist?: false)
+    {:ok, app} = App.start_link()
+
+    :ok = App.key(app, {:insert, "/attach attach-target"})
+    :ok = App.key(app, :submit)
+    Process.sleep(20)
+
+    assert App.snapshot(app).ui.session_id == Exy.Session.state(target).session_id
+  end
+
   test "offers generic slash command autocomplete" do
     {:ok, app} = App.start_link()
 

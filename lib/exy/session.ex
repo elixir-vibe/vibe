@@ -56,6 +56,9 @@ defmodule Exy.Session do
   def attach(server, pid \\ self(), opts \\ []) when is_pid(pid),
     do: GenServer.call(server, {:attach, pid, opts})
 
+  @spec detach(GenServer.server(), pid()) :: :ok
+  def detach(server, pid \\ self()) when is_pid(pid), do: GenServer.call(server, {:detach, pid})
+
   @spec state(GenServer.server()) :: State.t()
   def state(server), do: GenServer.call(server, :state)
 
@@ -115,6 +118,14 @@ defmodule Exy.Session do
     replay_after = Keyword.get(opts, :after, state.event_seq)
     replay_events(state, replay_after, pid)
     {:reply, {:ok, state.state, state.event_seq}, state}
+  end
+
+  def handle_call({:detach, pid}, _from, state) do
+    {removed, subscribers} =
+      Enum.split_with(state.subscribers, fn {_ref, subscriber} -> subscriber == pid end)
+
+    Enum.each(removed, fn {ref, _subscriber} -> Process.demonitor(ref, [:flush]) end)
+    {:reply, :ok, %{state | subscribers: Map.new(subscribers)}}
   end
 
   def handle_call({:dispatch, %Command{} = command}, _from, state) do
