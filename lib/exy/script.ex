@@ -31,7 +31,7 @@ defmodule Exy.Script do
     File.write!(path, source)
 
     try do
-      run(path, Keyword.put_new(opts, :cwd, tmp_dir))
+      run(path, opts)
     after
       File.rm_rf(tmp_dir)
     end

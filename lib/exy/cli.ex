@@ -51,10 +51,7 @@ defmodule Exy.CLI do
       invalid == [] and match?(["send", _session_id | _], args) ->
         ["send", session_id | prompt_parts] = args
 
-        print_result(
-          server_rpc(:send_prompt, [session_id, Enum.join(prompt_parts, " ")]),
-          opts
-        )
+        print_result(remote_send_prompt(session_id, Enum.join(prompt_parts, " ")), opts)
 
       invalid == [] and match?([command] when command in ["attach", "a"], args) ->
         attach_default_session(opts)
@@ -137,7 +134,7 @@ defmodule Exy.CLI do
   end
 
   defp sessions_command([], opts) do
-    case server_rpc(:sessions, []) do
+    case remote_sessions() do
       {:ok, sessions} -> print_result({:ok, filter_sessions(sessions, opts)}, opts)
       error -> print_result(error, opts)
     end
@@ -149,14 +146,14 @@ defmodule Exy.CLI do
   end
 
   defp new_session_tui(opts) do
-    case server_rpc(:new_session, [[model: Exy.Agent.Model.resolve(opts)]]) do
+    case remote_new_session(model: Exy.Agent.Model.resolve(opts)) do
       {:ok, %{id: session_id}} -> attach_session(session_id, opts)
       other -> print_result(other, opts)
     end
   end
 
   defp new_session(opts) do
-    print_result(server_rpc(:new_session, [[model: Exy.Agent.Model.resolve(opts)]]), opts)
+    print_result(remote_new_session(model: Exy.Agent.Model.resolve(opts)), opts)
   end
 
   defp attach_default_session(opts) do
@@ -176,7 +173,7 @@ defmodule Exy.CLI do
   end
 
   defp attach_session(session_id, opts) do
-    case server_rpc(:session_pid, [session_id]) do
+    case remote_session_pid(session_id) do
       {:ok, session} ->
         opts = Keyword.put_new(opts, :remote_node, session_node(session))
         tui(opts, session_server: session, session_id: session_id)
@@ -272,23 +269,41 @@ defmodule Exy.CLI do
   end
 
   defp latest_live_remote_session_id do
-    case server_rpc(:sessions, []) do
+    case remote_sessions() do
       {:ok, sessions} -> sessions |> Enum.find(& &1[:live?]) |> then(&(&1 && &1.id))
       {:error, _reason} -> nil
     end
   end
 
   defp new_remote_session_id(opts) do
-    case server_rpc(:new_session, [[model: Exy.Agent.Model.resolve(opts)]]) do
+    case remote_new_session(model: Exy.Agent.Model.resolve(opts)) do
       {:ok, %{id: id}} -> id
       {:error, reason} -> raise "cannot create Exy session: #{inspect(reason)}"
     end
   end
 
-  defp server_rpc(function, args) do
+  defp remote_sessions, do: remote_call(Exy.Session, :list, [])
+
+  defp remote_session_pid(session_id), do: remote_call(Exy.Session, :lookup, [session_id])
+
+  defp remote_new_session(opts) do
+    with {:ok, pid} <- remote_call(Exy.Session, :start, [opts]) do
+      {:ok, %{id: Exy.Session.state(pid).session_id}}
+    end
+  end
+
+  defp remote_send_prompt(session_id, text) do
+    with {:ok, pid} <- remote_session_pid(session_id),
+         :ok <-
+           Exy.Session.dispatch(pid, %Exy.UI.Command{type: :submit_prompt, data: %{text: text}}) do
+      {:ok, %{sent: true, session_id: session_id}}
+    end
+  end
+
+  defp remote_call(module, function, args) do
     with :ok <- ensure_server_running(),
          {:ok, node} <- Exy.Remote.connect() do
-      :rpc.call(node, Exy.Server.RPC, function, args)
+      :rpc.call(node, module, function, args)
     else
       {:error, reason} -> {:error, {:server_not_running, reason}}
     end

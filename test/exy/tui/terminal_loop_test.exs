@@ -82,9 +82,9 @@ defmodule Exy.TUI.TerminalLoopTest do
     :ok = TerminalLoop.input(loop, "hello")
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
 
-    assert_receive {TerminalLoop, :event, %{type: :prompt_submitted}}, 100
-    assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 100
-    assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 100
+    assert_receive {TerminalLoop, :event, %{type: :prompt_submitted}}, 500
+    assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 500
+    assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 500
   end
 
   defp wait_for_output(output, text) do

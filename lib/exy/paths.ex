@@ -3,8 +3,7 @@ defmodule Exy.Paths do
 
   @spec home() :: String.t()
   def home do
-    :exy
-    |> Application.get_env(:home_dir, "~/.exy")
+    (System.get_env("EXY_HOME") || Application.get_env(:exy, :home_dir, "~/.exy"))
     |> Path.expand()
   end
 

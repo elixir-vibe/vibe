@@ -111,7 +111,7 @@ defmodule Exy.TUI.App do
   end
 
   defp publish_active_sessions(state) do
-    case :rpc.call(state.remote_node, Exy.Server.RPC, :active_session_count, []) do
+    case :rpc.call(state.remote_node, Exy.Session, :active_count, []) do
       count when is_integer(count) ->
         count = max(count, minimum_visible_session_count(state))
 

@@ -16,13 +16,6 @@ defmodule Exy.Remote do
     end
   end
 
-  @spec call(atom(), list()) :: term()
-  def call(function, args \\ []) when is_atom(function) and is_list(args) do
-    with {:ok, node} <- connect() do
-      :rpc.call(node, Exy.Server.RPC, function, args)
-    end
-  end
-
   defp ensure_distribution do
     cookie = Cookie.get()
 

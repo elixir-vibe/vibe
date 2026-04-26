@@ -100,10 +100,15 @@ defmodule Exy.TUI.RuntimeTest do
   test "mix exy accepts input in a real PTY, escape cancels, and double ctrl-c exits" do
     {:ok, terminal} = Terminal.start_link(cols: @cols, rows: @rows)
 
+    exy_home =
+      Path.join(System.tmp_dir!(), "exy-runtime-test-#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(exy_home)
+
     {:ok, pty} =
       Ghostty.PTY.start_link(
         cmd: "/bin/sh",
-        args: ["-lc", "cd #{File.cwd!()} && mix exy"],
+        args: ["-lc", "cd #{File.cwd!()} && EXY_HOME=#{shell_quote(exy_home)} mix exy"],
         cols: @cols,
         rows: @rows,
         reader_start_timeout: 5_000
@@ -132,8 +137,11 @@ defmodule Exy.TUI.RuntimeTest do
       assert {:exit, 0, _output} = wait_for_exit("", @exit_timeout_ms)
     after
       if Process.alive?(pty), do: Ghostty.PTY.close(pty)
+      File.rm_rf(exy_home)
     end
   end
+
+  defp shell_quote(value), do: "'" <> String.replace(value, "'", "'\\''") <> "'"
 
   defp type_and_assert_stable_frames(pty, terminal, text, output) do
     text

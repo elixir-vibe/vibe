@@ -11,6 +11,7 @@ defmodule Exy.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
       description: "BEAM-native coding agent substrate for Elixir/OTP projects",
       source_url: @source_url,
       package: package(),
@@ -59,6 +60,9 @@ defmodule Exy.MixProject do
       strip_beams: [keep: ["Docs"]]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_env), do: ["lib"]
 
   defp deps do
     [

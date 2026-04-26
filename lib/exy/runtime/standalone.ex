@@ -117,6 +117,7 @@ defmodule Exy.Runtime.Standalone do
     quote do
       defmodule ExyRuntimeChild do
         def run do
+          Logger.configure(level: :none)
           context = %{binding: [], env: Code.env_for_eval([])}
           loop(context)
         end
@@ -132,7 +133,7 @@ defmodule Exy.Runtime.Standalone do
             packet ->
               {reply, context} = handle(packet, context)
               payload = :erlang.term_to_binary(reply)
-              IO.binwrite(:stdio, <<byte_size(payload)::32, payload::binary>>)
+              write_packet(payload)
               loop(context)
           end
         end
@@ -142,6 +143,12 @@ defmodule Exy.Runtime.Standalone do
                packet when is_binary(packet) <- IO.binread(:stdio, size) do
             packet
           end
+        end
+
+        defp write_packet(payload) do
+          :file.write(:standard_io, <<byte_size(payload)::32, payload::binary>>)
+        catch
+          :exit, _reason -> :ok
         end
 
         defp handle(packet, context) do

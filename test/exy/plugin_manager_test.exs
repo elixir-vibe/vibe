@@ -1,57 +1,7 @@
 defmodule Exy.PluginManagerTest do
   use ExUnit.Case, async: false
 
-  defmodule StatusWorker do
-    use GenServer
-
-    def start_link(opts), do: GenServer.start_link(__MODULE__, opts)
-
-    @impl true
-    def init(opts) do
-      Exy.Plugin.UI.set_status(opts[:session_id], :worker, "worker ready")
-      {:ok, opts}
-    end
-  end
-
-  defmodule PlainWorker do
-    use GenServer
-
-    def start_link(opts), do: GenServer.start_link(__MODULE__, opts)
-    @impl true
-    def init(opts), do: {:ok, opts}
-  end
-
-  defmodule BackgroundPlugin do
-    use Exy.Plugin
-
-    @impl true
-    def init(opts), do: {:ok, %{session_id: Keyword.fetch!(opts, :session_id)}}
-
-    @impl true
-    def children(_state, context), do: [{StatusWorker, [session_id: context.session_id]}]
-  end
-
-  defmodule PartialFailurePlugin do
-    use Exy.Plugin
-
-    @impl true
-    def children(_state, _context) do
-      [
-        {PlainWorker, []},
-        {Module.concat(__MODULE__, MissingWorker), []}
-      ]
-    end
-  end
-
-  defmodule EventPlugin do
-    use Exy.Plugin
-
-    @impl true
-    def handle_event(%{type: :prompt_submitted, text: text}, context, state) do
-      Exy.Plugin.UI.set_status(context.session_id, :prompt, "prompt: #{text}")
-      {:ok, state}
-    end
-  end
+  alias Exy.Test.PluginManagerFixtures.{BackgroundPlugin, EventPlugin, PartialFailurePlugin}
 
   test "plugin children run under OTP supervision and can update UI status" do
     session_id = "plugin-ui-session"
