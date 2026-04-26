@@ -14,7 +14,7 @@ defmodule Exy.Plugin do
   @callback init(keyword()) :: {:ok, term()} | {:error, term()}
   @callback handle_event(event(), context(), term()) :: {result(), term()}
   @callback actions(term()) :: [module()]
-  @callback commands(term()) :: [map()]
+  @callback commands(term()) :: [module() | map()]
   @callback children(term()) :: [Supervisor.child_spec() | {module(), term()} | module()]
   @callback children(term(), map()) :: [Supervisor.child_spec() | {module(), term()} | module()]
   @callback shutdown(term()) :: :ok

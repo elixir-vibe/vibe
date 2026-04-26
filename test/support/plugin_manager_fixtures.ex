@@ -64,3 +64,34 @@ defmodule Exy.Test.PluginManagerFixtures.EventPlugin do
     {:ok, state}
   end
 end
+
+defmodule Exy.Test.PluginManagerFixtures.PluginCommand do
+  @moduledoc false
+
+  @behaviour Exy.UI.SlashCommand
+
+  @impl true
+  def spec, do: %{name: "fixture", description: "Fixture plugin command"}
+
+  @impl true
+  def run(_args, ui_state) do
+    {:events,
+     [
+       Exy.UI.Event.new(:notification_added, ui_state.session_id, %{
+         level: :info,
+         text: "fixture command"
+       })
+     ]}
+  end
+end
+
+defmodule Exy.Test.PluginManagerFixtures.CommandPlugin do
+  @moduledoc false
+
+  use Exy.Plugin
+
+  alias Exy.Test.PluginManagerFixtures.PluginCommand
+
+  @impl true
+  def commands(_state), do: [PluginCommand]
+end

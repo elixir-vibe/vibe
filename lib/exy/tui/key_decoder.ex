@@ -23,31 +23,27 @@ defmodule Exy.TUI.KeyDecoder do
   def decode_event(%Ghostty.KeyEvent{key: :o, mods: [:ctrl]}), do: [:toggle_truncation]
   def decode_event(%Ghostty.KeyEvent{key: :b, mods: [:alt]}), do: [:word_left]
   def decode_event(%Ghostty.KeyEvent{key: :f, mods: [:alt]}), do: [:word_right]
+
+  def decode_event(%Ghostty.KeyEvent{utf8: utf8}) when is_binary(utf8) and byte_size(utf8) > 1,
+    do: [{:paste, utf8}]
+
   def decode_event(%Ghostty.KeyEvent{utf8: utf8}) when is_binary(utf8), do: [{:insert, utf8}]
   def decode_event(%Ghostty.KeyEvent{}), do: []
 
   @spec decode(binary()) :: [key()]
-  def decode("\eb"), do: [:word_left]
-  def decode("\ef"), do: [:word_right]
+  def decode(""), do: []
   def decode("\e\r"), do: [:enter]
   def decode("\e\n"), do: [:enter]
-  def decode("\e[D"), do: [:left]
-  def decode("\e[C"), do: [:right]
-  def decode("\e[A"), do: [:up]
-  def decode("\e[B"), do: [:down]
-  def decode("\e[H"), do: [:home]
-  def decode("\e[F"), do: [:end]
-  def decode("\e[3~"), do: [:delete]
-  def decode("\u007F"), do: [:backspace]
-  def decode("\b"), do: [:backspace]
-  def decode("\r"), do: [:submit]
-  def decode("\n"), do: [:enter]
-  def decode("\t"), do: [:tab]
-  def decode("\e"), do: [:cancel]
-  def decode(<<3>>), do: [:cancel]
   def decode(<<15>>), do: [:toggle_truncation]
 
   def decode(data) when is_binary(data) do
+    case Ghostty.KeyDecoder.decode(data) do
+      {:key, event} -> decode_event(event)
+      {:data, data} -> decode_data(data)
+    end
+  end
+
+  defp decode_data(data) do
     cond do
       printable?(data) and String.length(data) == 1 -> [{:insert, data}]
       printable?(data) -> [{:paste, data}]

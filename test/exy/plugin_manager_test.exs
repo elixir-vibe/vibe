@@ -1,7 +1,12 @@
 defmodule Exy.PluginManagerTest do
   use ExUnit.Case, async: false
 
-  alias Exy.Test.PluginManagerFixtures.{BackgroundPlugin, EventPlugin, PartialFailurePlugin}
+  alias Exy.Test.PluginManagerFixtures.{
+    BackgroundPlugin,
+    CommandPlugin,
+    EventPlugin,
+    PartialFailurePlugin
+  }
 
   test "plugin children run under OTP supervision and can update UI status" do
     session_id = "plugin-ui-session"
@@ -79,6 +84,23 @@ defmodule Exy.PluginManagerTest do
              Exy.Plugin.Manager.load(EventPlugin, session_id: "duplicate-plugin")
 
     assert :ok = Exy.Plugin.Manager.unload(EventPlugin)
+  end
+
+  test "plugins can register slash command modules" do
+    assert :ok = Exy.Plugin.Manager.load(CommandPlugin, session_id: "plugin-command")
+
+    assert Enum.any?(Exy.UI.SlashCommands.Registry.specs(), &(&1.name == "fixture"))
+
+    {:ok, server} = Exy.Session.start_link(session_id: "plugin-command-session")
+
+    assert :ok =
+             Exy.Session.dispatch(
+               server,
+               {:slash_command_submitted, %{command: "fixture", args: ""}}
+             )
+
+    assert Enum.any?(Exy.Session.state(server).notifications, &(&1.text == "fixture command"))
+    assert :ok = Exy.Plugin.Manager.unload(CommandPlugin)
   end
 
   test "partial child startup failure cleans up already started children" do

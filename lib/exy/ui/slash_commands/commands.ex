@@ -1,0 +1,29 @@
+defmodule Exy.UI.SlashCommands.Commands do
+  @moduledoc false
+
+  @behaviour Exy.UI.SlashCommand
+
+  alias Exy.UI.Event
+  alias Exy.UI.SlashCommands.Registry
+
+  @impl true
+  def spec, do: %{name: "commands", description: "Open command palette"}
+
+  @impl true
+  def run(_args, ui_state) do
+    selector = %{
+      kind: :command_palette,
+      title: "Commands",
+      items: Enum.map(Registry.specs(), &("/" <> &1.name)),
+      selected: 0,
+      limit: 8
+    }
+
+    {:events, [Event.new(:selector_opened, ui_state.session_id, selector)]}
+  end
+
+  @impl true
+  def selector_action("/" <> command, _ui_state), do: {:command, command}
+  def selector_action(command, _ui_state) when is_binary(command), do: {:command, command}
+  def selector_action(_item, _ui_state), do: :ignore
+end
