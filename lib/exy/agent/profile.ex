@@ -3,32 +3,8 @@ defmodule Exy.Agent.Profile do
   User-editable agent role/model profiles backed by TOML.
   """
 
-  @default """
-  default_model = "openai_codex:gpt-5.5"
-
-  [providers.openrouter]
-  app_title = "Exy"
-
-  [roles.scout]
-  model = "openrouter:anthropic/claude-3.5-haiku"
-  system = "Find relevant facts. Do not edit files."
-  tools = ["read", "eval"]
-
-  [roles.researcher]
-  model = "openrouter:perplexity/sonar-pro"
-  system = "Research current external information. Return concise findings and sources."
-  tools = ["eval"]
-
-  [roles.coder]
-  model = "openai_codex:gpt-5.5"
-  system = "Implement minimal code changes and validate."
-  tools = ["read", "write", "edit", "eval", "ast", "lsp"]
-
-  [roles.reviewer]
-  model = "openrouter:anthropic/claude-sonnet-4"
-  system = "Review correctness, maintainability, and risks. Do not edit files."
-  tools = ["read", "eval", "ast", "lsp"]
-  """
+  @default_path Application.app_dir(:exy, "priv/config/agent-profiles.toml")
+  @external_resource @default_path
 
   @spec path() :: String.t()
   def path, do: Exy.Paths.agent_profiles()
@@ -39,7 +15,7 @@ defmodule Exy.Agent.Profile do
 
     unless File.exists?(path) do
       File.mkdir_p!(Path.dirname(path))
-      File.write!(path, @default)
+      File.cp!(@default_path, path)
     end
 
     :ok
