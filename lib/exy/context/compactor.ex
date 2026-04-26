@@ -13,7 +13,7 @@ defmodule Exy.Context.Compactor do
 
   @spec compact(keyword()) :: {:ok, compact_result()} | {:error, term()}
   def compact(opts \\ []) do
-    events = Keyword.get_lazy(opts, :events, fn -> Exy.Trajectory.Store.list(opts) end)
+    events = Keyword.get_lazy(opts, :events, fn -> Exy.Session.Store.trajectory(opts) end)
     compact(events, opts)
   end
 
@@ -33,7 +33,7 @@ defmodule Exy.Context.Compactor do
           summary <> Serializer.format_file_operations(Serializer.file_operations(old_events))
 
         event =
-          Exy.Trajectory.Store.append(:compaction, %{
+          Exy.Session.Store.append_trajectory(:compaction, %{
             summary: summary,
             tokens_before: Serializer.estimate_tokens(events),
             kept_event_ids: Enum.map(kept_events, & &1.id),
@@ -71,7 +71,7 @@ defmodule Exy.Context.Compactor do
   end
 
   defp ask_llm(prompt, opts) do
-    ask = &Exy.Agent.Direct.ask/2
+    ask = &Exy.Model.Direct.ask/2
     ask.(prompt, opts)
   end
 

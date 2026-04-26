@@ -3,7 +3,7 @@ defmodule Exy.Agent do
   Convenience helpers for starting Exy's Jido-backed coding agent.
   """
 
-  alias Exy.Trajectory.Store
+  alias Exy.Session.Store
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -24,7 +24,7 @@ defmodule Exy.Agent do
       Keyword.get(opts, :session_id) || Exy.Session.Processes.session_id(pid) ||
         Exy.Session.Store.new_id()
 
-    Store.append(:user_message, %{prompt: prompt}, session_id: session_id)
+    Store.append_trajectory(:user_message, %{prompt: prompt}, session_id: session_id)
 
     result =
       try do
@@ -42,10 +42,10 @@ defmodule Exy.Agent do
         {:error, reason} -> %{error: inspect(reason)}
       end
 
-    Store.append(:assistant_message, data, session_id: session_id)
+    Store.append_trajectory(:assistant_message, data, session_id: session_id)
 
-    if usage = Exy.Agent.Usage.from_response(result) do
-      Store.append(:llm_usage, usage, session_id: session_id)
+    if usage = Exy.Model.Usage.from_response(result) do
+      Store.append_trajectory(:llm_usage, usage, session_id: session_id)
     end
 
     result
@@ -80,12 +80,12 @@ defmodule Exy.Agent do
     Application.put_env(
       :jido_ai,
       :model_aliases,
-      Map.put(current, :exy, Exy.Agent.Model.resolve(opts))
+      Map.put(current, :exy, Exy.Model.Config.resolve(opts))
     )
   end
 
   defp ensure_provider_credentials(opts) do
-    case Exy.Agent.Model.resolve(opts) do
+    case Exy.Model.Config.resolve(opts) do
       "openai_codex:" <> _model -> Exy.Auth.Codex.ensure_fresh()
       _model -> :ok
     end

@@ -20,7 +20,6 @@ defmodule Exy.Application do
       Exy.UI.Bus,
       Exy.Session.Processes,
       Exy.Agent.Streaming,
-      Exy.Trajectory.Store,
       Exy.Plugin.Manager
     ]
 

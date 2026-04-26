@@ -16,15 +16,17 @@ defmodule Exy.SessionTest do
       File.rm_rf(session_dir)
     end)
 
-    Exy.Trajectory.Store.clear()
+    Exy.Session.Store.clear()
     {:ok, session_dir: session_dir}
   end
 
   test "JSONL persists trajectory and UI events in one canonical file" do
     session_id = "test-session"
-    Exy.Trajectory.Store.append(:user_message, %{prompt: "hello"}, session_id: session_id)
+    Exy.Session.Store.append_trajectory(:user_message, %{prompt: "hello"}, session_id: session_id)
 
-    Exy.Trajectory.Store.append(:llm_usage, %{input_tokens: 2, output_tokens: 3, total_tokens: 5},
+    Exy.Session.Store.append_trajectory(
+      :llm_usage,
+      %{input_tokens: 2, output_tokens: 3, total_tokens: 5},
       session_id: session_id
     )
 
@@ -51,9 +53,12 @@ defmodule Exy.SessionTest do
 
   test "trajectory-only sessions project basic visible history" do
     session_id = "trajectory-only"
-    Exy.Trajectory.Store.append(:user_message, %{prompt: "old hello"}, session_id: session_id)
 
-    Exy.Trajectory.Store.append(:assistant_message, %{result: "old response"},
+    Exy.Session.Store.append_trajectory(:user_message, %{prompt: "old hello"},
+      session_id: session_id
+    )
+
+    Exy.Session.Store.append_trajectory(:assistant_message, %{result: "old response"},
       session_id: session_id
     )
 

@@ -3,7 +3,7 @@ defmodule Exy.UI.Reducer do
   Pure reducer for Exy's UI-neutral event stream.
   """
 
-  alias Exy.Agent.Usage
+  alias Exy.Model.Usage
   alias Exy.Support.Lists
   alias Exy.UI.{Event, State}
 

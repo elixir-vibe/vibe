@@ -30,11 +30,11 @@ defmodule Mix.Tasks.Exy do
     * `--model <provider:model>` - ReqLLM/Jido model.
       Defaults to `EXY_MODEL` or `openai_codex:gpt-5.5`.
     * `--api-key <key>` - API key for OpenAI-compatible requests.
-    * `--system-prompt <text>` - Override system prompt for direct TUI/`--no-agent` calls.
+    * `--system-prompt <text>` - Override system prompt for direct TUI/`--direct` calls.
     * `--mode <text|json>` - Output mode. Defaults to `text`.
     * `--print`, `-p` - Non-interactive mode: process prompt and exit.
-    * `--no-agent` - Use direct ReqLLM call instead of Jido.AI agent.
-    * `--stream` - Stream direct ReqLLM calls. Default for `--no-agent`.
+    * `--direct` - Use direct ReqLLM call instead of the tool-capable Jido.AI agent.
+    * `--stream` - Stream direct ReqLLM calls. Default for `--direct`.
     * `--no-stream` - Disable direct ReqLLM streaming.
     * `--eval <code>` - Evaluate Elixir code through `Exy.Eval`.
     * `--compact` - Compact stored trajectory context.

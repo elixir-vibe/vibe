@@ -1,4 +1,4 @@
-defmodule Exy.Agent.Direct do
+defmodule Exy.Model.Direct do
   @moduledoc false
 
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
@@ -29,7 +29,7 @@ defmodule Exy.Agent.Direct do
   end
 
   defp request(prompt, opts) do
-    model = Exy.Agent.Model.resolve(opts)
+    model = Exy.Model.Config.resolve(opts)
     system = Keyword.get_lazy(opts, :system, &Exy.Prompts.system/0)
 
     messages = [
@@ -79,21 +79,23 @@ defmodule Exy.Agent.Direct do
   defp maybe_put_chatgpt_account_id(opts, _credentials), do: opts
 
   defp record_request(prompt, model, session_id) do
-    Exy.Trajectory.Store.append(:user_message, %{prompt: prompt, model: model},
+    Exy.Session.Store.append_trajectory(:user_message, %{prompt: prompt, model: model},
       session_id: session_id
     )
   end
 
   defp record_response({:ok, response}, session_id) do
-    Exy.Trajectory.Store.append(:assistant_message, %{result: response}, session_id: session_id)
+    Exy.Session.Store.append_trajectory(:assistant_message, %{result: response},
+      session_id: session_id
+    )
 
-    if usage = Exy.Agent.Usage.from_response(response) do
-      Exy.Trajectory.Store.append(:llm_usage, usage, session_id: session_id)
+    if usage = Exy.Model.Usage.from_response(response) do
+      Exy.Session.Store.append_trajectory(:llm_usage, usage, session_id: session_id)
     end
   end
 
   defp record_response({:error, reason}, session_id) do
-    Exy.Trajectory.Store.append(:assistant_message, %{error: inspect(reason)},
+    Exy.Session.Store.append_trajectory(:assistant_message, %{error: inspect(reason)},
       session_id: session_id
     )
   end

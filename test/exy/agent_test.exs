@@ -16,7 +16,7 @@ defmodule Exy.AgentTest do
       File.rm_rf(session_dir)
     end)
 
-    Exy.Trajectory.Store.clear()
+    Exy.Session.Store.clear()
     {:ok, session_dir: session_dir}
   end
 

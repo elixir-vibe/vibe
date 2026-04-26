@@ -2,7 +2,7 @@ defmodule Exy.SubagentsTest do
   use ExUnit.Case, async: false
 
   setup do
-    Exy.Trajectory.Store.clear()
+    Exy.Session.Store.clear()
     :ok
   end
 
@@ -16,7 +16,7 @@ defmodule Exy.SubagentsTest do
     assert Enum.map(results, & &1.status) == [:ok, :ok]
     assert Enum.map(results, & &1.result) == [1, 2]
 
-    events = Exy.Trajectory.Store.list()
+    events = Exy.Session.Store.trajectory()
     assert Enum.count(events, &(&1.type == :subagent_started)) == 2
     assert Enum.count(events, &(&1.type == :subagent_finished)) == 2
   end

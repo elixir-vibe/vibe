@@ -169,7 +169,7 @@ defmodule Exy.TUI.Storybook do
     - future LiveView renderer
 
     ```elixir
-    Exy.Agent.Direct.stream("hello", on_result: &IO.write/1)
+    Exy.Model.Direct.stream("hello", on_result: &IO.write/1)
     ```
 
     | Feature | Status |

@@ -8,7 +8,7 @@ defmodule Exy.Session do
 
   use GenServer
 
-  alias Exy.Agent.Usage
+  alias Exy.Model.Usage
   alias Exy.UI.{Command, Event, PluginBridge, PromptRunner, Reducer, SlashCommands, State}
 
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})

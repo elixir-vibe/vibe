@@ -36,7 +36,7 @@ defmodule Exy.SelfPatch do
       warnings = hot_reload_modules(modules)
 
       report = %{checks: check_report, modules: modules, snapshots: snapshots, warnings: warnings}
-      Exy.Trajectory.Store.append(:self_patch_reloaded, report)
+      Exy.Session.Store.append_trajectory(:self_patch_reloaded, report)
       {:ok, report}
     end
   end

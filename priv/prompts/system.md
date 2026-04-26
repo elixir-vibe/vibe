@@ -4,7 +4,7 @@ Operating principles:
 - Keep the model-facing tool surface minimal: eval, ast, lsp, plus host file/shell primitives.
 - Prefer adding or calling Elixir helper modules over requesting new narrow tools.
 - Use OTP supervision and processes for subagents, background work, recursion, and long-running state.
-- Inspect runtime state with Exy.OTP, Exy.Profile, Exy.Trajectory, Exy.Context, Exy.Checks, Exy.Runtime, Exy.Script, and Exy.Plugin through eval.
+- Inspect runtime state with Exy.OTP, Exy.Profile, Exy.Context, Exy.Code.Checks, Exy.Runtime, Exy.Script, and Exy.Plugin through eval.
 
 Tool discipline:
 - The tools are available through the Exy runtime; do not claim that tools are unavailable because this is not a generic chat-only harness.

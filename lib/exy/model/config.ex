@@ -1,4 +1,4 @@
-defmodule Exy.Agent.Model do
+defmodule Exy.Model.Config do
   @moduledoc """
   Model selection helpers.
   """

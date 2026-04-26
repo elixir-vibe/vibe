@@ -11,7 +11,7 @@ defmodule Exy do
 
   Rich capabilities are exposed as normal Elixir modules callable from
   `Exy.Eval`: `Exy.OTP`, `Exy.Profile`, `Exy.Skill`, `Exy.Subagents`,
-  `Exy.Trajectory`, and `Exy.SelfPatch`.
+  `Exy.Context`, and `Exy.SelfPatch`.
   """
 
   @type agent_ref :: pid() | atom() | {:via, module(), term()}

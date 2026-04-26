@@ -20,7 +20,7 @@ defmodule Exy.CLI do
     timeout: :integer,
     session: :string,
     sessions: :boolean,
-    no_agent: :boolean,
+    direct: :boolean,
     stream: :boolean,
     no_stream: :boolean,
     foreground: :boolean,
@@ -51,7 +51,12 @@ defmodule Exy.CLI do
       invalid == [] and match?(["send", _session_id | _], args) ->
         ["send", session_id | prompt_parts] = args
 
-        print_result(remote_send_prompt(session_id, Enum.join(prompt_parts, " ")), opts)
+        print_result(
+          server_call(fn ->
+            Exy.Remote.Session.send_prompt(session_id, Enum.join(prompt_parts, " "))
+          end),
+          opts
+        )
 
       invalid == [] and match?([command] when command in ["attach", "a"], args) ->
         attach_default_session(opts)
@@ -134,7 +139,7 @@ defmodule Exy.CLI do
   end
 
   defp sessions_command([], opts) do
-    case remote_sessions() do
+    case server_call(&Exy.Remote.Session.list/0) do
       {:ok, sessions} -> print_result({:ok, filter_sessions(sessions, opts)}, opts)
       error -> print_result(error, opts)
     end
@@ -146,14 +151,17 @@ defmodule Exy.CLI do
   end
 
   defp new_session_tui(opts) do
-    case remote_new_session(model: Exy.Agent.Model.resolve(opts)) do
+    case server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end) do
       {:ok, %{id: session_id}} -> attach_session(session_id, opts)
       other -> print_result(other, opts)
     end
   end
 
   defp new_session(opts) do
-    print_result(remote_new_session(model: Exy.Agent.Model.resolve(opts)), opts)
+    print_result(
+      server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end),
+      opts
+    )
   end
 
   defp attach_default_session(opts) do
@@ -173,7 +181,7 @@ defmodule Exy.CLI do
   end
 
   defp attach_session(session_id, opts) do
-    case remote_session_pid(session_id) do
+    case server_call(fn -> Exy.Remote.Session.lookup(session_id) end) do
       {:ok, session} ->
         opts = Keyword.put_new(opts, :remote_node, session_node(session))
         tui(opts, session_server: session, session_id: session_id)
@@ -269,42 +277,22 @@ defmodule Exy.CLI do
   end
 
   defp latest_live_remote_session_id do
-    case remote_sessions() do
+    case server_call(&Exy.Remote.Session.list/0) do
       {:ok, sessions} -> sessions |> Enum.find(& &1[:live?]) |> then(&(&1 && &1.id))
       {:error, _reason} -> nil
     end
   end
 
   defp new_remote_session_id(opts) do
-    case remote_new_session(model: Exy.Agent.Model.resolve(opts)) do
+    case server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end) do
       {:ok, %{id: id}} -> id
       {:error, reason} -> raise "cannot create Exy session: #{inspect(reason)}"
     end
   end
 
-  defp remote_sessions, do: remote_call(Exy.Session, :list, [])
-
-  defp remote_session_pid(session_id), do: remote_call(Exy.Session, :lookup, [session_id])
-
-  defp remote_new_session(opts) do
-    with {:ok, pid} <- remote_call(Exy.Session, :start, [opts]) do
-      {:ok, %{id: Exy.Session.state(pid).session_id}}
-    end
-  end
-
-  defp remote_send_prompt(session_id, text) do
-    with {:ok, pid} <- remote_session_pid(session_id),
-         :ok <-
-           Exy.Session.dispatch(pid, %Exy.UI.Command{type: :submit_prompt, data: %{text: text}}) do
-      {:ok, %{sent: true, session_id: session_id}}
-    end
-  end
-
-  defp remote_call(module, function, args) do
-    with :ok <- ensure_server_running(),
-         {:ok, node} <- Exy.Remote.connect() do
-      :rpc.call(node, module, function, args)
-    else
+  defp server_call(fun) do
+    case ensure_server_running() do
+      :ok -> fun.()
       {:error, reason} -> {:error, {:server_not_running, reason}}
     end
   end
@@ -425,13 +413,13 @@ defmodule Exy.CLI do
 
     result =
       with_console_logs_suppressed(session_id, fn ->
-        if opts[:no_agent] do
+        if opts[:direct] do
           llm_opts = Keyword.put(llm_opts(opts), :session_id, session_id)
 
           if stream?(opts) do
-            Exy.Agent.Direct.stream(prompt, llm_opts)
+            Exy.Model.Direct.stream(prompt, llm_opts)
           else
-            Exy.Agent.Direct.ask(prompt, llm_opts)
+            Exy.Model.Direct.ask(prompt, llm_opts)
           end
         else
           with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
@@ -448,7 +436,7 @@ defmodule Exy.CLI do
     Exy.Application.configure_dependency_logging()
 
     runtime_opts =
-      [session_id: session_id(opts), model: Exy.Agent.Model.resolve(opts)]
+      [session_id: session_id(opts), model: Exy.Model.Config.resolve(opts)]
       |> maybe_put(:remote_node, opts[:remote_node])
       |> Keyword.merge(runtime_extra)
       |> maybe_put_system_prompt(opts[:system_prompt])
@@ -552,7 +540,7 @@ defmodule Exy.CLI do
       ReqLLM.put_key(:openai_api_key, key)
     end
 
-    if Exy.Agent.Model.resolve(opts) |> String.starts_with?("openai_codex:") do
+    if Exy.Model.Config.resolve(opts) |> String.starts_with?("openai_codex:") do
       Exy.Auth.Codex.ensure_fresh()
     end
 

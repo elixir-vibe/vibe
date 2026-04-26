@@ -35,7 +35,7 @@ defmodule Exy.Subagents.Worker do
   end
 
   defp execute(%{spec: spec, budget: budget, started_at: started_at}) do
-    Exy.Trajectory.Store.append(:subagent_started, %{
+    Exy.Session.Store.append_trajectory(:subagent_started, %{
       id: spec.id,
       role: Map.get(spec, :role),
       goal: spec.goal
@@ -77,7 +77,7 @@ defmodule Exy.Subagents.Worker do
           }
       end
 
-    Exy.Trajectory.Store.append(:subagent_finished, result)
+    Exy.Session.Store.append_trajectory(:subagent_finished, result)
     result
   end
 

@@ -83,8 +83,27 @@ defmodule Exy.Session.Store do
   @spec ui_events_path(String.t()) :: String.t()
   def ui_events_path(session_id) when is_binary(session_id), do: path(session_id)
 
+  @spec append_trajectory(atom(), map(), keyword()) :: Trajectory.t()
+  def append_trajectory(type, data \\ %{}, opts \\ []) do
+    event = Trajectory.new(type, data, opts)
+    _ = append(event)
+    event
+  end
+
+  @spec trajectory(keyword()) :: [Trajectory.t()]
+  def trajectory(opts \\ []) do
+    opts
+    |> trajectory_events()
+    |> maybe_filter_trajectory(
+      Keyword.get(opts, :type),
+      &(&1.type == Keyword.fetch!(opts, :type))
+    )
+    |> take_trajectory(Keyword.get(opts, :limit, :infinity))
+  end
+
   @spec append(Trajectory.t()) :: :ok | {:error, term()}
-  def append(%Trajectory{session_id: nil}), do: :ok
+  def append(%Trajectory{session_id: nil} = event),
+    do: append(%{event | session_id: "__global__"})
 
   def append(%Trajectory{} = event) do
     with :ok <- File.mkdir_p(dir()),
@@ -95,15 +114,38 @@ defmodule Exy.Session.Store do
 
   @spec events(String.t()) :: [Trajectory.t()]
   def events(session_id) when is_binary(session_id) do
-    case File.read(path(session_id)) do
-      {:ok, text} ->
-        text
-        |> String.split("\n", trim: true)
-        |> Enum.flat_map(&decode_trajectory_line/1)
+    session_id
+    |> path()
+    |> read_trajectory_events_file()
+  end
 
-      {:error, :enoent} ->
+  @spec all_events() :: [Trajectory.t()]
+  def all_events do
+    case File.ls(dir()) do
+      {:ok, files} ->
+        files
+        |> Enum.filter(&String.ends_with?(&1, ".jsonl"))
+        |> Enum.flat_map(fn file -> dir() |> Path.join(file) |> read_trajectory_events_file() end)
+        |> Enum.sort_by(& &1.at, DateTime)
+
+      {:error, _reason} ->
         []
     end
+  end
+
+  @spec clear() :: :ok
+  def clear do
+    case File.ls(dir()) do
+      {:ok, files} ->
+        Enum.each(files, fn file ->
+          if String.ends_with?(file, ".jsonl"), do: File.rm(Path.join(dir(), file))
+        end)
+
+      {:error, _reason} ->
+        :ok
+    end
+
+    :ok
   end
 
   @spec append_ui_event(Event.t(), non_neg_integer()) :: :ok | {:error, term()}
@@ -154,6 +196,19 @@ defmodule Exy.Session.Store do
         []
     end
   end
+
+  defp trajectory_events(opts) do
+    case Keyword.get(opts, :session_id) do
+      session_id when is_binary(session_id) -> events(session_id)
+      _session_id -> all_events()
+    end
+  end
+
+  defp maybe_filter_trajectory(events, nil, _fun), do: events
+  defp maybe_filter_trajectory(events, _value, fun), do: Enum.filter(events, fun)
+
+  defp take_trajectory(events, :infinity), do: events
+  defp take_trajectory(events, limit), do: Enum.take(events, limit)
 
   defp session_info(file) do
     full_path = Path.join(dir(), file)
@@ -219,6 +274,18 @@ defmodule Exy.Session.Store do
       "at" => DateTime.to_iso8601(event.at),
       "data" => json_safe(event.data)
     }
+  end
+
+  defp read_trajectory_events_file(path) do
+    case File.read(path) do
+      {:ok, text} ->
+        text
+        |> String.split("\n", trim: true)
+        |> Enum.flat_map(&decode_trajectory_line/1)
+
+      {:error, :enoent} ->
+        []
+    end
   end
 
   defp read_ui_events_file(path) do

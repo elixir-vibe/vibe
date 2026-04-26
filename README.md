@@ -50,9 +50,9 @@ Everything else is normal Elixir callable from `eval`:
 - `Exy.Profile` — `:cprof`, `:eprof`, `:fprof`, process-growth helpers
 - `Exy.Subagents` — supervised subagent process runner
 - `Exy.Skill` — procedural-memory skill files
-- `Exy.Trajectory` — structured event capture for self-improvement
-- `Exy.Session` — persisted JSONL dialogs, events, and usage under `~/.exy/sessions`
-- `Exy.Agent.Usage` — normalized token/cost accounting from model responses
+- `Exy.Session` / `Exy.Session.Store` — live sessions and persisted JSONL dialogs/events under `~/.exy/sessions`
+- `Exy.Trajectory` — typed semantic event struct projected from canonical session storage
+- `Exy.Model.Config` / `Exy.Model.Direct` / `Exy.Model.Usage` — model selection, direct provider calls, and usage accounting
 - `Exy.Context` — pi-style context compaction checkpoints
 - `Exy.Runtime` / `Exy.Runtime.Standalone` / `Exy.Script` — runtime behaviour, standalone BEAM evaluator, and Mix.install script runner
 - `Exy.Sandbox.Policy` — explicit isolation policy data for runtime selection
