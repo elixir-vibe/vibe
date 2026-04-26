@@ -61,10 +61,18 @@ defmodule Exy.UI.ReducerTest do
         Exy.UI.Event.new(:overlay_opened, "ui-test", %{kind: :session_selector})
       )
       |> Exy.UI.Reducer.apply_event(
-        Exy.UI.Event.new(:tool_started, "ui-test", %{id: "tool-1", name: "eval"})
+        Exy.UI.Event.new(
+          :tool_started,
+          "ui-test",
+          Exy.UI.ToolEvent.started(id: "tool-1", name: "eval")
+        )
       )
       |> Exy.UI.Reducer.apply_event(
-        Exy.UI.Event.new(:tool_finished, "ui-test", %{id: "tool-1", status: :ok})
+        Exy.UI.Event.new(
+          :tool_finished,
+          "ui-test",
+          Exy.UI.ToolEvent.finished(id: "tool-1", status: :ok)
+        )
       )
 
     assert [%{kind: :session_selector}] = state.overlays
@@ -82,14 +90,18 @@ defmodule Exy.UI.ReducerTest do
         Exy.UI.Event.new(:assistant_delta, "ui-test", %{text: "Before."})
       )
       |> Exy.UI.Reducer.apply_event(
-        Exy.UI.Event.new(:tool_started, "ui-test", %{
-          id: "tool-1",
-          name: "eval",
-          args: %{code: "1 + 1"}
-        })
+        Exy.UI.Event.new(
+          :tool_started,
+          "ui-test",
+          Exy.UI.ToolEvent.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
+        )
       )
       |> Exy.UI.Reducer.apply_event(
-        Exy.UI.Event.new(:tool_finished, "ui-test", %{id: "tool-1", status: :ok, output: "2"})
+        Exy.UI.Event.new(
+          :tool_finished,
+          "ui-test",
+          Exy.UI.ToolEvent.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
+        )
       )
       |> Exy.UI.Reducer.apply_event(
         Exy.UI.Event.new(:assistant_delta, "ui-test", %{text: "After."})

@@ -3,6 +3,8 @@ defmodule Exy.Agent.Streaming do
 
   use GenServer
 
+  alias Exy.UI.ToolEvent
+
   @table :exy_agent_streaming_callbacks
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -52,14 +54,14 @@ defmodule Exy.Agent.Streaming do
     {:ok, %{}}
   end
 
-  @spec dispatch_tool_started(String.t(), map()) :: :ok
-  def dispatch_tool_started(agent_id, data) when is_binary(agent_id) and is_map(data) do
-    dispatch_tool(agent_id, :tool_started, data)
+  @spec dispatch_tool_started(String.t(), ToolEvent.t()) :: :ok
+  def dispatch_tool_started(agent_id, %ToolEvent{} = event) when is_binary(agent_id) do
+    dispatch_tool(agent_id, :tool_started, event)
   end
 
-  @spec dispatch_tool_finished(String.t(), map()) :: :ok
-  def dispatch_tool_finished(agent_id, data) when is_binary(agent_id) and is_map(data) do
-    dispatch_tool(agent_id, :tool_finished, Map.put(data, :status, tool_status(data)))
+  @spec dispatch_tool_finished(String.t(), ToolEvent.t()) :: :ok
+  def dispatch_tool_finished(agent_id, %ToolEvent{} = event) when is_binary(agent_id) do
+    dispatch_tool(agent_id, :tool_finished, event)
   end
 
   defp callbacks(opts) do
@@ -95,41 +97,12 @@ defmodule Exy.Agent.Streaming do
   defp maybe_dispatch_delta({type, text}, callbacks),
     do: callbacks[type] && callbacks[type].(text)
 
-  defp dispatch_tool(agent_id, type, data) do
+  defp dispatch_tool(agent_id, type, %ToolEvent{} = event) do
     with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
-      callbacks[type] && callbacks[type].(normalize_tool_event(data))
+      callbacks[type] && callbacks[type].(event)
     end
 
     :ok
-  end
-
-  defp tool_status(data) do
-    case data |> Map.get(:result, Map.get(data, "result")) |> normalize_result() do
-      %{error: _error} -> :error
-      _result -> :ok
-    end
-  end
-
-  defp normalize_result({:ok, result, _effects}), do: unwrap_output(result)
-  defp normalize_result({:ok, result}), do: unwrap_output(result)
-  defp normalize_result({:error, reason, _effects}), do: %{error: reason}
-  defp normalize_result({:error, reason}), do: %{error: reason}
-  defp normalize_result(result), do: unwrap_output(result)
-
-  defp unwrap_output(%{output: output}) when is_binary(output), do: output
-  defp unwrap_output(%{"output" => output}) when is_binary(output), do: output
-  defp unwrap_output(result), do: result
-
-  defp normalize_tool_event(data) do
-    %{
-      id: Map.get(data, :call_id) || Map.get(data, "call_id"),
-      name: Map.get(data, :tool_name) || Map.get(data, "tool_name"),
-      args: Map.get(data, :arguments) || Map.get(data, "arguments"),
-      output: data |> Map.get(:result, Map.get(data, "result")) |> normalize_result(),
-      status: Map.get(data, :status) || Map.get(data, "status")
-    }
-    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-    |> Map.new()
   end
 
   defp ensure_table! do

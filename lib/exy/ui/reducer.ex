@@ -70,8 +70,8 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_started, at: at, data: %{id: id} = data}) do
-    tool = data |> Map.put_new(:status, :running) |> Map.put_new(:expanded?, false)
+  defp reduce(state, %Event{type: :tool_started, at: at, data: %Exy.UI.ToolEvent{id: id} = data}) do
+    tool = data |> tool_event_map() |> Map.put_new(:expanded?, false)
     tool_message = tool |> Map.put(:role, :tool) |> Map.put(:at, at)
 
     %{
@@ -82,7 +82,8 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_finished, data: %{id: id} = data}) do
+  defp reduce(state, %Event{type: :tool_finished, data: %Exy.UI.ToolEvent{id: id} = data}) do
+    data = tool_event_map(data)
     pending_tools = Map.update(state.pending_tools, id, data, &Map.merge(&1, data))
 
     %{
@@ -301,6 +302,13 @@ defmodule Exy.UI.Reducer do
         updated = Map.update(message, key, delta, &(&1 <> delta))
         {Lists.append(messages, updated), updated}
     end
+  end
+
+  defp tool_event_map(%Exy.UI.ToolEvent{} = event) do
+    event
+    |> Map.from_struct()
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
   end
 
   defp maybe_idle_after_tool_finished(state, pending_tools) do

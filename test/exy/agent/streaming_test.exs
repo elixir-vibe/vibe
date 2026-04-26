@@ -74,9 +74,11 @@ defmodule Exy.Agent.StreamingTest do
     assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(started, context)
     assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(finished, context)
 
-    assert_receive {:tool_started, %{id: "call-1", name: "eval", args: %{code: "1 + 1"}}}
+    assert_receive {:tool_started,
+                    %Exy.UI.ToolEvent{id: "call-1", name: "eval", args: %{code: "1 + 1"}}}
 
-    assert_receive {:tool_finished, %{id: "call-1", name: "eval", output: "2", status: :ok}}
+    assert_receive {:tool_finished,
+                    %Exy.UI.ToolEvent{id: "call-1", name: "eval", output: "2", status: :ok}}
   after
     Exy.Agent.Streaming.unregister(agent)
   end
@@ -94,7 +96,12 @@ defmodule Exy.Agent.StreamingTest do
              Exy.Agent.Streaming.Plugin.handle_signal(signal, %{agent: %{id: agent_id}})
 
     assert_receive {:tool_finished,
-                    %{id: "call-1", name: "eval", output: %{error: "boom"}, status: :error}}
+                    %Exy.UI.ToolEvent{
+                      id: "call-1",
+                      name: "eval",
+                      output: %{error: "boom"},
+                      status: :error
+                    }}
   after
     Exy.Agent.Streaming.unregister(agent)
   end
