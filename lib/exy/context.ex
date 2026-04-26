@@ -9,21 +9,6 @@ defmodule Exy.Context do
 
   alias Exy.Trajectory
 
-  @summarization_system_path Exy.Prompts.path("summarization_system.md")
-  @context_summary_path Exy.Prompts.path("context_summary.md")
-  @context_update_path Exy.Prompts.path("context_update.md")
-  @turn_prefix_summary_path Exy.Prompts.path("turn_prefix_summary.md")
-
-  @external_resource @summarization_system_path
-  @external_resource @context_summary_path
-  @external_resource @context_update_path
-  @external_resource @turn_prefix_summary_path
-
-  @system_prompt Exy.Prompts.read!("summarization_system.md")
-  @summary_prompt Exy.Prompts.read!("context_summary.md")
-  @update_prompt Exy.Prompts.read!("context_update.md")
-  @turn_prefix_prompt Exy.Prompts.read!("turn_prefix_summary.md")
-
   @tool_result_max_chars 2_000
 
   @type compact_result :: %{
@@ -79,13 +64,16 @@ defmodule Exy.Context do
           {:ok, String.t()} | {:error, term()}
   def summarize(events, previous_summary \\ nil, opts \\ []) do
     prompt = summary_request(events, previous_summary, opts)
-    ask_llm(prompt, Keyword.put(opts, :system, @system_prompt))
+    ask_llm(prompt, Keyword.put(opts, :system, Exy.Prompts.summarization_system()))
   end
 
   @spec turn_prefix_summary([Trajectory.t()], keyword()) :: {:ok, String.t()} | {:error, term()}
   def turn_prefix_summary(events, opts \\ []) do
-    prompt = "<conversation>\n#{serialize(events)}\n</conversation>\n\n" <> @turn_prefix_prompt
-    ask_llm(prompt, Keyword.put(opts, :system, @system_prompt))
+    prompt =
+      "<conversation>\n#{serialize(events)}\n</conversation>\n\n" <>
+        Exy.Prompts.turn_prefix_summary()
+
+    ask_llm(prompt, Keyword.put(opts, :system, Exy.Prompts.summarization_system()))
   end
 
   defp ask_llm(prompt, opts) do
@@ -103,7 +91,10 @@ defmodule Exy.Context do
 
   defp summary_request(events, previous_summary, opts) do
     custom = Keyword.get(opts, :custom_instructions)
-    prompt = if previous_summary, do: @update_prompt, else: @summary_prompt
+
+    prompt =
+      if previous_summary, do: Exy.Prompts.context_update(), else: Exy.Prompts.context_summary()
+
     prompt = if custom, do: prompt <> "\n\nAdditional focus: " <> custom, else: prompt
 
     previous =

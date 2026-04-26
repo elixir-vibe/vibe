@@ -3,8 +3,6 @@ defmodule Exy.Agent.Coding do
   Minimal Jido.AI ReAct agent wired to Exy's coding tools.
   """
 
-  @system_prompt Exy.SystemPrompt.default()
-
   use Jido.AI.Agent,
     name: "exy_coding_agent",
     model: :exy,
@@ -17,5 +15,5 @@ defmodule Exy.Agent.Coding do
       Exy.Actions.LSP
     ],
     plugins: [Exy.Agent.Streaming.Plugin],
-    system_prompt: @system_prompt
+    system_prompt: false
 end

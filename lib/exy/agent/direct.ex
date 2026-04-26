@@ -30,7 +30,7 @@ defmodule Exy.Agent.Direct do
 
   defp request(prompt, opts) do
     model = Exy.Agent.Model.resolve(opts)
-    system = Keyword.get_lazy(opts, :system, &Exy.SystemPrompt.default/0)
+    system = Keyword.get_lazy(opts, :system, &Exy.Prompts.system/0)
 
     messages = [
       ReqLLM.Context.system(system),

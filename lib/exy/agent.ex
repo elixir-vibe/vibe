@@ -11,6 +11,7 @@ defmodule Exy.Agent do
     ensure_provider_credentials(opts)
 
     with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
+      Jido.AI.set_system_prompt(pid, Exy.Prompts.system())
       session_id = Keyword.get(opts, :session_id) || Exy.Session.Store.new_id()
       Exy.Session.Processes.register(pid, session_id)
       {:ok, pid}
