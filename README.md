@@ -41,8 +41,8 @@ Exy keeps the model-facing tool surface small:
 - `edit` / `write`
 - `bash` / terminal
 - `eval` → `Exy.Eval.run/2`
-- `ast` → `Exy.AST.run/1`
-- `lsp` → `Exy.LSP.run/1`
+- `ast` → `Exy.Code.AST.run/1`
+- `lsp` → `Exy.Code.LSP.run/1`
 
 Everything else is normal Elixir callable from `eval`:
 
@@ -56,7 +56,7 @@ Everything else is normal Elixir callable from `eval`:
 - `Exy.Context` — pi-style context compaction checkpoints
 - `Exy.Runtime` / `Exy.Script` — Livebook-inspired standalone BEAM runtime and Mix.install script runner
 - `Exy.Sandbox.Policy` — explicit isolation policy data for runtime selection
-- `Exy.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
+- `Exy.Code.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
 - `Exy.SelfPatch` — validated development hot-compile helpers
 - `Exy.LLM` — direct ReqLLM calls
 - `Exy.Agent` / `Exy.Agent.Coding` — Jido.AI ReAct agent over Exy's coding tools
@@ -74,14 +74,14 @@ Everything else is normal Elixir callable from `eval`:
 4. Use LSP for diagnostics/navigation, runtime eval for OTP state.
 5. Subagents are OTP processes, not prompt magic.
 6. Self-improvement evolves skills/helpers first, runtime core only with validation.
-7. Tests come before self-modification; `Exy.Checks.run_all/1` gates reloads.
+7. Tests come before self-modification; `Exy.Code.Checks.run_all/1` gates reloads.
 
 ## Examples
 
 ```elixir
 Exy.Eval.run("Exy.OTP.runtime_info()")
 
-Exy.AST.run(%{
+Exy.Code.AST.run(%{
   action: :search,
   path: "lib/",
   pattern: "def handle_call(_, _, _) do _ end"
@@ -124,14 +124,14 @@ Exy.Session.list()
 #   mix exy --login codex
 
 # Expert LSP gateway
-Exy.LSP.run(%{action: :diagnostics, file: "lib/exy.ex"})
+Exy.Code.LSP.run(%{action: :diagnostics, file: "lib/exy.ex"})
 
 # Self inspection and validation
 Exy.supervision_tree(depth: 2)
-report = Exy.Checks.analyze()
+report = Exy.Code.Checks.analyze()
 report.ok?
 report.failures
-Exy.Checks.analyze(checks: [:test, :ex_slop])
+Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
 Exy.SelfPatch.deployment_gate()
 Exy.SelfPatch.compile_and_reload()
 

@@ -15,7 +15,7 @@ defmodule Exy.SelfPatch do
 
   @spec validate(keyword()) :: {:ok, map()} | {:error, map()}
   def validate(opts \\ []) do
-    report = Exy.Checks.analyze(opts)
+    report = Exy.Code.Checks.analyze(opts)
     if report.ok?, do: {:ok, report}, else: {:error, report}
   end
 
@@ -45,7 +45,7 @@ defmodule Exy.SelfPatch do
   def deployment_gate(opts \\ []) do
     opts
     |> Keyword.put_new(:checks, full_checks())
-    |> Exy.Checks.analyze()
+    |> Exy.Code.Checks.analyze()
     |> case do
       %{ok?: true} = report -> {:ok, report}
       report -> {:error, report}

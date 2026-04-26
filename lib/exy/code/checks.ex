@@ -1,4 +1,4 @@
-defmodule Exy.Checks do
+defmodule Exy.Code.Checks do
   @moduledoc """
   Validation gates Exy can run before and after self-modification.
   """

@@ -1,4 +1,4 @@
-defmodule Exy.LSP do
+defmodule Exy.Code.LSP do
   @moduledoc """
   Single Expert LSP gateway.
 
@@ -6,7 +6,7 @@ defmodule Exy.LSP do
   `:symbols`, `:workspace_symbols`, `:code_actions`.
   """
 
-  alias Exy.LSP.Client
+  alias Exy.Code.LSP.Client
 
   @spec run(map() | keyword()) :: {:ok, term()} | {:error, String.t() | map()}
   def run(params) when is_map(params) or is_list(params) do

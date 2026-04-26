@@ -12,7 +12,7 @@ defmodule Exy.Application do
       {Jido, name: Jido, otp_app: :exy},
       Exy.Jido,
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Subagents.Supervisor},
-      {DynamicSupervisor, strategy: :one_for_one, name: Exy.LSP.Supervisor},
+      {DynamicSupervisor, strategy: :one_for_one, name: Exy.Code.LSP.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Terminal.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Plugin.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.SessionSupervisor},

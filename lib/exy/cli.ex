@@ -92,7 +92,7 @@ defmodule Exy.CLI do
         compact(opts)
 
       opts[:checks] ->
-        print_result(Exy.Checks.run_all(), opts)
+        print_result(Exy.Code.Checks.run_all(), opts)
 
       opts[:codex_usage] ->
         print_result(Exy.Auth.Codex.usage_limits(), opts)

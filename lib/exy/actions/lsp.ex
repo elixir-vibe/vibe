@@ -41,7 +41,7 @@ defmodule Exy.Actions.LSP do
     params = JSONSpec.atomize(@schema, params)
 
     Exy.Actions.ToolResult.run(fn ->
-      case Exy.LSP.run(params) do
+      case Exy.Code.LSP.run(params) do
         {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
         other -> other
       end

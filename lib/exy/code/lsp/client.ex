@@ -1,4 +1,4 @@
-defmodule Exy.LSP.Client do
+defmodule Exy.Code.LSP.Client do
   @moduledoc false
 
   use GenServer
@@ -24,7 +24,7 @@ defmodule Exy.LSP.Client do
           restart: :temporary
         }
 
-        case DynamicSupervisor.start_child(Exy.LSP.Supervisor, spec) do
+        case DynamicSupervisor.start_child(Exy.Code.LSP.Supervisor, spec) do
           {:ok, pid} -> {:ok, pid}
           {:error, {:already_started, pid}} -> {:ok, pid}
           other -> other

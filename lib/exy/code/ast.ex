@@ -1,4 +1,4 @@
-defmodule Exy.AST do
+defmodule Exy.Code.AST do
   @moduledoc """
   Single ExAST gateway for structural Elixir search, replace, and diff.
 

@@ -5,8 +5,8 @@ defmodule Exy do
   Exy intentionally keeps the model-facing surface small:
 
     * `Exy.Eval.run/2` for runtime Elixir expressions
-    * `Exy.AST.run/1` for ExAST search/replace/diff
-    * `Exy.LSP.run/1` for Expert/LSP operations
+    * `Exy.Code.AST.run/1` for ExAST search/replace/diff
+    * `Exy.Code.LSP.run/1` for Expert/LSP operations
     * shell/file operations live at the client layer
 
   Rich capabilities are exposed as normal Elixir modules callable from

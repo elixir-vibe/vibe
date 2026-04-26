@@ -1,8 +1,8 @@
-defmodule Exy.ChecksTest do
+defmodule Exy.Code.ChecksTest do
   use ExUnit.Case, async: false
 
   test "analysis gives agent-friendly summary without reruns" do
-    report = Exy.Checks.analyze(checks: [:reach])
+    report = Exy.Code.Checks.analyze(checks: [:reach])
 
     assert report.ok?
     assert report.failed == []
@@ -16,7 +16,7 @@ defmodule Exy.ChecksTest do
     File.write!(path, "defmodule Broken do\n  def nope(\nend\n")
 
     try do
-      result = Exy.Checks.run(:reach, paths: [path])
+      result = Exy.Code.Checks.run(:reach, paths: [path])
       assert result.status == :error
       assert [%{file: ^path}] = result.details.errors
     after
