@@ -99,7 +99,8 @@ defmodule Exy.Session do
        event_seq: event_seq,
        events_tail: events_tail,
        persist?: persist?,
-       persistence_failed?: false
+       persistence_failed?: false,
+       last_user_prompt: nil
      }}
   end
 
@@ -189,12 +190,15 @@ defmodule Exy.Session do
     ask_fun = state.ask_fun
     parent = self()
     ref = make_ref()
+    context = %{session_id: session_id}
+    Exy.Memory.Manager.on_turn_start(length(state.state.messages), text, context)
+    prompt_text = prompt_with_memory(text, context)
 
     {ask_opts, state} = ask_options(state, parent, ref, session_id)
 
-    {:ok, task} = PromptRunner.start(ask_fun, text, ask_opts, parent, ref)
+    {:ok, task} = PromptRunner.start(ask_fun, prompt_text, ask_opts, parent, ref)
 
-    %{state | prompt_task: task, prompt_ref: ref, active_agent: nil}
+    %{state | prompt_task: task, prompt_ref: ref, active_agent: nil, last_user_prompt: text}
   end
 
   defp handle_command(%Command{type: :cancel_stream}, state) do
@@ -269,6 +273,11 @@ defmodule Exy.Session do
   end
 
   defp record_prompt_result(state, {:ok, response}) do
+    Exy.Memory.Manager.sync_turn(state.last_user_prompt || "", response_text(response), %{
+      session_id: state.state.session_id
+    })
+
+    state = %{state | last_user_prompt: nil}
     state = record_successful_response(state, response)
 
     case Usage.from_response(response) do
@@ -278,6 +287,8 @@ defmodule Exy.Session do
   end
 
   defp record_prompt_result(state, {:error, reason}) do
+    state = %{state | last_user_prompt: nil}
+
     state =
       emit(
         state,
@@ -288,6 +299,17 @@ defmodule Exy.Session do
       state,
       Event.new(:assistant_message_added, state.state.session_id, %{error: inspect(reason)})
     )
+  end
+
+  defp response_text(response) when is_binary(response), do: response
+  defp response_text(%{output: output}) when is_binary(output), do: output
+  defp response_text(response), do: inspect(response)
+
+  defp prompt_with_memory(text, context) do
+    case Exy.Memory.Manager.prefetch(text, context) do
+      "" -> text
+      memory -> text <> "\n\n" <> memory
+    end
   end
 
   defp record_successful_response(

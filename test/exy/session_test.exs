@@ -72,6 +72,45 @@ defmodule Exy.SessionTest do
     assert assistant.data.result == "old response"
   end
 
+  test "prompt runner receives fenced memory context while visible user message stays clean" do
+    memory_dir =
+      Path.join(
+        System.tmp_dir!(),
+        "exy-memory-session-test-#{System.unique_integer([:positive])}"
+      )
+
+    previous = Application.get_env(:exy, :memory_dir)
+    Application.put_env(:exy, :memory_dir, memory_dir)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:exy, :memory_dir, previous),
+        else: Application.delete_env(:exy, :memory_dir)
+
+      File.rm_rf(memory_dir)
+    end)
+
+    assert {:ok, _entry} = Exy.Memory.add(:global, "Washington weather source is weather.gov")
+    parent = self()
+
+    {:ok, server} =
+      Exy.Session.start_link(
+        session_id: "memory-context-session",
+        ask_fun: fn text, _opts ->
+          send(parent, {:asked, text})
+          {:ok, "ok"}
+        end
+      )
+
+    assert :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "weather.gov"}})
+    assert_receive {:asked, text}
+    assert text =~ "<memory-context>"
+    assert text =~ "Washington weather source is weather.gov"
+
+    Process.sleep(20)
+    assert [%{text: "weather.gov"} | _] = Exy.Session.state(server).messages
+  end
+
   test "invalid persisted atoms and event types are skipped without creating atoms" do
     session_id = "crafted"
 

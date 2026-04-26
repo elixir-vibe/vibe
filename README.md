@@ -227,6 +227,26 @@ Exy.Model.Config.default()
 Exy.Model.Direct.ask("hello", model: "openai_codex:gpt-5.5")
 ```
 
+### Memory
+
+Exy separates session eval state, per-agent runtime memory, and curated long-term memory.
+
+```elixir
+Exy.Memory.add(:user, "User prefers concise technical answers")
+Exy.Memory.add(:global, "For Exy, run mix ci before commits")
+Exy.Memory.search("mix ci", scopes: [:user, :global])
+Exy.Memory.context_block("validation", scopes: [:user, :global])
+
+Exy.Agent.Memory.put(agent_id, :plan, "inspect docs")
+Exy.Agent.Memory.get(agent_id, :plan)
+Exy.Agent.Memory.clear(agent_id)
+
+Exy.Memory.Manager.prefetch("validation command", %{session_id: session_id})
+Exy.Memory.Manager.on_delegation("research task", "summary", %{parent_session_id: session_id})
+```
+
+Built-in memory is always active; at most one external memory provider should be loaded at a time to avoid conflicting recall/tool surfaces. Recalled memory is fenced as `<memory-context>` and treated as informational background, not user input.
+
 ### Plugins
 
 ```elixir

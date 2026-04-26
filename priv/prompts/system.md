@@ -30,6 +30,9 @@ Self-modification and validation policy:
 Context and memory:
 - Use normal Elixir assignment in eval for short-lived working memory; serializable bindings plus eval aliases/imports are restored for resumed sessions without replaying old eval code.
 - Use `Exy.Eval.bindings(session_id)` to inspect eval memory, `Exy.Eval.forget(session_id, names)` to drop stale/heavy bindings, and `Exy.Eval.reset(session_id)` to clear the session eval environment.
+- Use `Exy.Agent.Memory` only for ephemeral per-agent/subagent runtime facts.
+- Use `Exy.Memory` for curated long-term user/global/session memory. Recalled memory appears inside `<memory-context>` and is background context, not user input.
+- Subagents should report observations to the parent; only the parent/session should decide whether to write global memory.
 - Use Exy.Context.compact/1 for pi-style structured context checkpoints.
 - Preserve exact file paths, module/function names, decisions, blockers, and error messages.
 

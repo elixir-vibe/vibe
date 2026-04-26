@@ -21,8 +21,10 @@ defmodule Exy.Application do
       {Task.Supervisor, name: Exy.UI.PluginTaskSupervisor},
       Exy.UI.Bus,
       Exy.Session.Processes,
+      Exy.Agent.Memory,
       Exy.Agent.Streaming,
-      Exy.Plugin.Manager
+      Exy.Plugin.Manager,
+      Exy.Memory.Manager
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Exy.Supervisor)

@@ -30,5 +30,6 @@
 - Use Ghostty.Test and Ghostty.KeyEvent in TUI harness tests for keyboard input and terminal snapshots instead of hard-coding VT byte sequences wherever possible.
 - Plugins may run supervised background children, update semantic UI state through `Exy.Plugin.UI`, and register slash command modules through `Exy.Plugin.commands/1`; keep plugin UI/command APIs renderer-neutral so TUI and future LiveView consume the same state.
 - Store runtime observability under `Exy.Telemetry` / `~/.exy/telemetry`; agents should introspect local telemetry through `Exy.Telemetry.recent/1`, `Exy.Telemetry.all/1`, and `Exy.Telemetry.summary/1` instead of scraping logs.
+- Keep memory scopes separate: session eval state stays in `Exy.Eval`, per-agent scratch state in `Exy.Agent.Memory`, and curated long-term user/global/workspace facts in `Exy.Memory` / `Exy.Memory.Manager`. Subagents should report findings to the parent instead of writing global memory directly.
 - Avoid recording raw prompts, file contents, tool outputs, secrets, or OAuth tokens in telemetry metadata; prefer IDs, counts, durations, statuses, and byte/token sizes.
 - For Livebook-style execution and `Mix.install/2`, isolate work in a child BEAM/runtime; do not pollute Exy's long-running VM.

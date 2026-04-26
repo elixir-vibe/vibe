@@ -11,7 +11,7 @@ defmodule Exy.Agent do
     ensure_provider_credentials(opts)
 
     with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
-      Jido.AI.set_system_prompt(pid, Exy.Prompts.system())
+      Jido.AI.set_system_prompt(pid, system_prompt())
       session_id = Keyword.get(opts, :session_id) || Exy.Session.Store.new_id()
       Exy.Session.Processes.register(pid, session_id)
       {:ok, pid}
@@ -72,6 +72,13 @@ defmodule Exy.Agent do
     Jido.AgentServer.status(pid)
   catch
     :exit, _reason -> {:error, :agent_unavailable}
+  end
+
+  defp system_prompt do
+    case Exy.Memory.Manager.system_prompt_block() do
+      "" -> Exy.Prompts.system()
+      memory -> Exy.Prompts.system() <> "\n\n" <> memory
+    end
   end
 
   defp configure_model_alias(opts) do
