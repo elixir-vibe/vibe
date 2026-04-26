@@ -72,6 +72,7 @@ defmodule Exy.MixProject do
       {:json_spec, "~> 1.1"},
       {:mdex, "~> 0.12"},
       {:yaml_elixir, "~> 2.12"},
+      {:toml, "~> 0.7"},
       {:req, "~> 0.5"},
       {:req_llm, "~> 1.10"},
       {:opentelemetry_api, "~> 1.5"},

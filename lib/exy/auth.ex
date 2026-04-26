@@ -5,7 +5,9 @@ defmodule Exy.Auth do
 
   @builtin %{
     "openai-codex" => Exy.Auth.Codex,
-    "codex" => Exy.Auth.Codex
+    "codex" => Exy.Auth.Codex,
+    "openrouter" => Exy.Auth.OpenRouter,
+    "open-router" => Exy.Auth.OpenRouter
   }
 
   @spec provider(String.t() | atom()) :: module() | nil

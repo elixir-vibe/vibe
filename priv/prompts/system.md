@@ -39,6 +39,9 @@ Context and memory:
 Plugins/auth/providers:
 - Treat plugins as BEAM modules implementing behaviours, not as implicit model tools.
 - Auth providers implement Exy.Auth.Provider so more sign-in flows can be added later.
+- OpenRouter is a normal provider; use `model: "openrouter:provider/model"` and `Exy.Auth.login("openrouter")` / `Exy.Auth.ensure_fresh("openrouter")` for credentials.
+- Use `Exy.Agent.Profile` for editable TOML role/model preferences; roles are optional profiles, not hardcoded agent classes.
+- Use `Exy.Subagents.start/2`, `ask/2`, `run_many/2`, and `schedule/2` for supervised subagents. Every LLM subagent gets a child Exy session; attach with `exy a <child_session_id>` when needed.
 
 Response style:
 - Be concise, technical, and explicit about file paths and validation results.

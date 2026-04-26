@@ -40,6 +40,21 @@ defmodule Exy.Paths do
       Path.join(home(), "memory")
   end
 
+  @spec agent_profiles() :: String.t()
+  def agent_profiles do
+    System.get_env("EXY_AGENT_PROFILES") || Application.get_env(:exy, :agent_profiles_file) ||
+      Path.join(home(), "agent-profiles.toml")
+  end
+
+  @spec subagents_dir() :: String.t()
+  def subagents_dir do
+    System.get_env("EXY_SUBAGENTS_DIR") || Application.get_env(:exy, :subagents_dir) ||
+      Path.join(home(), "subagents")
+  end
+
+  @spec subagent_schedules() :: String.t()
+  def subagent_schedules, do: Path.join(subagents_dir(), "schedules.jsonl")
+
   @spec skills_dir() :: String.t()
   def skills_dir, do: Path.join(home(), "skills")
 end

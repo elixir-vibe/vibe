@@ -10,6 +10,13 @@ defmodule Exy.Model.Config do
 
   @spec resolve(keyword()) :: String.t()
   def resolve(opts \\ []) do
-    Keyword.get(opts, :model) || System.get_env("EXY_MODEL") || default()
+    Keyword.get(opts, :model) || role_model(opts) || System.get_env("EXY_MODEL") || default()
+  end
+
+  defp role_model(opts) do
+    case Keyword.get(opts, :role) do
+      nil -> nil
+      role -> Exy.Agent.Profile.model_for(role: role)
+    end
   end
 end

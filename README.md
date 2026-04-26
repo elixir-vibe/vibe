@@ -216,16 +216,54 @@ Exy.Runtime.Python.run("x = 1 + 2\nx", %{})
 Exy.Runtime.JS.run("1 + 2")
 ```
 
-### Auth and model usage
+### Auth, model usage, and agent profiles
 
 ```elixir
 Exy.Auth.login("codex")
+Exy.Auth.login("openrouter", api_key: "sk-or-...")
 Exy.Auth.ensure_fresh("openai-codex")
+Exy.Auth.ensure_fresh("openrouter")
 Exy.Auth.usage("openai-codex")
 
 Exy.Model.Config.default()
 Exy.Model.Direct.ask("hello", model: "openai_codex:gpt-5.5")
+Exy.Model.Direct.ask("hello", model: "openrouter:anthropic/claude-sonnet-4")
+
+Exy.Agent.Profile.path()
+Exy.Agent.Profile.load()
+Exy.Agent.Profile.model_for(role: :scout)
+Exy.Agent.Profile.provider_options(:openrouter)
 ```
+
+Agent role/model preferences are editable TOML at `~/.exy/agent-profiles.toml`. Roles are optional profile keys, not hardcoded classes; explicit `model`, `system`, and task opts override role defaults.
+
+### Subagents and schedules
+
+Subagents are supervised jobs. LLM subagents create real child Exy sessions, so their work can be attached like any other session:
+
+```elixir
+{:ok, job} = Exy.Subagents.start("Research ReqLLM OpenRouter support", role: :scout)
+Exy.Subagents.status(job.id)
+Exy.Subagents.await(job.id)
+Exy.Subagents.result(job.id)
+Exy.Subagents.cancel(job.id)
+
+# Attach from the shell:
+# exy a <job.child_session_id>
+
+Exy.Subagents.ask("Summarize this repository", role: :summarizer)
+
+Exy.Subagents.run_many([
+  %{role: :scout, task: "Inspect provider docs"},
+  %{role: :reviewer, task: "Review the implementation plan"}
+])
+
+{:ok, schedule} = Exy.Subagents.schedule("Check telemetry errors", every: :timer.minutes(30))
+Exy.Subagents.scheduled()
+Exy.Subagents.unschedule(schedule.id)
+```
+
+The local scheduler uses OTP timers and persists schedule definitions under `~/.exy/subagents/schedules.jsonl`; missed runs are skipped by default. A scheduler backend boundary is planned so hosted/Phoenix deployments can use Oban later without changing the public API.
 
 ### Memory
 

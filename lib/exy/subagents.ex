@@ -1,33 +1,44 @@
 defmodule Exy.Subagents do
   @moduledoc """
-  OTP-native subagent runner.
-
-  This first implementation runs Elixir functions as supervised workers. The
-  same process-tree, budget, and telemetry shape can later wrap Jido/LLM agents.
+  Supervised subagent orchestration.
   """
 
-  @type spec :: %{
-          optional(:id) => term(),
-          optional(:role) => atom(),
-          required(:goal) => String.t(),
-          required(:run) => (map() -> term())
-        }
+  alias Exy.Subagents.{Manager, Scheduler}
 
-  @spec run_many([spec()], keyword()) :: {:ok, [map()]} | {:error, term(), [map()]}
+  @type task_spec :: %{required(:task) => String.t(), optional(atom()) => term()}
+
+  @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
+  def ask(task, opts \\ []) when is_binary(task) do
+    timeout = Keyword.get(opts, :timeout, 120_000)
+
+    with {:ok, job} <- start(task, opts),
+         {:ok, finished} <- await(job.id, timeout) do
+      case finished.status do
+        :ok -> {:ok, finished.result}
+        :error -> {:error, finished.error}
+      end
+    end
+  end
+
+  @spec start(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
+  def start(task, opts \\ []) when is_binary(task), do: Manager.start_job(task, opts)
+
+  @spec run_many([task_spec() | map()], keyword()) :: {:ok, [map()]} | {:error, term(), [map()]}
   def run_many(specs, opts \\ []) when is_list(specs) do
     max_concurrency = Keyword.get(opts, :max_concurrency, min(length(specs), 3))
-    timeout = Keyword.get(opts, :timeout, 60_000)
-    budget = Exy.Budget.new(opts)
+    timeout = Keyword.get(opts, :timeout, 120_000)
 
     specs
-    |> Task.async_stream(&run_one(&1, budget),
+    |> Task.async_stream(&run_spec(&1, opts),
       max_concurrency: max_concurrency,
       timeout: timeout,
       on_timeout: :kill_task
     )
     |> Enum.reduce({:ok, []}, fn
-      {:ok, result}, {:ok, acc} -> {:ok, [result | acc]}
-      {:ok, result}, {:error, reason, acc} -> {:error, reason, [result | acc]}
+      {:ok, {:ok, result}}, {:ok, acc} -> {:ok, [result | acc]}
+      {:ok, {:ok, result}}, {:error, reason, acc} -> {:error, reason, [result | acc]}
+      {:ok, {:error, reason}}, {:ok, acc} -> {:error, reason, acc}
+      {:ok, {:error, reason}}, {:error, _old, acc} -> {:error, reason, acc}
       {:exit, reason}, {:ok, acc} -> {:error, reason, acc}
       {:exit, reason}, {:error, _old, acc} -> {:error, reason, acc}
     end)
@@ -37,6 +48,33 @@ defmodule Exy.Subagents do
     end
   end
 
+  @spec await(String.t(), timeout()) :: {:ok, term()} | {:error, term()}
+  def await(id, timeout \\ 120_000) do
+    started = System.monotonic_time(:millisecond)
+    await_loop(id, timeout, started)
+  end
+
+  @spec jobs() :: [term()]
+  def jobs, do: Manager.jobs()
+
+  @spec status(String.t()) :: {:ok, term()} | {:error, term()}
+  def status(id), do: Manager.status(id)
+
+  @spec cancel(String.t()) :: :ok | {:error, term()}
+  def cancel(id), do: Manager.cancel(id)
+
+  @spec result(String.t()) :: {:ok, term()} | {:error, term()}
+  def result(id), do: Manager.result(id)
+
+  @spec schedule(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
+  def schedule(task, opts \\ []), do: Scheduler.schedule(task, opts)
+
+  @spec scheduled() :: [term()]
+  def scheduled, do: Scheduler.scheduled()
+
+  @spec unschedule(String.t()) :: :ok | {:error, term()}
+  def unschedule(id), do: Scheduler.unschedule(id)
+
   @spec active() :: [map()]
   def active do
     Registry.select(Exy.Registry, [{{{:subagent, :_}, :_, :_}, [], [{{:"$1", :"$2", :"$3"}}]}])
@@ -45,35 +83,73 @@ defmodule Exy.Subagents do
     end)
   end
 
-  defp run_one(spec, budget) do
+  defp run_spec(%{run: run} = spec, _opts) when is_function(run, 1) do
+    run_function_spec(spec)
+  end
+
+  defp run_spec(%{task: task} = spec, opts) when is_binary(task) do
+    task_opts = Keyword.merge(opts, Map.to_list(Map.delete(spec, :task)))
+
+    with {:ok, job} <- start(task, task_opts),
+         {:ok, result} <- await(job.id, Keyword.get(task_opts, :timeout, 120_000)) do
+      {:ok, Map.from_struct(result)}
+    end
+  end
+
+  defp run_spec(%{"task" => task} = spec, opts) when is_binary(task) do
+    atom_spec = Map.new(spec, fn {key, value} -> {String.to_existing_atom(key), value} end)
+    run_spec(atom_spec, opts)
+  rescue
+    ArgumentError -> {:error, :invalid_task_spec}
+  end
+
+  defp run_spec(spec, _opts), do: {:error, {:invalid_task_spec, spec}}
+
+  defp run_function_spec(spec) do
     id = Map.get(spec, :id, new_id())
-    parent = self()
-
-    child_spec = %{
-      id: {:exy_subagent, id},
-      start: {Exy.Subagents.Worker, :start_link, [Map.put(spec, :id, id), parent, budget]},
-      restart: :temporary
-    }
-
+    goal = Map.get(spec, :goal) || Map.get(spec, :task)
     started_at = System.monotonic_time(:millisecond)
 
-    {:ok, pid} = DynamicSupervisor.start_child(Exy.Subagents.Supervisor, child_spec)
-    ref = Process.monitor(pid)
+    Exy.Session.Store.append_trajectory(:subagent_started, %{
+      id: id,
+      role: Map.get(spec, :role),
+      goal: goal
+    })
 
-    receive do
-      {:exy_subagent_result, ^id, result} ->
-        Process.demonitor(ref, [:flush])
-        result
+    try do
+      result = %{
+        id: id,
+        role: Map.get(spec, :role, :worker),
+        goal: goal,
+        status: :ok,
+        result: spec.run.(spec),
+        duration_ms: System.monotonic_time(:millisecond) - started_at
+      }
 
-      {:DOWN, ^ref, :process, ^pid, reason} ->
-        %{
-          id: id,
-          role: Map.get(spec, :role, :worker),
-          goal: spec.goal,
-          status: :error,
-          error: Exception.format_exit(reason),
-          duration_ms: System.monotonic_time(:millisecond) - started_at
-        }
+      Exy.Session.Store.append_trajectory(:subagent_finished, result)
+      {:ok, result}
+    rescue
+      exception -> {:error, Exception.format(:error, exception, __STACKTRACE__)}
+    catch
+      kind, reason -> {:error, Exception.format(kind, reason, __STACKTRACE__)}
+    end
+  end
+
+  defp await_loop(id, timeout, started) do
+    case Manager.status(id) do
+      {:ok, %{status: status} = job} when status in [:ok, :error] ->
+        {:ok, job}
+
+      {:ok, _job} ->
+        if System.monotonic_time(:millisecond) - started >= timeout do
+          {:error, :timeout}
+        else
+          Process.sleep(50)
+          await_loop(id, timeout, started)
+        end
+
+      error ->
+        error
     end
   end
 

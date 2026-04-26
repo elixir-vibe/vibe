@@ -7,14 +7,28 @@ defmodule Exy.Agent do
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
+    opts = resolve_opts(opts)
     configure_model_alias(opts)
     ensure_provider_credentials(opts)
 
     with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
-      Jido.AI.set_system_prompt(pid, system_prompt())
+      Jido.AI.set_system_prompt(pid, system_prompt(opts))
       session_id = Keyword.get(opts, :session_id) || Exy.Session.Store.new_id()
       Exy.Session.Processes.register(pid, session_id)
       {:ok, pid}
+    end
+  end
+
+  @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
+  def ask(prompt, opts \\ []) when is_binary(prompt) do
+    opts = resolve_opts(opts)
+
+    with {:ok, pid} <- start_link(opts) do
+      try do
+        ask_sync(pid, prompt, opts)
+      after
+        if Process.alive?(pid), do: GenServer.stop(pid)
+      end
     end
   end
 
@@ -74,10 +88,58 @@ defmodule Exy.Agent do
     :exit, _reason -> {:error, :agent_unavailable}
   end
 
-  defp system_prompt do
-    case Exy.Memory.Manager.system_prompt_block() do
-      "" -> Exy.Prompts.system()
-      memory -> Exy.Prompts.system() <> "\n\n" <> memory
+  defp system_prompt(opts) do
+    base =
+      case Exy.Memory.Manager.system_prompt_block() do
+        "" -> Exy.Prompts.system()
+        memory -> Exy.Prompts.system() <> "\n\n" <> memory
+      end
+
+    case Keyword.get(opts, :system) do
+      system when is_binary(system) and system != "" ->
+        base <> "\n\nRole instructions:\n" <> system
+
+      _system ->
+        base
+    end
+  end
+
+  defp resolve_opts(opts) do
+    opts
+    |> put_role_model()
+    |> put_role_system()
+    |> put_provider_options()
+  end
+
+  defp put_role_model(opts) do
+    Keyword.put_new_lazy(opts, :model, fn -> Exy.Agent.Profile.model_for(opts) end)
+  end
+
+  defp put_role_system(opts) do
+    if Keyword.has_key?(opts, :system) do
+      opts
+    else
+      case Exy.Agent.Profile.system_for(opts) do
+        nil -> opts
+        system -> Keyword.put(opts, :system, system)
+      end
+    end
+  end
+
+  defp put_provider_options(opts) do
+    model = Keyword.get(opts, :model) || Exy.Model.Config.default()
+    provider = model |> to_string() |> String.split(":", parts: 2) |> hd()
+    provider_options = Exy.Agent.Profile.provider_options(provider)
+
+    if provider_options == [] do
+      opts
+    else
+      Keyword.update(
+        opts,
+        :provider_options,
+        provider_options,
+        &Keyword.merge(provider_options, &1)
+      )
     end
   end
 
@@ -92,9 +154,21 @@ defmodule Exy.Agent do
   end
 
   defp ensure_provider_credentials(opts) do
-    case Exy.Model.Config.resolve(opts) do
-      "openai_codex:" <> _model -> Exy.Auth.Codex.ensure_fresh()
-      _model -> :ok
+    opts
+    |> Exy.Model.Config.resolve()
+    |> to_string()
+    |> String.split(":", parts: 2)
+    |> hd()
+    |> auth_provider_name()
+    |> Exy.Auth.ensure_fresh()
+    |> case do
+      {:ok, _credentials} -> :ok
+      {:error, {:unknown_auth_provider, _provider}} -> :ok
+      {:error, :not_found} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp auth_provider_name("openai_codex"), do: "openai-codex"
+  defp auth_provider_name(provider), do: provider
 end
