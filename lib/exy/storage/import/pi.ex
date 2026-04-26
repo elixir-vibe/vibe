@@ -27,7 +27,7 @@ defmodule Exy.Storage.Import.Pi do
       if imported?(file) do
         {count, skipped + 1, errors}
       else
-        case import_file(file) do
+        case import_file(file, index?: false) do
           {:ok, _result} ->
             {count + 1, skipped, errors}
 
@@ -37,23 +37,25 @@ defmodule Exy.Storage.Import.Pi do
       end
     end)
     |> then(fn {count, skipped, errors} ->
+      if count > 0 do
+        Exy.Storage.FTS.rebuild()
+        Exy.Storage.FTS.optimize()
+      end
+
       {:ok, %{imported: count, skipped: skipped, errors: Enum.reverse(errors)}}
     end)
   end
 
-  defp import_file(file) do
-    with {:ok, entries} <- read_jsonl(file),
-         {:ok, header} <- header(entries) do
+  defp import_file(file, opts \\ []) do
+    with {:ok, header, count, events} <- parse_file(file) do
       session_id = Map.fetch!(header, "id")
       at = parse_datetime(header["timestamp"]) || DateTime.utc_now()
       Exy.Session.Store.ensure_session(session_id, at, cwd: header["cwd"])
 
-      {count, events} =
-        entries
-        |> Enum.reject(&(Map.get(&1, "type") == "session"))
-        |> Enum.reduce({0, []}, fn entry, acc -> import_entry(session_id, acc, entry) end)
-
-      :ok = Exy.Session.Store.append_ui_events(Enum.reverse(events))
+      :ok =
+        Exy.Session.Store.append_ui_events(Enum.reverse(events),
+          index?: Keyword.get(opts, :index?, true)
+        )
 
       Exy.Storage.Import.record!(:pi, import_id(file), %{
         session_id: session_id,
@@ -154,30 +156,34 @@ defmodule Exy.Storage.Import.Pi do
 
   defp import_id(file), do: "pi:#{file}"
 
-  defp read_jsonl(file) do
-    case File.read(file) do
-      {:ok, text} ->
-        entries =
-          text
-          |> String.split("\n", trim: true)
-          |> Enum.flat_map(fn line ->
-            case Jason.decode(line) do
-              {:ok, map} when is_map(map) -> [map]
-              _invalid -> []
-            end
-          end)
+  defp parse_file(file) do
+    file
+    |> File.stream!(:line, [])
+    |> Enum.reduce({nil, 0, []}, fn line, {header, count, events} ->
+      case decode_line(line) do
+        %{"type" => "session", "id" => id} = entry when is_binary(id) ->
+          {entry, count, events}
 
-        {:ok, entries}
+        entry when is_map(entry) and not is_nil(header) ->
+          {new_count, new_events} = import_entry(header["id"], {count, events}, entry)
+          {header, new_count, new_events}
 
-      {:error, reason} ->
-        {:error, reason}
+        _entry ->
+          {header, count, events}
+      end
+    end)
+    |> case do
+      {nil, _count, _events} -> {:error, :missing_pi_session_header}
+      {header, count, events} -> {:ok, header, count, events}
     end
+  rescue
+    exception -> {:error, exception}
   end
 
-  defp header(entries) do
-    case Enum.find(entries, &(Map.get(&1, "type") == "session" and is_binary(Map.get(&1, "id")))) do
-      nil -> {:error, :missing_pi_session_header}
-      header -> {:ok, header}
+  defp decode_line(line) do
+    case Jason.decode(line) do
+      {:ok, map} when is_map(map) -> map
+      _invalid -> nil
     end
   end
 

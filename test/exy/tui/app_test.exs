@@ -62,6 +62,38 @@ defmodule Exy.TUI.AppTest do
     assert App.snapshot(app).ui.session_id == Exy.Session.state(target).session_id
   end
 
+  test "migrates local startup session to server session when server becomes available" do
+    parent = self()
+
+    migration_fun = fn current ->
+      {:ok, remote} =
+        Exy.Session.start_link(
+          session_id: current.session_id,
+          cwd: current.cwd,
+          model: current.model,
+          persist?: false
+        )
+
+      send(parent, {:migrated, current.session_id})
+      {:ok, :remote_node, current.session_id, remote}
+    end
+
+    {:ok, app} =
+      App.start_link(
+        session_id: "async-migration-session",
+        start_server_async: true,
+        server_migration_fun: migration_fun,
+        persist?: false
+      )
+
+    assert_receive {:migrated, "async-migration-session"}, 1_000
+    Process.sleep(20)
+
+    snapshot = App.snapshot(app)
+    assert snapshot.ui.session_id == "async-migration-session"
+    assert Enum.any?(snapshot.ui.notifications, &(&1.text == "attached to background server"))
+  end
+
   test "offers generic slash command autocomplete" do
     {:ok, app} = App.start_link()
 

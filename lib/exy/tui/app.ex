@@ -39,6 +39,7 @@ defmodule Exy.TUI.App do
     remote_node = Keyword.get(opts, :remote_node)
     active_sessions_timer = Process.send_after(self(), :active_sessions_tick, 0)
     server_migration_timer = maybe_schedule_server_migration(opts)
+    server_migration_fun = Keyword.get(opts, :server_migration_fun, &default_server_migration/1)
 
     {:ok,
      %{
@@ -51,7 +52,8 @@ defmodule Exy.TUI.App do
        subscribers: %{},
        remote_node: remote_node,
        active_sessions_timer: active_sessions_timer,
-       server_migration_timer: server_migration_timer
+       server_migration_timer: server_migration_timer,
+       server_migration_fun: server_migration_fun
      }}
   end
 
@@ -158,14 +160,7 @@ defmodule Exy.TUI.App do
   defp maybe_migrate_to_remote_session(state) do
     current = Session.state(state.ui)
 
-    with {:ok, node} <- Exy.Remote.connect(),
-         {:ok, %{id: session_id}} <-
-           Exy.Remote.Session.start(
-             session_id: current.session_id,
-             cwd: current.cwd,
-             model: current.model
-           ),
-         {:ok, remote_session} <- Exy.Remote.Session.lookup(session_id),
+    with {:ok, node, _session_id, remote_session} <- state.server_migration_fun.(current),
          :ok <- Session.detach(state.ui, self()),
          {:ok, _snapshot, _cursor} <- Session.attach(remote_session, self()) do
       Session.dispatch(
@@ -184,6 +179,19 @@ defmodule Exy.TUI.App do
       _reason ->
         timer = Process.send_after(self(), :server_migration_tick, 1_000)
         %{state | server_migration_timer: timer}
+    end
+  end
+
+  defp default_server_migration(current) do
+    with {:ok, node} <- Exy.Remote.connect(),
+         {:ok, %{id: session_id}} <-
+           Exy.Remote.Session.start(
+             session_id: current.session_id,
+             cwd: current.cwd,
+             model: current.model
+           ),
+         {:ok, remote_session} <- Exy.Remote.Session.lookup(session_id) do
+      {:ok, node, session_id, remote_session}
     end
   end
 

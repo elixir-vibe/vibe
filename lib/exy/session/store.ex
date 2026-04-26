@@ -5,7 +5,7 @@ defmodule Exy.Session.Store do
 
   import Ecto.Query
 
-  alias Exy.Session.Store.{Codec, Listing}
+  alias Exy.Session.Store.{Codec, Listing, Summary}
   alias Exy.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent}
   alias Exy.Trajectory
   alias Exy.UI.Event
@@ -74,7 +74,7 @@ defmodule Exy.Session.Store do
     |> Exy.Repo.insert(on_conflict: :nothing, conflict_target: :event_id)
     |> case do
       {:ok, _event} ->
-        refresh_session_summary(event.session_id)
+        Summary.refresh(event.session_id)
         :ok
 
       {:error, reason} ->
@@ -172,7 +172,7 @@ defmodule Exy.Session.Store do
     |> case do
       {:ok, stored_event} ->
         Exy.Storage.FTS.index_ui_event(stored_event)
-        refresh_session_summary(event.session_id)
+        Summary.refresh(event.session_id)
         :ok
 
       {:error, reason} ->
@@ -180,10 +180,11 @@ defmodule Exy.Session.Store do
     end
   end
 
-  @spec append_ui_events([{non_neg_integer(), Event.t()}]) :: :ok | {:error, term()}
-  def append_ui_events([]), do: :ok
+  @spec append_ui_events([{non_neg_integer(), Event.t()}], keyword()) :: :ok | {:error, term()}
+  def append_ui_events(events, opts \\ [])
+  def append_ui_events([], _opts), do: :ok
 
-  def append_ui_events([{_seq, %Event{} = first_event} | _rest] = events) do
+  def append_ui_events([{_seq, %Event{} = first_event} | _rest] = events, opts) do
     Exy.Storage.ensure!()
     ensure_session(first_event.session_id, first_event.at)
 
@@ -200,8 +201,12 @@ defmodule Exy.Session.Store do
           )
         end)
 
-        Exy.Storage.FTS.index_ui_event_rows(rows)
-        refresh_session_summary(first_event.session_id)
+        if Keyword.get(opts, :index?, true), do: Exy.Storage.FTS.index_ui_event_rows(rows)
+
+        if Keyword.get(opts, :refresh_summary?, true),
+          do: Summary.refresh(first_event.session_id)
+
+        :ok
       end)
 
     case result do
@@ -273,31 +278,6 @@ defmodule Exy.Session.Store do
       at: Exy.Storage.normalize_datetime(event.at),
       data: encoded["data"]
     }
-  end
-
-  defp refresh_session_summary(session_id) do
-    case Listing.summary(session_id) do
-      nil ->
-        :ok
-
-      summary ->
-        session = Exy.Repo.get!(Session, session_id)
-
-        Ecto.Changeset.change(session, %{
-          status: to_string(summary.status || :idle),
-          model: summary.model,
-          message_count: summary.message_count,
-          first_message_preview: summary.first_message,
-          last_message_preview: summary.last_message_preview,
-          usage_input_tokens: get_in(summary.usage, [:input_tokens]) || 0,
-          usage_output_tokens: get_in(summary.usage, [:output_tokens]) || 0,
-          usage_total_tokens: get_in(summary.usage, [:total_tokens]) || 0,
-          usage_total_cost: get_in(summary.usage, [:total_cost]) || 0.0
-        })
-        |> Exy.Repo.update!()
-
-        :ok
-    end
   end
 
   defp trajectory_events(opts) do

@@ -88,6 +88,7 @@ exy storage fts rebuild
 exy storage fts optimize
 exy storage checkpoint
 exy storage vacuum
+exy search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
 exy storage search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
 exy storage import pi <path>
 ```

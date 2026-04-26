@@ -20,10 +20,7 @@ defmodule Exy.Storage.FTS do
 
     if event_ids != [] do
       Exy.Repo.delete_all(from(row in UIEventFTS, where: row.event_id in ^event_ids))
-
-      fts_rows
-      |> Enum.chunk_every(500)
-      |> Enum.each(&Exy.Repo.insert_all(UIEventFTS, &1))
+      insert_ui_event_fts_rows(fts_rows)
     end
 
     :ok
@@ -39,15 +36,7 @@ defmodule Exy.Storage.FTS do
   def index_memory(%Memory{} = memory) do
     Exy.Repo.delete_all(from(row in MemoryFTS, where: row.memory_id == ^memory.id))
 
-    Exy.Repo.insert_all(MemoryFTS, [
-      %{
-        memory_id: memory.id,
-        scope_type: memory.scope_type,
-        scope_id: memory.scope_id,
-        inserted_at: DateTime.to_iso8601(memory.inserted_at),
-        text: memory.text
-      }
-    ])
+    Exy.Repo.insert_all(MemoryFTS, [memory_fts_row(memory)])
 
     :ok
   end
@@ -68,16 +57,77 @@ defmodule Exy.Storage.FTS do
   @spec rebuild() :: :ok
   def rebuild do
     clear()
-
-    UIEvent
-    |> Exy.Repo.all()
-    |> Enum.each(&index_ui_event/1)
-
-    Memory
-    |> Exy.Repo.all()
-    |> Enum.each(&index_memory/1)
-
+    rebuild_ui_events(0)
+    rebuild_memories("")
     :ok
+  end
+
+  defp rebuild_ui_events(last_id) do
+    rows =
+      UIEvent
+      |> where([event], event.id > ^last_id)
+      |> order_by([event], event.id)
+      |> limit(2_000)
+      |> Exy.Repo.all()
+
+    case rows do
+      [] ->
+        :ok
+
+      rows ->
+        rows
+        |> Enum.flat_map(&ui_event_fts_row/1)
+        |> insert_ui_event_fts_rows()
+
+        rows |> List.last() |> Map.fetch!(:id) |> rebuild_ui_events()
+    end
+  end
+
+  defp rebuild_memories(last_id) do
+    rows =
+      Memory
+      |> where([memory], memory.id > ^last_id)
+      |> order_by([memory], memory.id)
+      |> limit(2_000)
+      |> Exy.Repo.all()
+
+    case rows do
+      [] ->
+        :ok
+
+      rows ->
+        rows
+        |> Enum.map(&memory_fts_row/1)
+        |> insert_memory_fts_rows()
+
+        rows |> List.last() |> Map.fetch!(:id) |> rebuild_memories()
+    end
+  end
+
+  defp insert_ui_event_fts_rows([]), do: :ok
+
+  defp insert_ui_event_fts_rows(rows) do
+    rows
+    |> Enum.chunk_every(1_000)
+    |> Enum.each(&Exy.Repo.insert_all(UIEventFTS, &1))
+  end
+
+  defp insert_memory_fts_rows([]), do: :ok
+
+  defp insert_memory_fts_rows(rows) do
+    rows
+    |> Enum.chunk_every(1_000)
+    |> Enum.each(&Exy.Repo.insert_all(MemoryFTS, &1))
+  end
+
+  defp memory_fts_row(%Memory{} = memory) do
+    %{
+      memory_id: memory.id,
+      scope_type: memory.scope_type,
+      scope_id: memory.scope_id,
+      inserted_at: DateTime.to_iso8601(memory.inserted_at),
+      text: memory.text
+    }
   end
 
   @spec optimize() :: :ok
