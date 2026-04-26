@@ -8,8 +8,8 @@ defmodule Exy.Session do
 
   use GenServer
 
-  alias Exy.Model.Usage
-  alias Exy.UI.{Command, Event, PluginBridge, PromptRunner, Reducer, SlashCommands, State}
+  alias Exy.Session.PromptLifecycle
+  alias Exy.UI.{Command, Event, PluginBridge, Reducer, SlashCommands, State}
 
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})
 
@@ -96,8 +96,8 @@ defmodule Exy.Session do
     {:ok,
      %{
        state: state,
-       ask_fun: Keyword.get(opts, :ask_fun, &PromptRunner.default_ask/2),
-       llm_opts: llm_opts(opts),
+       ask_fun: Keyword.get(opts, :ask_fun, &Exy.UI.PromptRunner.default_ask/2),
+       llm_opts: PromptLifecycle.llm_opts(opts),
        streaming?: Keyword.get(opts, :streaming?, not Keyword.has_key?(opts, :ask_fun)),
        locked_by_job: Keyword.get(opts, :locked_by_job),
        lock_owner: Keyword.get(opts, :lock_owner),
@@ -172,7 +172,7 @@ defmodule Exy.Session do
 
   def handle_info({:prompt_result, ref, result}, %{prompt_ref: ref} = state) do
     state = %{state | prompt_task: nil, prompt_ref: nil, active_agent: nil}
-    state = record_prompt_result(state, result)
+    state = PromptLifecycle.record_result(state, result, &emit/2)
     {:noreply, state}
   end
 
@@ -211,25 +211,11 @@ defmodule Exy.Session do
 
   defp handle_command(%Command{type: :submit_prompt, data: %{text: text}}, state)
        when is_binary(text) do
-    session_id = state.state.session_id
-    state = emit(state, Event.new(:prompt_submitted, session_id, %{text: text}))
-    state = emit(state, Event.new(:user_message_added, session_id, %{text: text}))
-    ask_fun = state.ask_fun
-    parent = self()
-    ref = make_ref()
-    context = %{session_id: session_id}
-    Exy.Memory.Manager.on_turn_start(length(state.state.messages), text, context)
-    prompt_text = prompt_with_memory(text, context)
-
-    {ask_opts, state} = ask_options(state, parent, ref, session_id)
-
-    {:ok, task} = PromptRunner.start(ask_fun, prompt_text, ask_opts, parent, ref)
-
-    %{state | prompt_task: task, prompt_ref: ref, active_agent: nil, last_user_prompt: text}
+    PromptLifecycle.submit(state, text, &emit/2)
   end
 
   defp handle_command(%Command{type: :cancel_stream}, state) do
-    cancel_prompt(state)
+    PromptLifecycle.cancel(state, &emit/2)
   end
 
   defp handle_command(%Command{type: :toggle_truncation}, state) do
@@ -272,108 +258,6 @@ defmodule Exy.Session do
         text: "This subagent session is read-only until the job finishes."
       })
     )
-  end
-
-  defp llm_opts(opts) do
-    opts
-    |> Keyword.take([:model, :role, :system, :allowed_tools])
-    |> maybe_put_llm_provider_options(Keyword.get(opts, :provider_options))
-  end
-
-  defp maybe_put_llm_provider_options(opts, []), do: opts
-  defp maybe_put_llm_provider_options(opts, nil), do: opts
-
-  defp maybe_put_llm_provider_options(opts, provider_options),
-    do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
-
-  defp ask_options(%{streaming?: true} = state, parent, ref, session_id) do
-    state = emit(state, Event.new(:assistant_stream_started, session_id, %{}))
-
-    ask_opts =
-      state.llm_opts
-      |> Keyword.put(:session_id, session_id)
-      |> Keyword.put(:tool_context, %{session_id: session_id})
-      |> Keyword.put(:stream_owner, {parent, ref})
-      |> Keyword.put(:on_result, &send(parent, {:assistant_delta, &1}))
-      |> Keyword.put(:on_thinking, &send(parent, {:assistant_thinking_delta, &1}))
-      |> Keyword.put(:on_tool_started, &send(parent, {:tool_started, &1}))
-      |> Keyword.put(:on_tool_finished, &send(parent, {:tool_finished, &1}))
-
-    {ask_opts, state}
-  end
-
-  defp ask_options(state, parent, ref, session_id) do
-    ask_opts =
-      state.llm_opts
-      |> Keyword.put(:session_id, session_id)
-      |> Keyword.put(:tool_context, %{session_id: session_id})
-      |> Keyword.put(:stream_owner, {parent, ref})
-      |> Keyword.put(:on_tool_started, &send(parent, {:tool_started, &1}))
-      |> Keyword.put(:on_tool_finished, &send(parent, {:tool_finished, &1}))
-
-    {ask_opts, state}
-  end
-
-  defp cancel_prompt(%{prompt_task: nil} = state), do: state
-
-  defp cancel_prompt(state) do
-    PromptRunner.cancel(state.active_agent, state.prompt_task)
-
-    state
-    |> Map.merge(%{prompt_task: nil, prompt_ref: nil, active_agent: nil})
-    |> emit(Event.new(:assistant_aborted, state.state.session_id, %{reason: "cancelled"}))
-  end
-
-  defp record_prompt_result(state, {:ok, response}) do
-    Exy.Memory.Manager.sync_turn(state.last_user_prompt || "", response_text(response), %{
-      session_id: state.state.session_id
-    })
-
-    state = %{state | last_user_prompt: nil}
-    state = record_successful_response(state, response)
-
-    case Usage.from_response(response) do
-      nil -> state
-      usage -> emit(state, Event.new(:usage_updated, state.state.session_id, usage))
-    end
-  end
-
-  defp record_prompt_result(state, {:error, reason}) do
-    state = %{state | last_user_prompt: nil}
-
-    state =
-      emit(
-        state,
-        Event.new(:assistant_aborted, state.state.session_id, %{reason: inspect(reason)})
-      )
-
-    emit(
-      state,
-      Event.new(:assistant_message_added, state.state.session_id, %{error: inspect(reason)})
-    )
-  end
-
-  defp response_text(response) when is_binary(response), do: response
-  defp response_text(%{output: output}) when is_binary(output), do: output
-  defp response_text(response), do: inspect(response)
-
-  defp prompt_with_memory(text, context) do
-    case Exy.Memory.Manager.prefetch(text, context) do
-      "" -> text
-      memory -> text <> "\n\n" <> memory
-    end
-  end
-
-  defp record_successful_response(
-         %{state: %{streaming_message: %{text: text}}} = state,
-         _response
-       )
-       when is_binary(text) and text != "" do
-    emit(state, Event.new(:assistant_stream_finished, state.state.session_id, %{}))
-  end
-
-  defp record_successful_response(state, response) do
-    emit(state, Event.new(:assistant_message_added, state.state.session_id, %{result: response}))
   end
 
   defp emit(state, event, opts \\ []) do

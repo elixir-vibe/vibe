@@ -81,12 +81,14 @@ defmodule Exy.Subagents.Job do
   end
 
   defp start_child_session(job, opts) do
+    profile_opts = profile_opts(job, opts)
+
     session_opts = [
       session_id: job.child_session_id,
       model: job.model,
       role: job.role,
-      system: Exy.Agent.Profile.system_for(profile_opts(job, opts)),
-      allowed_tools: Exy.Agent.Profile.tools_for(profile_opts(job, opts)),
+      system: Exy.Agent.Profile.system_for(profile_opts),
+      allowed_tools: Exy.Agent.Profile.tools_for(profile_opts),
       ask_fun: Keyword.get(opts, :ask_fun, &Exy.UI.PromptRunner.default_ask/2)
     ]
 

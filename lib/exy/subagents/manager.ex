@@ -3,7 +3,7 @@ defmodule Exy.Subagents.Manager do
 
   use GenServer
 
-  alias Exy.Subagents.JobInfo
+  alias Exy.Subagents.{JobBuilder, JobInfo}
 
   defstruct jobs: %{}
 
@@ -26,11 +26,11 @@ defmodule Exy.Subagents.Manager do
   def cancel(id), do: GenServer.call(__MODULE__, {:cancel, id})
 
   @impl true
-  def init(_opts), do: {:ok, %__MODULE__{jobs: reconstruct_jobs()}}
+  def init(_opts), do: {:ok, %__MODULE__{jobs: JobBuilder.reconstruct()}}
 
   @impl true
   def handle_call({:start_job, task, opts}, _from, state) do
-    case new_job(task, opts) do
+    case JobBuilder.new(task, opts) do
       {:ok, job} ->
         start_job_child(job, opts, state)
 
@@ -113,70 +113,5 @@ defmodule Exy.Subagents.Manager do
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
-  end
-
-  defp reconstruct_jobs do
-    Registry.select(Exy.Registry, [
-      {{{:subagent, :"$1"}, :"$2", :"$3"}, [], [{{:"$1", :"$2", :"$3"}}]}
-    ])
-    |> Map.new(fn {id, pid, meta} ->
-      meta = Map.new(meta)
-
-      job = %JobInfo{
-        id: id,
-        task: Map.get(meta, :task, ""),
-        role: Map.get(meta, :role),
-        model: Map.get(meta, :model) || Exy.Agent.Profile.model_for(role: Map.get(meta, :role)),
-        parent_session_id: Map.get(meta, :parent_session_id),
-        child_session_id: Map.get(meta, :child_session_id),
-        status: :running,
-        started_at: started_at(meta),
-        pid: pid
-      }
-
-      Process.monitor(pid)
-      {id, job}
-    end)
-  end
-
-  defp started_at(%{started_at: millis}) when is_integer(millis),
-    do: DateTime.from_unix!(millis, :millisecond)
-
-  defp started_at(_meta), do: DateTime.utc_now()
-
-  defp new_job(task, opts) do
-    role = Keyword.get(opts, :role)
-
-    with :ok <- validate_role(role, opts) do
-      id = Keyword.get_lazy(opts, :id, &new_id/0)
-      child_session_id = Keyword.get_lazy(opts, :child_session_id, &Exy.Session.Store.new_id/0)
-      model = Keyword.get(opts, :model) || Exy.Agent.Profile.model_for(role: role)
-
-      {:ok,
-       %JobInfo{
-         id: id,
-         task: task,
-         role: role,
-         model: model,
-         parent_session_id: Keyword.get(opts, :parent_session_id),
-         child_session_id: child_session_id,
-         status: :running,
-         started_at: DateTime.utc_now()
-       }}
-    end
-  end
-
-  defp validate_role(nil, _opts), do: :ok
-
-  defp validate_role(role, opts) do
-    cond do
-      Keyword.has_key?(opts, :model) or Keyword.has_key?(opts, :system) -> :ok
-      match?({:ok, _profile}, Exy.Agent.Profile.role(role)) -> :ok
-      true -> {:error, {:unknown_role, role}}
-    end
-  end
-
-  defp new_id do
-    "sg-" <> Base.url_encode64(:crypto.strong_rand_bytes(5), padding: false)
   end
 end
