@@ -1,189 +1,294 @@
 # Exy
 
-Minimal BEAM-native coding-agent substrate.
+BEAM-native coding-agent substrate for Elixir/OTP projects.
 
-## Install
+Exy is an OTP application, terminal client, background session server, and coding-agent runtime built around a small model-facing tool surface and a large set of native Elixir introspection APIs.
 
-```elixir
-{:exy, "~> 0.1.0"}
-```
+## Highlights
 
-Or run from this repository:
+- Tool-capable coding agent backed by Jido/ReqLLM.
+- Default model: `openai_codex:gpt-5.5` with ChatGPT/Codex OAuth credentials.
+- Minimal model-facing tools:
+  - `read`
+  - `write`
+  - `edit`
+  - `eval`
+  - `ast`
+  - `lsp`
+- Semantic UI state shared by TUI and future LiveView clients.
+- Ghostty-backed TTY/PTY integration.
+- Tmux-like background server and attachable sessions.
+- Append-only canonical session storage under `~/.exy/sessions`.
+- Local telemetry recorder under `~/.exy/telemetry` with `Exy.Telemetry` self-inspection APIs.
+- Plugin system with supervised background children, semantic UI updates, and plugin-registered slash commands.
+- Iodata-first terminal widgets, Markdown rendering, and dark/light themes.
+
+## Install from checkout
 
 ```bash
+cd ~/Development/exy
+mix deps.get
+mix ci
+```
+
+Run from the checkout:
+
+```bash
+mix exy
 mix exy --help
 ```
 
-Install a local `exy` executable from a checkout:
+Install a local `exy` executable:
 
 ```bash
 mix escript.install --force
-```
-
-Make sure Mix's escript directory is on your `PATH` (Mix prints the exact install path; commonly `~/.mix/escripts`):
-
-```bash
 export PATH="$HOME/.mix/escripts:$PATH"
 ```
 
 Then run:
 
 ```bash
-exy --help
 exy
+exy --help
 ```
 
-By default, `exy` behaves like a small tmux-style client: it starts the Exy background server when needed, creates or resumes the latest server-owned session, and attaches the TUI. Closing the TUI detaches the client; the server-owned session remains available for later `exy attach`.
+## CLI overview
 
-Exy keeps the model-facing tool surface small:
+Default interactive entrypoints open the TUI and attach to a server-owned session when possible:
 
-- `read`
-- `edit` / `write`
-- `bash` / terminal
-- `eval` → `Exy.Eval.run/2`
-- `ast` → `Exy.Code.AST.run/1`
-- `lsp` → `Exy.Code.LSP.run/1`
+```bash
+exy
+mix exy
+exy attach
+exy a
+```
 
-Everything else is normal Elixir callable from `eval`:
+Server/session commands:
 
-- `Exy.OTP` — process, ETS, supervision, runtime introspection
-- `Exy.Profile` — `:cprof`, `:eprof`, `:fprof`, process-growth helpers
-- `Exy.Subagents` — supervised subagent process runner
-- `Exy.Skill` — procedural-memory skill files
-- `Exy.Session` / `Exy.Session.Store` — live sessions and persisted JSONL dialogs/events under `~/.exy/sessions`
-- `Exy.Trajectory` — typed semantic event struct projected from canonical session storage
-- `Exy.Model.Config` / `Exy.Model.Direct` / `Exy.Model.Usage` — model selection, direct provider calls, and usage accounting
-- `Exy.Context` — pi-style context compaction checkpoints
-- `Exy.Runtime` / `Exy.Runtime.Standalone` / `Exy.Script` — runtime behaviour, standalone BEAM evaluator, and Mix.install script runner
-- `Exy.Sandbox.Policy` — explicit isolation policy data for runtime selection
-- `Exy.Code.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
-- `Exy.SelfPatch` — validated development hot-compile helpers
-- `Exy.Agent` / `Exy.Agent.Coding` — Jido.AI ReAct agent over Exy's coding tools
-- `Exy.Auth` / `Exy.Auth.Codex` — behaviour-based auth providers and ChatGPT/Codex OAuth
-- `Exy.Plugin` — behaviour-based plugin hooks discovered from `Exy.Plugins.*`
-- `Exy.UI` — UI-neutral event/state/command layer for TUI and future LiveView clients
-- `Exy.Terminal` — Ghostty-backed terminal panes and terminal-aware snapshots
-- `Exy.Runtime.Python` / `Exy.Runtime.JS` — optional Pythonx and QuickBEAM evaluation helpers
+```bash
+exy server start
+exy server status
+exy server stop
+exy new
+exy n
+exy sessions
+exy ls
+exy send <session-id> "prompt"
+exy attach <session-id>
+exy a <session-id>
+```
 
-## First principles
+Scriptable/non-interactive commands remain available through flags such as:
 
-1. Few tools outside, many BEAM powers inside.
-2. Prefer `eval` over shelling out to `mix run`.
-3. Prefer `ast` over grep for Elixir syntax.
-4. Use LSP for diagnostics/navigation, runtime eval for OTP state.
-5. Subagents are OTP processes, not prompt magic.
-6. Self-improvement evolves skills/helpers first, runtime core only with validation.
-7. Tests come before self-modification; `Exy.Code.Checks.run_all/1` gates reloads.
+```bash
+mix exy -p "Inspect runtime info"
+mix exy --eval "Exy.OTP.runtime_info()"
+mix exy --checks
+mix exy --codex-usage
+mix exy --login codex
+```
 
-## Examples
+## Slash commands
+
+The TUI supports behavior-backed slash command modules and command autocomplete.
+
+Built-ins:
+
+```text
+/sessions  Browse and attach sessions
+/session   Alias for /sessions
+/s         Alias for /sessions
+/new       Start a new session
+/n         Alias for /new
+/attach    Open session selector
+/attach ID Attach by session id
+/a ID      Alias for /attach ID
+/model     Choose model
+/skill     Choose skill
+/clear     Clear visible messages
+/compact   Compact context
+/commands  Command palette
+```
+
+Typing `/` opens generic autocomplete. Plugins can contribute commands by returning modules that implement `Exy.UI.SlashCommand` from `Exy.Plugin.commands/1`.
+
+## Runtime files
+
+Exy keeps runtime state under `~/.exy` by default. Set `EXY_HOME` to isolate a test/dev instance.
+
+```text
+~/.exy/auth.json              # ChatGPT/Codex OAuth credentials
+~/.exy/server.cookie          # Exy-specific Erlang distribution cookie
+~/.exy/server.json            # server node metadata
+~/.exy/server.out             # background server log
+~/.exy/sessions/<id>.jsonl    # canonical append-only session log
+~/.exy/sessions/<id>.log      # dependency/session log output
+~/.exy/telemetry/events.jsonl # local telemetry events
+~/.exy/skills                 # skill files
+```
+
+Environment overrides:
+
+```bash
+EXY_HOME=/tmp/exy-dev
+EXY_SESSION_DIR=/tmp/exy-sessions
+EXY_TELEMETRY_DIR=/tmp/exy-telemetry
+```
+
+## Elixir APIs for agents
+
+Everything below is callable through `eval`; prefer these APIs over adding narrow new tools.
+
+### Sessions
+
+```elixir
+{:ok, session} = Exy.Session.start(session_id: "work")
+{:ok, snapshot, cursor} = Exy.Session.attach(session)
+Exy.Session.dispatch(session, {:submit_prompt, %{text: "hello"}})
+Exy.Session.detach(session)
+Exy.Session.state(session)
+Exy.Session.list()
+Exy.Session.active_count()
+```
+
+Durable session data:
+
+```elixir
+Exy.Session.Store.list()
+Exy.Session.Store.ui_events("work")
+Exy.Session.Store.trajectory(session_id: "work")
+```
+
+### Telemetry/self-inspection
+
+Exy records selected Exy, ReqLLM, Jido, Finch, and WebSockex telemetry events locally.
+
+```elixir
+Exy.Telemetry.path()
+Exy.Telemetry.events()
+Exy.Telemetry.recent()
+Exy.Telemetry.recent(100)
+Exy.Telemetry.all(limit: 1_000)
+Exy.Telemetry.summary()
+Exy.Telemetry.clear()
+```
+
+Emit custom local telemetry:
+
+```elixir
+Exy.Telemetry.execute([:exy, :custom, :event], %{count: 1}, %{source: :eval})
+
+Exy.Telemetry.span([:exy, :custom, :work], %{name: :demo}, fn ->
+  :ok
+end)
+```
+
+OpenTelemetry is available in-process. Exy disables external span processors by default so no external collector is required. ReqLLM's OpenTelemetry bridge is attached when OTel is available; exporting elsewhere can be enabled later by configuring normal OpenTelemetry processors/exporters.
+
+### Coding helpers
+
+```elixir
+Exy.Code.AST.run(%{action: :search, path: "lib/", pattern: "def handle_call(_, _, _) do _ end"})
+Exy.Code.LSP.run(%{action: :diagnostics, file: "lib/exy.ex"})
+Exy.Code.Checks.analyze()
+Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
+```
+
+### Runtime/eval helpers
 
 ```elixir
 Exy.Eval.run("Exy.OTP.runtime_info()")
 
-Exy.Code.AST.run(%{
-  action: :search,
-  path: "lib/",
-  pattern: "def handle_call(_, _, _) do _ end"
-})
-
-Exy.Subagents.run_many([
-  %{role: :static, goal: "Count modules", run: fn _ -> length(Path.wildcard("lib/**/*.ex")) end},
-  %{role: :runtime, goal: "Runtime info", run: fn _ -> Exy.OTP.runtime_info() end}
-])
-
-# ChatGPT/Codex OAuth
-Exy.Auth.login("codex")
-Exy.Auth.ensure_fresh("openai-codex")
-Exy.Auth.usage("openai-codex")
-
-# Elixir API: Jido-backed agent
-{:ok, pid} = Exy.start_link()
-Exy.ask(pid, "Use eval to inspect runtime info")
-Exy.Session.list()
-
-# CLI / Mix task
-#   mix exy
-#   exy server start
-#   exy server status
-#   exy server stop
-#   exy new
-#   exy sessions
-#   exy send <session-id> "Inspect runtime info"
-#   exy attach <session-id>
-#   mix exy -p "Inspect runtime info"
-#   mix exy --eval "Exy.OTP.runtime_info()"
-#   mix exy --compact --keep-recent 20
-#   mix exy --checks
-#   mix exy --codex-usage
-#   mix exy --sessions
-#   mix exy --session work-1 -p "Continue this persisted session"
-#   mix exy --login codex
-
-# Expert LSP gateway
-Exy.Code.LSP.run(%{action: :diagnostics, file: "lib/exy.ex"})
-
-# Self inspection and validation
-Exy.supervision_tree(depth: 2)
-report = Exy.Code.Checks.analyze()
-report.ok?
-report.failures
-Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
-Exy.SelfPatch.deployment_gate()
-Exy.SelfPatch.compile_and_reload()
-
-# Livebook-style standalone runtime
 {:ok, runtime} = Exy.Runtime.Standalone.start_link()
 Exy.Runtime.Standalone.evaluate(runtime, "Mix.install([])\nx = 1 + 2")
 Exy.Runtime.Standalone.evaluate(runtime, "x * 2")
 Exy.Runtime.Standalone.stop(runtime)
 
-# One-shot scripts with Mix.install/2
 Exy.Script.run_string("Mix.install([])\nIO.puts(:ok)")
-Exy.Script.run_string("x = 1 + 2", runtime: :standalone)
-
-# Optional Python/JS helpers through Pythonx and QuickBEAM
 Exy.Runtime.Python.run("x = 1 + 2\nx", %{})
 Exy.Runtime.JS.run("1 + 2")
-
-# UI-neutral session state for TUI and LiveView-compatible clients
-{:ok, ui} = Exy.Session.start_link()
-{:ok, snapshot, cursor} = Exy.Session.attach(ui)
-Exy.Session.dispatch(ui, {:open_overlay, %{kind: :session_selector}})
-Exy.Session.state(ui)
-
-# Ghostty terminal panes and snapshots
-{:ok, pane} = Exy.Terminal.Pane.start_link(cmd: "/bin/sh")
-Exy.Terminal.Pane.write(pane, "echo hello\\n")
-Exy.Terminal.Pane.snapshot(pane)
-Exy.Terminal.Snapshot.from_ansi("\\e[32mok\\e[0m\\r\\n")
-
-# Semantic TUI theming maps to ANSI now and CSS variables later
-view = Exy.Session.state(ui) |> Exy.UI.ViewModel.from_state()
-Exy.TUI.Renderer.render(view, 100, Exy.TUI.Theme.default())
 ```
 
-## Server sessions
+### Auth and model usage
 
-Server mode keeps canonical session state in supervised BEAM processes. TUI clients, scripts, and the future web client attach to those sessions over Erlang distribution.
+```elixir
+Exy.Auth.login("codex")
+Exy.Auth.ensure_fresh("openai-codex")
+Exy.Auth.usage("openai-codex")
+
+Exy.Model.Config.default()
+Exy.Model.Direct.ask("hello", model: "openai_codex:gpt-5.5")
+```
+
+### Plugins
+
+```elixir
+defmodule MyPlugin do
+  use Exy.Plugin
+
+  @impl true
+  def children(_state, context), do: []
+
+  @impl true
+  def commands(_state), do: [MyPlugin.HelloCommand]
+end
+
+defmodule MyPlugin.HelloCommand do
+  @behaviour Exy.UI.SlashCommand
+
+  @impl true
+  def spec, do: %{name: "hello", description: "Say hello"}
+
+  @impl true
+  def run(_args, ui_state) do
+    {:events, [Exy.UI.Event.new(:notification_added, ui_state.session_id, %{level: :info, text: "hello"})]}
+  end
+end
+```
+
+Plugins can update renderer-neutral UI state:
+
+```elixir
+Exy.Plugin.UI.set_status(session_id, :indexer, "indexing")
+Exy.Plugin.UI.set_progress(session_id, :indexer, title: "Indexing", current: 1, total: 10)
+Exy.Plugin.UI.set_widget(session_id, :panel, ["line 1", "line 2"], placement: :below_editor)
+```
+
+### Terminal panes
+
+```elixir
+{:ok, pane} = Exy.Terminal.Pane.start_link(cmd: "/bin/sh")
+Exy.Terminal.Pane.write(pane, "echo hello\n")
+Exy.Terminal.Pane.snapshot(pane)
+Exy.Terminal.Snapshot.from_ansi("\e[32mok\e[0m\r\n")
+```
+
+## Development
+
+Run the full gate:
 
 ```bash
-exy server start          # start background server
-exy server status         # check metadata and distribution reachability
-exy server stop           # stop the server
-exy new                   # create a server-owned session
-exy sessions              # list live and persisted sessions
-exy send <id> "prompt"    # send work without attaching a TUI
-exy attach <id>           # attach a TUI client
+mix ci
 ```
 
-Runtime files:
+`mix ci` runs compile, format check, tests, Credo with ExSlop, Dialyzer, and ExDNA.
 
-```text
-~/.exy/server.cookie      # Exy-specific Erlang distribution cookie
-~/.exy/server.json        # server node metadata
-~/.exy/server.out         # background server log
-~/.exy/sessions/<id>.jsonl # canonical append-only session log
-~/.exy/sessions/<id>.log   # dependency/session log output
+Useful checks from Elixir:
+
+```elixir
+report = Exy.Code.Checks.analyze()
+report.ok?
+report.failures
+Exy.SelfPatch.deployment_gate()
 ```
 
-The JSONL session log stores typed entries, including semantic UI events, so `Exy.Session.attach/3` can rebuild snapshots and replay missed events from durable state.
+## First principles
+
+1. Few model-facing tools outside; many BEAM powers inside.
+2. Prefer `eval` over shelling out to `mix run`.
+3. Prefer `ast` over regex search for Elixir syntax.
+4. Use LSP for diagnostics/navigation and runtime eval for OTP state.
+5. Subagents, plugins, sessions, terminal panes, and background work are OTP processes.
+6. UI state is semantic; terminal rendering is an adapter.
+7. Persist durable state as typed append-only events.
+8. Self-improvement changes skills/helpers first, runtime core only with tests and validation.

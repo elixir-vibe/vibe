@@ -11,7 +11,7 @@
 - Keep prompts in `priv/prompts/*.md` and embed them at compile time through `Exy.Prompts` with `@external_resource`.
 - Avoid static catalogs/registries when modules can be discovered idiomatically from compiled application modules or dependency availability, like Reach/Volt plugin detection.
 - Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
-- Auth, plugins, runtimes, and providers should be behaviour-based so future implementations can be added without changing callers.
+- Auth, plugins, runtimes, slash commands, and providers should be behaviour-based so future implementations can be added without changing callers.
 - `mix exy` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
 - Keep `exy sessions` human-friendly by default: recent useful sessions only. Put raw exhaustive listings behind `--all` and destructive cleanup behind explicit subcommands.
 - For Mix task help, use Mix's built-in help rendering (`@moduledoc` + `Mix.Tasks.Help`) instead of hand-rolled CLI help formatters.
@@ -26,6 +26,9 @@
 - Storybook output is a visual regression surface; inspect it after changing TUI/Markdown rendering, not just tests.
 - Prefer `IO.ANSI` or established terminal libraries over raw ANSI escape strings. If a raw terminal control sequence is unavoidable, isolate it behind a small named adapter and document why no library API is available.
 - Use Ghostty.TTY for the interactive current-terminal runtime; do not add Exy-local `stty`, `/dev/tty`, or raw terminal-mode adapters.
+- Use Ghostty.KeyDecoder for terminal byte decoding; Exy-local key handling should only map `Ghostty.KeyEvent` values into semantic editor/UI commands.
 - Use Ghostty.Test and Ghostty.KeyEvent in TUI harness tests for keyboard input and terminal snapshots instead of hard-coding VT byte sequences wherever possible.
-- Plugins may run supervised background children and update semantic UI state through `Exy.Plugin.UI`; keep plugin UI APIs renderer-neutral so TUI and future LiveView consume the same state.
+- Plugins may run supervised background children, update semantic UI state through `Exy.Plugin.UI`, and register slash command modules through `Exy.Plugin.commands/1`; keep plugin UI/command APIs renderer-neutral so TUI and future LiveView consume the same state.
+- Store runtime observability under `Exy.Telemetry` / `~/.exy/telemetry`; agents should introspect local telemetry through `Exy.Telemetry.recent/1`, `Exy.Telemetry.all/1`, and `Exy.Telemetry.summary/1` instead of scraping logs.
+- Avoid recording raw prompts, file contents, tool outputs, secrets, or OAuth tokens in telemetry metadata; prefer IDs, counts, durations, statuses, and byte/token sizes.
 - For Livebook-style execution and `Mix.install/2`, isolate work in a child BEAM/runtime; do not pollute Exy's long-running VM.
