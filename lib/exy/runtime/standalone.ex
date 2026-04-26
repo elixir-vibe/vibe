@@ -2,8 +2,8 @@ defmodule Exy.Runtime.Standalone do
   @moduledoc """
   Stateful standalone BEAM runtime for Livebook-style script evaluation.
 
-  This runtime starts a separate `elixir` OS process and talks to it with a
-  Base64-encoded Erlang term line protocol. The child keeps `binding` and
+  This runtime starts a separate `elixir` OS process and talks to it with
+  Erlang external terms over a packetized port. The child keeps `binding` and
   `Macro.Env` between evaluations, so aliases/imports/variables and
   `Mix.install/2` state stay out of Exy's main VM.
   """
@@ -41,7 +41,7 @@ defmodule Exy.Runtime.Standalone do
     id = state.next_id
     timeout = Keyword.get(opts, :timeout, @default_timeout)
     message = {:eval, id, code, Keyword.take(opts, [:file])}
-    Port.command(state.port, encode(message) <> "\n")
+    Port.command(state.port, encode(message))
     timer = Process.send_after(self(), {:request_timeout, id}, timeout)
 
     state = %{
@@ -54,8 +54,8 @@ defmodule Exy.Runtime.Standalone do
   end
 
   @impl true
-  def handle_info({port, {:data, {:eol, line}}}, %{port: port} = state) do
-    case decode(line) do
+  def handle_info({port, {:data, packet}}, %{port: port} = state) do
+    case decode(packet) do
       {:reply, id, reply} ->
         {request, requests} = Map.pop(state.requests, id)
 
@@ -73,9 +73,6 @@ defmodule Exy.Runtime.Standalone do
     _exception ->
       {:noreply, state}
   end
-
-  def handle_info({port, {:data, {:noeol, _line}}}, %{port: port} = state), do: {:noreply, state}
-  def handle_info({port, {:data, _data}}, %{port: port} = state), do: {:noreply, state}
 
   def handle_info({:request_timeout, id}, state) do
     {request, requests} = Map.pop(state.requests, id)
@@ -108,14 +105,11 @@ defmodule Exy.Runtime.Standalone do
   end
 
   defp child_args do
-    encoded = child_code() |> Macro.to_string() |> Base.encode64()
-
     [
       "--erl",
       "+sbwt none +sbwtdcpu none +sbwtdio none",
       "--eval",
-      "System.argv() |> hd() |> Base.decode64!() |> Code.eval_string()",
-      encoded
+      child_code() |> Macro.to_string()
     ]
   end
 
@@ -128,22 +122,30 @@ defmodule Exy.Runtime.Standalone do
         end
 
         defp loop(context) do
-          case IO.read(:stdio, :line) do
+          case read_packet() do
             :eof ->
               :ok
 
             {:error, _reason} ->
               :ok
 
-            line ->
-              {reply, context} = handle(line, context)
-              IO.write(:stdio, Base.encode64(:erlang.term_to_binary(reply)) <> "\n")
+            packet ->
+              {reply, context} = handle(packet, context)
+              payload = :erlang.term_to_binary(reply)
+              IO.binwrite(:stdio, <<byte_size(payload)::32, payload::binary>>)
               loop(context)
           end
         end
 
-        defp handle(line, context) do
-          case :erlang.binary_to_term(Base.decode64!(String.trim(line))) do
+        defp read_packet do
+          with <<size::32>> <- IO.binread(:stdio, 4),
+               packet when is_binary(packet) <- IO.binread(:stdio, size) do
+            packet
+          end
+        end
+
+        defp handle(packet, context) do
+          case :erlang.binary_to_term(packet) do
             {:eval, id, code, opts} ->
               {result, context} = eval(code, opts, context)
               {{:reply, id, result}, context}
@@ -233,8 +235,7 @@ defmodule Exy.Runtime.Standalone do
     Port.open({:spawn_executable, runtime.executable}, [
       :binary,
       :exit_status,
-      :stderr_to_stdout,
-      {:line, 1_048_576},
+      {:packet, 4},
       args: child_args(),
       cd: runtime.cwd,
       env: normalize_env(runtime.env)
@@ -248,8 +249,8 @@ defmodule Exy.Runtime.Standalone do
     _ -> state
   end
 
-  defp encode(term), do: term |> :erlang.term_to_binary() |> Base.encode64()
-  defp decode(line), do: line |> String.trim() |> Base.decode64!() |> :erlang.binary_to_term()
+  defp encode(term), do: :erlang.term_to_binary(term)
+  defp decode(packet), do: :erlang.binary_to_term(packet)
 
   defp normalize_env(env) when is_map(env), do: env |> Map.to_list() |> normalize_env()
 
