@@ -42,6 +42,9 @@ defmodule Exy.Session do
   @spec list() :: [map()]
   def list, do: Exy.Session.Listing.list()
 
+  @spec search(String.t(), keyword()) :: [Exy.Storage.Search.Result.t()]
+  def search(query, opts \\ []), do: Exy.Storage.Search.sessions(query, opts)
+
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     {server_opts, init_opts} = Keyword.split(opts, [:name])

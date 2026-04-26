@@ -55,11 +55,10 @@ defmodule Exy.Memory do
     Storage.ensure!()
     scopes = Keyword.get(opts, :scopes, [:user, :global])
     limit = Keyword.get(opts, :limit, 10)
-    needle = String.downcase(query)
 
-    scopes
-    |> Enum.flat_map(&search_scope(&1, needle, limit))
-    |> Enum.take(limit)
+    query
+    |> Exy.Storage.Search.memories(memory_scopes: scopes, limit: limit)
+    |> Enum.map(&memory_search_result/1)
   end
 
   @spec remove(scope(), String.t()) :: :ok | {:error, :not_found | term()}
@@ -72,8 +71,12 @@ defmodule Exy.Memory do
     |> where_scope_id(scope_id)
     |> Exy.Repo.delete_all()
     |> case do
-      {0, _rows} -> {:error, :not_found}
-      {_count, _rows} -> :ok
+      {0, _rows} ->
+        {:error, :not_found}
+
+      {_count, _rows} ->
+        Exy.Storage.FTS.remove_memory(id)
+        :ok
     end
   end
 
@@ -82,11 +85,18 @@ defmodule Exy.Memory do
     Storage.ensure!()
     {scope_type, scope_id} = encode_scope(scope)
 
+    ids =
+      Memory
+      |> where([memory], memory.scope_type == ^scope_type)
+      |> where_scope_id(scope_id)
+      |> select([memory], memory.id)
+      |> Exy.Repo.all()
+
     Memory
-    |> where([memory], memory.scope_type == ^scope_type)
-    |> where_scope_id(scope_id)
+    |> where([memory], memory.id in ^ids)
     |> Exy.Repo.delete_all()
 
+    Enum.each(ids, &Exy.Storage.FTS.remove_memory/1)
     :ok
   end
 
@@ -130,22 +140,17 @@ defmodule Exy.Memory do
     }
     |> Exy.Repo.insert()
     |> case do
-      {:ok, memory} -> {:ok, decode_memory(memory)}
-      {:error, reason} -> {:error, inspect(reason)}
+      {:ok, memory} ->
+        Exy.Storage.FTS.index_memory(memory)
+        {:ok, decode_memory(memory)}
+
+      {:error, reason} ->
+        {:error, inspect(reason)}
     end
   end
 
-  defp search_scope(scope, needle, limit) do
-    {scope_type, scope_id} = encode_scope(scope)
-
-    Memory
-    |> where([memory], memory.scope_type == ^scope_type)
-    |> where_scope_id(scope_id)
-    |> order_by([memory], desc: memory.inserted_at)
-    |> Exy.Repo.all()
-    |> Enum.filter(&(needle == "" or String.contains?(String.downcase(&1.text), needle)))
-    |> Enum.take(limit)
-    |> Enum.map(&decode_memory/1)
+  defp memory_search_result(%Exy.Storage.Search.Result{} = result) do
+    %{id: result.id, scope: result.metadata.scope, text: result.text, at: result.at}
   end
 
   defp decode_memory(%Memory{} = memory) do

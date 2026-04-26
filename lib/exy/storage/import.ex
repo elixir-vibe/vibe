@@ -24,6 +24,12 @@ defmodule Exy.Storage.Import do
   @spec providers() :: %{String.t() => module()}
   def providers, do: @providers
 
+  @spec imported?(String.t()) :: boolean()
+  def imported?(id) when is_binary(id) do
+    Exy.Storage.ensure!()
+    not is_nil(Exy.Repo.get(Import, id))
+  end
+
   @spec record!(atom(), String.t(), map()) :: term()
   def record!(source, id, metadata) when is_atom(source) and is_binary(id) and is_map(metadata) do
     now = Exy.Storage.normalize_datetime(DateTime.utc_now())

@@ -21,15 +21,24 @@ defmodule Exy.Storage.Import.Pi do
 
   defp import_dir(dir) do
     dir
-    |> Path.join("*.jsonl")
+    |> Path.join("**/*.jsonl")
     |> Path.wildcard()
-    |> Enum.reduce({0, []}, fn file, {count, errors} ->
-      case import_file(file) do
-        {:ok, _result} -> {count + 1, errors}
-        {:error, reason} -> {count, [%{file: file, reason: inspect(reason)} | errors]}
+    |> Enum.reduce({0, 0, []}, fn file, {count, skipped, errors} ->
+      if imported?(file) do
+        {count, skipped + 1, errors}
+      else
+        case import_file(file) do
+          {:ok, _result} ->
+            {count + 1, skipped, errors}
+
+          {:error, reason} ->
+            {count, skipped, [%{file: file, reason: inspect(reason)} | errors]}
+        end
       end
     end)
-    |> then(fn {count, errors} -> {:ok, %{imported: count, errors: Enum.reverse(errors)}} end)
+    |> then(fn {count, skipped, errors} ->
+      {:ok, %{imported: count, skipped: skipped, errors: Enum.reverse(errors)}}
+    end)
   end
 
   defp import_file(file) do
@@ -38,51 +47,72 @@ defmodule Exy.Storage.Import.Pi do
       session_id = Map.fetch!(header, "id")
       at = parse_datetime(header["timestamp"]) || DateTime.utc_now()
       Exy.Session.Store.ensure_session(session_id, at)
-      Exy.Storage.Import.record!(:pi, "pi:#{file}", %{session_id: session_id, file: file})
 
-      entries
-      |> Enum.reject(&(Map.get(&1, "type") == "session"))
-      |> Enum.reduce(0, fn entry, seq -> import_entry(session_id, seq, entry) end)
-      |> then(&{:ok, %{session_id: session_id, events: &1, file: file}})
+      {count, events} =
+        entries
+        |> Enum.reject(&(Map.get(&1, "type") == "session"))
+        |> Enum.reduce({0, []}, fn entry, acc -> import_entry(session_id, acc, entry) end)
+
+      :ok = Exy.Session.Store.append_ui_events(Enum.reverse(events))
+
+      Exy.Storage.Import.record!(:pi, import_id(file), %{
+        session_id: session_id,
+        file: file,
+        events: count
+      })
+
+      {:ok, %{session_id: session_id, events: count, file: file}}
     end
   end
 
   defp import_entry(
          session_id,
-         seq,
+         {seq, events},
          %{"type" => "message", "message" => %{"role" => role} = message} = entry
        ) do
     event_type = if role == "user", do: :user_message_added, else: :assistant_message_added
     data = message_data(event_type, message)
-    append_event(session_id, seq + 1, event_type, data, entry["timestamp"])
+    event = build_event(session_id, seq + 1, event_type, data, entry["timestamp"])
+    {seq + 1, [{seq + 1, event} | events]}
   end
 
-  defp import_entry(session_id, seq, %{"type" => "model_change"} = entry) do
+  defp import_entry(session_id, {seq, events}, %{"type" => "model_change"} = entry) do
     model = [entry["provider"], entry["modelId"]] |> Enum.reject(&is_nil/1) |> Enum.join(":")
-    append_event(session_id, seq + 1, :model_selected, %{model: model}, entry["timestamp"])
+    event = build_event(session_id, seq + 1, :model_selected, %{model: model}, entry["timestamp"])
+    {seq + 1, [{seq + 1, event} | events]}
   end
 
-  defp import_entry(session_id, seq, %{"type" => "session_info", "name" => name} = entry) do
-    append_event(session_id, seq + 1, :title_updated, %{title: name}, entry["timestamp"])
+  defp import_entry(
+         session_id,
+         {seq, events},
+         %{"type" => "session_info", "name" => name} = entry
+       ) do
+    event = build_event(session_id, seq + 1, :title_updated, %{title: name}, entry["timestamp"])
+    {seq + 1, [{seq + 1, event} | events]}
   end
 
-  defp import_entry(session_id, seq, %{"type" => "compaction", "summary" => summary} = entry) do
-    append_event(
-      session_id,
-      seq + 1,
-      :context_compaction_finished,
-      %{summary: summary},
-      entry["timestamp"]
-    )
+  defp import_entry(
+         session_id,
+         {seq, events},
+         %{"type" => "compaction", "summary" => summary} = entry
+       ) do
+    event =
+      build_event(
+        session_id,
+        seq + 1,
+        :context_compaction_finished,
+        %{summary: summary},
+        entry["timestamp"]
+      )
+
+    {seq + 1, [{seq + 1, event} | events]}
   end
 
-  defp import_entry(_session_id, seq, _entry), do: seq
+  defp import_entry(_session_id, acc, _entry), do: acc
 
-  defp append_event(session_id, seq, type, data, timestamp) do
+  defp build_event(session_id, seq, type, data, timestamp) do
     at = parse_datetime(timestamp) || DateTime.utc_now()
-    event = Event.new(type, session_id, data, id: "pi-#{session_id}-#{seq}", at: at)
-    :ok = Exy.Session.Store.append_ui_event(event, seq)
-    seq
+    Event.new(type, session_id, data, id: "pi-#{session_id}-#{seq}", at: at)
   end
 
   defp message_data(:user_message_added, message), do: %{text: content_text(message["content"])}
@@ -103,6 +133,10 @@ defmodule Exy.Storage.Import.Pi do
 
   defp content_text(nil), do: ""
   defp content_text(content), do: inspect(content)
+
+  defp imported?(file), do: Exy.Storage.Import.imported?(import_id(file))
+
+  defp import_id(file), do: "pi:#{file}"
 
   defp read_jsonl(file) do
     case File.read(file) do

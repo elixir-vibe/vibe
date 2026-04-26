@@ -83,6 +83,9 @@ Storage commands:
 ```bash
 exy storage migrate
 exy storage status
+exy storage fts status
+exy storage fts rebuild
+exy storage search <query>
 exy storage import pi <path>
 ```
 
@@ -164,6 +167,7 @@ Durable session data is backed by local SQLite storage:
 Exy.Session.Store.list()
 Exy.Session.Store.ui_events("work")
 Exy.Session.Store.trajectory(session_id: "work")
+Exy.Session.search("sqlite migration", session_id: "work")
 ```
 
 ### Storage
@@ -185,11 +189,17 @@ Exy.Paths.database()
 Exy.Storage.status()
 Exy.Storage.migrate!()
 Exy.Storage.Import.import_path("pi", "/path/to/pi-session-or-dir")
+Exy.Storage.FTS.status()
+Exy.Storage.FTS.rebuild()
+Exy.Storage.Search.query("sqlite migration", scopes: [:sessions, :memory])
 ```
 
 ```bash
 exy storage migrate
 exy storage status
+exy storage fts status
+exy storage fts rebuild
+exy storage search "sqlite migration"
 exy storage import pi /path/to/pi-session-or-dir
 ```
 

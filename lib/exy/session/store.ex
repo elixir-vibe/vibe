@@ -109,6 +109,8 @@ defmodule Exy.Session.Store do
 
     Enum.each(
       [
+        Exy.Storage.Schema.UIEventFTS,
+        Exy.Storage.Schema.MemoryFTS,
         UIEvent,
         TrajectoryEvent,
         EvalState,
@@ -160,28 +162,51 @@ defmodule Exy.Session.Store do
   def append_ui_event(%Event{} = event, seq) do
     Exy.Storage.ensure!()
     ensure_session(event.session_id, event.at)
-    encoded = Codec.encode_ui_event(event, seq)
 
     %UIEvent{}
-    |> Map.merge(%{
-      session_id: event.session_id,
-      seq: seq,
-      event_id: event.id,
-      type: Atom.to_string(event.type),
-      at: Exy.Storage.normalize_datetime(event.at),
-      data: encoded["data"]
-    })
+    |> Map.merge(ui_event_row(event, seq))
     |> Exy.Repo.insert(
       on_conflict: {:replace, [:event_id, :type, :at, :data]},
       conflict_target: [:session_id, :seq]
     )
     |> case do
-      {:ok, _event} ->
+      {:ok, stored_event} ->
+        Exy.Storage.FTS.index_ui_event(stored_event)
         refresh_session_summary(event.session_id)
         :ok
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  @spec append_ui_events([{non_neg_integer(), Event.t()}]) :: :ok | {:error, term()}
+  def append_ui_events([]), do: :ok
+
+  def append_ui_events([{_seq, %Event{} = first_event} | _rest] = events) do
+    Exy.Storage.ensure!()
+    ensure_session(first_event.session_id, first_event.at)
+
+    rows = Enum.map(events, fn {seq, event} -> ui_event_row(event, seq) end)
+
+    result =
+      Exy.Repo.transaction(fn ->
+        rows
+        |> Enum.chunk_every(500)
+        |> Enum.each(fn chunk ->
+          Exy.Repo.insert_all(UIEvent, chunk,
+            on_conflict: {:replace, [:event_id, :type, :at, :data]},
+            conflict_target: [:session_id, :seq]
+          )
+        end)
+
+        Exy.Storage.FTS.index_ui_event_rows(rows)
+        refresh_session_summary(first_event.session_id)
+      end)
+
+    case result do
+      {:ok, :ok} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -231,6 +256,19 @@ defmodule Exy.Session.Store do
     )
 
     :ok
+  end
+
+  defp ui_event_row(%Event{} = event, seq) do
+    encoded = Codec.encode_ui_event(event, seq)
+
+    %{
+      session_id: event.session_id,
+      seq: seq,
+      event_id: event.id,
+      type: Atom.to_string(event.type),
+      at: Exy.Storage.normalize_datetime(event.at),
+      data: encoded["data"]
+    }
   end
 
   defp refresh_session_summary(session_id) do

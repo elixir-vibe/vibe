@@ -2,6 +2,8 @@ defmodule Exy.MemoryTest do
   use ExUnit.Case, async: false
 
   setup do
+    Exy.Session.Store.clear()
+
     memory_dir =
       Path.join(System.tmp_dir!(), "exy-memory-test-#{System.unique_integer([:positive])}")
 
