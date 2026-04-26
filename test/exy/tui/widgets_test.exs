@@ -146,6 +146,22 @@ defmodule Exy.TUI.WidgetsTest do
     assert placeholder =~ "› Ask..."
   end
 
+  test "autocomplete widget renders reusable suggestions" do
+    lines =
+      TUI.autocomplete(
+        title: "Commands",
+        query: "se",
+        items: [%{value: "/sessions", label: "/sessions", detail: "Browse sessions"}],
+        selected: 0
+      )
+      |> Widget.render(50, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(lines, &String.contains?(&1, "Commands"))
+    assert Enum.any?(lines, &String.contains?(&1, "/sessions"))
+    assert Enum.any?(lines, &String.contains?(&1, "Browse sessions"))
+  end
+
   test "textarea widget renders multiline prompt box" do
     lines =
       TUI.textarea(title: "Prompt", value: "hello\nworld", cursor: 2, min_rows: 3)

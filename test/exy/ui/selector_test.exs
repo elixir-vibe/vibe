@@ -25,6 +25,30 @@ defmodule Exy.UI.SelectorTest do
     assert state.overlays == []
   end
 
+  test "sessions slash command opens rich session selector rows" do
+    session_id = "selector-row-#{System.unique_integer([:positive])}"
+
+    {:ok, server} =
+      Exy.Session.start_link(
+        session_id: session_id,
+        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+      )
+
+    :ok = Exy.Session.dispatch(server, Command.new(:submit_prompt, %{text: "hello sessions"}))
+    Process.sleep(50)
+
+    :ok =
+      Exy.Session.dispatch(
+        server,
+        Command.new(:slash_command_submitted, %{command: "sessions", args: ""})
+      )
+
+    state = Exy.Session.state(server)
+
+    assert state.selector.kind == :session_selector
+    assert Enum.any?(state.selector.items, &match?(%{value: ^session_id}, &1))
+  end
+
   test "slash model command opens a selector" do
     {:ok, server} =
       Exy.Session.start_link(

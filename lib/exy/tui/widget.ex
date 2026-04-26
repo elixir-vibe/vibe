@@ -22,6 +22,7 @@ defmodule Exy.TUI.Widget do
     model_info: Exy.TUI.Widgets.ModelInfo,
     input: Exy.TUI.Widgets.Input,
     textarea: Exy.TUI.Widgets.Textarea,
+    autocomplete: Exy.TUI.Widgets.Autocomplete,
     select_list: Exy.TUI.Widgets.SelectList,
     notifications: Exy.TUI.Widgets.Notifications,
     plugin_widget: Exy.TUI.Widgets.PluginWidget,

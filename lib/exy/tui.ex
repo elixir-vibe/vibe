@@ -110,6 +110,12 @@ defmodule Exy.TUI do
   @spec select_list(keyword() | map()) :: Node.t()
   def select_list(props), do: node(:select_list, Map.new(props))
 
+  @spec autocomplete(keyword() | map() | Exy.UI.Autocomplete.t()) :: Node.t()
+  def autocomplete(%Exy.UI.Autocomplete{} = autocomplete),
+    do: autocomplete(Map.from_struct(autocomplete))
+
+  def autocomplete(props), do: node(:autocomplete, Map.new(props))
+
   @spec notifications(keyword() | map() | Exy.UI.Block.NotificationList.t()) :: Node.t()
   def notifications(%Exy.UI.Block.NotificationList{items: items}), do: notifications(items: items)
   def notifications(props), do: node(:notifications, Map.new(props))

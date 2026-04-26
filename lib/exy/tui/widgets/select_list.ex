@@ -27,7 +27,8 @@ defmodule Exy.TUI.Widgets.SelectList do
   defp row(item, selected?, width, theme) do
     marker = if selected?, do: Theme.symbol(theme, :success_icon), else: " "
     label = item_label(item)
-    line = Widget.fit_line([marker, " ", label], width)
+    detail = item_detail(item)
+    line = Widget.join_sides([marker, " ", label], Theme.fg(theme, :dim, detail), width)
 
     if selected? do
       Theme.bg(theme, :selected_bg, Widget.pad_line(line, width))
@@ -38,7 +39,11 @@ defmodule Exy.TUI.Widgets.SelectList do
 
   defp item_label(%{label: label}), do: label
   defp item_label(%{name: name}), do: name
+  defp item_label(%{value: value}), do: value
   defp item_label(item), do: to_string(item)
+
+  defp item_detail(%{detail: detail}) when is_binary(detail), do: detail
+  defp item_detail(_item), do: ""
 
   defp viewport_offset(count, selected, limit) do
     cond do

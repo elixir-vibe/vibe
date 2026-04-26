@@ -10,7 +10,7 @@ defmodule Exy.TUI.App do
   use GenServer
 
   alias Exy.Session
-  alias Exy.UI.{Command, EditorServer}
+  alias Exy.UI.{Autocomplete, Command, EditorServer, SlashCommands}
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -46,6 +46,7 @@ defmodule Exy.TUI.App do
        width: Keyword.get(opts, :width, 100),
        height: Keyword.get(opts, :height, 30),
        events: [],
+       autocomplete: nil,
        subscribers: %{},
        remote_node: remote_node,
        active_sessions_timer: active_sessions_timer
@@ -54,12 +55,19 @@ defmodule Exy.TUI.App do
 
   @impl true
   def handle_call({:key, key}, _from, state) do
-    if selector_open?(state) do
-      handle_selector_key(key, state)
-    else
-      commands = EditorServer.key(state.editor, key)
-      Enum.each(commands, &handle_editor_command(&1, state))
-    end
+    state =
+      cond do
+        selector_open?(state) ->
+          handle_selector_key(key, state)
+
+        autocomplete_key?(key, state) ->
+          handle_autocomplete_key(key, state)
+
+        true ->
+          commands = EditorServer.key(state.editor, key)
+          Enum.each(commands, &handle_editor_command(&1, state))
+          refresh_autocomplete(state)
+      end
 
     {:reply, :ok, state}
   end
@@ -77,6 +85,7 @@ defmodule Exy.TUI.App do
     snapshot = %{
       ui: Session.state(state.ui),
       editor: EditorServer.state(state.editor),
+      autocomplete: state.autocomplete,
       width: state.width,
       height: state.height,
       events: Enum.reverse(state.events)
@@ -151,10 +160,12 @@ defmodule Exy.TUI.App do
 
   defp handle_selector_key(:up, state) do
     Session.dispatch(state.ui, Command.new(:selector_moved, %{direction: -1}))
+    state
   end
 
   defp handle_selector_key(:down, state) do
     Session.dispatch(state.ui, Command.new(:selector_moved, %{direction: 1}))
+    state
   end
 
   defp handle_selector_key(:submit, state) do
@@ -165,13 +176,43 @@ defmodule Exy.TUI.App do
       state.ui,
       Command.new(:selector_confirmed, %{selector: Map.get(selector, :kind), item: item})
     )
+
+    state
   end
 
   defp handle_selector_key(:cancel, state) do
     Session.dispatch(state.ui, Command.new(:selector_closed))
+    state
   end
 
-  defp handle_selector_key(_key, _state), do: :ok
+  defp handle_selector_key(_key, state), do: state
+
+  defp autocomplete_key?(key, %{autocomplete: %Autocomplete{}}), do: key in [:up, :down, :tab]
+  defp autocomplete_key?(_key, _state), do: false
+
+  defp handle_autocomplete_key(:up, state) do
+    %{state | autocomplete: Autocomplete.move(state.autocomplete, -1)}
+  end
+
+  defp handle_autocomplete_key(:down, state) do
+    %{state | autocomplete: Autocomplete.move(state.autocomplete, 1)}
+  end
+
+  defp handle_autocomplete_key(:tab, state) do
+    case Autocomplete.selected_item(state.autocomplete) do
+      %{value: value} ->
+        :ok = EditorServer.replace(state.editor, value <> " ")
+        %{state | autocomplete: nil}
+
+      nil ->
+        %{state | autocomplete: nil}
+    end
+  end
+
+  defp refresh_autocomplete(state) do
+    editor = EditorServer.state(state.editor)
+    %{state | autocomplete: SlashCommands.autocomplete(editor.text)}
+  end
 
   defp handle_editor_command({:submit, text}, state) do
     Session.dispatch(state.ui, Command.new(:submit_prompt, %{text: text}))

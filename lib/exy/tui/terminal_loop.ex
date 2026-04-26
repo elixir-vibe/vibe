@@ -209,6 +209,7 @@ defmodule Exy.TUI.TerminalLoop do
   end
 
   defp editor_cursor_position(snapshot, editor_start_row) do
+    autocomplete_rows = autocomplete_height(snapshot)
     inner_width = max(snapshot.width - 4, 1)
     text = snapshot.editor.text || ""
     cursor = snapshot.editor.cursor || 0
@@ -223,20 +224,40 @@ defmodule Exy.TUI.TerminalLoop do
       |> Enum.sum()
 
     current_width = Width.visible_length(current_line)
-    row = editor_start_row + 2 + previous_rows + div(current_width, inner_width)
+
+    row =
+      editor_start_row + autocomplete_rows + 2 + previous_rows + div(current_width, inner_width)
+
     column = 3 + rem(current_width, inner_width)
 
     {max(row, 1), max(column, 1)}
   end
 
+  defp autocomplete_height(%{autocomplete: nil}), do: 0
+  defp autocomplete_height(%{autocomplete: %{items: [], limit: _limit}}), do: 2
+
+  defp autocomplete_height(%{autocomplete: %{items: items, limit: limit}}),
+    do: 1 + min(length(items), limit)
+
+  defp autocomplete_height(_snapshot), do: 0
+
   defp render_editor(snapshot, theme) do
-    TUI.textarea(
-      title: "Prompt",
-      value: snapshot.editor.text,
-      cursor: snapshot.editor.cursor,
-      min_rows: min(max(snapshot.height - 8, 3), 8),
-      placeholder: "Ask Exy to change this project..."
-    )
-    |> Widget.render(snapshot.width, theme)
+    autocomplete =
+      case Map.get(snapshot, :autocomplete) do
+        nil -> []
+        autocomplete -> autocomplete |> TUI.autocomplete() |> Widget.render(snapshot.width, theme)
+      end
+
+    textarea =
+      TUI.textarea(
+        title: "Prompt",
+        value: snapshot.editor.text,
+        cursor: snapshot.editor.cursor,
+        min_rows: min(max(snapshot.height - 8 - length(autocomplete), 3), 8),
+        placeholder: "Ask Exy to change this project..."
+      )
+      |> Widget.render(snapshot.width, theme)
+
+    Lines.join(autocomplete, textarea)
   end
 end

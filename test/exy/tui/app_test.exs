@@ -40,6 +40,19 @@ defmodule Exy.TUI.AppTest do
     assert App.snapshot(app).ui.selector == nil
   end
 
+  test "offers generic slash command autocomplete" do
+    {:ok, app} = App.start_link()
+
+    :ok = App.key(app, {:insert, "/se"})
+    assert %{autocomplete: %{items: [%{value: "/sessions"} | _]}} = App.snapshot(app)
+
+    :ok = App.key(app, :tab)
+    snapshot = App.snapshot(app)
+
+    assert snapshot.editor.text == "/sessions "
+    assert snapshot.autocomplete == nil
+  end
+
   test "tracks resize" do
     {:ok, app} = App.start_link()
     :ok = App.resize(app, 120, 40)

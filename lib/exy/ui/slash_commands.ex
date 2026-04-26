@@ -1,7 +1,26 @@
 defmodule Exy.UI.SlashCommands do
   @moduledoc false
 
+  alias Exy.UI.Autocomplete
   alias Exy.UI.Event
+
+  @commands [
+    %{value: "/sessions", label: "/sessions", detail: "Browse and resume stored sessions"},
+    %{value: "/session", label: "/session", detail: "Browse stored sessions"},
+    %{value: "/model", label: "/model", detail: "Choose model"},
+    %{value: "/skill", label: "/skill", detail: "Choose skill"},
+    %{value: "/clear", label: "/clear", detail: "Clear visible messages"},
+    %{value: "/compact", label: "/compact", detail: "Compact context"},
+    %{value: "/commands", label: "/commands", detail: "Open command palette"}
+  ]
+
+  @spec autocomplete(String.t()) :: Autocomplete.t() | nil
+  def autocomplete("/" <> text) do
+    query = text |> String.split(~r/\s+/, parts: 2) |> hd()
+    Autocomplete.filter(@commands, query, title: "Commands", limit: 7)
+  end
+
+  def autocomplete(_text), do: nil
 
   @spec handle(String.t(), String.t(), map()) :: {:events, [Event.t()]} | :compact
   def handle("clear", _args, ui_state),
@@ -31,6 +50,11 @@ defmodule Exy.UI.SlashCommands do
     {:events, [Event.new(:model_selected, ui_state.session_id, %{model: model})]}
   end
 
+  def selector_action(%{selector: :session_selector, item: %{value: session_id}}, ui_state)
+      when is_binary(session_id) do
+    {:events, [Event.new(:session_selected, ui_state.session_id, %{session_id: session_id})]}
+  end
+
   def selector_action(%{selector: :session_selector, item: session_id}, ui_state)
       when is_binary(session_id) do
     {:events, [Event.new(:session_selected, ui_state.session_id, %{session_id: session_id})]}
@@ -57,9 +81,19 @@ defmodule Exy.UI.SlashCommands do
     %{kind: :model_selector, title: "Model", items: [ui_state.model], selected: 0, limit: 8}
   end
 
-  defp selector("session", _ui_state) do
-    items = Exy.Session.Store.list() |> Enum.map(& &1.id)
-    %{kind: :session_selector, title: "Session", items: items, selected: 0, limit: 8}
+  defp selector(command, _ui_state) when command in ["session", "sessions", "s"] do
+    items =
+      Exy.Session.list()
+      |> Enum.map(fn session ->
+        %{
+          value: session.id,
+          label: session_label(session),
+          detail: session_detail(session),
+          session: session
+        }
+      end)
+
+    %{kind: :session_selector, title: "Sessions", items: items, selected: 0, limit: 10}
   end
 
   defp selector("skill", _ui_state) do
@@ -71,11 +105,47 @@ defmodule Exy.UI.SlashCommands do
     %{
       kind: :command_palette,
       title: "Commands",
-      items: ["model", "session", "skill", "clear", "compact"],
+      items: Enum.map(@commands, & &1.value),
       selected: 0,
       limit: 8
     }
   end
 
   defp selector(_command, _ui_state), do: nil
+
+  defp session_label(session) do
+    preview = session.first_message || session.last_message_preview || "empty session"
+    marker = if Map.get(session, :live?), do: "● ", else: "  "
+    marker <> preview
+  end
+
+  defp session_detail(session) do
+    [
+      short_id(session.id),
+      relative_time(session.updated_at),
+      message_count(session.message_count)
+    ]
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.join("  ")
+  end
+
+  defp short_id(id) when is_binary(id), do: String.slice(id, 0, 15)
+  defp short_id(_id), do: nil
+
+  defp message_count(count) when is_integer(count), do: "#{count} msg"
+  defp message_count(_count), do: nil
+
+  defp relative_time(%DateTime{} = at) do
+    seconds = max(DateTime.diff(DateTime.utc_now(), at), 0)
+
+    cond do
+      seconds < 60 -> "now"
+      seconds < 3_600 -> "#{div(seconds, 60)}m"
+      seconds < 86_400 -> "#{div(seconds, 3_600)}h"
+      seconds < 604_800 -> "#{div(seconds, 86_400)}d"
+      true -> "#{div(seconds, 604_800)}w"
+    end
+  end
+
+  defp relative_time(_at), do: nil
 end
