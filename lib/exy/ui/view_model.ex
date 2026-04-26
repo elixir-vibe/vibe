@@ -3,7 +3,8 @@ defmodule Exy.UI.ViewModel do
   Converts `Exy.UI.State` into semantic blocks for renderers.
   """
 
-  alias Exy.{Agent.Usage, Lists}
+  alias Exy.Agent.Usage
+  alias Exy.Support.Lists
 
   alias Exy.UI.Block.{
     AssistantMessage,

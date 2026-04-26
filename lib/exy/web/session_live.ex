@@ -13,14 +13,14 @@ defmodule Exy.Web.SessionLive do
 
   @spec mount(map(), map(), socket()) :: {:ok, socket()} | {:error, term()}
   def mount(%{"session_id" => session_id}, _session, socket) do
-    with {:ok, session} <- Exy.Sessions.lookup(session_id),
+    with {:ok, session} <- Exy.Session.lookup(session_id),
          {:ok, state, cursor} <- Exy.Session.attach(session, self()) do
       {:ok, assign_session(socket, session, state, cursor)}
     end
   end
 
   def mount(_params, _session, socket) do
-    with {:ok, session} <- Exy.Sessions.start(),
+    with {:ok, session} <- Exy.Session.start(),
          {:ok, state, cursor} <- Exy.Session.attach(session, self()) do
       {:ok, assign_session(socket, session, state, cursor)}
     end

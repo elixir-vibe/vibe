@@ -8,7 +8,8 @@ defmodule Exy.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Exy.TUI.{App, DSL, KeyDecoder, Lines, Renderer, Theme, Widget, Width}
+  alias Exy.TUI
+  alias Exy.TUI.{App, KeyDecoder, Lines, Renderer, Theme, Widget, Width}
   alias Exy.UI.ViewModel
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -229,7 +230,7 @@ defmodule Exy.TUI.TerminalLoop do
   end
 
   defp render_editor(snapshot, theme) do
-    DSL.textarea(
+    TUI.textarea(
       title: "Prompt",
       value: snapshot.editor.text,
       cursor: snapshot.editor.cursor,

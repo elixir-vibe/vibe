@@ -1,11 +1,13 @@
 defmodule Exy.TUI.FooterPluginStatusTest do
   use ExUnit.Case, async: true
 
-  alias Exy.TUI.{DSL, Theme, Widget, Width}
+  alias Exy.TUI
+
+  alias Exy.TUI.{Theme, Widget, Width}
 
   test "footer renders sorted plugin status line" do
     plain =
-      DSL.footer(%{
+      TUI.footer(%{
         cwd: File.cwd!(),
         session_id: "session",
         model: "model",

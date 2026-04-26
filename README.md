@@ -54,7 +54,7 @@ Everything else is normal Elixir callable from `eval`:
 - `Exy.Session` — persisted JSONL dialogs, events, and usage under `~/.exy/sessions`
 - `Exy.Agent.Usage` — normalized token/cost accounting from model responses
 - `Exy.Context` — pi-style context compaction checkpoints
-- `Exy.Runtime` / `Exy.Script` — Livebook-inspired standalone BEAM runtime and Mix.install script runner
+- `Exy.Runtime` / `Exy.Runtime.Standalone` / `Exy.Script` — runtime behaviour, standalone BEAM evaluator, and Mix.install script runner
 - `Exy.Sandbox.Policy` — explicit isolation policy data for runtime selection
 - `Exy.Code.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
 - `Exy.SelfPatch` — validated development hot-compile helpers
@@ -132,10 +132,10 @@ Exy.SelfPatch.deployment_gate()
 Exy.SelfPatch.compile_and_reload()
 
 # Livebook-style standalone runtime
-{:ok, runtime} = Exy.Runtime.start_link()
-Exy.Runtime.evaluate(runtime, "Mix.install([])\nx = 1 + 2")
-Exy.Runtime.evaluate(runtime, "x * 2")
-Exy.Runtime.stop(runtime)
+{:ok, runtime} = Exy.Runtime.Standalone.start_link()
+Exy.Runtime.Standalone.evaluate(runtime, "Mix.install([])\nx = 1 + 2")
+Exy.Runtime.Standalone.evaluate(runtime, "x * 2")
+Exy.Runtime.Standalone.stop(runtime)
 
 # One-shot scripts with Mix.install/2
 Exy.Script.run_string("Mix.install([])\nIO.puts(:ok)")

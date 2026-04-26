@@ -1,5 +1,9 @@
-defmodule Exy.Lists do
-  @moduledoc false
+defmodule Exy.Support.Lists do
+  @moduledoc """
+  Small list assembly helpers for append-heavy render/state paths.
+
+  These avoid `++` call sites while keeping ordering explicit.
+  """
 
   @spec append([term()], term()) :: [term()]
   def append(list, item), do: prepend_reversed(Enum.reverse(list), [item])

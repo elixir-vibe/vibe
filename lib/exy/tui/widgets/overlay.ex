@@ -3,12 +3,13 @@ defmodule Exy.TUI.Widgets.Overlay do
 
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.{DSL, Theme, Widget}
+  alias Exy.TUI
+  alias Exy.TUI.{Theme, Widget}
 
   @impl true
   def render(%{props: %{kind: :selector} = props}, width, theme) do
     props
-    |> DSL.select_list()
+    |> TUI.select_list()
     |> Widget.render(width, theme)
   end
 

@@ -1,11 +1,13 @@
 defmodule Exy.TUI.SelectionTest do
   use ExUnit.Case, async: true
 
-  alias Exy.TUI.{DSL, Theme, Widget, Width}
+  alias Exy.TUI
+
+  alias Exy.TUI.{Theme, Widget, Width}
 
   test "renders windowed select list without scrollbars" do
     lines =
-      DSL.select_list(
+      TUI.select_list(
         title: "Models",
         items: Enum.map(1..20, &"model-#{&1}"),
         selected: 10,
@@ -22,7 +24,7 @@ defmodule Exy.TUI.SelectionTest do
 
   test "renders notifications" do
     plain =
-      DSL.notifications(items: [%{level: :warning, text: "rate limit soon"}])
+      TUI.notifications(items: [%{level: :warning, text: "rate limit soon"}])
       |> Widget.render(40, Theme.default())
       |> Enum.map_join("\n", &Width.visible_text/1)
 

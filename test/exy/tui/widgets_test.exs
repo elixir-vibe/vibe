@@ -1,15 +1,17 @@
 defmodule Exy.TUI.WidgetsTest do
   use ExUnit.Case, async: true
 
-  alias Exy.TUI.{DSL, Theme, Widget, Width}
+  alias Exy.TUI
+
+  alias Exy.TUI.{Theme, Widget, Width}
 
   test "renders section, status, model info, dialog, and diff widgets" do
     nodes = [
-      DSL.section("Tools", [DSL.text("eval")]),
-      DSL.status(title: "Expert", description: "ready", color: :success),
-      DSL.model_info(model: "gpt-5.5", provider: "openai_codex", usage: %{total_tokens: 1_200}),
-      DSL.dialog("Resume", [DSL.text("session")]),
-      DSL.diff(lines: [{:del, "old"}, {:add, "new"}])
+      TUI.section("Tools", [TUI.text("eval")]),
+      TUI.status(title: "Expert", description: "ready", color: :success),
+      TUI.model_info(model: "gpt-5.5", provider: "openai_codex", usage: %{total_tokens: 1_200}),
+      TUI.dialog("Resume", [TUI.text("session")]),
+      TUI.diff(lines: [{:del, "old"}, {:add, "new"}])
     ]
 
     plain =
@@ -27,7 +29,7 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "dialog keeps right border on every framed row" do
     lines =
-      DSL.dialog("Resume", [DSL.text("session")], hint: "enter opens")
+      TUI.dialog("Resume", [TUI.text("session")], hint: "enter opens")
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -42,17 +44,17 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "message widgets use content blocks without speaker labels" do
     user =
-      DSL.message(%{role: :user, text: "hello"})
+      TUI.message(%{role: :user, text: "hello"})
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
     assistant =
-      DSL.message(%{role: :assistant, text: "hi"})
+      TUI.message(%{role: :assistant, text: "hi"})
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
     thinking =
-      DSL.message(%{role: :assistant, text: ""})
+      TUI.message(%{role: :assistant, text: ""})
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -94,7 +96,7 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "message background survives nested markdown ANSI resets" do
     [blank, content, _blank] =
-      DSL.message(%{role: :assistant, text: "**bold** normal"})
+      TUI.message(%{role: :assistant, text: "**bold** normal"})
       |> Widget.render(40, Theme.default())
       |> Enum.map(&IO.iodata_to_binary/1)
 
@@ -107,7 +109,7 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "assistant errors are padded on an error background" do
     lines =
-      DSL.message(%{role: :assistant, error: "boom"})
+      TUI.message(%{role: :assistant, error: "boom"})
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -119,7 +121,7 @@ defmodule Exy.TUI.WidgetsTest do
   end
 
   test "message renderer failures degrade to error blocks" do
-    node = DSL.message(%{role: :assistant, text: ""})
+    node = TUI.message(%{role: :assistant, text: ""})
 
     lines =
       %{node | props: Map.put(node.props, :loader_phase, :not_a_number)}
@@ -131,12 +133,12 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "input widget renders prompt, value, cursor, and placeholder" do
     focused =
-      DSL.input(value: "hello", cursor: 2)
+      TUI.input(value: "hello", cursor: 2)
       |> Widget.render(40, Theme.default())
       |> Enum.map_join("\n", &Width.visible_text/1)
 
     placeholder =
-      DSL.input(value: "", placeholder: "Ask...", focused?: false)
+      TUI.input(value: "", placeholder: "Ask...", focused?: false)
       |> Widget.render(40, Theme.default())
       |> Enum.map_join("\n", &Width.visible_text/1)
 
@@ -146,7 +148,7 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "textarea widget renders multiline prompt box" do
     lines =
-      DSL.textarea(title: "Prompt", value: "hello\nworld", cursor: 2, min_rows: 3)
+      TUI.textarea(title: "Prompt", value: "hello\nworld", cursor: 2, min_rows: 3)
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -158,7 +160,7 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "textarea cursor before newline renders as a visible cell without consuming the newline" do
     lines =
-      DSL.textarea(title: "Prompt", value: "hello\nworld", cursor: 5, min_rows: 3)
+      TUI.textarea(title: "Prompt", value: "hello\nworld", cursor: 5, min_rows: 3)
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -169,7 +171,7 @@ defmodule Exy.TUI.WidgetsTest do
   test "loader widget renders Exy's reusable waiting indicator phases" do
     plain =
       for phase <- 0..3 do
-        DSL.loader(label: "Working", phase: phase)
+        TUI.loader(label: "Working", phase: phase)
         |> Widget.render(40, Theme.default())
         |> Enum.map(&Width.visible_text/1)
       end
@@ -179,10 +181,10 @@ defmodule Exy.TUI.WidgetsTest do
 
   test "layout primitives render boxes, padding, horizontal rows, spacers, and truncation" do
     lines =
-      DSL.box("Layout", [
-        DSL.horizontal([DSL.text("left"), DSL.text("right")]),
-        DSL.spacer(),
-        DSL.padding([DSL.truncate("abcdef", suffix: "…")], x: 2)
+      TUI.box("Layout", [
+        TUI.horizontal([TUI.text("left"), TUI.text("right")]),
+        TUI.spacer(),
+        TUI.padding([TUI.truncate("abcdef", suffix: "…")], x: 2)
       ])
       |> Widget.render(30, Theme.default())
       |> Enum.map(&Width.visible_text/1)

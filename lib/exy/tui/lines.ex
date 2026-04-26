@@ -1,7 +1,7 @@
 defmodule Exy.TUI.Lines do
   @moduledoc false
 
-  alias Exy.Lists
+  alias Exy.Support.Lists
 
   @type line :: IO.chardata()
 

@@ -1,7 +1,8 @@
 defmodule Exy.TUI.Widgets.Tools.FileMutation do
   @moduledoc false
 
-  alias Exy.TUI.{DSL, Lines, Theme, ToolWidget, Widget}
+  alias Exy.TUI
+  alias Exy.TUI.{Lines, Theme, ToolWidget, Widget}
 
   @spec output_lines(term(), pos_integer(), Theme.t()) :: [IO.chardata()]
   def output_lines(%{error: error}, width, theme) do
@@ -35,7 +36,7 @@ defmodule Exy.TUI.Widgets.Tools.FileMutation do
     message_lines = Widget.wrap([Widget.spaces(2), Theme.fg(theme, :muted, message)], width)
 
     diff_lines =
-      DSL.diff(text: diff)
+      TUI.diff(text: diff)
       |> Widget.render(max(width - 2, 1), theme)
       |> Enum.map(&[Widget.spaces(2), &1])
 

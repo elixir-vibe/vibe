@@ -150,7 +150,7 @@ defmodule Exy.Plugin.Manager do
 
   defp configured_plugins do
     Exy.Plugin.Discovery.builtin()
-    |> Exy.Lists.join(Application.get_env(:exy, :plugins, []))
+    |> Exy.Support.Lists.join(Application.get_env(:exy, :plugins, []))
     |> Enum.uniq()
   end
 

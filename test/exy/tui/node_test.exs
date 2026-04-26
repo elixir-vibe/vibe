@@ -1,13 +1,15 @@
 defmodule Exy.TUI.NodeTest do
   use ExUnit.Case, async: true
 
-  alias Exy.TUI.{DSL, Theme, Widget, Width}
+  alias Exy.TUI
+
+  alias Exy.TUI.{Theme, Widget, Width}
 
   test "renders iodata lines" do
     lines =
-      DSL.vertical([
-        DSL.text(["hello", " ", "world"], fg: :accent),
-        DSL.text("plain")
+      TUI.vertical([
+        TUI.text(["hello", " ", "world"], fg: :accent),
+        TUI.text("plain")
       ])
       |> Widget.render(80, Theme.default())
 
@@ -19,7 +21,7 @@ defmodule Exy.TUI.NodeTest do
   test "renders semantic message blocks" do
     lines =
       %{role: :user, text: "hello"}
-      |> DSL.message()
+      |> TUI.message()
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 

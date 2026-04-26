@@ -7,7 +7,7 @@ defmodule Exy.Script do
   Livebook-like binding/env state in a child BEAM process.
   """
 
-  alias Exy.Runtime
+  alias Exy.Runtime.Standalone
 
   @type result :: %{
           status: :ok | :error | :timeout,
@@ -38,7 +38,7 @@ defmodule Exy.Script do
   end
 
   defp run_in_standalone(path, opts) do
-    case Runtime.start_link(
+    case Standalone.start_link(
            cwd: Keyword.get(opts, :cwd, File.cwd!()),
            env: Keyword.get(opts, :env, %{})
          ) do
@@ -46,7 +46,7 @@ defmodule Exy.Script do
         try do
           source = File.read!(path)
 
-          case Runtime.evaluate(runtime, source,
+          case Standalone.evaluate(runtime, source,
                  timeout: Keyword.get(opts, :timeout, 120_000),
                  file: path
                ) do
@@ -61,7 +61,7 @@ defmodule Exy.Script do
               %{status: :error, exit_status: nil, output: inspect(reason)}
           end
         after
-          Runtime.stop(runtime)
+          Standalone.stop(runtime)
         end
 
       {:error, reason} ->
@@ -73,7 +73,7 @@ defmodule Exy.Script do
 
   defp run_os_process(path, opts) do
     executable = Keyword.get(opts, :elixir, System.find_executable("elixir") || "elixir")
-    args = Exy.Lists.append(Keyword.get(opts, :args, []), path)
+    args = Exy.Support.Lists.append(Keyword.get(opts, :args, []), path)
     cwd = Keyword.get(opts, :cwd, File.cwd!())
     env = Keyword.get(opts, :env, [])
     timeout = Keyword.get(opts, :timeout, 120_000)

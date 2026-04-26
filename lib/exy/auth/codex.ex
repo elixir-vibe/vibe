@@ -102,7 +102,12 @@ defmodule Exy.Auth.Codex do
 
   @impl Exy.Auth.Provider
   @spec put_credentials(map()) :: :ok
-  def put_credentials(credentials), do: Exy.Agent.Direct.put_codex_credentials(credentials)
+  def put_credentials(%{access: access} = credentials) when is_binary(access) do
+    ReqLLM.put_key(:openai_codex_api_key, access)
+    Application.put_env(:exy, :openai_codex_credentials, credentials)
+    Application.put_env(:req_llm, :oauth_file, Exy.Paths.auth_file())
+    :ok
+  end
 
   defp exchange_code(code, verifier) do
     %{

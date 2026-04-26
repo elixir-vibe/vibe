@@ -1,11 +1,13 @@
 defmodule Exy.TUI.ToolWidgetTest do
   use ExUnit.Case, async: true
 
-  alias Exy.TUI.{DSL, Theme, Widget, Width}
+  alias Exy.TUI
+
+  alias Exy.TUI.{Theme, Widget, Width}
 
   test "dispatches eval by atom name" do
     lines =
-      DSL.tool(%{
+      TUI.tool(%{
         id: "eval-1",
         name: :eval,
         status: :ok,
@@ -35,7 +37,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         args: %{"code" => "File.cwd!()", "timeout" => 1000},
         output: %{output: ~s("/tmp")}
       }
-      |> DSL.tool()
+      |> TUI.tool()
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -50,7 +52,7 @@ defmodule Exy.TUI.ToolWidgetTest do
   test "tool title is bold without status background" do
     line =
       %{id: "eval-1", name: :eval, status: :ok, args: %{code: "1 + 1"}, output: "2"}
-      |> DSL.tool()
+      |> TUI.tool()
       |> Widget.render(80, Theme.default())
       |> List.first()
       |> IO.iodata_to_binary()
@@ -69,7 +71,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         args: %{code: "raise \"boom\""},
         output: %{error: "boom"}
       }
-      |> DSL.tool()
+      |> TUI.tool()
       |> Widget.render(80, Theme.default())
 
     plain = Enum.map(lines, &Width.visible_text/1)
@@ -86,7 +88,7 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     plain =
       %{id: "tool", name: :eval, status: :ok, args: %{code: "many()"}, output: output}
-      |> DSL.tool()
+      |> TUI.tool()
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -109,7 +111,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         output: output,
         truncate?: false
       }
-      |> DSL.tool()
+      |> TUI.tool()
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
@@ -134,7 +136,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         args: %{path: "lib/demo.ex"},
         output: %{path: "lib/demo.ex", content: "IO.puts(:ok)", language: "elixir"}
       }
-      |> DSL.tool()
+      |> TUI.tool()
       |> Widget.render(80, Theme.default())
 
     plain = Enum.map(lines, &Width.visible_text/1)
@@ -159,7 +161,7 @@ defmodule Exy.TUI.ToolWidgetTest do
           diff: "-1  old\n+1  new"
         }
       }
-      |> DSL.tool()
+      |> TUI.tool()
       |> Widget.render(80, Theme.default())
 
     plain = Enum.map(lines, &Width.visible_text/1)
@@ -174,7 +176,7 @@ defmodule Exy.TUI.ToolWidgetTest do
 
   test "dispatches AST and LSP widgets" do
     ast =
-      DSL.tool(%{
+      TUI.tool(%{
         id: "ast",
         name: :ast,
         status: :ok,
@@ -184,7 +186,7 @@ defmodule Exy.TUI.ToolWidgetTest do
       })
 
     lsp =
-      DSL.tool(%{
+      TUI.tool(%{
         id: "lsp",
         name: :lsp,
         status: :ok,

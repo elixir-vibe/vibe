@@ -97,12 +97,4 @@ defmodule Exy.Agent.Direct do
       session_id: session_id
     )
   end
-
-  @spec put_codex_credentials(map()) :: :ok
-  def put_codex_credentials(%{access: access} = credentials) when is_binary(access) do
-    ReqLLM.put_key(:openai_codex_api_key, access)
-    Application.put_env(:exy, :openai_codex_credentials, credentials)
-    Application.put_env(:req_llm, :oauth_file, Exy.Paths.auth_file())
-    :ok
-  end
 end

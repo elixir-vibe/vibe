@@ -5,6 +5,7 @@ defmodule Exy.TUI.Storybook do
 
   use Exy.TUI
 
+  alias Exy.TUI
   alias Exy.TUI.{Node, Theme, Widget, Width}
   alias Exy.UI.{Event, Reducer, State, ViewModel}
 
@@ -50,7 +51,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:tool_eval_ok) do
-    DSL.tool(%{
+    TUI.tool(%{
       id: "eval-1",
       name: :eval,
       status: :ok,
@@ -61,7 +62,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:tool_ast_matches) do
-    DSL.tool(%{
+    TUI.tool(%{
       id: "ast-1",
       name: :ast,
       status: :ok,
@@ -72,7 +73,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:tool_lsp_diagnostics) do
-    DSL.tool(%{
+    TUI.tool(%{
       id: "lsp-1",
       name: :lsp,
       status: :ok,
@@ -83,7 +84,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:footer_usage) do
-    DSL.footer(%{
+    TUI.footer(%{
       cwd: File.cwd!(),
       session_id: "story-footer",
       model: "openai_codex:gpt-5.5",
@@ -93,7 +94,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:footer_plugin_status) do
-    DSL.footer(%{
+    TUI.footer(%{
       cwd: File.cwd!(),
       session_id: "story-footer",
       model: "openai_codex:gpt-5.5",
@@ -122,21 +123,19 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:status_rows) do
-    vertical do
+    vertical([
       status(
         icon: Theme.symbol(Theme.default(), :success_icon),
         title: "Expert",
         description: "ready",
         color: :success
-      )
-
+      ),
       status(
         icon: Theme.symbol(Theme.default(), :error_icon),
         title: "Auth",
         description: "missing credentials",
         color: :error
-      )
-
+      ),
       status(
         icon: Theme.symbol(Theme.default(), :status_icon),
         title: "Runtime",
@@ -144,7 +143,7 @@ defmodule Exy.TUI.Storybook do
         extra: "idle",
         color: :accent
       )
-    end
+    ])
   end
 
   def story(:section_header) do
@@ -158,7 +157,7 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:markdown_rich) do
-    DSL.markdown("""
+    TUI.markdown("""
     # Markdown renderer
 
     Exy renders **bold**, *italic*, `inline code`, links like [MDEx](https://mdelixir.dev), quotes, lists, code blocks, and tables.
@@ -186,11 +185,11 @@ defmodule Exy.TUI.Storybook do
       Exy.TUI.Markdown.new_stream()
       |> Exy.TUI.Markdown.put_chunk("## Partial stream\n\nThis has **bo")
 
-    DSL.markdown(MDEx.to_markdown!(MDEx.Document.run(document)))
+    TUI.markdown(MDEx.to_markdown!(MDEx.Document.run(document)))
   end
 
   def story(:model_info) do
-    DSL.model_info(
+    TUI.model_info(
       model: "gpt-5.5",
       provider: "openai_codex",
       reasoning: "medium",
@@ -211,25 +210,25 @@ defmodule Exy.TUI.Storybook do
   end
 
   def story(:themes) do
-    vertical do
-      section("Dark", [textarea(title: "Prompt", value: "dark prompt", cursor: 4, min_rows: 2)])
+    vertical([
+      section("Dark", [textarea(title: "Prompt", value: "dark prompt", cursor: 4, min_rows: 2)]),
       section("Light", [textarea(title: "Prompt", value: "light prompt", cursor: 5, min_rows: 2)])
-    end
+    ])
   end
 
   def story(:dialog) do
-    DSL.dialog(
+    TUI.dialog(
       "Resume Session",
       [
-        DSL.status(icon: "1", title: "story-chat", description: "now", color: :accent),
-        DSL.status(icon: "2", title: "previous-work", description: "2h", color: :muted)
+        TUI.status(icon: "1", title: "story-chat", description: "now", color: :accent),
+        TUI.status(icon: "2", title: "previous-work", description: "2h", color: :muted)
       ],
       hint: "enter opens • esc cancels"
     )
   end
 
   def story(:diff) do
-    DSL.diff(
+    TUI.diff(
       lines: [{:context, "def hello do"}, {:del, "  :old"}, {:add, "  :new"}, {:context, "end"}]
     )
   end

@@ -3,7 +3,8 @@ defmodule Exy.TUI.ToolWidget do
   Behaviour and dispatcher for built-in tool widgets.
   """
 
-  alias Exy.TUI.{DSL, Lines, TextTruncation, Theme, Widget}
+  alias Exy.TUI
+  alias Exy.TUI.{Lines, TextTruncation, Theme, Widget}
 
   @type tool :: map()
   @type renderer :: module()
@@ -168,7 +169,7 @@ defmodule Exy.TUI.ToolWidget do
   defp section_label_lines(:output, _width, _theme), do: [""]
 
   defp section_label_lines(label, width, theme) do
-    Widget.render(DSL.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
+    Widget.render(TUI.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
   end
 
   defp value_lines(:output, %{error: error}, width, theme) do
@@ -190,7 +191,7 @@ defmodule Exy.TUI.ToolWidget do
 
   defp value_lines(_label, value, width, theme) do
     Widget.render(
-      DSL.padding([DSL.text(format_value(value), fg: :tool_output)], x: 2),
+      TUI.padding([TUI.text(format_value(value), fg: :tool_output)], x: 2),
       width,
       theme
     )
