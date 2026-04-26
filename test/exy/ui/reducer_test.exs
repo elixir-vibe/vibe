@@ -82,6 +82,35 @@ defmodule Exy.UI.ReducerTest do
     assert state.status == :idle
   end
 
+  test "turns subagent lifecycle events into transcript blocks and notifications" do
+    state =
+      Exy.UI.State.new(session_id: "ui-test")
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:subagent_started, "ui-test", %{
+          id: "sg-1",
+          role: :scout,
+          task: "inspect docs",
+          child_session_id: "child-1"
+        })
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:subagent_finished, "ui-test", %{
+          id: "sg-1",
+          role: :scout,
+          status: :ok,
+          task: "inspect docs",
+          child_session_id: "child-1"
+        })
+      )
+
+    assert [
+             %{role: :subagent, role_name: :scout, lifecycle: :started},
+             %{role: :subagent, role_name: :scout, lifecycle: :finished, status: :ok}
+           ] = state.messages
+
+    assert Enum.any?(state.notifications, &String.contains?(&1.text, "exy a child-1"))
+  end
+
   test "keeps assistant text and tool calls in chronological order" do
     state =
       Exy.UI.State.new(session_id: "ui-test")

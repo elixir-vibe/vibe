@@ -12,6 +12,7 @@ defmodule Exy.UI.ViewModel do
     NotificationList,
     Overlay,
     PluginWidget,
+    SubagentLifecycle,
     ToolCall,
     UserMessage
   }
@@ -65,9 +66,24 @@ defmodule Exy.UI.ViewModel do
         :user -> %UserMessage{id: id, text: message.text, at: message.at}
         :assistant -> assistant_block(id, message)
         :tool -> tool_block(message, state)
+        :subagent -> subagent_block(id, message)
       end
       |> Map.put(:role, message.role)
     end)
+  end
+
+  defp subagent_block(id, message) do
+    %SubagentLifecycle{
+      id: id,
+      job_id: Map.get(message, :id),
+      role_name: Map.get(message, :role_name),
+      lifecycle: Map.get(message, :lifecycle),
+      status: Map.get(message, :status),
+      task: Map.get(message, :task),
+      child_session_id: Map.get(message, :child_session_id),
+      error: Map.get(message, :error),
+      at: message.at
+    }
   end
 
   defp assistant_block(id, message) do

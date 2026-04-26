@@ -18,6 +18,21 @@ defmodule Exy.UI.Block do
     defstruct [:id, :name, :status, :args, :output, :expanded?, :truncate?]
   end
 
+  defmodule SubagentLifecycle do
+    @moduledoc false
+    defstruct [
+      :id,
+      :job_id,
+      :role_name,
+      :lifecycle,
+      :status,
+      :task,
+      :child_session_id,
+      :error,
+      :at
+    ]
+  end
+
   defmodule Footer do
     @moduledoc false
     defstruct [:cwd, :model, :session_id, :status, :usage, :active_sessions, plugin_statuses: %{}]

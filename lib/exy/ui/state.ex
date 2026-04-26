@@ -26,7 +26,7 @@ defmodule Exy.UI.State do
             events: []
 
   @type message :: %{
-          required(:role) => :user | :assistant | :tool,
+          required(:role) => :user | :assistant | :tool | :subagent,
           required(:at) => DateTime.t(),
           optional(atom()) => term()
         }

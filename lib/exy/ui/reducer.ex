@@ -205,27 +205,31 @@ defmodule Exy.UI.Reducer do
     %{state | notifications: Enum.reject(state.notifications, &(notification_id(&1) == id))}
   end
 
-  defp reduce(state, %Event{type: :subagent_started, data: data}) do
+  defp reduce(state, %Event{type: :subagent_started, at: at, data: data}) do
     child_session_id = Map.get(data, :child_session_id)
     role = Map.get(data, :role) || "subagent"
     text = "#{role} started" <> attach_hint(child_session_id)
+    message = Map.merge(data, %{role: :subagent, role_name: role, lifecycle: :started, at: at})
 
     %{
       state
-      | notifications:
+      | messages: Lists.append(state.messages, message),
+        notifications:
           Lists.append(state.notifications, Notification.new(%{level: :info, text: text}))
     }
   end
 
-  defp reduce(state, %Event{type: :subagent_finished, data: data}) do
+  defp reduce(state, %Event{type: :subagent_finished, at: at, data: data}) do
     child_session_id = Map.get(data, :child_session_id)
     status = Map.get(data, :status, :finished)
     role = Map.get(data, :role) || "subagent"
     text = "#{role} finished: #{status}" <> attach_hint(child_session_id)
+    message = Map.merge(data, %{role: :subagent, role_name: role, lifecycle: :finished, at: at})
 
     %{
       state
-      | notifications:
+      | messages: Lists.append(state.messages, message),
+        notifications:
           Lists.append(state.notifications, Notification.new(%{level: :info, text: text}))
     }
   end
