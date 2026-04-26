@@ -85,7 +85,7 @@ defmodule Exy.CLI do
         login(opts[:login])
 
       code = opts[:eval] ->
-        Output.print(Exy.Eval.run(code, timeout: opts[:timeout] || 30_000), opts)
+        Output.print(Exy.Eval.once(code, timeout: opts[:timeout] || 30_000), opts)
 
       opts[:compact] ->
         compact(opts)

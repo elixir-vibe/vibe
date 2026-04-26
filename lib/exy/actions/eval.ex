@@ -20,14 +20,20 @@ defmodule Exy.Actions.Eval do
     schema: @schema
 
   @impl true
-  def run(params, _context) do
+  def run(params, context) do
     params = JSONSpec.atomize(@schema, params)
 
     ToolResult.run(fn ->
-      case Exy.Eval.run(params.code, timeout: Map.get(params, :timeout, 30_000)) do
+      case Exy.Eval.run(params.code,
+             timeout: Map.get(params, :timeout, 30_000),
+             session_id: session_id(context)
+           ) do
         {:ok, text} -> ToolResult.ok(%{output: text})
         {:error, error} -> ToolResult.error(error)
       end
     end)
   end
+
+  defp session_id(context) when is_map(context), do: Map.get(context, :session_id)
+  defp session_id(_context), do: nil
 end

@@ -15,11 +15,12 @@ defmodule Exy.Plugin do
   @callback handle_event(event(), context(), term()) :: {result(), term()}
   @callback actions(term()) :: [module()]
   @callback commands(term()) :: [module() | map()]
+  @callback apis(term()) :: [Exy.Plugin.API.t() | keyword() | map()]
   @callback children(term()) :: [Supervisor.child_spec() | {module(), term()} | module()]
   @callback children(term(), map()) :: [Supervisor.child_spec() | {module(), term()} | module()]
   @callback shutdown(term()) :: :ok
 
-  @optional_callbacks actions: 1, commands: 1, children: 1, children: 2, shutdown: 1
+  @optional_callbacks actions: 1, commands: 1, apis: 1, children: 1, children: 2, shutdown: 1
 
   defmacro __using__(_opts) do
     quote do
@@ -38,6 +39,9 @@ defmodule Exy.Plugin do
       def commands(_state), do: []
 
       @impl Exy.Plugin
+      def apis(_state), do: []
+
+      @impl Exy.Plugin
       def children(_state), do: []
 
       @impl Exy.Plugin
@@ -50,6 +54,7 @@ defmodule Exy.Plugin do
                      handle_event: 3,
                      actions: 1,
                      commands: 1,
+                     apis: 1,
                      children: 1,
                      children: 2,
                      shutdown: 1

@@ -1,25 +1,42 @@
 defmodule Exy.Eval do
   @moduledoc """
-  Runtime Elixir evaluation with captured IO and timeouts.
+  Runtime Elixir evaluation with captured IO, timeouts, and session state.
 
   This is Exy's primary power tool. Prefer adding helper modules callable from
   here over growing the external tool list.
   """
 
-  alias Exy.ToolOutput
-
-  @inspect_opts [charlists: :as_lists, limit: 80, pretty: true]
+  alias Exy.Eval.Evaluator
 
   @type result :: {:ok, String.t()} | {:error, String.t()}
 
   @spec run(String.t(), keyword()) :: result()
-  def run(code, opts \\ []) when is_binary(code) do
+  def run(code, opts) when is_binary(code) do
+    case Keyword.fetch(opts, :session_id) do
+      {:ok, session_id} when is_binary(session_id) ->
+        evaluate_with_timeout(code, session_id, true, opts)
+
+      _missing ->
+        {:error,
+         "session_id is required for stateful eval; use Exy.Eval.once/2 for one-off evaluation"}
+    end
+  end
+
+  @spec once(String.t(), keyword()) :: result()
+  def once(code, opts \\ []) when is_binary(code) do
+    session_id = "__eval_#{System.unique_integer([:positive])}"
+    evaluate_with_timeout(code, session_id, false, opts)
+  end
+
+  defp evaluate_with_timeout(code, session_id, persist?, opts) do
     timeout = Keyword.get(opts, :timeout, 30_000)
     caller = self()
 
     {pid, ref} =
       spawn_monitor(fn ->
-        send(caller, {:exy_eval_result, self(), eval_with_captured_io(code)})
+        result = evaluate(session_id, code, persist?)
+        unless persist?, do: stop_evaluator(session_id)
+        send(caller, {:exy_eval_result, self(), result})
       end)
 
     receive do
@@ -33,59 +50,48 @@ defmodule Exy.Eval do
       timeout ->
         Process.demonitor(ref, [:flush])
         Process.exit(pid, :brutal_kill)
+        stop_evaluator(session_id)
         {:error, "evaluation timed out after #{timeout}ms"}
     end
   end
 
-  defp eval_with_captured_io(code) do
-    {{success?, result}, io} = capture_io(fn -> eval_code(code) end)
-
-    cond do
-      success? and result == :__exy_no_output__ ->
-        {:ok, ToolOutput.limit_text(io)}
-
-      success? and io == "" ->
-        {:ok, result |> inspect(@inspect_opts) |> ToolOutput.limit_text()}
-
-      success? ->
-        {:ok,
-         ToolOutput.limit_text("IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}")}
-
-      true ->
-        {:error, ToolOutput.limit_text(result)}
+  defp evaluate(session_id, code, persist?) do
+    with {:ok, evaluator} <- evaluator(session_id, persist?) do
+      Evaluator.evaluate(evaluator, code)
     end
   end
 
-  defp eval_code(code) do
-    try do
-      {result, _bindings} = Code.eval_string(code, [], env())
-      {true, result}
-    catch
-      kind, reason -> {false, Exception.format(kind, reason, __STACKTRACE__)}
+  defp evaluator(session_id, persist?) do
+    case Registry.lookup(Exy.Registry, {:eval, session_id}) do
+      [{pid, _value}] when is_pid(pid) ->
+        if Process.alive?(pid), do: {:ok, pid}, else: start_evaluator(session_id, persist?)
+
+      [] ->
+        start_evaluator(session_id, persist?)
     end
   end
 
-  defp env do
-    import IEx.Helpers, warn: false
-    __ENV__
+  defp start_evaluator(session_id, persist?) do
+    DynamicSupervisor.start_child(
+      Exy.Eval.Supervisor,
+      %{
+        id: {Evaluator, session_id},
+        start: {Evaluator, :start_link, [[session_id: session_id, persist?: persist?]]}
+      }
+    )
+    |> case do
+      {:ok, pid} -> {:ok, pid}
+      {:ok, pid, _info} -> {:ok, pid}
+      {:error, {:already_started, pid}} -> {:ok, pid}
+      {:error, reason} -> {:error, "failed to start evaluator: #{inspect(reason)}"}
+    end
   end
 
-  defp capture_io(fun) do
-    {:ok, io} = StringIO.open("")
-    ansi? = Application.get_env(:elixir, :ansi_enabled)
-    original_gl = Process.group_leader()
-
-    Application.put_env(:elixir, :ansi_enabled, false)
-    Process.group_leader(self(), io)
-
-    try do
-      result = fun.()
-      {_, content} = StringIO.contents(io)
-      {result, content}
-    after
-      Process.group_leader(self(), original_gl)
-      StringIO.close(io)
-      Application.put_env(:elixir, :ansi_enabled, ansi?)
+  defp stop_evaluator(session_id) do
+    with [{pid, _value}] <- Registry.lookup(Exy.Registry, {:eval, session_id}) do
+      DynamicSupervisor.terminate_child(Exy.Eval.Supervisor, pid)
     end
+
+    :ok
   end
 end

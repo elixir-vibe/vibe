@@ -196,8 +196,12 @@ Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
 
 ### Runtime/eval helpers
 
+`eval` is stateful when called with a session id. Normal Elixir variables and aliases persist for that session. Use `Exy.Eval.once/2` for explicit one-off evaluation.
+
 ```elixir
-Exy.Eval.run("Exy.OTP.runtime_info()")
+Exy.Eval.run(~s(query = "weather in washington"), session_id: session_id)
+Exy.Eval.run(~s(query <> " tomorrow"), session_id: session_id)
+Exy.Eval.once("Exy.OTP.runtime_info()")
 
 {:ok, runtime} = Exy.Runtime.Standalone.start_link()
 Exy.Runtime.Standalone.evaluate(runtime, "Mix.install([])\nx = 1 + 2")
@@ -231,6 +235,18 @@ defmodule MyPlugin do
 
   @impl true
   def commands(_state), do: [MyPlugin.HelloCommand]
+
+  @impl true
+  def apis(_state) do
+    [
+      %Exy.Plugin.API{
+        name: :hello,
+        module: MyPlugin.API,
+        alias: Hello,
+        description: "Composable helper API for eval sessions"
+      }
+    ]
+  end
 end
 
 defmodule MyPlugin.HelloCommand do
@@ -244,6 +260,13 @@ defmodule MyPlugin.HelloCommand do
     {:events, [Exy.UI.Event.new(:notification_added, ui_state.session_id, %{level: :info, text: "hello"})]}
   end
 end
+```
+
+Plugin APIs are discoverable and pre-aliased in eval sessions:
+
+```elixir
+Exy.Plugin.Manager.apis()
+Hello.some_function("input")
 ```
 
 Plugins can update renderer-neutral UI state:

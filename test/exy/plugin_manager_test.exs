@@ -2,6 +2,7 @@ defmodule Exy.PluginManagerTest do
   use ExUnit.Case, async: false
 
   alias Exy.Test.PluginManagerFixtures.{
+    APIPlugin,
     BackgroundPlugin,
     CommandPlugin,
     EventPlugin,
@@ -101,6 +102,18 @@ defmodule Exy.PluginManagerTest do
 
     assert Enum.any?(Exy.Session.state(server).notifications, &(&1.text == "fixture command"))
     assert :ok = Exy.Plugin.Manager.unload(CommandPlugin)
+  end
+
+  test "plugins can expose eval API modules" do
+    assert :ok = Exy.Plugin.Manager.load(APIPlugin, session_id: "plugin-api")
+
+    assert [api] = Exy.Plugin.Manager.apis()
+    assert api.name == :fixture_search
+    assert api.module == Exy.Test.PluginManagerFixtures.SearchAPI
+    assert api.alias == Search
+    assert api.description == "Fixture search API"
+
+    assert :ok = Exy.Plugin.Manager.unload(APIPlugin)
   end
 
   test "partial child startup failure cleans up already started children" do

@@ -95,3 +95,30 @@ defmodule Exy.Test.PluginManagerFixtures.CommandPlugin do
   @impl true
   def commands(_state), do: [PluginCommand]
 end
+
+defmodule Exy.Test.PluginManagerFixtures.SearchAPI do
+  @moduledoc false
+
+  def remember(value), do: {:remembered, value}
+end
+
+defmodule Exy.Test.PluginManagerFixtures.APIPlugin do
+  @moduledoc false
+
+  use Exy.Plugin
+
+  alias Exy.Test.PluginManagerFixtures.SearchAPI
+
+  @impl true
+  def apis(_state) do
+    [
+      %Exy.Plugin.API{
+        name: :fixture_search,
+        module: SearchAPI,
+        alias: Search,
+        description: "Fixture search API",
+        examples: ["Search.remember(query)"]
+      }
+    ]
+  end
+end

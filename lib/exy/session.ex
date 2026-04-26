@@ -236,6 +236,7 @@ defmodule Exy.Session do
     ask_opts =
       state.llm_opts
       |> Keyword.put(:session_id, session_id)
+      |> Keyword.put(:tool_context, %{session_id: session_id})
       |> Keyword.put(:stream_owner, {parent, ref})
       |> Keyword.put(:on_result, &send(parent, {:assistant_delta, &1}))
       |> Keyword.put(:on_thinking, &send(parent, {:assistant_thinking_delta, &1}))
@@ -249,6 +250,7 @@ defmodule Exy.Session do
     ask_opts =
       state.llm_opts
       |> Keyword.put(:session_id, session_id)
+      |> Keyword.put(:tool_context, %{session_id: session_id})
       |> Keyword.put(:stream_owner, {parent, ref})
       |> Keyword.put(:on_tool_started, &send(parent, {:tool_started, &1}))
       |> Keyword.put(:on_tool_finished, &send(parent, {:tool_finished, &1}))

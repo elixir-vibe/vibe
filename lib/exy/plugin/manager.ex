@@ -27,6 +27,9 @@ defmodule Exy.Plugin.Manager do
   @spec commands() :: [module()]
   def commands, do: GenServer.call(__MODULE__, :commands)
 
+  @spec apis() :: [Exy.Plugin.API.t()]
+  def apis, do: GenServer.call(__MODULE__, :apis)
+
   @impl true
   def init(opts) do
     modules = Keyword.get(opts, :plugins, configured_plugins())
@@ -73,6 +76,15 @@ defmodule Exy.Plugin.Manager do
       |> Enum.uniq()
 
     {:reply, commands, state}
+  end
+
+  def handle_call(:apis, _from, state) do
+    apis =
+      state.plugins
+      |> Enum.flat_map(fn {module, entry} -> plugin_apis(module, entry.state) end)
+      |> Enum.uniq_by(&{&1.alias, &1.module})
+
+    {:reply, apis, state}
   end
 
   def handle_call({:dispatch, event, context}, _from, state) do
@@ -158,6 +170,16 @@ defmodule Exy.Plugin.Manager do
 
   defp plugin_commands(module, plugin_state) do
     if function_exported?(module, :commands, 1), do: module.commands(plugin_state), else: []
+  rescue
+    _ -> []
+  end
+
+  defp plugin_apis(module, plugin_state) do
+    if function_exported?(module, :apis, 1) do
+      Enum.map(module.apis(plugin_state), &Exy.Plugin.API.new/1)
+    else
+      []
+    end
   rescue
     _ -> []
   end

@@ -149,6 +149,23 @@ defmodule Exy.Session.Store do
     :ok
   end
 
+  @spec append_eval_bindings(Code.binding(), keyword()) :: :ok | {:error, term()}
+  def append_eval_bindings(binding, opts) when is_list(binding) do
+    session_id = Keyword.fetch!(opts, :session_id)
+
+    with :ok <- File.mkdir_p(dir()),
+         line <- Jason.encode!(eval_binding_entry(session_id, binding)) <> "\n" do
+      File.write(path(session_id), line, [:append])
+    end
+  end
+
+  @spec eval_bindings(String.t()) :: Code.binding()
+  def eval_bindings(session_id) when is_binary(session_id) do
+    session_id
+    |> path()
+    |> read_eval_bindings_file()
+  end
+
   @spec append_ui_event(Event.t(), non_neg_integer()) :: :ok | {:error, term()}
   def append_ui_event(%Event{} = event, seq) do
     with :ok <- File.mkdir_p(dir()),
@@ -266,6 +283,21 @@ defmodule Exy.Session.Store do
     }
   end
 
+  defp eval_binding_entry(session_id, binding) do
+    %{
+      "entry_type" => "eval_binding",
+      "session_id" => session_id,
+      "at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "bindings" => encode_eval_bindings(binding)
+    }
+  end
+
+  defp encode_eval_bindings(binding) do
+    Map.new(binding, fn {name, value} ->
+      {Atom.to_string(name), value |> :erlang.term_to_binary() |> Base.encode64()}
+    end)
+  end
+
   defp encode_ui_event(%Event{} = event, seq) do
     %{
       "seq" => seq,
@@ -283,6 +315,18 @@ defmodule Exy.Session.Store do
         text
         |> String.split("\n", trim: true)
         |> Enum.flat_map(&decode_trajectory_line/1)
+
+      {:error, :enoent} ->
+        []
+    end
+  end
+
+  defp read_eval_bindings_file(path) do
+    case File.read(path) do
+      {:ok, text} ->
+        text
+        |> String.split("\n", trim: true)
+        |> Enum.reduce([], &decode_eval_binding_line/2)
 
       {:error, :enoent} ->
         []
@@ -307,6 +351,29 @@ defmodule Exy.Session.Store do
 
   defp ui_event_paths(session_id) do
     [ui_events_path(session_id)]
+  end
+
+  defp decode_eval_binding_line(line, acc) do
+    with {:ok, %{"entry_type" => "eval_binding", "bindings" => bindings}} <- Jason.decode(line),
+         {:ok, binding} <- decode_eval_bindings(bindings) do
+      binding
+    else
+      _ -> acc
+    end
+  end
+
+  defp decode_eval_bindings(bindings) when is_map(bindings) do
+    bindings
+    |> Enum.reduce_while({:ok, []}, fn {name, encoded}, {:ok, acc} ->
+      with {:ok, binary} <- Base.decode64(encoded),
+           value <- :erlang.binary_to_term(binary, [:safe]) do
+        {:cont, {:ok, [{String.to_atom(name), value} | acc]}}
+      else
+        _ -> {:halt, :error}
+      end
+    end)
+  rescue
+    _exception -> :error
   end
 
   defp decode_ui_event_line(line) do
