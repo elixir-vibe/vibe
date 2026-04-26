@@ -43,7 +43,7 @@ defmodule Exy.Agent do
 
     Store.append(:assistant_message, data, session_id: session_id)
 
-    if usage = Exy.LLM.Usage.from_response(result) do
+    if usage = Exy.Agent.Usage.from_response(result) do
       Store.append(:llm_usage, usage, session_id: session_id)
     end
 
@@ -79,12 +79,12 @@ defmodule Exy.Agent do
     Application.put_env(
       :jido_ai,
       :model_aliases,
-      Map.put(current, :exy, Exy.LLM.Model.resolve(opts))
+      Map.put(current, :exy, Exy.Agent.Model.resolve(opts))
     )
   end
 
   defp ensure_provider_credentials(opts) do
-    case Exy.LLM.Model.resolve(opts) do
+    case Exy.Agent.Model.resolve(opts) do
       "openai_codex:" <> _model -> Exy.Auth.Codex.ensure_fresh()
       _model -> :ok
     end

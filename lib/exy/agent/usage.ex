@@ -1,4 +1,4 @@
-defmodule Exy.LLM.Usage do
+defmodule Exy.Agent.Usage do
   @moduledoc """
   Normalized model usage extraction for session accounting.
   """

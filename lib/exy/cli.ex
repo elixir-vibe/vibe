@@ -149,14 +149,14 @@ defmodule Exy.CLI do
   end
 
   defp new_session_tui(opts) do
-    case server_rpc(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]) do
+    case server_rpc(:new_session, [[model: Exy.Agent.Model.resolve(opts)]]) do
       {:ok, %{id: session_id}} -> attach_session(session_id, opts)
       other -> print_result(other, opts)
     end
   end
 
   defp new_session(opts) do
-    print_result(server_rpc(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]), opts)
+    print_result(server_rpc(:new_session, [[model: Exy.Agent.Model.resolve(opts)]]), opts)
   end
 
   defp attach_default_session(opts) do
@@ -279,7 +279,7 @@ defmodule Exy.CLI do
   end
 
   defp new_remote_session_id(opts) do
-    case server_rpc(:new_session, [[model: Exy.LLM.Model.resolve(opts)]]) do
+    case server_rpc(:new_session, [[model: Exy.Agent.Model.resolve(opts)]]) do
       {:ok, %{id: id}} -> id
       {:error, reason} -> raise "cannot create Exy session: #{inspect(reason)}"
     end
@@ -414,9 +414,9 @@ defmodule Exy.CLI do
           llm_opts = Keyword.put(llm_opts(opts), :session_id, session_id)
 
           if stream?(opts) do
-            Exy.LLM.stream(prompt, llm_opts)
+            Exy.Agent.Direct.stream(prompt, llm_opts)
           else
-            Exy.LLM.ask(prompt, llm_opts)
+            Exy.Agent.Direct.ask(prompt, llm_opts)
           end
         else
           with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
@@ -433,7 +433,7 @@ defmodule Exy.CLI do
     Exy.Application.configure_dependency_logging()
 
     runtime_opts =
-      [session_id: session_id(opts), model: Exy.LLM.Model.resolve(opts)]
+      [session_id: session_id(opts), model: Exy.Agent.Model.resolve(opts)]
       |> maybe_put(:remote_node, opts[:remote_node])
       |> Keyword.merge(runtime_extra)
       |> maybe_put_system_prompt(opts[:system_prompt])
@@ -537,7 +537,7 @@ defmodule Exy.CLI do
       ReqLLM.put_key(:openai_api_key, key)
     end
 
-    if Exy.LLM.Model.resolve(opts) |> String.starts_with?("openai_codex:") do
+    if Exy.Agent.Model.resolve(opts) |> String.starts_with?("openai_codex:") do
       Exy.Auth.Codex.ensure_fresh()
     end
 

@@ -52,13 +52,12 @@ Everything else is normal Elixir callable from `eval`:
 - `Exy.Skill` — procedural-memory skill files
 - `Exy.Trajectory` — structured event capture for self-improvement
 - `Exy.Session` — persisted JSONL dialogs, events, and usage under `~/.exy/sessions`
-- `Exy.LLM.Usage` — normalized token/cost accounting from model responses
+- `Exy.Agent.Usage` — normalized token/cost accounting from model responses
 - `Exy.Context` — pi-style context compaction checkpoints
 - `Exy.Runtime` / `Exy.Script` — Livebook-inspired standalone BEAM runtime and Mix.install script runner
 - `Exy.Sandbox.Policy` — explicit isolation policy data for runtime selection
 - `Exy.Code.Checks` — format/compile/test/Credo/ExSlop/ExDNA/Reach validation gates
 - `Exy.SelfPatch` — validated development hot-compile helpers
-- `Exy.LLM` — direct ReqLLM calls
 - `Exy.Agent` / `Exy.Agent.Coding` — Jido.AI ReAct agent over Exy's coding tools
 - `Exy.Auth` / `Exy.Auth.Codex` — behaviour-based auth providers and ChatGPT/Codex OAuth
 - `Exy.Plugin` — behaviour-based plugin hooks discovered from `Exy.Plugins.*`
@@ -96,9 +95,6 @@ Exy.Subagents.run_many([
 Exy.Auth.login("codex")
 Exy.Auth.ensure_fresh("openai-codex")
 Exy.Auth.usage("openai-codex")
-
-# Direct LLM call through ReqLLM
-Exy.LLM.ask("Summarize Exy's architecture")
 
 # Elixir API: Jido-backed agent
 {:ok, pid} = Exy.start_link()

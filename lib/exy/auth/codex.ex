@@ -102,7 +102,7 @@ defmodule Exy.Auth.Codex do
 
   @impl Exy.Auth.Provider
   @spec put_credentials(map()) :: :ok
-  def put_credentials(credentials), do: Exy.LLM.put_codex_credentials(credentials)
+  def put_credentials(credentials), do: Exy.Agent.Direct.put_codex_credentials(credentials)
 
   defp exchange_code(code, verifier) do
     %{

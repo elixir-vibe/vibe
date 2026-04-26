@@ -89,7 +89,7 @@ defmodule Exy.Context do
   end
 
   defp ask_llm(prompt, opts) do
-    ask = &Exy.LLM.ask/2
+    ask = &Exy.Agent.Direct.ask/2
     ask.(prompt, opts)
   end
 

@@ -1,4 +1,4 @@
-defmodule Exy.LLMTest do
+defmodule Exy.Agent.DirectTest do
   use ExUnit.Case, async: false
 
   setup do
@@ -14,7 +14,7 @@ defmodule Exy.LLMTest do
   end
 
   test "stores codex credentials for OAuth requests" do
-    assert :ok = Exy.LLM.put_codex_credentials(%{access: "token", accountId: "account"})
+    assert :ok = Exy.Agent.Direct.put_codex_credentials(%{access: "token", accountId: "account"})
 
     assert %{access: "token", accountId: "account"} =
              Application.get_env(:exy, :openai_codex_credentials)

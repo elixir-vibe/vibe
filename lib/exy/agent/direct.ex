@@ -1,15 +1,5 @@
-defmodule Exy.LLM do
-  @moduledoc """
-  Thin ReqLLM facade for one-shot model calls.
-
-  Jido.AI is used for supervised/tool-using agents; ReqLLM remains the simple
-  provider abstraction for direct calls and smoke tests.
-  """
-
-  @default_system """
-  You are Exy, a concise Elixir-centric coding agent.
-  Prefer eval for BEAM/runtime work, ast for Elixir syntax, and lsp for Expert diagnostics/navigation.
-  """
+defmodule Exy.Agent.Direct do
+  @moduledoc false
 
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(prompt, opts \\ []) when is_binary(prompt) do
@@ -39,8 +29,8 @@ defmodule Exy.LLM do
   end
 
   defp request(prompt, opts) do
-    model = Exy.LLM.Model.resolve(opts)
-    system = Keyword.get(opts, :system, @default_system)
+    model = Exy.Agent.Model.resolve(opts)
+    system = Keyword.get_lazy(opts, :system, &Exy.SystemPrompt.default/0)
 
     messages = [
       ReqLLM.Context.system(system),
@@ -97,7 +87,7 @@ defmodule Exy.LLM do
   defp record_response({:ok, response}, session_id) do
     Exy.Trajectory.Store.append(:assistant_message, %{result: response}, session_id: session_id)
 
-    if usage = Exy.LLM.Usage.from_response(response) do
+    if usage = Exy.Agent.Usage.from_response(response) do
       Exy.Trajectory.Store.append(:llm_usage, usage, session_id: session_id)
     end
   end

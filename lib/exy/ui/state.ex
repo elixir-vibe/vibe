@@ -60,7 +60,7 @@ defmodule Exy.UI.State do
     %__MODULE__{
       session_id: Keyword.get_lazy(opts, :session_id, &Exy.Session.Store.new_id/0),
       cwd: Keyword.get_lazy(opts, :cwd, fn -> File.cwd!() end),
-      model: Keyword.get_lazy(opts, :model, &Exy.LLM.Model.default/0)
+      model: Keyword.get_lazy(opts, :model, &Exy.Agent.Model.default/0)
     }
   end
 end
