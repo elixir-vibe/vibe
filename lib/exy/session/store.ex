@@ -37,6 +37,8 @@ defmodule Exy.Session.Store do
     "session_selected" => :session_selected,
     "slash_command_submitted" => :slash_command_submitted,
     "status_changed" => :status_changed,
+    "subagent_finished" => :subagent_finished,
+    "subagent_started" => :subagent_started,
     "title_updated" => :title_updated,
     "tool_finished" => :tool_finished,
     "tool_started" => :tool_started,

@@ -77,8 +77,10 @@ defmodule Exy.Subagents do
 
   @spec active() :: [map()]
   def active do
-    Registry.select(Exy.Registry, [{{{:subagent, :_}, :_, :_}, [], [{{:"$1", :"$2", :"$3"}}]}])
-    |> Enum.map(fn {{:subagent, id}, pid, meta} ->
+    Registry.select(Exy.Registry, [
+      {{{:subagent, :"$1"}, :"$2", :"$3"}, [], [{{:"$1", :"$2", :"$3"}}]}
+    ])
+    |> Enum.map(fn {id, pid, meta} ->
       Map.merge(Map.new(meta), %{id: id, pid: inspect(pid)})
     end)
   end

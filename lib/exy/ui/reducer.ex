@@ -205,6 +205,31 @@ defmodule Exy.UI.Reducer do
     %{state | notifications: Enum.reject(state.notifications, &(notification_id(&1) == id))}
   end
 
+  defp reduce(state, %Event{type: :subagent_started, data: data}) do
+    child_session_id = Map.get(data, :child_session_id)
+    role = Map.get(data, :role) || "subagent"
+    text = "#{role} started" <> attach_hint(child_session_id)
+
+    %{
+      state
+      | notifications:
+          Lists.append(state.notifications, Notification.new(%{level: :info, text: text}))
+    }
+  end
+
+  defp reduce(state, %Event{type: :subagent_finished, data: data}) do
+    child_session_id = Map.get(data, :child_session_id)
+    status = Map.get(data, :status, :finished)
+    role = Map.get(data, :role) || "subagent"
+    text = "#{role} finished: #{status}" <> attach_hint(child_session_id)
+
+    %{
+      state
+      | notifications:
+          Lists.append(state.notifications, Notification.new(%{level: :info, text: text}))
+    }
+  end
+
   defp reduce(state, %Event{type: :active_sessions_updated, data: %{count: count}}) do
     %{state | active_sessions: count}
   end
@@ -348,6 +373,9 @@ defmodule Exy.UI.Reducer do
   end
 
   defp empty_usage_preview, do: usage_preview(input_tokens: 0, output_tokens: 0)
+
+  defp attach_hint(session_id) when is_binary(session_id), do: " · attach: exy a #{session_id}"
+  defp attach_hint(_session_id), do: ""
 
   defp estimate_tokens(""), do: 0
   defp estimate_tokens(text) when is_binary(text), do: max(1, div(String.length(text) + 3, 4))

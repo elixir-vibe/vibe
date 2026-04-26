@@ -26,14 +26,14 @@ defmodule Exy.CLI.Sessions do
   @spec new(keyword()) :: :ok | {:error, term()}
   def new(opts) do
     Output.print(
-      server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end),
+      server_call(fn -> Exy.Remote.Session.start(session_opts(opts)) end),
       opts
     )
   end
 
   @spec new_tui(keyword()) :: :ok | {:error, term()}
   def new_tui(opts) do
-    case server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end) do
+    case server_call(fn -> Exy.Remote.Session.start(session_opts(opts)) end) do
       {:ok, %{id: session_id}} -> attach(session_id, opts)
       other -> Output.print(other, opts)
     end
@@ -68,9 +68,31 @@ defmodule Exy.CLI.Sessions do
         opts = Keyword.put_new(opts, :remote_node, session_node(session))
         Runner.tui(opts, session_server: session, session_id: session_id)
 
+      {:error, :not_found} ->
+        attach_subagent_child(session_id, opts)
+
       {:error, reason} ->
         Output.print({:error, reason}, opts)
     end
+  end
+
+  defp attach_subagent_child(job_id, opts) do
+    case server_call(fn -> Exy.Subagents.status(job_id) end) do
+      {:ok, %{child_session_id: child_session_id}} when is_binary(child_session_id) ->
+        attach(child_session_id, opts)
+
+      {:ok, _job} ->
+        Output.print({:error, :subagent_has_no_child_session}, opts)
+
+      {:error, reason} ->
+        Output.print({:error, reason}, opts)
+    end
+  end
+
+  defp session_opts(opts) do
+    opts
+    |> Keyword.take([:model, :role, :system])
+    |> Keyword.put_new_lazy(:model, fn -> Exy.Model.Config.resolve(opts) end)
   end
 
   defp server_call(fun) do
@@ -88,7 +110,7 @@ defmodule Exy.CLI.Sessions do
   end
 
   defp new_remote_session_id(opts) do
-    case server_call(fn -> Exy.Remote.Session.start(model: Exy.Model.Config.resolve(opts)) end) do
+    case server_call(fn -> Exy.Remote.Session.start(session_opts(opts)) end) do
       {:ok, %{id: id}} -> id
       {:error, reason} -> raise "cannot create Exy session: #{inspect(reason)}"
     end

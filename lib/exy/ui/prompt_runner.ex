@@ -34,7 +34,10 @@ defmodule Exy.UI.PromptRunner do
   @spec default_ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def default_ask(text, opts) do
     Exy.Application.configure_dependency_logging()
-    agent_opts = Keyword.take(opts, [:model, :session_id])
+
+    agent_opts =
+      Keyword.take(opts, [:model, :role, :system, :allowed_tools, :provider_options, :session_id])
+
     ask_opts = opts |> Exy.Session.agent_ask_opts() |> Keyword.delete(:stream_owner)
 
     with {:ok, agent} <- Exy.start_link(agent_opts) do

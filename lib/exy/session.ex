@@ -73,6 +73,13 @@ defmodule Exy.Session do
   def emit_transient_event(server, %Event{} = event),
     do: GenServer.call(server, {:emit_transient_event, event})
 
+  @spec lock(GenServer.server(), String.t(), pid()) :: :ok
+  def lock(server, job_id, owner \\ self()) when is_binary(job_id) and is_pid(owner),
+    do: GenServer.call(server, {:lock, job_id, owner})
+
+  @spec unlock(GenServer.server(), String.t()) :: :ok
+  def unlock(server, job_id) when is_binary(job_id), do: GenServer.call(server, {:unlock, job_id})
+
   @doc false
   @spec agent_ask_opts(keyword()) :: keyword()
   def agent_ask_opts(opts), do: Keyword.drop(opts, [:model])
@@ -90,8 +97,10 @@ defmodule Exy.Session do
      %{
        state: state,
        ask_fun: Keyword.get(opts, :ask_fun, &PromptRunner.default_ask/2),
-       llm_opts: Keyword.take(opts, [:model, :system]),
+       llm_opts: llm_opts(opts),
        streaming?: Keyword.get(opts, :streaming?, not Keyword.has_key?(opts, :ask_fun)),
+       locked_by_job: Keyword.get(opts, :locked_by_job),
+       lock_owner: Keyword.get(opts, :lock_owner),
        subscribers: %{},
        prompt_task: nil,
        prompt_ref: nil,
@@ -129,14 +138,24 @@ defmodule Exy.Session do
     {:reply, :ok, %{state | subscribers: Map.new(subscribers)}}
   end
 
-  def handle_call({:dispatch, %Command{} = command}, _from, state) do
+  def handle_call({:dispatch, %Command{} = command}, {caller, _tag}, state) do
     state =
       Exy.Telemetry.span([:exy, :session, :command], command_metadata(command, state), fn ->
-        handle_command(command, state)
+        handle_command(command, state, caller)
       end)
 
     {:reply, :ok, state}
   end
+
+  def handle_call({:lock, job_id, owner}, _from, state) do
+    {:reply, :ok, %{state | locked_by_job: job_id, lock_owner: owner}}
+  end
+
+  def handle_call({:unlock, job_id}, _from, %{locked_by_job: job_id} = state) do
+    {:reply, :ok, %{state | locked_by_job: nil, lock_owner: nil}}
+  end
+
+  def handle_call({:unlock, _job_id}, _from, state), do: {:reply, :ok, state}
 
   def handle_call({:emit_event, %Event{} = event}, _from, state) do
     {:reply, :ok, emit(state, event)}
@@ -180,6 +199,14 @@ defmodule Exy.Session do
 
   def handle_info({:tool_finished, %Exy.UI.ToolEvent{} = data}, state) do
     {:noreply, emit(state, Event.new(:tool_finished, state.state.session_id, data))}
+  end
+
+  defp handle_command(command, state, caller) do
+    if locked?(state, caller) and command.type == :submit_prompt do
+      locked_notice(state)
+    else
+      handle_command(command, state)
+    end
   end
 
   defp handle_command(%Command{type: :submit_prompt, data: %{text: text}}, state)
@@ -233,6 +260,31 @@ defmodule Exy.Session do
   defp handle_command(%Command{type: type, data: data}, state) do
     emit(state, Event.new(type, state.state.session_id, data))
   end
+
+  defp locked?(%{locked_by_job: nil}, _caller), do: false
+  defp locked?(%{lock_owner: owner}, caller), do: owner != caller
+
+  defp locked_notice(state) do
+    emit(
+      state,
+      Event.new(:notification_added, state.state.session_id, %{
+        level: :warning,
+        text: "This subagent session is read-only until the job finishes."
+      })
+    )
+  end
+
+  defp llm_opts(opts) do
+    opts
+    |> Keyword.take([:model, :role, :system, :allowed_tools])
+    |> maybe_put_llm_provider_options(Keyword.get(opts, :provider_options))
+  end
+
+  defp maybe_put_llm_provider_options(opts, []), do: opts
+  defp maybe_put_llm_provider_options(opts, nil), do: opts
+
+  defp maybe_put_llm_provider_options(opts, provider_options),
+    do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
 
   defp ask_options(%{streaming?: true} = state, parent, ref, session_id) do
     state = emit(state, Event.new(:assistant_stream_started, session_id, %{}))

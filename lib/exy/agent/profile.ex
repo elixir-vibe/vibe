@@ -60,7 +60,10 @@ defmodule Exy.Agent.Profile do
         model
 
       role = Keyword.get(opts, :role) ->
-        with {:ok, data} <- role(role), do: Map.get(data, "model")
+        case role(role) do
+          {:ok, data} -> Map.get(data, "model")
+          {:error, _reason} -> nil
+        end
 
       true ->
         default_model()
@@ -74,7 +77,10 @@ defmodule Exy.Agent.Profile do
         system
 
       role = Keyword.get(opts, :role) ->
-        with {:ok, data} <- role(role), do: Map.get(data, "system")
+        case role(role) do
+          {:ok, data} -> Map.get(data, "system")
+          {:error, _reason} -> nil
+        end
 
       true ->
         nil

@@ -7,23 +7,23 @@ defmodule Exy.Agent do
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
-    opts = resolve_opts(opts)
-    configure_model_alias(opts)
-    ensure_provider_credentials(opts)
+    with {:ok, opts} <- resolve_opts(opts),
+         :ok <- ensure_provider_credentials(opts) do
+      configure_model_alias(opts)
 
-    with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
-      Jido.AI.set_system_prompt(pid, system_prompt(opts))
-      session_id = Keyword.get(opts, :session_id) || Exy.Session.Store.new_id()
-      Exy.Session.Processes.register(pid, session_id)
-      {:ok, pid}
+      with {:ok, pid} <- Exy.Jido.start_agent(Exy.Agent.Coding) do
+        Jido.AI.set_system_prompt(pid, system_prompt(opts))
+        session_id = Keyword.get(opts, :session_id) || Exy.Session.Store.new_id()
+        Exy.Session.Processes.register(pid, session_id)
+        {:ok, pid}
+      end
     end
   end
 
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(prompt, opts \\ []) when is_binary(prompt) do
-    opts = resolve_opts(opts)
-
-    with {:ok, pid} <- start_link(opts) do
+    with {:ok, opts} <- resolve_opts(opts),
+         {:ok, pid} <- start_link(opts) do
       try do
         ask_sync(pid, prompt, opts)
       after
@@ -105,10 +105,34 @@ defmodule Exy.Agent do
   end
 
   defp resolve_opts(opts) do
-    opts
-    |> put_role_model()
-    |> put_role_system()
-    |> put_provider_options()
+    with :ok <- validate_role(opts) do
+      opts =
+        opts
+        |> put_role_model()
+        |> put_role_system()
+        |> put_role_tools()
+        |> put_provider_options()
+
+      {:ok, opts}
+    end
+  end
+
+  defp validate_role(opts) do
+    role = Keyword.get(opts, :role)
+
+    cond do
+      is_nil(role) ->
+        :ok
+
+      Keyword.has_key?(opts, :model) or Keyword.has_key?(opts, :system) ->
+        :ok
+
+      match?({:ok, _profile}, Exy.Agent.Profile.role(role)) ->
+        :ok
+
+      true ->
+        {:error, {:unknown_role, role}}
+    end
   end
 
   defp put_role_model(opts) do
@@ -122,6 +146,17 @@ defmodule Exy.Agent do
       case Exy.Agent.Profile.system_for(opts) do
         nil -> opts
         system -> Keyword.put(opts, :system, system)
+      end
+    end
+  end
+
+  defp put_role_tools(opts) do
+    if Keyword.has_key?(opts, :allowed_tools) do
+      opts
+    else
+      case Exy.Agent.Profile.tools_for(opts) do
+        tools when is_list(tools) -> Keyword.put(opts, :allowed_tools, tools)
+        _tools -> opts
       end
     end
   end

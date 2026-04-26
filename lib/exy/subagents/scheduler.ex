@@ -21,6 +21,7 @@ defmodule Exy.Subagents.Scheduler do
   def init(_opts) do
     schedules =
       Store.schedules()
+      |> Enum.reject(&missed_skip?/1)
       |> Enum.map(&schedule_timer/1)
       |> Map.new(&{&1.id, &1})
 
@@ -81,6 +82,13 @@ defmodule Exy.Subagents.Scheduler do
   end
 
   defp reschedule(state, schedule), do: Map.delete(state, schedule.id)
+
+  defp missed_skip?(%{at: %DateTime{} = at, every_ms: every_ms, missed: :skip})
+       when is_nil(every_ms) do
+    DateTime.compare(at, DateTime.utc_now()) == :lt
+  end
+
+  defp missed_skip?(_schedule), do: false
 
   defp schedule_timer(%Schedule{} = schedule) do
     delay = delay(schedule)

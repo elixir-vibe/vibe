@@ -1,7 +1,7 @@
 defmodule Exy.CLI do
   @moduledoc false
 
-  alias Exy.CLI.{Output, Runner, Server, Sessions}
+  alias Exy.CLI.{Output, Runner, Server, Sessions, Subagents}
 
   @version Mix.Project.config()[:version]
 
@@ -9,6 +9,7 @@ defmodule Exy.CLI do
     help: :boolean,
     version: :boolean,
     model: :string,
+    role: :string,
     api_key: :string,
     system_prompt: :string,
     mode: :string,
@@ -49,6 +50,10 @@ defmodule Exy.CLI do
       invalid == [] and match?([command | _] when command in ["sessions", "ls"], args) ->
         [_command | rest] = args
         Sessions.command(rest, opts)
+
+      invalid == [] and match?([command | _] when command in ["subagents", "jobs"], args) ->
+        [_command | rest] = args
+        Subagents.command(if(args |> hd() == "jobs", do: ["jobs" | rest], else: rest), opts)
 
       invalid == [] and match?(["send", _session_id | _], args) ->
         ["send", session_id | prompt_parts] = args
