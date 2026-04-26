@@ -1,4 +1,4 @@
-defmodule Exy.JS do
+defmodule Exy.Runtime.JS do
   @moduledoc """
   Optional JavaScript/TypeScript evaluation through QuickBEAM.
 

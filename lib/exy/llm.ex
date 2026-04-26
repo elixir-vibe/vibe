@@ -112,7 +112,7 @@ defmodule Exy.LLM do
   def put_codex_credentials(%{access: access} = credentials) when is_binary(access) do
     ReqLLM.put_key(:openai_codex_api_key, access)
     Application.put_env(:exy, :openai_codex_credentials, credentials)
-    Application.put_env(:req_llm, :oauth_file, Path.expand("~/.exy/auth.json"))
+    Application.put_env(:req_llm, :oauth_file, Exy.Paths.auth_file())
     :ok
   end
 end

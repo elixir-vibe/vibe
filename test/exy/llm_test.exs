@@ -19,7 +19,7 @@ defmodule Exy.LLMTest do
     assert %{access: "token", accountId: "account"} =
              Application.get_env(:exy, :openai_codex_credentials)
 
-    assert Application.get_env(:req_llm, :oauth_file) == Path.expand("~/.exy/auth.json")
+    assert Application.get_env(:req_llm, :oauth_file) == Exy.Paths.auth_file()
   end
 
   defp restore_env(app, key, nil), do: Application.delete_env(app, key)

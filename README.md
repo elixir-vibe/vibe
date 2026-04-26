@@ -64,7 +64,7 @@ Everything else is normal Elixir callable from `eval`:
 - `Exy.Plugin` — behaviour-based plugin hooks discovered from `Exy.Plugins.*`
 - `Exy.UI` — UI-neutral event/state/command layer for TUI and future LiveView clients
 - `Exy.Terminal` — Ghostty-backed terminal panes and terminal-aware snapshots
-- `Exy.Python` / `Exy.JS` — optional Pythonx and QuickBEAM evaluation helpers
+- `Exy.Runtime.Python` / `Exy.Runtime.JS` — optional Pythonx and QuickBEAM evaluation helpers
 
 ## First principles
 
@@ -146,8 +146,8 @@ Exy.Script.run_string("Mix.install([])\nIO.puts(:ok)")
 Exy.Script.run_string("x = 1 + 2", runtime: :standalone)
 
 # Optional Python/JS helpers through Pythonx and QuickBEAM
-Exy.Python.run("x = 1 + 2\nx", %{})
-Exy.JS.run("1 + 2")
+Exy.Runtime.Python.run("x = 1 + 2\nx", %{})
+Exy.Runtime.JS.run("1 + 2")
 
 # UI-neutral session state for TUI and LiveView-compatible clients
 {:ok, ui} = Exy.Session.start_link()

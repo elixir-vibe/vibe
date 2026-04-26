@@ -308,7 +308,7 @@ defmodule Exy.CLI do
   end
 
   defp launch_background_server do
-    log_path = Path.expand("~/.exy/server.out")
+    log_path = Exy.Paths.server_log()
     File.mkdir_p!(Path.dirname(log_path))
 
     command = "exec #{background_server_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null"

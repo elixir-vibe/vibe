@@ -1,4 +1,4 @@
-defmodule Exy.Python do
+defmodule Exy.Runtime.Python do
   @moduledoc """
   Optional Python evaluation through Pythonx.
 

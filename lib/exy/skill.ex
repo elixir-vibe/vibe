@@ -6,11 +6,10 @@ defmodule Exy.Skill do
   workflows and can be patched as Exy learns.
   """
 
-  @skills_dir Path.expand("~/.exy/skills")
   @allowed_name ~r/^[a-z0-9][a-z0-9._-]*$/
 
   @spec dir() :: String.t()
-  def dir, do: @skills_dir
+  def dir, do: Exy.Paths.skills_dir()
 
   @spec create(String.t(), String.t(), keyword()) :: {:ok, String.t()} | {:error, String.t()}
   def create(name, content, opts \\ []) do
@@ -61,7 +60,7 @@ defmodule Exy.Skill do
 
   @spec find(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def find(name) do
-    root = Path.expand(@skills_dir)
+    root = Path.expand(dir())
 
     case Path.wildcard(Path.join(root, "**/SKILL.md"))
          |> Enum.find(&(Path.basename(Path.dirname(&1)) == name)) do
@@ -72,7 +71,7 @@ defmodule Exy.Skill do
 
   @spec list() :: [map()]
   def list do
-    Path.wildcard(Path.join(@skills_dir, "**/SKILL.md"))
+    Path.wildcard(Path.join(dir(), "**/SKILL.md"))
     |> Enum.map(fn path ->
       %{name: Path.basename(Path.dirname(path)), path: path, title: title(path)}
     end)
@@ -101,8 +100,8 @@ defmodule Exy.Skill do
       else: {:error, "invalid skill name"}
   end
 
-  defp skill_dir(name, nil), do: Path.join(@skills_dir, name)
-  defp skill_dir(name, category), do: Path.join([@skills_dir, category, name])
+  defp skill_dir(name, nil), do: Path.join(dir(), name)
+  defp skill_dir(name, category), do: Path.join([dir(), category, name])
 
   defp atomic_write(path, content) do
     tmp = path <> ".tmp-#{System.unique_integer([:positive])}"

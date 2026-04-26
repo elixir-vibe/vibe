@@ -66,8 +66,7 @@ defmodule Exy.Session.Store do
 
   @spec dir() :: String.t()
   def dir do
-    (System.get_env("EXY_SESSION_DIR") ||
-       Application.get_env(:exy, :session_dir, "~/.exy/sessions"))
+    Exy.Paths.sessions_dir()
     |> Path.expand()
   end
 
