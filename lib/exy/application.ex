@@ -6,8 +6,10 @@ defmodule Exy.Application do
   @impl true
   def start(_type, _args) do
     configure_dependency_logging()
+    Exy.Storage.configure_repo()
 
     children = [
+      Exy.Repo,
       {Registry, keys: :unique, name: Exy.Registry},
       Exy.Telemetry,
       {Jido, name: Jido, otp_app: :exy},

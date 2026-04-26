@@ -7,6 +7,33 @@ defmodule Exy.Paths do
     |> Path.expand()
   end
 
+  @spec database() :: String.t()
+  def database do
+    System.get_env("EXY_DB_PATH") || Application.get_env(:exy, :database_path) ||
+      default_database()
+  end
+
+  defp default_database do
+    key = {__MODULE__, :default_database}
+
+    case :persistent_term.get(key, nil) do
+      nil ->
+        database = build_default_database()
+        :persistent_term.put(key, database)
+        database
+
+      database ->
+        database
+    end
+  end
+
+  defp build_default_database do
+    case Application.get_env(:exy, :env) do
+      :test -> Path.join(System.tmp_dir!(), "exy-test-#{System.unique_integer([:positive])}.db")
+      _env -> Path.join(home(), "exy.db")
+    end
+  end
+
   @spec auth_file() :: String.t()
   def auth_file, do: Path.join(home(), "auth.json")
 

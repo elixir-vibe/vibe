@@ -3,7 +3,7 @@ defmodule Exy.Subagents.Manager do
 
   use GenServer
 
-  alias Exy.Subagents.{JobBuilder, JobInfo}
+  alias Exy.Subagents.{JobBuilder, JobInfo, JobStore}
 
   defstruct jobs: %{}
 
@@ -39,12 +39,18 @@ defmodule Exy.Subagents.Manager do
     end
   end
 
-  def handle_call(:jobs, _from, state), do: {:reply, Map.values(state.jobs), state}
+  def handle_call(:jobs, _from, state), do: {:reply, merge_stored_jobs(state.jobs), state}
 
   def handle_call({:status, id}, _from, state) do
     case Map.fetch(state.jobs, id) do
-      {:ok, job} -> {:reply, {:ok, job}, state}
-      :error -> {:reply, {:error, :not_found}, state}
+      {:ok, job} ->
+        {:reply, {:ok, job}, state}
+
+      :error ->
+        case JobStore.get(id) do
+          nil -> {:reply, {:error, :not_found}, state}
+          job -> {:reply, {:ok, job}, state}
+        end
     end
   end
 
@@ -53,7 +59,7 @@ defmodule Exy.Subagents.Manager do
       {:ok, %{status: :ok, result: result}} -> {:reply, {:ok, result}, state}
       {:ok, %{status: :error, error: error}} -> {:reply, {:error, error}, state}
       {:ok, %{status: status}} -> {:reply, {:error, status}, state}
-      :error -> {:reply, {:error, :not_found}, state}
+      :error -> {:reply, stored_result(id), state}
     end
   end
 
@@ -73,6 +79,7 @@ defmodule Exy.Subagents.Manager do
 
   @impl true
   def handle_cast({:job_finished, %JobInfo{} = job}, state) do
+    _ = JobStore.put(job)
     {:noreply, put_in(state.jobs[job.id], job)}
   end
 
@@ -89,12 +96,32 @@ defmodule Exy.Subagents.Manager do
             finished_at: DateTime.utc_now()
         }
 
+        _ = JobStore.put(job)
         put_in(state.jobs[id], job)
       else
         state
       end
 
     {:noreply, state}
+  end
+
+  defp merge_stored_jobs(running_jobs) do
+    running_jobs = Map.new(running_jobs, fn {id, job} -> {id, job} end)
+
+    JobStore.list()
+    |> Map.new(&{&1.id, &1})
+    |> Map.merge(running_jobs)
+    |> Map.values()
+    |> Enum.sort_by(&(&1.started_at || DateTime.utc_now()), {:desc, DateTime})
+  end
+
+  defp stored_result(id) do
+    case JobStore.get(id) do
+      %{status: :ok, result: result} -> {:ok, result}
+      %{status: :error, error: error} -> {:error, error}
+      %{status: status} -> {:error, status}
+      nil -> {:error, :not_found}
+    end
   end
 
   defp start_job_child(job, opts, state) do
@@ -107,6 +134,7 @@ defmodule Exy.Subagents.Manager do
     case DynamicSupervisor.start_child(Exy.Subagents.JobSupervisor, child_spec) do
       {:ok, pid} ->
         job = %{job | pid: pid}
+        _ = JobStore.put(job)
         Process.monitor(pid)
         {:reply, {:ok, job}, put_in(state.jobs[job.id], job)}
 

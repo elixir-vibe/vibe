@@ -2,12 +2,15 @@ defmodule Exy.Telemetry do
   @moduledoc """
   Local telemetry recorder and introspection API for Exy.
 
-  Exy stores observed telemetry events under `~/.exy/telemetry/events.jsonl`
-  so agents can inspect their own runtime without requiring an external
-  collector.
+  Exy stores sanitized telemetry events in the local SQLite database so agents
+  can inspect their own runtime without requiring an external collector.
   """
 
   use GenServer
+
+  import Ecto.Query
+
+  alias Exy.Storage.Schema.TelemetryEvent
 
   @handler_id "exy-telemetry-recorder"
   @req_llm_otel_handler_id "exy-req-llm-open-telemetry"
@@ -106,7 +109,7 @@ defmodule Exy.Telemetry do
   def events, do: @events
 
   @spec path() :: String.t()
-  def path, do: Exy.Paths.telemetry_events()
+  def path, do: Exy.Paths.database() |> Path.expand()
 
   @spec recent(pos_integer()) :: [event()]
   def recent(limit \\ 50) when is_integer(limit) and limit > 0,
@@ -116,9 +119,23 @@ defmodule Exy.Telemetry do
   def all(opts \\ []) do
     limit = Keyword.get(opts, :limit, :infinity)
 
-    path()
-    |> read_events_file()
-    |> take(limit)
+    Exy.Storage.ensure!()
+
+    query =
+      case limit do
+        :infinity ->
+          order_by(TelemetryEvent, [event], event.id)
+
+        limit when is_integer(limit) ->
+          TelemetryEvent
+          |> order_by([event], desc: event.id)
+          |> limit(^limit)
+      end
+
+    query
+    |> Exy.Repo.all()
+    |> Enum.map(&decode_record/1)
+    |> maybe_reverse_limited(limit)
   end
 
   @spec summary(keyword()) :: map()
@@ -137,7 +154,7 @@ defmodule Exy.Telemetry do
   def clear do
     GenServer.call(__MODULE__, :clear)
   catch
-    :exit, _reason -> File.rm(path())
+    :exit, _reason -> {:error, :telemetry_unavailable}
   end
 
   @spec execute([atom()], map(), map()) :: :ok
@@ -154,7 +171,6 @@ defmodule Exy.Telemetry do
 
   @impl true
   def init(_opts) do
-    File.mkdir_p!(Exy.Paths.telemetry_dir())
     attached? = attach_recorder()
     req_llm_otel? = attach_req_llm_open_telemetry()
     {:ok, %__MODULE__{attached?: attached?, req_llm_otel?: req_llm_otel?}}
@@ -166,9 +182,9 @@ defmodule Exy.Telemetry do
   end
 
   def handle_call(:clear, _from, state) do
-    result = File.rm(path())
-    reply = if result in [:ok, {:error, :enoent}], do: :ok, else: result
-    {:reply, reply, %{state | recent: []}}
+    Exy.Storage.ensure!()
+    Exy.Repo.delete_all(TelemetryEvent)
+    {:reply, :ok, %{state | recent: []}}
   end
 
   @impl true
@@ -220,46 +236,45 @@ defmodule Exy.Telemetry do
   end
 
   defp append_event(event) do
-    with :ok <- File.mkdir_p(Exy.Paths.telemetry_dir()),
-         {:ok, line} <- Jason.encode(event) do
-      File.write(path(), line <> "\n", [:append])
-    end
+    Exy.Storage.ensure!()
+
+    %TelemetryEvent{
+      name: Enum.join(event.event, "."),
+      at: parse_datetime!(event.at),
+      measurements: event.measurements,
+      metadata: event.metadata
+    }
+    |> Exy.Repo.insert()
   end
 
   defp remember(recent, event), do: [event | Enum.take(recent, @max_recent - 1)]
 
-  defp read_events_file(file) do
-    case File.read(file) do
-      {:ok, text} ->
-        text
-        |> String.split("\n", trim: true)
-        |> Enum.flat_map(&decode_line/1)
-
-      {:error, :enoent} ->
-        []
-    end
-  end
-
-  defp decode_line(line) do
-    case Jason.decode(line) do
-      {:ok, map} -> [decode_event(map)]
-      {:error, _reason} -> []
-    end
-  end
-
-  defp decode_event(map) do
+  defp decode_record(%TelemetryEvent{} = event) do
     %{
-      at: Map.get(map, "at"),
-      event: Enum.map(Map.get(map, "event", []), &String.to_existing_atom/1),
-      measurements: atomize_known(Map.get(map, "measurements", %{})),
-      metadata: atomize_known(Map.get(map, "metadata", %{}))
+      at: DateTime.to_iso8601(event.at),
+      event: decode_event_name(event.name),
+      measurements: atomize_known(event.measurements || %{}),
+      metadata: atomize_known(event.metadata || %{})
     }
-  rescue
-    _exception -> %{at: Map.get(map, "at"), event: [], measurements: %{}, metadata: %{}}
   end
 
-  defp take(events, :infinity), do: events
-  defp take(events, limit) when is_integer(limit), do: Enum.take(events, -limit)
+  defp decode_event_name(name) when is_binary(name) do
+    name
+    |> String.split(".", trim: true)
+    |> Enum.map(&String.to_existing_atom/1)
+  rescue
+    _exception -> []
+  end
+
+  defp parse_datetime!(value) when is_binary(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, dt, _offset} -> Exy.Storage.normalize_datetime(dt)
+      _ -> Exy.Storage.normalize_datetime(DateTime.utc_now())
+    end
+  end
+
+  defp maybe_reverse_limited(events, :infinity), do: events
+  defp maybe_reverse_limited(events, limit) when is_integer(limit), do: Enum.reverse(events)
 
   defp json_safe(%_{} = struct), do: struct |> Map.from_struct() |> json_safe()
 

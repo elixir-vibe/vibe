@@ -1,9 +1,12 @@
 defmodule Exy.Session.Store do
   @moduledoc """
-  Durable JSONL sessions for dialogs, tool events, and usage.
+  Durable SQLite-backed sessions for dialogs, tool events, eval state, and usage.
   """
 
+  import Ecto.Query
+
   alias Exy.Session.Store.{Codec, Listing}
+  alias Exy.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent}
   alias Exy.Trajectory
   alias Exy.UI.Event
 
@@ -56,46 +59,67 @@ defmodule Exy.Session.Store do
     do: append(%{event | session_id: "__global__"})
 
   def append(%Trajectory{} = event) do
-    with :ok <- File.mkdir_p(dir()),
-         line <-
-           Jason.encode!(Map.put(Codec.encode_trajectory(event), "entry_type", "trajectory")) <>
-             "\n" do
-      File.write(path(event.session_id), line, [:append])
+    Exy.Storage.ensure!()
+    ensure_session(event.session_id, event.at)
+    encoded = Codec.encode_trajectory(event)
+
+    %TrajectoryEvent{}
+    |> Map.merge(%{
+      session_id: event.session_id,
+      event_id: event.id,
+      type: Atom.to_string(event.type),
+      at: Exy.Storage.normalize_datetime(event.at),
+      data: encoded["data"]
+    })
+    |> Exy.Repo.insert(on_conflict: :nothing, conflict_target: :event_id)
+    |> case do
+      {:ok, _event} ->
+        refresh_session_summary(event.session_id)
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   @spec events(String.t()) :: [Trajectory.t()]
   def events(session_id) when is_binary(session_id) do
-    session_id
-    |> path()
-    |> read_trajectory_events_file()
+    Exy.Storage.ensure!()
+
+    TrajectoryEvent
+    |> where([event], event.session_id == ^session_id)
+    |> order_by([event], [event.at, event.id])
+    |> Exy.Repo.all()
+    |> Enum.flat_map(&decode_trajectory_record/1)
   end
 
   @spec all_events() :: [Trajectory.t()]
   def all_events do
-    case File.ls(dir()) do
-      {:ok, files} ->
-        files
-        |> Enum.filter(&String.ends_with?(&1, ".jsonl"))
-        |> Enum.flat_map(fn file -> dir() |> Path.join(file) |> read_trajectory_events_file() end)
-        |> Enum.sort_by(& &1.at, DateTime)
+    Exy.Storage.ensure!()
 
-      {:error, _reason} ->
-        []
-    end
+    TrajectoryEvent
+    |> order_by([event], [event.at, event.id])
+    |> Exy.Repo.all()
+    |> Enum.flat_map(&decode_trajectory_record/1)
   end
 
   @spec clear() :: :ok
   def clear do
-    case File.ls(dir()) do
-      {:ok, files} ->
-        Enum.each(files, fn file ->
-          if String.ends_with?(file, ".jsonl"), do: File.rm(Path.join(dir(), file))
-        end)
+    Exy.Storage.ensure!()
 
-      {:error, _reason} ->
-        :ok
-    end
+    Enum.each(
+      [
+        UIEvent,
+        TrajectoryEvent,
+        EvalState,
+        Exy.Storage.Schema.SubagentJob,
+        Exy.Storage.Schema.SubagentSchedule,
+        Exy.Storage.Schema.Memory,
+        Exy.Storage.Schema.TelemetryEvent,
+        Session
+      ],
+      &Exy.Repo.delete_all/1
+    )
 
     :ok
   end
@@ -103,44 +127,90 @@ defmodule Exy.Session.Store do
   @spec append_eval_state(Code.binding(), Macro.Env.t(), keyword()) :: :ok | {:error, term()}
   def append_eval_state(binding, %Macro.Env{} = env, opts) when is_list(binding) do
     session_id = Keyword.fetch!(opts, :session_id)
+    Exy.Storage.ensure!()
+    now = DateTime.utc_now() |> Exy.Storage.normalize_datetime()
+    ensure_session(session_id, now)
+    snapshot = :erlang.term_to_binary(%{binding: binding, env: env})
 
-    with :ok <- File.mkdir_p(dir()),
-         {:ok, entry} <- Codec.eval_state_entry(session_id, binding, env),
-         line <- Jason.encode!(entry) <> "\n" do
-      File.write(path(session_id), line, [:append])
-    end
+    %EvalState{session_id: session_id, state: snapshot, updated_at: now}
+    |> Exy.Repo.insert(
+      on_conflict: [set: [state: snapshot, updated_at: now]],
+      conflict_target: :session_id
+    )
+    |> ok()
   end
 
   @spec eval_state(String.t()) :: %{binding: Code.binding(), env: Macro.Env.t()} | nil
   def eval_state(session_id) when is_binary(session_id) do
-    session_id
-    |> path()
-    |> read_eval_state_file()
+    Exy.Storage.ensure!()
+
+    case Exy.Repo.get(EvalState, session_id) do
+      %EvalState{state: state} ->
+        case Codec.decode_eval_state_binary(state) do
+          {:ok, decoded} -> decoded
+          :error -> nil
+        end
+
+      nil ->
+        nil
+    end
   end
 
   @spec append_ui_event(Event.t(), non_neg_integer()) :: :ok | {:error, term()}
   def append_ui_event(%Event{} = event, seq) do
-    with :ok <- File.mkdir_p(dir()),
-         line <-
-           Jason.encode!(Map.put(Codec.encode_ui_event(event, seq), "entry_type", "ui_event")) <>
-             "\n" do
-      File.write(ui_events_path(event.session_id), line, [:append])
+    Exy.Storage.ensure!()
+    ensure_session(event.session_id, event.at)
+    encoded = Codec.encode_ui_event(event, seq)
+
+    %UIEvent{}
+    |> Map.merge(%{
+      session_id: event.session_id,
+      seq: seq,
+      event_id: event.id,
+      type: Atom.to_string(event.type),
+      at: Exy.Storage.normalize_datetime(event.at),
+      data: encoded["data"]
+    })
+    |> Exy.Repo.insert(
+      on_conflict: {:replace, [:event_id, :type, :at, :data]},
+      conflict_target: [:session_id, :seq]
+    )
+    |> case do
+      {:ok, _event} ->
+        refresh_session_summary(event.session_id)
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   @spec ui_events(String.t()) :: [{non_neg_integer(), Event.t()}]
   def ui_events(session_id) when is_binary(session_id) do
-    session_id
-    |> ui_event_paths()
-    |> Enum.flat_map(&read_ui_events_file/1)
-    |> Enum.sort_by(fn {seq, _event} -> seq || 0 end)
+    Exy.Storage.ensure!()
+
+    events =
+      UIEvent
+      |> where([event], event.session_id == ^session_id)
+      |> order_by([event], event.seq)
+      |> Exy.Repo.all()
+      |> Enum.flat_map(&decode_ui_event_record/1)
+
+    case events do
+      [] -> session_id |> events() |> Codec.project_trajectory_events()
+      events -> events
+    end
   end
 
   @spec ui_events_after(String.t(), non_neg_integer()) :: [{non_neg_integer(), Event.t()}]
   def ui_events_after(session_id, seq) when is_binary(session_id) and is_integer(seq) do
-    session_id
-    |> ui_events()
-    |> Enum.filter(fn {event_seq, _event} -> event_seq > seq end)
+    Exy.Storage.ensure!()
+
+    UIEvent
+    |> where([event], event.session_id == ^session_id and event.seq > ^seq)
+    |> order_by([event], event.seq)
+    |> Exy.Repo.all()
+    |> Enum.flat_map(&decode_ui_event_record/1)
   end
 
   @spec info(String.t()) :: map() | nil
@@ -148,6 +218,45 @@ defmodule Exy.Session.Store do
 
   @spec list() :: [map()]
   def list, do: Listing.list()
+
+  @spec ensure_session(String.t(), DateTime.t()) :: :ok
+  def ensure_session(session_id, at \\ DateTime.utc_now()) do
+    Exy.Storage.ensure!()
+    at = Exy.Storage.normalize_datetime(at)
+
+    %Session{id: session_id, started_at: at, updated_at: at}
+    |> Exy.Repo.insert(
+      on_conflict: [set: [updated_at: at]],
+      conflict_target: :id
+    )
+
+    :ok
+  end
+
+  defp refresh_session_summary(session_id) do
+    case Listing.summary(session_id) do
+      nil ->
+        :ok
+
+      summary ->
+        session = Exy.Repo.get!(Session, session_id)
+
+        Ecto.Changeset.change(session, %{
+          status: to_string(summary.status || :idle),
+          model: summary.model,
+          message_count: summary.message_count,
+          first_message_preview: summary.first_message,
+          last_message_preview: summary.last_message_preview,
+          usage_input_tokens: get_in(summary.usage, [:input_tokens]) || 0,
+          usage_output_tokens: get_in(summary.usage, [:output_tokens]) || 0,
+          usage_total_tokens: get_in(summary.usage, [:total_tokens]) || 0,
+          usage_total_cost: get_in(summary.usage, [:total_cost]) || 0.0
+        })
+        |> Exy.Repo.update!()
+
+        :ok
+    end
+  end
 
   defp trajectory_events(opts) do
     case Keyword.get(opts, :session_id) do
@@ -162,54 +271,39 @@ defmodule Exy.Session.Store do
   defp take_trajectory(events, :infinity), do: events
   defp take_trajectory(events, limit), do: Enum.take(events, limit)
 
-  defp read_trajectory_events_file(path) do
-    case File.read(path) do
-      {:ok, text} ->
-        text
-        |> String.split("\n", trim: true)
-        |> Enum.flat_map(&Codec.decode_trajectory_line/1)
-
-      {:error, :enoent} ->
-        []
+  defp decode_ui_event_record(%UIEvent{} = event) do
+    %{
+      "seq" => event.seq,
+      "id" => event.event_id,
+      "session_id" => event.session_id,
+      "type" => event.type,
+      "at" => DateTime.to_iso8601(event.at),
+      "data" => event.data
+    }
+    |> Codec.decode_ui_event_map()
+    |> case do
+      {:ok, event} -> [event]
+      :error -> []
     end
   end
 
-  defp read_eval_state_file(path) do
-    case File.read(path) do
-      {:ok, text} ->
-        text
-        |> String.split("\n", trim: true)
-        |> Enum.reduce(nil, &Codec.decode_eval_state_line/2)
-
-      {:error, :enoent} ->
-        nil
+  defp decode_trajectory_record(%TrajectoryEvent{} = event) do
+    %{
+      "id" => event.event_id,
+      "session_id" => event.session_id,
+      "type" => event.type,
+      "at" => DateTime.to_iso8601(event.at),
+      "data" => event.data
+    }
+    |> Codec.decode_trajectory_map()
+    |> case do
+      {:ok, event} -> [event]
+      :error -> []
     end
   end
 
-  defp read_ui_events_file(path) do
-    case File.read(path) do
-      {:ok, text} ->
-        lines = String.split(text, "\n", trim: true)
-        ui_events = Enum.flat_map(lines, &Codec.decode_ui_event_line/1)
-
-        case ui_events do
-          [] ->
-            lines
-            |> Enum.flat_map(&Codec.decode_trajectory_line/1)
-            |> Codec.project_trajectory_events()
-
-          events ->
-            events
-        end
-
-      {:error, :enoent} ->
-        []
-    end
-  end
-
-  defp ui_event_paths(session_id) do
-    [ui_events_path(session_id)]
-  end
+  defp ok({:ok, _result}), do: :ok
+  defp ok({:error, reason}), do: {:error, reason}
 
   defp safe_session_id(session_id) do
     String.replace(session_id, ~r/[^A-Za-z0-9_.-]/, "-")

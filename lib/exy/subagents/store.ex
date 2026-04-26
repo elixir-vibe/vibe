@@ -1,90 +1,75 @@
 defmodule Exy.Subagents.Store do
   @moduledoc false
 
+  import Ecto.Query
+
+  alias Exy.Storage
+  alias Exy.Storage.Schema.SubagentSchedule
   alias Exy.Subagents.Schedule
 
   @spec append_created(Schedule.t()) :: :ok | {:error, term()}
-  def append_created(%Schedule{} = schedule), do: append("schedule_created", encode(schedule))
+  def append_created(%Schedule{} = schedule) do
+    Storage.ensure!()
+    now = Storage.normalize_datetime(DateTime.utc_now())
+
+    %SubagentSchedule{}
+    |> Map.merge(%{
+      id: schedule.id,
+      task: schedule.task,
+      role: atom_string(schedule.role),
+      parent_session_id: schedule.parent_session_id,
+      run_at: Storage.normalize_datetime(schedule.at),
+      every_ms: schedule.every_ms,
+      missed: atom_string(schedule.missed || :skip),
+      opts: opts(schedule.opts),
+      next_run_at: Storage.normalize_datetime(schedule.next_run_at),
+      inserted_at: now,
+      updated_at: now
+    })
+    |> Exy.Repo.insert(
+      on_conflict: {:replace_all_except, [:id, :inserted_at]},
+      conflict_target: :id
+    )
+    |> ok()
+  end
 
   @spec append_cancelled(String.t()) :: :ok | {:error, term()}
-  def append_cancelled(id), do: append("schedule_cancelled", %{"id" => id})
+  def append_cancelled(id) do
+    Storage.ensure!()
+    now = Storage.normalize_datetime(DateTime.utc_now())
+
+    SubagentSchedule
+    |> where([schedule], schedule.id == ^id)
+    |> Exy.Repo.update_all(set: [cancelled_at: now, updated_at: now])
+    |> then(fn {_count, _rows} -> :ok end)
+  end
 
   @spec schedules() :: [Schedule.t()]
   def schedules do
-    path()
-    |> read_events()
-    |> Enum.reduce(%{}, fn
-      {"schedule_created", data}, acc ->
-        case decode_schedule(data) do
-          {:ok, schedule} -> Map.put(acc, schedule.id, schedule)
-          :error -> acc
-        end
-
-      {"schedule_cancelled", %{"id" => id}}, acc ->
-        Map.delete(acc, id)
-
-      _event, acc ->
-        acc
-    end)
-    |> Map.values()
-  end
-
-  defp append(type, data) do
-    entry =
-      Map.merge(data, %{"entry_type" => type, "at" => DateTime.to_iso8601(DateTime.utc_now())})
-
-    with :ok <- File.mkdir_p(Path.dirname(path())) do
-      File.write(path(), Jason.encode!(entry) <> "\n", [:append])
+    if Storage.ready?() do
+      SubagentSchedule
+      |> where([schedule], is_nil(schedule.cancelled_at))
+      |> order_by([schedule], schedule.inserted_at)
+      |> Exy.Repo.all()
+      |> Enum.map(&decode_schedule/1)
+    else
+      []
     end
   end
 
-  defp read_events(path) do
-    case File.read(path) do
-      {:ok, text} ->
-        text
-        |> String.split("\n", trim: true)
-        |> Enum.flat_map(&decode_line/1)
-
-      {:error, :enoent} ->
-        []
-    end
-  end
-
-  defp decode_line(line) do
-    case Jason.decode(line) do
-      {:ok, %{"entry_type" => type} = data} -> [{type, data}]
-      _ -> []
-    end
-  end
-
-  defp encode(schedule) do
-    %{
-      "id" => schedule.id,
-      "task" => schedule.task,
-      "role" => atom_string(schedule.role),
-      "parent_session_id" => schedule.parent_session_id,
-      "run_at" => datetime(schedule.at),
-      "every_ms" => schedule.every_ms,
-      "missed" => atom_string(schedule.missed || :skip),
-      "opts" => opts(schedule.opts)
+  defp decode_schedule(%SubagentSchedule{} = schedule) do
+    %Schedule{
+      id: schedule.id,
+      task: schedule.task,
+      role: schedule.role,
+      parent_session_id: schedule.parent_session_id,
+      at: schedule.run_at,
+      every_ms: schedule.every_ms,
+      missed: missed(schedule.missed),
+      opts: decode_opts(schedule.opts || %{}),
+      next_run_at: schedule.next_run_at
     }
   end
-
-  defp decode_schedule(%{"id" => id, "task" => task} = data) do
-    {:ok,
-     %Schedule{
-       id: id,
-       task: task,
-       role: data["role"],
-       parent_session_id: data["parent_session_id"],
-       at: parse_datetime(data["run_at"]),
-       every_ms: data["every_ms"],
-       missed: missed(data["missed"]),
-       opts: decode_opts(data["opts"] || %{})
-     }}
-  end
-
-  defp decode_schedule(_data), do: :error
 
   defp opts(opts) do
     opts
@@ -121,18 +106,6 @@ defmodule Exy.Subagents.Store do
   defp missed("catch_up"), do: :catch_up
   defp missed(_value), do: :skip
 
-  defp datetime(nil), do: nil
-  defp datetime(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
-  defp datetime(value), do: value
-
-  defp parse_datetime(nil), do: nil
-
-  defp parse_datetime(value) when is_binary(value) do
-    case DateTime.from_iso8601(value) do
-      {:ok, dt, _offset} -> dt
-      _ -> nil
-    end
-  end
-
-  defp path, do: Exy.Paths.subagent_schedules()
+  defp ok({:ok, _result}), do: :ok
+  defp ok({:error, reason}), do: {:error, reason}
 end

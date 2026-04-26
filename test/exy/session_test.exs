@@ -20,7 +20,7 @@ defmodule Exy.SessionTest do
     {:ok, session_dir: session_dir}
   end
 
-  test "JSONL persists trajectory and UI events in one canonical file" do
+  test "SQLite persists trajectory and UI events" do
     session_id = "test-session"
     Exy.Session.Store.append_trajectory(:user_message, %{prompt: "hello"}, session_id: session_id)
 
@@ -33,12 +33,10 @@ defmodule Exy.SessionTest do
     ui_event = Exy.UI.Event.new(:user_message_added, session_id, %{text: "hello"})
     assert :ok = Exy.Session.Store.append_ui_event(ui_event, 1)
 
-    assert File.exists?(Exy.Session.Store.path(session_id))
-
     assert [%{id: ^session_id, path: path, message_count: 1, first_message: "hello"}] =
              Exy.Session.Store.list()
 
-    assert path == Exy.Session.Store.path(session_id)
+    assert path == Path.expand(Exy.Paths.database())
 
     assert [user, usage] = Exy.Session.Store.events(session_id)
     assert user.type == :user_message

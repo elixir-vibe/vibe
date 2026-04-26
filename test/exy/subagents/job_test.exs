@@ -51,12 +51,13 @@ defmodule Exy.Subagents.JobTest do
              Exy.Subagents.start("locked task",
                role: :scout,
                ask_fun: fn _text, _opts ->
-                 Process.sleep(150)
+                 Process.sleep(500)
                  {:ok, "done"}
                end
              )
 
     assert {:ok, child_session} = wait_for_child_session(job.child_session_id)
+    Process.sleep(50)
     :ok = Exy.Session.dispatch(child_session, {:submit_prompt, %{text: "interrupt"}})
     state = Exy.Session.state(child_session)
 

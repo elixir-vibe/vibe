@@ -3,6 +3,11 @@ defmodule Exy.Memory do
   Curated, durable memory for profile, workspace, session, and agent scopes.
   """
 
+  import Ecto.Query
+
+  alias Exy.Storage
+  alias Exy.Storage.Schema.Memory
+
   @type scope ::
           :global
           | :user
@@ -28,51 +33,62 @@ defmodule Exy.Memory do
         {:error, "memory entry looks like prompt injection or secret exfiltration content"}
 
       true ->
-        entry = %{id: id(), scope: scope, text: text, at: DateTime.utc_now()}
-
-        with :ok <- File.mkdir_p(dir()),
-             line <- Jason.encode!(encode(entry)) <> "\n",
-             :ok <- File.write(path(scope), line, [:append]) do
-          {:ok, entry}
-        else
-          {:error, reason} -> {:error, inspect(reason)}
-        end
+        insert(scope, text)
     end
   end
 
   @spec list(scope()) :: [entry()]
   def list(scope) do
-    scope
-    |> path()
-    |> read_entries()
+    Storage.ensure!()
+    {scope_type, scope_id} = encode_scope(scope)
+
+    Memory
+    |> where([memory], memory.scope_type == ^scope_type)
+    |> where_scope_id(scope_id)
+    |> order_by([memory], memory.inserted_at)
+    |> Exy.Repo.all()
+    |> Enum.map(&decode_memory/1)
   end
 
   @spec search(String.t(), keyword()) :: [entry()]
   def search(query, opts \\ []) when is_binary(query) do
+    Storage.ensure!()
     scopes = Keyword.get(opts, :scopes, [:user, :global])
     limit = Keyword.get(opts, :limit, 10)
     needle = String.downcase(query)
 
     scopes
-    |> Enum.flat_map(&list/1)
-    |> Enum.filter(&(String.contains?(String.downcase(&1.text), needle) or needle == ""))
+    |> Enum.flat_map(&search_scope(&1, needle, limit))
     |> Enum.take(limit)
   end
 
   @spec remove(scope(), String.t()) :: :ok | {:error, :not_found | term()}
   def remove(scope, id) when is_binary(id) do
-    entries = list(scope)
-    kept = Enum.reject(entries, &(&1.id == id))
+    Storage.ensure!()
+    {scope_type, scope_id} = encode_scope(scope)
 
-    if length(kept) == length(entries) do
-      {:error, :not_found}
-    else
-      write_entries(scope, kept)
+    Memory
+    |> where([memory], memory.id == ^id and memory.scope_type == ^scope_type)
+    |> where_scope_id(scope_id)
+    |> Exy.Repo.delete_all()
+    |> case do
+      {0, _rows} -> {:error, :not_found}
+      {_count, _rows} -> :ok
     end
   end
 
   @spec clear(scope()) :: :ok | {:error, term()}
-  def clear(scope), do: write_entries(scope, [])
+  def clear(scope) do
+    Storage.ensure!()
+    {scope_type, scope_id} = encode_scope(scope)
+
+    Memory
+    |> where([memory], memory.scope_type == ^scope_type)
+    |> where_scope_id(scope_id)
+    |> Exy.Repo.delete_all()
+
+    :ok
+  end
 
   @spec context_block(String.t(), keyword()) :: String.t()
   def context_block(query, opts \\ []) do
@@ -97,72 +113,70 @@ defmodule Exy.Memory do
     end
   end
 
-  defp write_entries(scope, entries) do
-    with :ok <- File.mkdir_p(dir()) do
-      content = Enum.map_join(entries, "\n", &Jason.encode!(encode(&1)))
-      content = if content == "", do: "", else: content <> "\n"
-      File.write(path(scope), content)
+  defp insert(scope, text) do
+    Storage.ensure!()
+    id = id()
+    now = DateTime.utc_now()
+    {scope_type, scope_id} = encode_scope(scope)
+
+    %Memory{
+      id: id,
+      scope_type: scope_type,
+      scope_id: scope_id,
+      text: text,
+      metadata: %{},
+      inserted_at: Storage.normalize_datetime(now),
+      updated_at: Storage.normalize_datetime(now)
+    }
+    |> Exy.Repo.insert()
+    |> case do
+      {:ok, memory} -> {:ok, decode_memory(memory)}
+      {:error, reason} -> {:error, inspect(reason)}
     end
   end
 
-  defp read_entries(path) do
-    case File.read(path) do
-      {:ok, text} ->
-        text
-        |> String.split("\n", trim: true)
-        |> Enum.flat_map(&decode_line/1)
+  defp search_scope(scope, needle, limit) do
+    {scope_type, scope_id} = encode_scope(scope)
 
-      {:error, :enoent} ->
-        []
-    end
+    Memory
+    |> where([memory], memory.scope_type == ^scope_type)
+    |> where_scope_id(scope_id)
+    |> order_by([memory], desc: memory.inserted_at)
+    |> Exy.Repo.all()
+    |> Enum.filter(&(needle == "" or String.contains?(String.downcase(&1.text), needle)))
+    |> Enum.take(limit)
+    |> Enum.map(&decode_memory/1)
   end
 
-  defp decode_line(line) do
-    with {:ok, map} <- Jason.decode(line),
-         {:ok, entry} <- decode(map) do
-      [entry]
-    else
-      _ -> []
-    end
-  end
-
-  defp encode(entry) do
+  defp decode_memory(%Memory{} = memory) do
     %{
-      "id" => entry.id,
-      "scope" => encode_scope(entry.scope),
-      "text" => entry.text,
-      "at" => DateTime.to_iso8601(entry.at)
+      id: memory.id,
+      scope: decode_scope!(memory.scope_type, memory.scope_id),
+      text: memory.text,
+      at: memory.inserted_at
     }
   end
 
-  defp decode(%{"id" => id, "scope" => scope, "text" => text, "at" => at}) do
-    with {:ok, scope} <- decode_scope(scope),
-         {:ok, at, _offset} <- DateTime.from_iso8601(at) do
-      {:ok, %{id: id, scope: scope, text: text, at: at}}
-    end
-  end
+  defp where_scope_id(query, nil), do: where(query, [memory], is_nil(memory.scope_id))
+  defp where_scope_id(query, scope_id), do: where(query, [memory], memory.scope_id == ^scope_id)
 
-  defp decode(_map), do: :error
+  defp encode_scope(:global), do: {"global", nil}
+  defp encode_scope(:user), do: {"user", nil}
+  defp encode_scope({:workspace, id}), do: {"workspace", id}
+  defp encode_scope({:session, id}), do: {"session", id}
+  defp encode_scope({:agent, id}), do: {"agent", id}
 
-  defp encode_scope(scope), do: format_scope(scope)
-
-  defp decode_scope("global"), do: {:ok, :global}
-  defp decode_scope("user"), do: {:ok, :user}
-  defp decode_scope("workspace:" <> id), do: {:ok, {:workspace, id}}
-  defp decode_scope("session:" <> id), do: {:ok, {:session, id}}
-  defp decode_scope("agent:" <> id), do: {:ok, {:agent, id}}
-  defp decode_scope(_scope), do: :error
-
-  defp path(scope), do: Path.join(dir(), safe_name(format_scope(scope)) <> ".jsonl")
-  defp dir, do: Exy.Paths.memory_dir() |> Path.expand()
+  defp decode_scope!("global", nil), do: :global
+  defp decode_scope!("user", nil), do: :user
+  defp decode_scope!("workspace", id) when is_binary(id), do: {:workspace, id}
+  defp decode_scope!("session", id) when is_binary(id), do: {:session, id}
+  defp decode_scope!("agent", id) when is_binary(id), do: {:agent, id}
 
   defp format_scope(:global), do: "global"
   defp format_scope(:user), do: "user"
   defp format_scope({:workspace, id}), do: "workspace:#{id}"
   defp format_scope({:session, id}), do: "session:#{id}"
   defp format_scope({:agent, id}), do: "agent:#{id}"
-
-  defp safe_name(name), do: String.replace(name, ~r/[^A-Za-z0-9_.-]/, "-")
 
   defp id do
     8 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)

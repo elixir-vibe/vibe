@@ -22,7 +22,7 @@ defmodule Exy.TelemetryTest do
     :ok
   end
 
-  test "stores telemetry under EXY_HOME and exposes recent events" do
+  test "stores telemetry in SQLite and exposes recent events" do
     Exy.Telemetry.execute([:exy, :session, :command, :start], %{system_time: 1}, %{
       session_id: "self",
       command: :test
@@ -30,8 +30,7 @@ defmodule Exy.TelemetryTest do
 
     assert_event(fn event -> event.event == [:exy, :session, :command, :start] end)
 
-    assert Exy.Telemetry.path() ==
-             Path.join([System.get_env("EXY_HOME"), "telemetry", "events.jsonl"])
+    assert Exy.Telemetry.path() == Path.expand(Exy.Paths.database())
 
     assert [%{metadata: metadata}] = Exy.Telemetry.recent(1)
     assert metadata.session_id == "self"

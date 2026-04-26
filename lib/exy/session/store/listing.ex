@@ -1,55 +1,72 @@
 defmodule Exy.Session.Store.Listing do
   @moduledoc false
 
-  alias Exy.UI.{Event, Reducer, State}
+  import Ecto.Query
+
+  alias Exy.Storage.Schema.Session
+  alias Exy.UI.{Reducer, State}
 
   @spec info(String.t()) :: map() | nil
   def info(session_id) when is_binary(session_id) do
-    file = safe_session_id(session_id) <> ".jsonl"
-    full_path = Exy.Session.Store.path(session_id)
+    Exy.Storage.ensure!()
 
-    if File.exists?(full_path) do
-      session_info(file)
+    case Exy.Repo.get(Session, session_id) do
+      %Session{} = session -> session_info(session)
+      nil -> nil
     end
   end
 
   @spec list() :: [map()]
   def list do
-    case File.ls(Exy.Session.Store.dir()) do
-      {:ok, files} ->
-        files
-        |> Enum.filter(&String.ends_with?(&1, ".jsonl"))
-        |> Enum.reject(&String.ends_with?(&1, ".events.jsonl"))
-        |> Enum.map(&session_info/1)
-        |> Enum.sort_by(&DateTime.to_unix(&1.updated_at), :desc)
+    Exy.Storage.ensure!()
 
-      {:error, _reason} ->
-        []
+    Session
+    |> order_by([session], desc: session.updated_at)
+    |> Exy.Repo.all()
+    |> Enum.map(&session_info/1)
+  end
+
+  @spec summary(String.t()) :: map() | nil
+  def summary(session_id) do
+    events = Exy.Session.Store.ui_events(session_id)
+
+    if events == [] do
+      nil
+    else
+      state = session_id |> restore_state(events) |> finalize_restored_state()
+      messages = Enum.reject(state.messages, &match?(%{streaming?: true}, &1))
+      first_user = Enum.find(messages, &(&1[:role] == :user))
+      last_message = List.last(messages)
+
+      %{
+        status: state.status,
+        model: state.model,
+        message_count: length(messages),
+        first_message: Exy.Session.Preview.message(first_user),
+        last_message_preview: Exy.Session.Preview.message(last_message),
+        usage: state.usage
+      }
     end
   end
 
-  defp session_info(file) do
-    full_path = Path.join(Exy.Session.Store.dir(), file)
-    stat = File.stat!(full_path, time: :posix)
-    id = Path.rootname(file)
-    events = Exy.Session.Store.ui_events(id)
-    state = id |> restore_state(events) |> finalize_restored_state()
-    messages = Enum.reject(state.messages, &match?(%{streaming?: true}, &1))
-    first_user = Enum.find(messages, &(&1[:role] == :user))
-    last_message = List.last(messages)
-
+  defp session_info(%Session{} = session) do
     %{
-      id: id,
-      path: full_path,
-      size: stat.size,
-      created_at: created_at(events),
-      updated_at: DateTime.from_unix!(stat.mtime),
-      message_count: length(messages),
-      first_message: Exy.Session.Preview.message(first_user),
-      last_message_preview: Exy.Session.Preview.message(last_message),
-      status: state.status,
-      model: state.model,
-      usage: state.usage
+      id: session.id,
+      path: Exy.Paths.database() |> Path.expand(),
+      size: 0,
+      created_at: nil,
+      updated_at: session.updated_at,
+      message_count: session.message_count || 0,
+      first_message: session.first_message_preview,
+      last_message_preview: session.last_message_preview,
+      status: status_atom(session.status),
+      model: session.model,
+      usage: %{
+        input_tokens: session.usage_input_tokens || 0,
+        output_tokens: session.usage_output_tokens || 0,
+        total_tokens: session.usage_total_tokens || 0,
+        total_cost: session.usage_total_cost || 0.0
+      }
     }
   end
 
@@ -70,10 +87,12 @@ defmodule Exy.Session.Store.Listing do
     |> then(&Reducer.apply_events(State.new(session_id: session_id), &1))
   end
 
-  defp created_at([]), do: nil
-  defp created_at([{_seq, %Event{at: at}} | _events]), do: at
-
-  defp safe_session_id(session_id) do
-    String.replace(session_id, ~r/[^A-Za-z0-9_.-]/, "-")
+  defp status_atom(status) when is_binary(status) do
+    String.to_existing_atom(status)
+  rescue
+    ArgumentError -> :idle
   end
+
+  defp status_atom(status) when is_atom(status), do: status
+  defp status_atom(_status), do: :idle
 end

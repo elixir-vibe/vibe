@@ -56,7 +56,8 @@ defmodule Exy.MixProject do
         :oxc,
         :ghostty,
         :quickbeam,
-        :pythonx
+        :pythonx,
+        :exqlite
       ],
       strip_beams: [keep: ["Docs"]]
     ]
@@ -73,6 +74,8 @@ defmodule Exy.MixProject do
       {:mdex, "~> 0.12"},
       {:yaml_elixir, "~> 2.12"},
       {:toml, "~> 0.7"},
+      {:ecto_sql, "~> 3.12"},
+      {:ecto_sqlite3, "~> 0.18"},
       {:req, "~> 0.5"},
       {:req_llm, "~> 1.10"},
       {:opentelemetry_api, "~> 1.5"},

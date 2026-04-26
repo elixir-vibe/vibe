@@ -91,11 +91,15 @@ defmodule Exy.Session.Store.Codec do
        "entry_type" => "eval_state",
        "session_id" => session_id,
        "at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-       "state" => snapshot |> :erlang.term_to_binary() |> Base.encode64()
+       "state" => :erlang.term_to_binary(snapshot)
      }}
   rescue
     exception -> {:error, exception}
   end
+
+  @spec decode_eval_state_binary(binary()) ::
+          {:ok, %{binding: Code.binding(), env: Macro.Env.t()}} | :error
+  def decode_eval_state_binary(binary) when is_binary(binary), do: decode_eval_state(binary)
 
   @spec decode_eval_state_line(String.t(), term()) ::
           %{binding: Code.binding(), env: Macro.Env.t()} | term()
@@ -108,6 +112,9 @@ defmodule Exy.Session.Store.Codec do
     end
   end
 
+  @spec decode_ui_event_map(map()) :: {:ok, {non_neg_integer(), Event.t()}} | :error
+  def decode_ui_event_map(map), do: decode_ui_event(map)
+
   @spec decode_ui_event_line(String.t()) :: [{non_neg_integer(), Event.t()}]
   def decode_ui_event_line(line) do
     with {:ok, %{"entry_type" => "ui_event"} = map} <- Jason.decode(line),
@@ -117,6 +124,9 @@ defmodule Exy.Session.Store.Codec do
       _ -> []
     end
   end
+
+  @spec decode_trajectory_map(map()) :: {:ok, Trajectory.t()} | :error
+  def decode_trajectory_map(map), do: decode_trajectory(map)
 
   @spec decode_trajectory_line(String.t()) :: [Trajectory.t()]
   def decode_trajectory_line(line) do
@@ -138,7 +148,7 @@ defmodule Exy.Session.Store.Codec do
   end
 
   defp decode_eval_state(encoded) do
-    with {:ok, binary} <- Base.decode64(encoded),
+    with binary when is_binary(binary) <- maybe_base64_decode(encoded),
          %{binding: binding, env: %Macro.Env{} = env} <- :erlang.binary_to_term(binary, [:safe]) do
       {:ok, %{binding: binding, env: env}}
     else
@@ -146,6 +156,13 @@ defmodule Exy.Session.Store.Codec do
     end
   rescue
     _exception -> :error
+  end
+
+  defp maybe_base64_decode(encoded) when is_binary(encoded) do
+    case Base.decode64(encoded) do
+      {:ok, binary} -> binary
+      :error -> encoded
+    end
   end
 
   defp decode_ui_event(map) do
