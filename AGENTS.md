@@ -4,7 +4,7 @@
 - Add Exy helper modules callable from `Exy.Eval` instead of adding narrow external tools.
 - Use `Exy.Code.AST`/ExAST for Elixir syntax search, replace, and diff. Do not use grep for code structure.
 - Use OTP supervision for background work and subagents.
-- Self-improvement should prefer skills and helper modules before changing runtime core. Skills may be Markdown (`SKILL.md`) or trusted executable `.skill.exs` files using `Exy.Skill.Script`; review executable skill code before sharing or installing it.
+- Self-improvement should prefer skills and helper modules before changing runtime core. Skills may be Markdown (`SKILL.md`) or trusted executable Elixir (`skill.exs` in a skill directory, or single-file `*.skill.exs`) using `Exy.Skill.Script`; review executable skill code before sharing or installing it.
 - Before self-modification, add/update tests for intended behavior, run `Exy.SelfPatch.preflight/1`, then patch.
 - Validate self-patches through `Exy.Code.Checks.analyze/1` first; use the returned `report.failures` instead of rerunning checks with different inspect/options. Prefer Elixir APIs over shelling out to Mix tasks.
 - Prefer idiomatic OTP/Elixir APIs over ad-hoc path/process handling, e.g. `Application.app_dir/2` for priv files and Erlang `:code.soft_purge/1`/`:code.delete/1`/`:code.ensure_loaded/1` for hot reload.

@@ -59,7 +59,7 @@ defmodule Exy.SkillScriptTest do
       |> Exy.Session.Store.append_ui_event(1)
 
     assert {:ok, path} = Exy.Skill.create_from_session(session_id, "debug-workflow")
-    assert String.ends_with?(path, "debug-workflow.skill.exs")
+    assert String.ends_with?(path, "debug-workflow/skill.exs")
     assert File.read!(path) =~ "Generated from Exy session `#{session_id}`"
     assert {:ok, [skill]} = Exy.Skill.Loader.load_file(path)
     assert skill.name == "debug-workflow"

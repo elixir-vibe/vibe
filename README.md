@@ -97,7 +97,7 @@ exy skill apis
 exy skill from-session <session-id> <name>
 ```
 
-Executable skills are trusted local `.skill.exs` files discovered from `priv/skills`, `./skills`, `./.exy/skills`, and `~/.exy/skills`. They combine Markdown guidance with Elixir helper functions exposed to eval through `Exy.Plugin.API` aliases.
+Executable skills are trusted local Elixir files discovered from `priv/skills`, `./skills`, `./.exy/skills`, and `~/.exy/skills`. Use `skill.exs` inside a skill directory for normal skills, or `*.skill.exs` for single-file shortcuts. They combine Markdown guidance with Elixir helper functions exposed to eval through `Exy.Plugin.API` aliases.
 
 Scriptable/non-interactive commands remain available through flags such as:
 

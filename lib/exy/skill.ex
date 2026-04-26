@@ -154,8 +154,8 @@ defmodule Exy.Skill do
     end
   end
 
-  defp script_path(name, nil), do: Path.join(dir(), "#{name}.skill.exs")
-  defp script_path(name, category), do: Path.join([dir(), category, "#{name}.skill.exs"])
+  defp script_path(name, nil), do: Path.join([dir(), name, "skill.exs"])
+  defp script_path(name, category), do: Path.join([dir(), category, name, "skill.exs"])
 
   defp script_content(name, session, events) do
     module =
