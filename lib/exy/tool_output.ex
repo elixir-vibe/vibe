@@ -29,7 +29,7 @@ defmodule Exy.ToolOutput do
     text = inspect(value, @inspect_opts)
 
     if byte_size(text) <= max_bytes do
-      value
+      json_safe(value)
     else
       %{
         truncated: true,
@@ -38,4 +38,23 @@ defmodule Exy.ToolOutput do
       }
     end
   end
+
+  defp json_safe(%DateTime{} = value), do: DateTime.to_iso8601(value)
+  defp json_safe(%NaiveDateTime{} = value), do: NaiveDateTime.to_iso8601(value)
+  defp json_safe(%Date{} = value), do: Date.to_iso8601(value)
+  defp json_safe(%Time{} = value), do: Time.to_iso8601(value)
+  defp json_safe(%_struct{} = value), do: value |> Map.from_struct() |> json_safe()
+
+  defp json_safe(map) when is_map(map),
+    do: Map.new(map, fn {key, value} -> {json_safe_key(key), json_safe(value)} end)
+
+  defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
+  defp json_safe(tuple) when is_tuple(tuple), do: tuple |> Tuple.to_list() |> json_safe()
+  defp json_safe(pid) when is_pid(pid), do: inspect(pid)
+  defp json_safe(reference) when is_reference(reference), do: inspect(reference)
+  defp json_safe(value), do: value
+
+  defp json_safe_key(key) when is_atom(key), do: key
+  defp json_safe_key(key) when is_binary(key), do: key
+  defp json_safe_key(key), do: inspect(key)
 end

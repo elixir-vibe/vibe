@@ -38,4 +38,9 @@ defmodule Exy.TUI.KeyDecoderTest do
     assert KeyDecoder.decode("a") == [{:insert, "a"}]
     assert KeyDecoder.decode("hello") == [{:paste, "hello"}]
   end
+
+  test "decodes pasted prompt followed by carriage return as submit" do
+    assert KeyDecoder.decode("hello\r") == [{:paste, "hello"}, :submit]
+    assert KeyDecoder.decode("hello\n") == [{:paste, "hello"}, :submit]
+  end
 end

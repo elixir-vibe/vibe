@@ -11,6 +11,12 @@ defmodule Exy.ToolOutputTest do
     assert output =~ "10 bytes omitted"
   end
 
+  test "small structured values are converted to JSON-safe data" do
+    assert Exy.ToolOutput.limit_value(%{matches: [{"lib/a.ex", 1}]}) == %{
+             matches: [["lib/a.ex", 1]]
+           }
+  end
+
   test "large structured values become a bounded textual tool result" do
     value = %{items: Enum.map(1..10_000, &%{n: &1, text: String.duplicate("x", 20)})}
 

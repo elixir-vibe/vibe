@@ -34,6 +34,9 @@ defmodule Exy.Code.LSP.Client do
 
   def request(pid, method, params \\ %{}, timeout \\ @timeout) do
     GenServer.call(pid, {:request, method, params}, timeout + 1_000)
+  catch
+    :exit, {:timeout, _call} -> {:error, "Expert LSP request timed out"}
+    :exit, reason -> {:error, "Expert LSP request failed: #{inspect(reason)}"}
   end
 
   def notify(pid, method, params \\ %{}) do

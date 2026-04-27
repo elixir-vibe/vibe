@@ -13,7 +13,8 @@ defmodule Exy.CLI.Escript do
   end
 
   defp run(argv, _opts) do
-    with :ok <- prepare_priv_dirs() do
+    with :ok <- prepare_priv_dirs(),
+         {:ok, _apps} <- Application.ensure_all_started(:exy) do
       Exy.CLI.main(argv)
     end
   end

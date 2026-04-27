@@ -146,12 +146,18 @@ defmodule Exy.Eval.Evaluator do
   defp initial_context(_session_id, false), do: {[], initial_env()}
 
   defp initial_env do
-    {_result, _binding, env} =
-      "import IEx.Helpers, warn: false"
-      |> Code.string_to_quoted!()
-      |> Code.eval_quoted_with_env([], Code.env_for_eval([]), prune_binding: true)
+    env = Code.env_for_eval([])
 
-    plugin_env(env)
+    if Code.ensure_loaded?(IEx.Helpers) do
+      {_result, _binding, env} =
+        "import IEx.Helpers, warn: false"
+        |> Code.string_to_quoted!()
+        |> Code.eval_quoted_with_env([], env, prune_binding: true)
+
+      plugin_env(env)
+    else
+      plugin_env(env)
+    end
   end
 
   defp plugin_env(env) do

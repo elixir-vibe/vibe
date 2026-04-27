@@ -19,8 +19,11 @@ defmodule Exy.Build do
     case :code.which(module) do
       path when is_list(path) ->
         path = List.to_string(path)
-        stat = File.stat!(path, time: :posix)
-        {module, stat.size, stat.mtime}
+
+        case File.stat(path, time: :posix) do
+          {:ok, stat} -> {module, stat.size, stat.mtime}
+          {:error, _reason} -> {module, module.module_info(:md5)}
+        end
 
       other ->
         {module, other}

@@ -43,11 +43,32 @@ defmodule Exy.TUI.KeyDecoder do
     end
   end
 
-  defp decode_data(data) do
-    cond do
-      printable?(data) and String.length(data) == 1 -> [{:insert, data}]
-      printable?(data) -> [{:paste, data}]
-      true -> []
+  defp decode_data(data), do: data |> decode_data([], "") |> Enum.reverse()
+
+  defp decode_data("", keys, pending), do: flush_pending(keys, pending)
+
+  defp decode_data(<<char::utf8, rest::binary>>, keys, pending) when char in [?\r, ?\n] do
+    keys = [:submit | flush_pending(keys, pending)]
+    decode_data(rest, keys, "")
+  end
+
+  defp decode_data(<<char::utf8, rest::binary>>, keys, pending) do
+    char = <<char::utf8>>
+
+    if printable?(char) do
+      decode_data(rest, keys, pending <> char)
+    else
+      decode_data(rest, keys, pending)
+    end
+  end
+
+  defp flush_pending(keys, ""), do: keys
+
+  defp flush_pending(keys, pending) do
+    if String.length(pending) == 1 do
+      [{:insert, pending} | keys]
+    else
+      [{:paste, pending} | keys]
     end
   end
 

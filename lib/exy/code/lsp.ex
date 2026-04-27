@@ -44,13 +44,15 @@ defmodule Exy.Code.LSP do
 
   defp dispatch(pid, %{action: action} = params) when action in [:symbols, "symbols"] do
     with {:ok, file} <- fetch(params, :file) do
-      Client.request(pid, "textDocument/documentSymbol", text_document_params(file))
+      timeout = Map.get(params, :wait_ms, 1_000)
+      Client.request(pid, "textDocument/documentSymbol", text_document_params(file), timeout)
     end
   end
 
   defp dispatch(pid, %{action: action} = params)
        when action in [:workspace_symbols, "workspace_symbols"] do
-    Client.request(pid, "workspace/symbol", %{query: Map.get(params, :query, "")})
+    timeout = Map.get(params, :wait_ms, 1_000)
+    Client.request(pid, "workspace/symbol", %{query: Map.get(params, :query, "")}, timeout)
   end
 
   defp dispatch(pid, %{action: action} = params) when action in [:code_actions, "code_actions"] do
@@ -62,10 +64,13 @@ defmodule Exy.Code.LSP do
         end: position(Map.get(params, :end_line, line), Map.get(params, :end_column, column))
       }
 
+      timeout = Map.get(params, :wait_ms, 1_000)
+
       Client.request(
         pid,
         "textDocument/codeAction",
-        Map.merge(text_document_params(file), %{range: range, context: %{diagnostics: []}})
+        Map.merge(text_document_params(file), %{range: range, context: %{diagnostics: []}}),
+        timeout
       )
     end
   end
@@ -81,13 +86,16 @@ defmodule Exy.Code.LSP do
       Process.sleep(Map.get(params, :open_wait_ms, 200))
       extra = Map.take(params, [:context])
 
+      timeout = Map.get(params, :wait_ms, 1_000)
+
       Client.request(
         pid,
         method,
         Map.merge(
           Map.merge(text_document_params(file), %{position: position(line, column)}),
           extra
-        )
+        ),
+        timeout
       )
     end
   end
