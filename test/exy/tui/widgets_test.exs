@@ -76,6 +76,13 @@ defmodule Exy.TUI.WidgetsTest do
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Exy:"))
   end
 
+  test "inset line helper adds symmetric edge padding and fills width" do
+    line = Widget.inset_line("notice", 12) |> Width.visible_text()
+
+    assert line == " notice     "
+    assert String.length(line) == 12
+  end
+
   test "background line helper pads and preserves parent background across nested resets" do
     line =
       Exy.TUI.Widget.background_line(

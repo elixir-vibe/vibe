@@ -78,6 +78,12 @@ defmodule Exy.TUI.Widget do
     [line, spaces(width - Width.visible_length(line))]
   end
 
+  @spec inset_line(IO.chardata(), non_neg_integer()) :: line()
+  def inset_line(content, width) do
+    inner_width = max(width - 2, 1)
+    [" ", pad_line(content, inner_width), " "]
+  end
+
   @spec background_line(IO.chardata(), pos_integer(), Theme.t(), atom(), keyword()) :: line()
   def background_line(content, width, theme, bg_key, opts \\ []) do
     padding_left = Keyword.get(opts, :padding_left, 0)

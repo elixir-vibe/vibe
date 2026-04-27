@@ -48,7 +48,7 @@ defmodule Exy.TUI.ToolWidget do
       |> append_output(tool, inner_width, theme, opts)
 
     [title | sections]
-    |> Enum.map(&margin_line(&1, width))
+    |> Enum.map(&Widget.inset_line(&1, width))
   end
 
   @spec title(tool(), Theme.t(), keyword()) :: IO.chardata()
@@ -228,11 +228,6 @@ defmodule Exy.TUI.ToolWidget do
     else
       truncation.lines
     end
-  end
-
-  defp margin_line(line, width) do
-    inner_width = max(width - 2, 1)
-    [" ", Widget.pad_line(line, inner_width), " "]
   end
 
   defp ensure_renderer_loaded(renderer) do
