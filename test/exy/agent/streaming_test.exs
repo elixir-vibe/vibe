@@ -69,7 +69,11 @@ defmodule Exy.Agent.StreamingTest do
 
     finished = %{
       type: "ai.tool.result",
-      data: %{call_id: "call-1", tool_name: "eval", result: {:ok, %{output: "2"}, []}}
+      data: %{
+        call_id: "call-1",
+        tool_name: "eval",
+        result: {:ok, %{output: "2", output_format: :inspect}, []}
+      }
     }
 
     assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(started, context)
@@ -79,7 +83,13 @@ defmodule Exy.Agent.StreamingTest do
                     %Exy.UI.ToolEvent{id: "call-1", name: "eval", args: %{code: "1 + 1"}}}
 
     assert_receive {:tool_finished,
-                    %Exy.UI.ToolEvent{id: "call-1", name: "eval", output: "2", status: :ok}}
+                    %Exy.UI.ToolEvent{
+                      id: "call-1",
+                      name: "eval",
+                      output: "2",
+                      output_format: :inspect,
+                      status: :ok
+                    }}
   after
     Exy.Agent.Streaming.unregister(agent)
   end

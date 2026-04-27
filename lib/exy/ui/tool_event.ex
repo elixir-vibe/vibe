@@ -45,11 +45,11 @@ defmodule Exy.UI.ToolEvent do
   defp status_from_output(_output), do: :ok
 
   @spec normalize_result(term()) :: term()
-  def normalize_result({:ok, result, _effects}), do: unwrap_output(result)
-  def normalize_result({:ok, result}), do: unwrap_output(result)
+  def normalize_result({:ok, result, _effects}), do: result
+  def normalize_result({:ok, result}), do: result
   def normalize_result({:error, reason, _effects}), do: %{error: reason}
   def normalize_result({:error, reason}), do: %{error: reason}
-  def normalize_result(result), do: unwrap_output(result)
+  def normalize_result(result), do: result
 
   defp unwrap_output(%{output: output}), do: output
   defp unwrap_output(result), do: result
