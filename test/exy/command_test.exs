@@ -40,4 +40,13 @@ defmodule Exy.CommandTest do
 
     assert result.output =~ ~s("ok")
   end
+
+  test "Cmd results display command output in eval" do
+    code = ~S|Cmd.run(["sh", "-c", "printf ok"], timeout: 5_000)|
+    assert {:ok, result} = Exy.Eval.run(code, session_id: "cmd-result-display-test")
+
+    assert result.output == "ok"
+    assert result.format == :text
+    assert result.value_type == Exy.Command.Result
+  end
 end

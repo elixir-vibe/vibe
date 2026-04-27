@@ -131,6 +131,14 @@ defmodule Exy.Eval.Evaluator do
     }
   end
 
+  defp display_result(%Exy.Command.Result{} = command) do
+    %Result{
+      output: ToolOutput.limit_text(command.output),
+      format: :text,
+      value_type: Exy.Command.Result
+    }
+  end
+
   defp display_result(result) do
     %Result{
       output: result |> inspect(@inspect_opts) |> ToolOutput.limit_text(),
