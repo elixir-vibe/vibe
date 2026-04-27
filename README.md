@@ -262,7 +262,15 @@ Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
 
 ### Runtime/eval helpers
 
-`eval` is stateful when called with a session id. Normal Elixir variables, aliases, imports, and requires persist for that session. Serializable eval state is snapshotted to the canonical session log and restored without replaying old eval code. Use `Exy.Eval.once/2` for explicit one-off evaluation.
+Exy has three execution layers. Use the smallest layer that fits the job:
+
+| Layer | Scope | Persistence | Use for |
+|---|---|---|---|
+| `Exy.Eval.run/2` | Current Exy VM, per session | Serializable bindings and `Macro.Env` snapshots are restored without replay | Fast BEAM introspection, small helpers, plugin APIs, `Cmd`/`MD` pipelines |
+| `Exy.Runtime.Standalone` | Supervised child BEAM | Process-local until stopped | Livebook-style stateful `Mix.install/2` experiments isolated from Exy's VM |
+| `Exy.Script` | Disposable OS process or standalone runtime | None by default | One-off `.exs` scripts and Livebook-style notebooks |
+
+`eval` is stateful when called with a session id. Normal Elixir variables, aliases, imports, and requires persist for that session. Use `Exy.Eval.once/2` for explicit one-off evaluation.
 
 Eval sessions preload `Cmd` (`Exy.Command`) for supervised OS commands and `MD` (`Exy.MD`) for Markdown rendering. Prefer these over raw `System.cmd/3` and ad-hoc formatting.
 
@@ -343,7 +351,16 @@ The local scheduler uses OTP timers and persists schedule definitions in SQLite;
 
 ### Memory
 
-Exy separates session eval state, per-agent runtime memory, and curated long-term memory.
+Exy keeps several kinds of memory intentionally separate:
+
+| Memory | API | Lifetime | Purpose |
+|---|---|---|---|
+| Eval state | `Exy.Eval.*` | Per session, SQLite-backed when serializable | Variables, aliases, imports, and helper results used inside eval |
+| Agent scratch | `Exy.Agent.Memory` | Per live agent process | Ephemeral planning/runtime facts that should not become user memory |
+| Curated memory | `Exy.Memory` / `Exy.Memory.Manager` | Durable SQLite records | User/global/session facts intentionally recalled into future prompts |
+| Session history | `Exy.Session.Store` / `Exy.Context` | Durable SQLite event/trajectory log | Searchable conversation, tool, UI, and trajectory history; not automatically treated as memory |
+
+Recalled curated memory is inserted as a fenced `<memory-context>` block and treated as background context, not as direct user input. Session history can be searched and recalled, but important durable preferences should be promoted through `Exy.Memory`.
 
 ```elixir
 Exy.Memory.add(:user, "User prefers concise technical answers")
@@ -359,7 +376,7 @@ Exy.Memory.Manager.prefetch("validation command", %{session_id: session_id})
 Exy.Memory.Manager.on_delegation("research task", "summary", %{parent_session_id: session_id})
 ```
 
-Built-in memory is always active; at most one external memory provider should be loaded at a time to avoid conflicting recall/tool surfaces. Recalled memory is fenced as `<memory-context>` and treated as informational background, not user input.
+Built-in memory is always active; at most one external memory provider should be loaded at a time to avoid conflicting recall/tool surfaces.
 
 ### Plugins
 
