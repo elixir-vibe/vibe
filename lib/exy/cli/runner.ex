@@ -3,6 +3,8 @@ defmodule Exy.CLI.Runner do
 
   alias Exy.CLI.{Logging, Output}
 
+  require Exy.Debug
+
   @spec ask(String.t(), keyword()) :: :ok | {:error, term()}
   def ask("", _opts) do
     Output.error("No prompt provided. Run `mix exy --help` for usage.")
@@ -41,6 +43,7 @@ defmodule Exy.CLI.Runner do
 
     runtime_opts =
       [session_id: session_id(opts), model: Exy.Model.Config.resolve(opts)]
+      |> maybe_put(:trace_dir, trace_dir(opts))
       |> maybe_put(:remote_node, opts[:remote_node])
       |> Keyword.merge(runtime_extra)
       |> maybe_put_system_prompt(opts[:system_prompt])
@@ -72,6 +75,12 @@ defmodule Exy.CLI.Runner do
 
   @spec session_id(keyword()) :: String.t()
   def session_id(opts), do: opts[:session] || Exy.Session.Store.new_id()
+
+  if Exy.Debug.enabled?() do
+    defp trace_dir(opts), do: opts[:trace_tui] || System.get_env("EXY_TUI_TRACE_DIR")
+  else
+    defp trace_dir(_opts), do: nil
+  end
 
   defp maybe_put_system_prompt(opts, nil), do: opts
   defp maybe_put_system_prompt(opts, system_prompt), do: Keyword.put(opts, :system, system_prompt)

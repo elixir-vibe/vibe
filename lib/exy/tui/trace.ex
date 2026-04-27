@@ -7,6 +7,55 @@ defmodule Exy.TUI.Trace do
 
   @type t :: %__MODULE__{dir: Path.t(), started_at: integer(), seq: non_neg_integer()}
 
+  @spec summary(Path.t()) :: map()
+  def summary(dir) do
+    dir = Path.expand(dir)
+    entries = entries(dir)
+    frames = Path.wildcard(Path.join([dir, "frames", "*.txt"]))
+    snapshots = Path.wildcard(Path.join([dir, "snapshots", "*.json"]))
+
+    %{
+      dir: dir,
+      metadata: read_json(Path.join(dir, "metadata.json")),
+      entries: length(entries),
+      frames: length(frames),
+      snapshots: length(snapshots),
+      first_entry: List.first(entries),
+      last_entry: List.last(entries)
+    }
+  end
+
+  @spec entries(Path.t()) :: [map()]
+  def entries(dir) do
+    path = Path.join(Path.expand(dir), "trace.jsonl")
+
+    if File.exists?(path) do
+      path
+      |> File.stream!()
+      |> Stream.map(&String.trim/1)
+      |> Stream.reject(&(&1 == ""))
+      |> Enum.map(&Jason.decode!/1)
+    else
+      []
+    end
+  end
+
+  @spec frame(Path.t(), pos_integer() | :last) :: {:ok, String.t()} | {:error, term()}
+  def frame(dir, index \\ :last) do
+    frames = Path.wildcard(Path.join([Path.expand(dir), "frames", "*.txt"]))
+
+    path =
+      case index do
+        :last -> List.last(frames)
+        index when is_integer(index) -> Enum.at(frames, index - 1)
+      end
+
+    case path do
+      nil -> {:error, :frame_not_found}
+      path -> File.read(path)
+    end
+  end
+
   @spec start(keyword()) :: t() | nil
   def start(opts) do
     case Keyword.get(opts, :trace_dir) do
@@ -91,6 +140,10 @@ defmodule Exy.TUI.Trace do
 
     append_jsonl(Path.join(trace.dir, "trace.jsonl"), entry)
     trace
+  end
+
+  defp read_json(path) do
+    if File.exists?(path), do: path |> File.read!() |> Jason.decode!(), else: %{}
   end
 
   defp write_metadata(trace, opts) do

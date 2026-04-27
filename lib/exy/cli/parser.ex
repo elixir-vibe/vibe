@@ -34,7 +34,9 @@ defmodule Exy.CLI.Parser do
     batch_size: :integer,
     overwrite: :boolean,
     web: :boolean,
-    port: :integer
+    port: :integer,
+    trace_tui: :string,
+    frame: :integer
   ]
 
   @aliases [h: :help, v: :version, p: :print]
