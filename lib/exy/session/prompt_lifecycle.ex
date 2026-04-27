@@ -106,10 +106,17 @@ defmodule Exy.Session.PromptLifecycle do
     do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
 
   defp prompt_with_memory(text, context) do
-    [text, Exy.Memory.Manager.prefetch(text, context), recalled_history(text, context)]
+    [
+      text,
+      Exy.Memory.Manager.prefetch(text, context),
+      active_skill_context(text),
+      recalled_history(text, context)
+    ]
     |> Enum.reject(&(&1 == ""))
     |> Enum.join("\n\n")
   end
+
+  defp active_skill_context(text), do: Exy.Skill.context(text, limit: 3)
 
   defp recalled_history(text, context) do
     Exy.Context.recall(text,

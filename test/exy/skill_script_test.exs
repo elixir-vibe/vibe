@@ -48,6 +48,30 @@ defmodule Exy.SkillScriptTest do
     assert result =~ ~S|"hello-eval"|
   end
 
+  test "formats matching skills as markdown context", %{dir: dir} do
+    skills_dir = Path.join([dir, "skills", "weather-skill"])
+    File.mkdir_p!(skills_dir)
+
+    File.write!(Path.join(skills_dir, "SKILL.md"), """
+    ---
+    name: weather-skill
+    description: Use weather.gov for weather answers
+    triggers:
+      - weather source
+    ---
+    # Weather Skill
+
+    Always prefer weather.gov as the weather source.
+    """)
+
+    context = Exy.Skill.context("check weather source", limit: 1)
+
+    assert context =~ "## Active skills"
+    assert context =~ "### weather-skill"
+    assert context =~ "Always prefer weather.gov"
+    refute context =~ "<skills>"
+  end
+
   test "creates an executable skill draft from a session", %{dir: dir} do
     session_id = "skill-source-session"
     Exy.Session.Store.ensure_session(session_id, ~U[2026-01-01 00:00:00Z], cwd: dir)

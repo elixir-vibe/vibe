@@ -97,6 +97,26 @@ defmodule Exy.Skill do
     end
   end
 
+  @spec match(String.t(), keyword()) :: [map()]
+  def match(text, opts \\ []) when is_binary(text) do
+    limit = Keyword.get(opts, :limit, 3)
+    normalized = normalize_text(text)
+
+    list()
+    |> Enum.map(&Map.put(&1, :score, skill_score(&1, normalized)))
+    |> Enum.filter(&(&1.score > 0))
+    |> Enum.sort_by(&{-&1.score, &1.name})
+    |> Enum.take(limit)
+  end
+
+  @spec context(String.t(), keyword()) :: String.t()
+  def context(text, opts \\ []) when is_binary(text) do
+    case match(text, opts) do
+      [] -> ""
+      skills -> active_skills_markdown(skills, opts)
+    end
+  end
+
   @spec create_from_session(String.t(), String.t(), keyword()) ::
           {:ok, String.t()} | {:error, String.t()}
   def create_from_session(session_id, name, opts \\ []) do
@@ -124,7 +144,17 @@ defmodule Exy.Skill do
   defp markdown_skills do
     Path.wildcard(Path.join(dir(), "**/SKILL.md"))
     |> Enum.map(fn path ->
-      %{type: :markdown, name: Path.basename(Path.dirname(path)), path: path, title: title(path)}
+      {metadata, markdown} = markdown_skill_content(path)
+
+      %{
+        type: :markdown,
+        name: Map.get(metadata, "name", Path.basename(Path.dirname(path))),
+        path: path,
+        title: Map.get(metadata, "description") || title(path),
+        metadata: metadata,
+        markdown: markdown,
+        apis: []
+      }
     end)
   end
 
@@ -137,9 +167,136 @@ defmodule Exy.Skill do
         title: Map.get(skill.metadata, :description),
         module: skill.module,
         metadata: skill.metadata,
+        markdown: skill.markdown,
         apis: skill.apis
       }
     end)
+  end
+
+  defp active_skills_markdown(skills, opts) do
+    body =
+      skills
+      |> Enum.map(&skill_markdown(&1, opts))
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.join("\n\n")
+
+    if body == "" do
+      ""
+    else
+      """
+      ## Active skills
+
+      The following skills are relevant background instructions. Follow them when applicable; do not mention them unless useful.
+
+      #{body}
+      """
+      |> String.trim()
+    end
+  end
+
+  defp skill_markdown(skill, opts) do
+    max_bytes = Keyword.get(opts, :max_bytes, 6_000)
+
+    [
+      "### ",
+      skill.name,
+      "\n\n",
+      skill_description(skill),
+      skill_api_markdown(skill),
+      "\n\n",
+      skill_body(skill)
+    ]
+    |> IO.iodata_to_binary()
+    |> String.trim()
+    |> truncate_markdown(max_bytes)
+  end
+
+  defp skill_description(%{title: title}) when is_binary(title) and title != "", do: title <> "\n"
+  defp skill_description(_skill), do: ""
+
+  defp skill_api_markdown(%{apis: []}), do: ""
+
+  defp skill_api_markdown(%{apis: apis}) do
+    examples =
+      apis
+      |> Enum.flat_map(& &1.examples)
+      |> Enum.reject(&(&1 == ""))
+
+    aliases = Enum.map_join(apis, ", ", &"`#{&1.alias}`")
+
+    case examples do
+      [] ->
+        "\nAvailable eval aliases: #{aliases}."
+
+      examples ->
+        "\nAvailable eval aliases: #{aliases}.\n\nExamples:\n" <>
+          Enum.map_join(examples, "\n", &"- `#{&1}`")
+    end
+  end
+
+  defp skill_body(%{type: :exs, module: module} = skill) do
+    if function_exported?(module, :prompt_context, 1) do
+      module.prompt_context(%{skill: skill})
+    else
+      Map.get(skill, :markdown, "")
+    end
+  rescue
+    _exception -> Map.get(skill, :markdown, "")
+  end
+
+  defp skill_body(skill), do: Map.get(skill, :markdown, "")
+
+  defp truncate_markdown(text, max_bytes) when byte_size(text) <= max_bytes, do: text
+
+  defp truncate_markdown(text, max_bytes),
+    do: text |> String.slice(0, max_bytes) |> Kernel.<>("...")
+
+  defp skill_score(skill, normalized_text) do
+    trigger_score(skill, normalized_text) + name_score(skill, normalized_text)
+  end
+
+  defp trigger_score(skill, normalized_text) do
+    skill
+    |> skill_triggers()
+    |> Enum.reduce(0, fn trigger, score ->
+      normalized_trigger = normalize_text(trigger)
+
+      if normalized_trigger != "" and String.contains?(normalized_text, normalized_trigger),
+        do: score + 10,
+        else: score
+    end)
+  end
+
+  defp name_score(skill, normalized_text) do
+    normalized_name = skill.name |> String.replace(["-", "_"], " ") |> normalize_text()
+
+    if normalized_name != "" and String.contains?(normalized_text, normalized_name),
+      do: 5,
+      else: 0
+  end
+
+  defp skill_triggers(%{metadata: metadata}) do
+    metadata
+    |> get_metadata(:triggers)
+    |> List.wrap()
+    |> Enum.filter(&is_binary/1)
+  end
+
+  defp get_metadata(metadata, key) when is_atom(key),
+    do: Map.get(metadata, key) || Map.get(metadata, Atom.to_string(key))
+
+  defp normalize_text(text) do
+    text
+    |> String.downcase()
+    |> String.replace(~r/[^\p{L}\p{N}]+/u, " ")
+    |> String.trim()
+  end
+
+  defp markdown_skill_content(path) do
+    case path |> File.read!() |> Exy.Skill.Frontmatter.parse() do
+      {:ok, metadata, markdown} -> {metadata, markdown}
+      {:error, _reason} -> {%{}, ""}
+    end
   end
 
   defp create_script(name, session, events, opts) do

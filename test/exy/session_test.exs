@@ -89,6 +89,30 @@ defmodule Exy.SessionTest do
     end)
 
     assert {:ok, _entry} = Exy.Memory.add(:global, "Washington weather source is weather.gov")
+    skills_dir = Path.join([memory_dir, "skills", "weather-source"])
+    File.mkdir_p!(skills_dir)
+
+    previous_home = Application.get_env(:exy, :home_dir)
+    Application.put_env(:exy, :home_dir, memory_dir)
+
+    on_exit(fn ->
+      if previous_home,
+        do: Application.put_env(:exy, :home_dir, previous_home),
+        else: Application.delete_env(:exy, :home_dir)
+    end)
+
+    File.write!(Path.join(skills_dir, "SKILL.md"), """
+    ---
+    name: weather-source
+    description: Use authoritative weather sources
+    triggers:
+      - weather.gov
+    ---
+    # Weather Source
+
+    Prefer authoritative weather sources when answering weather questions.
+    """)
+
     parent = self()
 
     {:ok, server} =
@@ -104,6 +128,9 @@ defmodule Exy.SessionTest do
     assert_receive {:asked, text}
     assert text =~ "<memory-context>"
     assert text =~ "Washington weather source is weather.gov"
+    assert text =~ "## Active skills"
+    assert text =~ "### weather-source"
+    assert text =~ "Prefer authoritative weather sources"
 
     Process.sleep(20)
     assert [%{text: "weather.gov"} | _] = Exy.Session.state(server).messages
