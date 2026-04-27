@@ -70,6 +70,29 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert String.length(header) <= 120
   end
 
+  test "eval renders inspected MD.to_markdown output as markdown" do
+    markdown = "## Command ok\n\n- Command: `mix test`\n\n```text\n1 test, 0 failures\n```"
+
+    plain =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{code: "Cmd.run([\"mix\", \"test\"]) |> MD.to_markdown()"},
+        output: inspect(markdown)
+      }
+      |> TUI.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    rendered = Enum.join(plain, "\n")
+    assert rendered =~ "Command ok"
+    assert rendered =~ "Command: mix test"
+    assert rendered =~ "1 test, 0 failures"
+    refute rendered =~ ~S(\n)
+    refute rendered =~ ~s("## Command ok)
+  end
+
   test "expanded eval shows command in header without duplicating command section" do
     code = ~S|System.cmd("ls", ["-la"], stderr_to_stdout: true)|
 

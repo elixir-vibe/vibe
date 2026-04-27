@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.ToolWidget
+  alias Exy.TUI.{Markdown, ToolWidget}
 
   @impl true
   def render(tool, width, theme) do
@@ -11,6 +11,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
       name: :eval,
       action: timeout_summary(tool),
       summary: eval_summary(tool),
+      output_lines: markdown_output_lines(tool, width, theme),
       params?: false
     )
   end
@@ -26,6 +27,44 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
       true ->
         ToolWidget.compact_summary(tool)
     end
+  end
+
+  defp markdown_output_lines(tool, width, theme) do
+    with true <- markdown_eval?(tool),
+         output when is_binary(output) <- ToolWidget.output(tool),
+         {:ok, markdown} <- inspected_binary(output),
+         true <- markdown?(markdown) do
+      Markdown.render(markdown, max(width - 2, 1), theme)
+    else
+      _other -> nil
+    end
+  end
+
+  defp markdown_eval?(tool) do
+    tool
+    |> Map.get(:args)
+    |> code_from_args()
+    |> case do
+      code when is_binary(code) ->
+        String.contains?(code, ["MD.to_markdown", "Exy.Markdown.to_markdown"])
+
+      _other ->
+        false
+    end
+  end
+
+  defp inspected_binary(output) do
+    case Code.string_to_quoted(output) do
+      {:ok, binary} when is_binary(binary) -> {:ok, binary}
+      _other -> :error
+    end
+  rescue
+    _error -> :error
+  end
+
+  defp markdown?(markdown) do
+    markdown = String.trim_leading(markdown)
+    String.starts_with?(markdown, ["#", "- ", "* ", "```", ">", "|"])
   end
 
   defp timeout_summary(tool) do
