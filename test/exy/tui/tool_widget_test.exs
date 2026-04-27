@@ -49,6 +49,63 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Enum.any?(plain, &String.contains?(&1, ~s("/tmp")))
   end
 
+  test "eval header highlights elixir summary with dim syntax colors" do
+    line =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{code: ~S|Cmd.run(["bash", "-lc", "pwd"], timeout: 120_000)|},
+        output: "ok"
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+      |> List.first()
+      |> IO.iodata_to_binary()
+
+    assert Width.visible_text(line) =~ ~S|Cmd.run(["bash", "-lc", "pwd"], timeout: 120_000)|
+    assert line =~ "38;2;154;154;154"
+    assert Width.visible_length(line) <= 100
+  end
+
+  test "text output is not syntax highlighted" do
+    lines =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{code: ~S|Cmd.run(["mix", "phx.new"] )|},
+        output: "* creating tic_tac_toe/lib/tic_tac_toe.ex",
+        output_format: :text
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+
+    output_line = Enum.find(lines, &(Width.visible_text(&1) =~ "* creating"))
+
+    assert output_line
+    refute IO.iodata_to_binary(output_line) =~ "38;2;154;154;154"
+  end
+
+  test "inspect output is syntax highlighted" do
+    lines =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{code: "%{ok: true}"},
+        output: "%{ok: true}",
+        output_format: :inspect
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+
+    output_line = Enum.find(lines, &(Width.visible_text(&1) =~ "%{ok: true}"))
+
+    assert output_line
+    assert IO.iodata_to_binary(output_line) =~ "\e[38;2;"
+  end
+
   test "eval header uses available line width for long commands" do
     code =
       "dev = Path.join(System.user_home!(), \"Development\") base = Path.join(dev, \"exy\") File.ls!(base)"

@@ -11,6 +11,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
       name: :eval,
       action: timeout_summary(tool),
       summary: eval_summary(tool),
+      summary_style: :elixir_dim,
       output_lines: markdown_output_lines(tool, width, theme),
       params?: false
     )

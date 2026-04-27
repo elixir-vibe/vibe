@@ -4,7 +4,7 @@ defmodule Exy.TUI.ToolWidget do
   """
 
   alias Exy.TUI
-  alias Exy.TUI.{Lines, TextTruncation, Theme, Widget, Width}
+  alias Exy.TUI.{Lines, Syntax, TextTruncation, Theme, Widget, Width}
 
   @type tool :: map()
   @type renderer :: module()
@@ -73,7 +73,10 @@ defmodule Exy.TUI.ToolWidget do
       status_icon(status, theme)
     ]
 
-    summary = fitted_summary(summary, prefix, suffix, width, theme)
+    summary =
+      summary
+      |> format_summary(Keyword.get(opts, :summary_style))
+      |> fitted_summary(prefix, suffix, width, theme)
 
     text = [
       prefix,
@@ -86,6 +89,11 @@ defmodule Exy.TUI.ToolWidget do
 
     Theme.fg(theme, :tool_title, text)
   end
+
+  defp format_summary(summary, :elixir_dim) when is_binary(summary),
+    do: Syntax.highlight_inline_elixir(summary)
+
+  defp format_summary(summary, _style), do: summary
 
   defp fitted_summary(summary, _prefix, _suffix, _width, _theme) when summary in [nil, ""],
     do: summary
@@ -196,7 +204,7 @@ defmodule Exy.TUI.ToolWidget do
     label_lines = section_label_lines(label, width, theme)
 
     value_lines =
-      value_lines(label, value, width, theme)
+      value_lines(label, value, width, theme, tool)
       |> maybe_truncate(label, tool, width, theme)
 
     lines |> Lines.join(label_lines) |> Lines.join(value_lines)
@@ -208,7 +216,7 @@ defmodule Exy.TUI.ToolWidget do
     Widget.render(TUI.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
   end
 
-  defp value_lines(:output, %{error: error}, width, theme) do
+  defp value_lines(:output, %{error: error}, width, theme, _tool) do
     error
     |> format_error()
     |> String.split("\n")
@@ -217,15 +225,24 @@ defmodule Exy.TUI.ToolWidget do
     end)
   end
 
-  defp value_lines(:output, value, width, theme) do
+  defp value_lines(:output, value, width, _theme, %{output_format: :inspect}) do
     value
     |> format_value()
-    |> highlight_output(theme)
+    |> Syntax.highlight_elixir()
     |> String.split("\n")
     |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), line], width) end)
   end
 
-  defp value_lines(_label, value, width, theme) do
+  defp value_lines(:output, value, width, theme, _tool) do
+    value
+    |> format_value()
+    |> String.split("\n")
+    |> Enum.flat_map(fn line ->
+      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :tool_output, line)], width)
+    end)
+  end
+
+  defp value_lines(_label, value, width, theme, _tool) do
     Widget.render(
       TUI.padding([TUI.text(format_value(value), fg: :tool_output)], x: 2),
       width,
@@ -235,13 +252,6 @@ defmodule Exy.TUI.ToolWidget do
 
   defp format_error(error) when is_binary(error), do: error
   defp format_error(error), do: inspect(error, pretty: true, limit: 20)
-
-  defp highlight_output(value, theme) do
-    {:ok, highlighted} = Lumis.highlight(value, formatter: {:terminal, language: "elixir"})
-    highlighted
-  rescue
-    _error -> Theme.fg(theme, :tool_output, value)
-  end
 
   defp maybe_truncate(lines, :params, _tool, _width, _theme), do: lines
 
