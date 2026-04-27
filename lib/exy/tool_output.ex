@@ -29,7 +29,7 @@ defmodule Exy.ToolOutput do
     text = inspect(value, @inspect_opts)
 
     if byte_size(text) <= max_bytes do
-      json_safe(value)
+      value
     else
       %{
         truncated: true,
@@ -38,29 +38,4 @@ defmodule Exy.ToolOutput do
       }
     end
   end
-
-  defp json_safe(value) do
-    case Jason.encode(value) do
-      {:ok, _json} -> value
-      {:error, _reason} -> normalize_json(value)
-    end
-  end
-
-  defp normalize_json(%_struct{} = value), do: inspect(value)
-
-  defp normalize_json(map) when is_map(map),
-    do: Map.new(map, fn {key, value} -> {json_safe_key(key), json_safe(value)} end)
-
-  defp normalize_json(list) when is_list(list), do: Enum.map(list, &json_safe/1)
-
-  defp normalize_json(tuple) when is_tuple(tuple),
-    do: tuple |> Tuple.to_list() |> normalize_json()
-
-  defp normalize_json(pid) when is_pid(pid), do: inspect(pid)
-  defp normalize_json(reference) when is_reference(reference), do: inspect(reference)
-  defp normalize_json(value), do: value
-
-  defp json_safe_key(key) when is_atom(key), do: key
-  defp json_safe_key(key) when is_binary(key), do: key
-  defp json_safe_key(key), do: inspect(key)
 end

@@ -11,13 +11,11 @@ defmodule Exy.ToolOutputTest do
     assert output =~ "10 bytes omitted"
   end
 
-  test "small structured values are converted to JSON-safe data" do
-    date = ~D[2026-04-27]
+  test "small structured values remain encodable through project Jason encoders" do
+    value = %{matches: [{"lib/a.ex", 1}], date: ~D[2026-04-27]}
 
-    assert Exy.ToolOutput.limit_value(%{matches: [{"lib/a.ex", 1}], date: date}) == %{
-             matches: [["lib/a.ex", 1]],
-             date: date
-           }
+    assert Exy.ToolOutput.limit_value(value) == value
+    assert Jason.encode!(value) == ~s({"date":"2026-04-27","matches":[["lib/a.ex",1]]})
   end
 
   test "large structured values become a bounded textual tool result" do
