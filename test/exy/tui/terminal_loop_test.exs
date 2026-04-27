@@ -131,6 +131,25 @@ defmodule Exy.TUI.TerminalLoopTest do
     end
   end
 
+  test "confirmation replaces prompt without clearing chat history" do
+    ask = fn _text, _opts -> {:ok, "ok"} end
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 30, ask_fun: ask)
+
+    :ok = TerminalLoop.input(loop, "hello")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+    Process.sleep(50)
+    :ok = TerminalLoop.input(loop, "/clear")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+    Process.sleep(50)
+
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "hello"))
+    assert Enum.any?(plain, &String.contains?(&1, "Clear session?"))
+    assert Enum.any?(plain, &String.contains?(&1, "→ Yes"))
+    refute Enum.any?(plain, &String.contains?(&1, "Prompt"))
+  end
+
   test "keeps footer directly above prompt when autocomplete is visible" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 20)
 

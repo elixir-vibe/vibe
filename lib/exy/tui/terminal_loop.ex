@@ -233,6 +233,16 @@ defmodule Exy.TUI.TerminalLoop do
     {max(row, 1), max(column, 1)}
   end
 
+  defp render_editor(
+         %{ui: %{selector: %{overlay_kind: :confirmation} = selector}} = snapshot,
+         theme
+       ) do
+    selector
+    |> Map.from_struct()
+    |> TUI.confirmation()
+    |> Widget.render(snapshot.width, theme)
+  end
+
   defp render_editor(snapshot, theme) do
     TUI.textarea(
       title: "Prompt",

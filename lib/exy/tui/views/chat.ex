@@ -27,7 +27,10 @@ defmodule Exy.TUI.Views.Chat do
         do: [Exy.TUI.autocomplete(assigns.autocomplete)],
         else: []
 
-    overlays = Enum.map(assign(:overlays), &overlay/1)
+    overlays =
+      assign(:overlays)
+      |> Enum.reject(&(&1.kind == :confirmation))
+      |> Enum.map(&overlay/1)
 
     footer_margin =
       if body == [] and plugin_widgets == [] and notices == [] and autocomplete == [],
