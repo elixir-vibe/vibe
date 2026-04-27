@@ -49,7 +49,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Enum.any?(plain, &String.contains?(&1, ~s("/tmp")))
   end
 
-  test "eval header highlights elixir summary with dim syntax colors" do
+  test "eval header highlights command summaries with dim syntax colors" do
     line =
       %{
         id: "eval-1",
@@ -66,6 +66,25 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Width.visible_text(line) =~ ~S|Cmd.run(["bash", "-lc", "pwd"], timeout: 120_000)|
     assert line =~ "38;2;154;154;154"
     assert Width.visible_length(line) <= 100
+  end
+
+  test "eval header does not dim-highlight non-command summaries" do
+    line =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{code: ~S|%{home: System.user_home!(), ok: true}|},
+        output: "%{home: \"/Users/dannote\", ok: true}",
+        output_format: :inspect
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+      |> List.first()
+      |> IO.iodata_to_binary()
+
+    assert Width.visible_text(line) =~ ~S|%{home: System.user_home!(), ok: true}|
+    refute line =~ "38;2;154;154;154"
   end
 
   test "text output is not syntax highlighted" do

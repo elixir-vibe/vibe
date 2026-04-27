@@ -11,7 +11,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
       name: :eval,
       action: timeout_summary(tool),
       summary: eval_summary(tool),
-      summary_style: :elixir_dim,
+      summary_style: summary_style(tool),
       output_lines: markdown_output_lines(tool, width, theme),
       params?: false
     )
@@ -29,6 +29,24 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
         ToolWidget.compact_summary(tool)
     end
   end
+
+  defp summary_style(tool) do
+    tool
+    |> Map.get(:args)
+    |> code_from_args()
+    |> command_expression?()
+    |> case do
+      true -> :elixir_dim
+      false -> nil
+    end
+  end
+
+  defp command_expression?(code) when is_binary(code) do
+    code = String.trim_leading(code)
+    String.starts_with?(code, ["Cmd.run(", "Cmd.start(", "System.cmd("])
+  end
+
+  defp command_expression?(_code), do: false
 
   defp markdown_output_lines(tool, width, theme) do
     if markdown_output?(tool) do
