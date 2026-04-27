@@ -70,26 +70,25 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert String.length(header) <= 120
   end
 
-  test "expanded eval shows full command" do
-    code = "first = 1\nsecond = first + 1\nthird = second + 1"
+  test "expanded eval shows command in header without duplicating command section" do
+    code = ~S|System.cmd("ls", ["-la"], stderr_to_stdout: true)|
 
     plain =
       %{
         id: "eval-1",
         name: :eval,
         status: :ok,
-        args: %{"code" => code, "timeout" => 120_000},
-        output: "3",
+        args: %{"code" => code, "timeout" => 10_000},
+        output: "total 0",
         truncate?: false
       }
       |> TUI.tool()
-      |> Widget.render(80, Theme.default())
+      |> Widget.render(100, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert Enum.any?(plain, &String.contains?(&1, "command:"))
-    assert Enum.any?(plain, &String.contains?(&1, "first = 1"))
-    assert Enum.any?(plain, &String.contains?(&1, "second = first + 1"))
-    assert Enum.any?(plain, &String.contains?(&1, "third = second + 1"))
+    header = List.first(plain)
+    assert String.contains?(header, code)
+    refute Enum.any?(plain, &String.contains?(&1, "command:"))
   end
 
   test "tool title is bold without status background" do

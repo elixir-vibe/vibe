@@ -4,7 +4,7 @@ defmodule Exy.TUI.ToolWidget do
   """
 
   alias Exy.TUI
-  alias Exy.TUI.{Lines, TextTruncation, Theme, Widget}
+  alias Exy.TUI.{Lines, TextTruncation, Theme, Widget, Width}
 
   @type tool :: map()
   @type renderer :: module()
@@ -39,7 +39,7 @@ defmodule Exy.TUI.ToolWidget do
   @spec block(tool(), pos_integer(), Theme.t(), keyword()) :: [IO.chardata()]
   def block(tool, width, theme, opts \\ []) do
     inner_width = max(width - 2, 1)
-    title = title(tool, theme, opts)
+    title = title(tool, inner_width, theme, opts)
 
     sections =
       []
@@ -52,26 +52,53 @@ defmodule Exy.TUI.ToolWidget do
   end
 
   @spec title(tool(), Theme.t(), keyword()) :: IO.chardata()
-  def title(tool, theme, opts \\ []) do
+  def title(tool, theme, opts \\ []), do: title(tool, nil, theme, opts)
+
+  @spec title(tool(), pos_integer() | nil, Theme.t(), keyword()) :: IO.chardata()
+  def title(tool, width, theme, opts) do
     name = opts[:name] || tool_name(tool) || "tool"
     action = opts[:action]
     summary = opts[:summary]
     status = status(tool)
 
-    text = [
+    prefix = [
       Theme.fg(theme, :tool_icon, Theme.symbol(theme, :tool_icon)),
       " ",
-      Theme.bold(to_string(name)),
-      if(summary in [nil, ""],
-        do: "",
-        else: [Theme.symbol(theme, :separator), Theme.fg(theme, :dim, summary)]
-      ),
+      Theme.bold(to_string(name))
+    ]
+
+    suffix = [
       if(action in [nil, ""], do: "", else: [" ", Theme.fg(theme, :muted, action)]),
       "  ",
       status_icon(status, theme)
     ]
 
+    summary = fitted_summary(summary, prefix, suffix, width, theme)
+
+    text = [
+      prefix,
+      if(summary in [nil, ""],
+        do: "",
+        else: [Theme.symbol(theme, :separator), Theme.fg(theme, :dim, summary)]
+      ),
+      suffix
+    ]
+
     Theme.fg(theme, :tool_title, text)
+  end
+
+  defp fitted_summary(summary, _prefix, _suffix, _width, _theme) when summary in [nil, ""],
+    do: summary
+
+  defp fitted_summary(summary, _prefix, _suffix, nil, _theme), do: summary
+
+  defp fitted_summary(summary, prefix, suffix, width, theme) do
+    separator_width = Width.visible_length(Theme.symbol(theme, :separator))
+
+    available =
+      width - Width.visible_length(prefix) - Width.visible_length(suffix) - separator_width
+
+    if available > 0, do: Widget.fit_line(summary, available), else: nil
   end
 
   @doc false
