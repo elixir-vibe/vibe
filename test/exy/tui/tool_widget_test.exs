@@ -49,6 +49,49 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Enum.any?(plain, &String.contains?(&1, ~s("/tmp")))
   end
 
+  test "eval header uses available line width for long commands" do
+    code =
+      "dev = Path.join(System.user_home!(), \"Development\") base = Path.join(dev, \"exy\") File.ls!(base)"
+
+    plain =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{"code" => code, "timeout" => 120_000},
+        output: "[]"
+      }
+      |> TUI.tool()
+      |> Widget.render(120, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    header = List.first(plain)
+    assert String.contains?(header, "File.ls!")
+    assert String.length(header) <= 120
+  end
+
+  test "expanded eval shows full command" do
+    code = "first = 1\nsecond = first + 1\nthird = second + 1"
+
+    plain =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{"code" => code, "timeout" => 120_000},
+        output: "3",
+        truncate?: false
+      }
+      |> TUI.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "command:"))
+    assert Enum.any?(plain, &String.contains?(&1, "first = 1"))
+    assert Enum.any?(plain, &String.contains?(&1, "second = first + 1"))
+    assert Enum.any?(plain, &String.contains?(&1, "third = second + 1"))
+  end
+
   test "tool title is bold without status background" do
     line =
       %{id: "eval-1", name: :eval, status: :ok, args: %{code: "1 + 1"}, output: "2"}

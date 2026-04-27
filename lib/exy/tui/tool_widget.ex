@@ -43,6 +43,7 @@ defmodule Exy.TUI.ToolWidget do
 
     sections =
       []
+      |> maybe_append_command(inner_width, theme, opts)
       |> maybe_append_params(tool, inner_width, theme, opts)
       |> append_output(tool, inner_width, theme, opts)
 
@@ -85,13 +86,21 @@ defmodule Exy.TUI.ToolWidget do
     end
   end
 
+  def summarize_value(value, :infinity) when is_binary(value), do: single_line(value)
+
+  def summarize_value(value, :infinity) do
+    value |> inspect(limit: :infinity) |> single_line()
+  end
+
   def summarize_value(value, limit) when is_binary(value) do
-    value |> String.replace("\n", " ") |> String.slice(0, limit)
+    value |> single_line() |> String.slice(0, limit)
   end
 
   def summarize_value(value, limit) do
-    value |> inspect(limit: 8) |> String.replace("\n", " ") |> String.slice(0, limit)
+    value |> inspect(limit: 8) |> single_line() |> String.slice(0, limit)
   end
+
+  def single_line(value) when is_binary(value), do: String.replace(value, "\n", " ")
 
   def status_bg(text, status, theme) when status in [:ok, "ok", :success, "success"],
     do: Theme.bg(theme, :tool_success_bg, text)
@@ -126,6 +135,13 @@ defmodule Exy.TUI.ToolWidget do
 
   defp unwrap_output(%{output: output}), do: output
   defp unwrap_output(output), do: output
+
+  defp maybe_append_command(lines, width, theme, opts) do
+    case Keyword.get(opts, :command) do
+      nil -> lines
+      command -> append_section(lines, :command, command, width, theme, %{})
+    end
+  end
 
   defp maybe_append_params(lines, tool, width, theme, opts) do
     if Keyword.get(opts, :params?, true) do
