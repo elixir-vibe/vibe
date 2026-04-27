@@ -39,20 +39,26 @@ defmodule Exy.ToolOutput do
     end
   end
 
-  defp json_safe(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp json_safe(%NaiveDateTime{} = value), do: NaiveDateTime.to_iso8601(value)
-  defp json_safe(%Date{} = value), do: Date.to_iso8601(value)
-  defp json_safe(%Time{} = value), do: Time.to_iso8601(value)
-  defp json_safe(%_struct{} = value), do: value |> Map.from_struct() |> json_safe()
+  defp json_safe(value) do
+    case Jason.encode(value) do
+      {:ok, _json} -> value
+      {:error, _reason} -> normalize_json(value)
+    end
+  end
 
-  defp json_safe(map) when is_map(map),
+  defp normalize_json(%_struct{} = value), do: inspect(value)
+
+  defp normalize_json(map) when is_map(map),
     do: Map.new(map, fn {key, value} -> {json_safe_key(key), json_safe(value)} end)
 
-  defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
-  defp json_safe(tuple) when is_tuple(tuple), do: tuple |> Tuple.to_list() |> json_safe()
-  defp json_safe(pid) when is_pid(pid), do: inspect(pid)
-  defp json_safe(reference) when is_reference(reference), do: inspect(reference)
-  defp json_safe(value), do: value
+  defp normalize_json(list) when is_list(list), do: Enum.map(list, &json_safe/1)
+
+  defp normalize_json(tuple) when is_tuple(tuple),
+    do: tuple |> Tuple.to_list() |> normalize_json()
+
+  defp normalize_json(pid) when is_pid(pid), do: inspect(pid)
+  defp normalize_json(reference) when is_reference(reference), do: inspect(reference)
+  defp normalize_json(value), do: value
 
   defp json_safe_key(key) when is_atom(key), do: key
   defp json_safe_key(key) when is_binary(key), do: key

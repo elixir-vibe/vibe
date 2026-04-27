@@ -12,8 +12,11 @@ defmodule Exy.ToolOutputTest do
   end
 
   test "small structured values are converted to JSON-safe data" do
-    assert Exy.ToolOutput.limit_value(%{matches: [{"lib/a.ex", 1}]}) == %{
-             matches: [["lib/a.ex", 1]]
+    date = ~D[2026-04-27]
+
+    assert Exy.ToolOutput.limit_value(%{matches: [{"lib/a.ex", 1}], date: date}) == %{
+             matches: [["lib/a.ex", 1]],
+             date: date
            }
   end
 
