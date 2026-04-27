@@ -304,8 +304,21 @@ defmodule Exy.TUI.App do
 
   defp handle_selector_key(_key, state), do: state
 
+  defp autocomplete_key?(:submit, %{autocomplete: %Autocomplete{}} = state) do
+    state.editor
+    |> EditorServer.state()
+    |> Map.get(:text, "")
+    |> command_prefix_only?()
+  end
+
   defp autocomplete_key?(key, %{autocomplete: %Autocomplete{}}), do: key in [:up, :down, :tab]
   defp autocomplete_key?(_key, _state), do: false
+
+  defp command_prefix_only?("/" <> text) do
+    not String.match?(String.trim_leading(text), ~r/\s/)
+  end
+
+  defp command_prefix_only?(_text), do: false
 
   defp handle_autocomplete_key(:up, state) do
     %{state | autocomplete: Autocomplete.move(state.autocomplete, -1)}
@@ -319,6 +332,27 @@ defmodule Exy.TUI.App do
     case Autocomplete.selected_item(state.autocomplete) do
       %{value: value} ->
         :ok = EditorServer.replace(state.editor, value <> " ")
+        %{state | autocomplete: nil}
+
+      nil ->
+        %{state | autocomplete: nil}
+    end
+  end
+
+  defp handle_autocomplete_key(:submit, state) do
+    case Autocomplete.selected_item(state.autocomplete) do
+      %{value: "/" <> command} ->
+        :ok = EditorServer.replace(state.editor, "")
+
+        dispatch_async(
+          state.ui,
+          Command.new(:slash_command_submitted, %{command: command, args: ""})
+        )
+
+        %{state | autocomplete: nil}
+
+      %{value: value} ->
+        :ok = EditorServer.replace(state.editor, value)
         %{state | autocomplete: nil}
 
       nil ->

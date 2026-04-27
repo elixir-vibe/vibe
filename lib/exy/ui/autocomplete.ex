@@ -80,10 +80,14 @@ defmodule Exy.UI.Autocomplete do
   end
 
   @spec move(t(), integer()) :: t()
+  def move(%__MODULE__{items: []} = autocomplete, _direction), do: autocomplete
+
   def move(%__MODULE__{} = autocomplete, direction) do
+    count = length(autocomplete.items)
+
     %{
       autocomplete
-      | selected: clamp(autocomplete.selected + direction, length(autocomplete.items))
+      | selected: (autocomplete.selected + direction) |> Integer.mod(count)
     }
   end
 

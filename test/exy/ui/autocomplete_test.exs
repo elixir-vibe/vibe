@@ -16,11 +16,14 @@ defmodule Exy.UI.AutocompleteTest do
     assert [%{value: "/sessions"}] = autocomplete.items
   end
 
-  test "moves selected item within bounds" do
+  test "moves selected item with wraparound" do
     autocomplete = Autocomplete.new(items: ["one", "two"], selected: 0)
 
     assert Autocomplete.move(autocomplete, 1).selected == 1
-    assert Autocomplete.move(autocomplete, 10).selected == 1
-    assert Autocomplete.move(autocomplete, -10).selected == 0
+
+    assert Autocomplete.move(autocomplete, 1) |> Autocomplete.move(1) |> Map.fetch!(:selected) ==
+             0
+
+    assert Autocomplete.move(autocomplete, -1).selected == 1
   end
 end

@@ -64,9 +64,9 @@ defmodule Exy.TUI.AppTest do
 
     :ok = App.key(app, {:insert, "/attach attach-target"})
     :ok = App.key(app, :submit)
-    Process.sleep(20)
 
-    assert App.snapshot(app).ui.session_id == Exy.Session.state(target).session_id
+    snapshot = wait_until(app, &(&1.ui.session_id == Exy.Session.state(target).session_id))
+    assert snapshot.ui.session_id == Exy.Session.state(target).session_id
   end
 
   test "migrates local startup session to server session when server becomes available" do
@@ -112,6 +112,28 @@ defmodule Exy.TUI.AppTest do
 
     assert snapshot.editor.text == "/sessions "
     assert snapshot.autocomplete == nil
+  end
+
+  test "submit applies selected slash command from autocomplete" do
+    {:ok, app} = App.start_link()
+
+    :ok = App.key(app, {:insert, "/mo"})
+    assert %{autocomplete: %{items: [%{value: "/model"} | _]}} = App.snapshot(app)
+
+    :ok = App.key(app, :submit)
+
+    snapshot =
+      wait_until(app, fn snapshot ->
+        snapshot.editor.text == "" and
+          not is_nil(snapshot.ui.selector) and
+          Enum.any?(snapshot.ui.events, fn event ->
+            event.type == :slash_command_submitted and event.data.command == "model"
+          end)
+      end)
+
+    assert snapshot.autocomplete == nil
+    assert snapshot.ui.selector.kind == :model_selector
+    refute Enum.any?(snapshot.ui.notifications, &String.contains?(&1.text, "unknown command"))
   end
 
   test "tracks resize" do
