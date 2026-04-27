@@ -54,6 +54,8 @@ defmodule Exy.UI.ToolEvent do
   defp unwrap_output(%{output: output}), do: output
   defp unwrap_output(result), do: result
 
-  defp output_format(%{output_format: format}) when is_atom(format), do: format
+  defp output_format(%{output_format: format}) when format in [:inspect, :text, :markdown],
+    do: format
+
   defp output_format(_result), do: nil
 end
