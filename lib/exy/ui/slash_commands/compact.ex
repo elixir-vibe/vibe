@@ -1,7 +1,7 @@
 defmodule Exy.UI.SlashCommands.Compact do
   @moduledoc false
 
-  @behaviour Exy.UI.SlashCommand
+  @behaviour Exy.UI.SlashCommands.Command
 
   @impl true
   def spec, do: %{name: "compact", description: "Compact context"}

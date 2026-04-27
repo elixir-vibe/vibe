@@ -1,4 +1,4 @@
-defmodule Exy.Storage.Migration.FTS do
+defmodule Exy.Storage.FTS.Migration do
   @moduledoc false
 
   import Ecto.Migration

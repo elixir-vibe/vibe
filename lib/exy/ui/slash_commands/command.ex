@@ -1,4 +1,4 @@
-defmodule Exy.UI.SlashCommand do
+defmodule Exy.UI.SlashCommands.Command do
   @moduledoc false
 
   alias Exy.UI.Event

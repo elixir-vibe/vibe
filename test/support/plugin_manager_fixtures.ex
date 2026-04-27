@@ -68,7 +68,7 @@ end
 defmodule Exy.Test.PluginManagerFixtures.PluginCommand do
   @moduledoc false
 
-  @behaviour Exy.UI.SlashCommand
+  @behaviour Exy.UI.SlashCommands.Command
 
   @impl true
   def spec, do: %{name: "fixture", description: "Fixture plugin command"}

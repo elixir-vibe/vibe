@@ -1,4 +1,4 @@
-defmodule Exy.FileToolsTest do
+defmodule Exy.FilesTest do
   use ExUnit.Case, async: true
 
   @tmp Path.join(System.tmp_dir!(), "exy-file-tools-test")
@@ -14,7 +14,7 @@ defmodule Exy.FileToolsTest do
     path = Path.join(dir, "sample.ex")
     File.write!(path, "IO.puts(:ok)\n")
 
-    assert {:ok, result} = Exy.FileTools.read_file("sample.ex", root: dir)
+    assert {:ok, result} = Exy.Files.read_file("sample.ex", root: dir)
     assert result.content == "IO.puts(:ok)\n"
     assert result.language == "elixir"
     assert result.lines == 1
@@ -23,7 +23,7 @@ defmodule Exy.FileToolsTest do
   test "writes files and returns a diff", %{dir: dir} do
     path = Path.join(dir, "sample.txt")
 
-    assert {:ok, result} = Exy.FileTools.write_file("sample.txt", "new\n", root: dir)
+    assert {:ok, result} = Exy.Files.write_file("sample.txt", "new\n", root: dir)
     assert File.read!(path) == "new\n"
     assert result.change.diff =~ "+1  new"
   end
@@ -33,7 +33,7 @@ defmodule Exy.FileToolsTest do
     File.write!(path, "one\ntwo\nthree\n")
 
     assert {:ok, result} =
-             Exy.FileTools.edit_file("sample.txt", [%{"oldText" => "two", "newText" => "TWO"}],
+             Exy.Files.edit_file("sample.txt", [%{"oldText" => "two", "newText" => "TWO"}],
                root: dir
              )
 
@@ -50,7 +50,7 @@ defmodule Exy.FileToolsTest do
     File.ln_s!(outside, Path.join(dir, "link"))
 
     try do
-      assert {:error, error} = Exy.FileTools.read_file("link/secret.txt", root: dir)
+      assert {:error, error} = Exy.Files.read_file("link/secret.txt", root: dir)
       assert error =~ "resolves outside workspace"
     after
       File.rm_rf(outside)
@@ -58,11 +58,11 @@ defmodule Exy.FileToolsTest do
   end
 
   test "rejects paths that escape the workspace", %{dir: dir} do
-    assert {:error, error} = Exy.FileTools.read_file("../outside.txt", root: dir)
+    assert {:error, error} = Exy.Files.read_file("../outside.txt", root: dir)
     assert error =~ "escapes workspace"
 
     assert {:error, error} =
-             Exy.FileTools.write_file(Path.join(dir, "absolute.txt"), "x", root: dir)
+             Exy.Files.write_file(Path.join(dir, "absolute.txt"), "x", root: dir)
 
     assert error =~ "absolute paths are not allowed"
   end
@@ -72,7 +72,7 @@ defmodule Exy.FileToolsTest do
     File.write!(path, "same\nsame\n")
 
     assert {:error, error} =
-             Exy.FileTools.edit_file("sample.txt", [%{"oldText" => "same", "newText" => "other"}],
+             Exy.Files.edit_file("sample.txt", [%{"oldText" => "same", "newText" => "other"}],
                root: dir
              )
 

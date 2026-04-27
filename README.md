@@ -134,7 +134,7 @@ Built-ins:
 /commands  Command palette
 ```
 
-Typing `/` opens generic autocomplete. Plugins can contribute commands by returning modules that implement `Exy.UI.SlashCommand` from `Exy.Plugin.commands/1`.
+Typing `/` opens generic autocomplete. Plugins can contribute commands by returning modules that implement `Exy.UI.SlashCommands.Command` from `Exy.Plugin.commands/1`.
 
 ## Runtime files
 
@@ -377,7 +377,7 @@ defmodule MyPlugin do
 end
 
 defmodule MyPlugin.HelloCommand do
-  @behaviour Exy.UI.SlashCommand
+  @behaviour Exy.UI.SlashCommands.Command
 
   @impl true
   def spec, do: %{name: "hello", description: "Say hello"}

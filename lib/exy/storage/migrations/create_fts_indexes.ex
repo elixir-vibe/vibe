@@ -3,7 +3,7 @@ defmodule Exy.Storage.Migrations.CreateFTSIndexes do
 
   use Ecto.Migration
 
-  import Exy.Storage.Migration.FTS
+  import Exy.Storage.FTS.Migration
 
   def up do
     create_fts5(:ui_events_fts,

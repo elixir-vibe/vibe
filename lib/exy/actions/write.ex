@@ -21,7 +21,7 @@ defmodule Exy.Actions.Write do
     params = JSONSpec.atomize(@schema, params)
 
     Exy.Actions.ToolResult.run(fn ->
-      Exy.FileTools.write_file(params.path, params.content)
+      Exy.Files.write_file(params.path, params.content)
     end)
   end
 end

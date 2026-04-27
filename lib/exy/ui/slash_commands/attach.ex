@@ -1,7 +1,7 @@
 defmodule Exy.UI.SlashCommands.Attach do
   @moduledoc false
 
-  @behaviour Exy.UI.SlashCommand
+  @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event
   alias Exy.UI.SlashCommands.Sessions

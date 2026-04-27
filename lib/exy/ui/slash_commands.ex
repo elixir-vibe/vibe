@@ -16,7 +16,7 @@ defmodule Exy.UI.SlashCommands do
 
   def autocomplete(_text), do: nil
 
-  @spec handle(String.t(), String.t(), map()) :: Exy.UI.SlashCommand.result()
+  @spec handle(String.t(), String.t(), map()) :: Exy.UI.SlashCommands.Command.result()
   def handle(command, args, ui_state) do
     case Registry.find(command) do
       nil -> unknown_command(command, ui_state)
@@ -24,7 +24,8 @@ defmodule Exy.UI.SlashCommands do
     end
   end
 
-  @spec selector_action(map(), map()) :: Exy.UI.SlashCommand.result() | {:command, String.t()}
+  @spec selector_action(map(), map()) ::
+          Exy.UI.SlashCommands.Command.result() | {:command, String.t()}
   def selector_action(%{selector: selector, item: item}, ui_state) do
     case Registry.find_selector(selector) do
       nil -> :ignore

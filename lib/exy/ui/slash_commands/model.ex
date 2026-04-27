@@ -1,7 +1,7 @@
 defmodule Exy.UI.SlashCommands.Model do
   @moduledoc false
 
-  @behaviour Exy.UI.SlashCommand
+  @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event
 

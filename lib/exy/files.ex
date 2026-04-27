@@ -1,4 +1,4 @@
-defmodule Exy.FileTools do
+defmodule Exy.Files do
   @moduledoc false
 
   @read_limit_lines 2_000
