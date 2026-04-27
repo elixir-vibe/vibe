@@ -131,6 +131,22 @@ defmodule Exy.TUI.TerminalLoopTest do
     end
   end
 
+  test "keeps footer directly above prompt when autocomplete is visible" do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 20)
+
+    :ok = TerminalLoop.input(loop, "/se")
+
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+    footer_index = Enum.find_index(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
+    prompt_index = Enum.find_index(plain, &String.contains?(&1, "Prompt"))
+    autocomplete_index = Enum.find_index(plain, &String.contains?(&1, "/sessions"))
+
+    assert autocomplete_index
+    assert footer_index
+    assert prompt_index == footer_index + 1
+    assert autocomplete_index < footer_index
+  end
+
   test "tracks editor cursor position inside the prompt" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 12)
 
