@@ -12,6 +12,8 @@ defmodule Exy.TUI.TerminalLoop do
   alias Exy.TUI.{App, KeyDecoder, Lines, Renderer, Theme, Widget, Width}
   alias Exy.UI.ViewModel
 
+  require Exy.Debug
+
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     {server_opts, init_opts} = Keyword.split(opts, [:name])
@@ -54,34 +56,58 @@ defmodule Exy.TUI.TerminalLoop do
       event_target: Keyword.get(opts, :event_target),
       loader_phase: 0,
       loader_timer: nil,
-      theme: Keyword.get_lazy(opts, :theme, &Theme.default/0)
+      theme: Keyword.get_lazy(opts, :theme, &Theme.default/0),
+      trace:
+        Exy.Debug.run nil do
+          Exy.TUI.Trace.start(opts)
+        end
     }
+
+    state =
+      Exy.Debug.run state do
+        trace_snapshot(state, :initial)
+      end
 
     {:ok, maybe_start_loader_timer(state)}
   end
 
   @impl true
   def handle_call({:input, data}, _from, state) do
+    state =
+      Exy.Debug.run state do
+        trace_record(state, :input, %{bytes: data})
+      end
+
     data
     |> KeyDecoder.decode()
     |> Enum.each(&App.key(state.app, &1))
 
-    paint(state)
+    state = paint(state, {:input, byte_size(data)})
     {:reply, :ok, state}
   end
 
   def handle_call({:input_key, event}, _from, state) do
+    state =
+      Exy.Debug.run state do
+        trace_record(state, :input_key, event)
+      end
+
     event
     |> KeyDecoder.decode_event()
     |> Enum.each(&App.key(state.app, &1))
 
-    paint(state)
+    state = paint(state, {:input_key, event.key})
     {:reply, :ok, state}
   end
 
   def handle_call({:resize, columns, rows}, _from, state) do
+    state =
+      Exy.Debug.run state do
+        trace_record(state, :resize, %{columns: columns, rows: rows})
+      end
+
     :ok = App.resize(state.app, columns, rows)
-    paint(state)
+    state = paint(state, {:resize, columns, rows})
     {:reply, :ok, state}
   end
 
@@ -108,7 +134,13 @@ defmodule Exy.TUI.TerminalLoop do
   @impl true
   def handle_info({App, :event, event}, state) do
     notify_event_target(state, event)
-    paint(state)
+
+    state =
+      Exy.Debug.run state do
+        trace_record(state, :app_event, event)
+      end
+
+    state = paint(state, {:app_event, event_type(event)})
     {:noreply, maybe_start_loader_timer(state)}
   end
 
@@ -116,7 +148,13 @@ defmodule Exy.TUI.TerminalLoop do
     if working?(state) do
       state = %{state | loader_phase: state.loader_phase + 1, loader_timer: nil}
       notify_event_target(state, :loader_tick)
-      paint(state)
+
+      state =
+        Exy.Debug.run state do
+          trace_record(state, :loader_tick, %{phase: state.loader_phase})
+        end
+
+      state = paint(state, :loader_tick)
       {:noreply, maybe_start_loader_timer(state)}
     else
       {:noreply, %{state | loader_timer: nil}}
@@ -137,12 +175,47 @@ defmodule Exy.TUI.TerminalLoop do
   defp notify_event_target(%{event_target: target}, event),
     do: send(target, {__MODULE__, :event, event})
 
-  defp paint(%{output: false}), do: :ok
+  if Exy.Debug.enabled?() do
+    defp paint(%{output: false} = state, reason) do
+      trace_frame(state, reason)
+    end
 
-  defp paint(state) do
-    lines = render_lines(state)
-    IO.write(state.output, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
+    defp paint(state, reason) do
+      lines = render_lines(state)
+      IO.write(state.output, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
+      trace_frame(state, lines, reason)
+    end
+
+    defp trace_record(state, type, payload) do
+      %{state | trace: Exy.TUI.Trace.record(state.trace, type, payload)}
+    end
+
+    defp trace_frame(state, reason) do
+      trace_frame(state, render_lines(state), reason)
+    end
+
+    defp trace_frame(state, lines, reason) do
+      state
+      |> Map.update!(:trace, &Exy.TUI.Trace.frame(&1, lines, reason))
+      |> trace_snapshot(reason)
+    end
+
+    defp trace_snapshot(state, reason) do
+      %{state | trace: Exy.TUI.Trace.snapshot(state.trace, App.snapshot(state.app), reason)}
+    end
+  else
+    defp paint(%{output: false} = state, _reason), do: state
+
+    defp paint(state, _reason) do
+      lines = render_lines(state)
+      IO.write(state.output, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
+      state
+    end
   end
+
+  defp event_type(%{type: type}), do: type
+  defp event_type(type) when is_atom(type), do: type
+  defp event_type(event), do: inspect(event)
 
   defp render_lines(state) do
     snapshot = App.snapshot(state.app)

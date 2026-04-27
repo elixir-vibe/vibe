@@ -4,6 +4,7 @@ config :opentelemetry, processors: []
 
 config :exy, ecto_repos: [Exy.Repo]
 config :exy, env: config_env()
+config :exy, compile_time_debug: config_env() != :prod
 
 config :exy, Exy.Repo,
   journal_mode: :wal,

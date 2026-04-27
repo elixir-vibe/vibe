@@ -131,6 +131,24 @@ defmodule Exy.TUI.TerminalLoopTest do
     end
   end
 
+  test "writes trace artifacts when compile-time debug tracing is enabled" do
+    trace_dir =
+      Path.join(System.tmp_dir!(), "exy-tui-trace-#{System.unique_integer([:positive])}")
+
+    {:ok, loop} =
+      TerminalLoop.start_link(output: false, width: 60, height: 20, trace_dir: trace_dir)
+
+    :ok = TerminalLoop.input(loop, "/")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :escape})
+
+    assert File.exists?(Path.join(trace_dir, "metadata.json"))
+    assert File.exists?(Path.join(trace_dir, "trace.jsonl"))
+    assert [_ | _] = Path.join([trace_dir, "frames", "*.txt"]) |> Path.wildcard()
+    assert [_ | _] = Path.join([trace_dir, "snapshots", "*.json"]) |> Path.wildcard()
+
+    File.rm_rf!(trace_dir)
+  end
+
   test "notice blocks keep a gap from preceding messages" do
     {:ok, loop} =
       TerminalLoop.start_link(
