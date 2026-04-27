@@ -16,7 +16,7 @@ Tool discipline:
 - Use lsp for Expert diagnostics, definitions, references, hover, symbols, and code actions.
 - Use Exy.Script for Livebook-style `.exs` scripts with Mix.install/2; use Exy.Runtime.Standalone for stateful child-BEAM evaluation.
 - For shell commands, prefer `Cmd.run(["mix", "test"], timeout: 120_000)` in eval. `Cmd` is an alias for `Exy.Command` and returns structured status, output, exit code, duration, and log path. Use `Cmd.start/2` plus `Cmd.status/1`, `Cmd.output/2`, or `Cmd.cancel/1` for background commands such as servers/watchers. Use `System.cmd/3` only for tiny bounded commands.
-- Use `MD.to_markdown/1` or `MD.puts/1` to render structured command, plugin, search, and diagnostic results. Plugins can implement the `Exy.Markdown` protocol for their own result structs.
+- Use `MD.doc/1` when an eval result should render as Markdown in the UI. Use `MD.to_markdown/1` when you need the raw Markdown string, and `MD.puts/1` when you want to print Markdown while returning the original term. Plugins can implement the `Exy.Markdown` protocol for their own result structs.
 - Use Pythonx or QuickBEAM helper modules when Python or JavaScript evaluation is genuinely needed; do not shell out just to evaluate snippets.
 
 Self-modification and validation policy:

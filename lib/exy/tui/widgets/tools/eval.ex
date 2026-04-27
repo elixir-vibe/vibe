@@ -30,42 +30,15 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
   end
 
   defp markdown_output_lines(tool, width, theme) do
-    with true <- markdown_eval?(tool),
-         output when is_binary(output) <- ToolWidget.output(tool),
-         {:ok, markdown} <- inspected_binary(output),
-         true <- markdown?(markdown) do
-      Markdown.render(markdown, max(width - 2, 1), theme)
-    else
-      _other -> nil
+    if markdown_output?(tool) do
+      tool
+      |> ToolWidget.output()
+      |> Markdown.render(max(width - 2, 1), theme)
     end
   end
 
-  defp markdown_eval?(tool) do
-    tool
-    |> Map.get(:args)
-    |> code_from_args()
-    |> case do
-      code when is_binary(code) ->
-        String.contains?(code, ["MD.to_markdown", "Exy.Markdown.to_markdown"])
-
-      _other ->
-        false
-    end
-  end
-
-  defp inspected_binary(output) do
-    case Code.string_to_quoted(output) do
-      {:ok, binary} when is_binary(binary) -> {:ok, binary}
-      _other -> :error
-    end
-  rescue
-    _error -> :error
-  end
-
-  defp markdown?(markdown) do
-    markdown = String.trim_leading(markdown)
-    String.starts_with?(markdown, ["#", "- ", "* ", "```", ">", "|"])
-  end
+  defp markdown_output?(%{output_format: :markdown}), do: true
+  defp markdown_output?(_tool), do: false
 
   defp timeout_summary(tool) do
     case Map.get(tool, :args) || %{} do

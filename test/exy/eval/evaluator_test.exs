@@ -11,10 +11,10 @@ defmodule Exy.Eval.EvaluatorTest do
   end
 
   test "keeps Elixir variables and aliases in a per-session evaluator", %{session_id: session_id} do
-    assert {:ok, ~s("weather in washington")} =
+    assert {:ok, %{output: ~s("weather in washington")}} =
              Exy.Eval.run(~s(query = "weather in washington"), session_id: session_id)
 
-    assert {:ok, ~s("weather in washington today")} =
+    assert {:ok, %{output: ~s("weather in washington today")}} =
              Exy.Eval.run(~s(query <> " today"), session_id: session_id)
 
     other_session_id = session_id <> "-other"
@@ -26,8 +26,8 @@ defmodule Exy.Eval.EvaluatorTest do
   end
 
   test "keeps IEx helpers available", %{session_id: session_id} do
-    assert {:ok, output} = Exy.Eval.run("exports(Enum)", session_id: session_id)
-    assert output =~ "map"
+    assert {:ok, result} = Exy.Eval.run("exports(Enum)", session_id: session_id)
+    assert result.output =~ "map"
   end
 
   test "restores serializable eval state for resumed sessions", %{session_id: session_id} do
@@ -42,11 +42,13 @@ defmodule Exy.Eval.EvaluatorTest do
 
     stop_evaluator(session_id)
 
-    assert {:ok, ~s("weather in washington tomorrow")} =
+    assert {:ok, %{output: ~s("weather in washington tomorrow")}} =
              Exy.Eval.run(~s(query <> " tomorrow"), session_id: session_id)
 
-    assert {:ok, ~s("RAIN")} = Exy.Eval.run("S.upcase(\"rain\")", session_id: session_id)
-    assert {:ok, ~s("WIND")} = Exy.Eval.run("upcase(\"wind\")", session_id: session_id)
+    assert {:ok, %{output: ~s("RAIN")}} =
+             Exy.Eval.run("S.upcase(\"rain\")", session_id: session_id)
+
+    assert {:ok, %{output: ~s("WIND")}} = Exy.Eval.run("upcase(\"wind\")", session_id: session_id)
   end
 
   test "lists, forgets, and resets session eval state", %{session_id: session_id} do
@@ -66,12 +68,12 @@ defmodule Exy.Eval.EvaluatorTest do
     assert :ok = Exy.Eval.forget(session_id, [:query])
     assert {:error, error} = Exy.Eval.run(~s(query), session_id: session_id)
     assert error =~ "cannot compile file"
-    assert {:ok, "2"} = Exy.Eval.run(~s(count), session_id: session_id)
+    assert {:ok, %{output: "2"}} = Exy.Eval.run(~s(count), session_id: session_id)
 
     stop_evaluator(session_id)
     assert {:error, error} = Exy.Eval.run(~s(query), session_id: session_id)
     assert error =~ "cannot compile file"
-    assert {:ok, "2"} = Exy.Eval.run(~s(count), session_id: session_id)
+    assert {:ok, %{output: "2"}} = Exy.Eval.run(~s(count), session_id: session_id)
 
     assert :ok = Exy.Eval.reset(session_id)
     assert {:ok, []} = Exy.Eval.bindings(session_id)
@@ -82,8 +84,8 @@ defmodule Exy.Eval.EvaluatorTest do
   test "preloads plugin API aliases into session evaluators", %{session_id: session_id} do
     assert :ok = Exy.Plugin.Manager.load(APIPlugin, session_id: session_id)
 
-    assert {:ok, output} = Exy.Eval.run("Search.remember(\"query\")", session_id: session_id)
-    assert output == ~s({:remembered, "query"})
+    assert {:ok, result} = Exy.Eval.run("Search.remember(\"query\")", session_id: session_id)
+    assert result.output == ~s({:remembered, "query"})
 
     assert :ok = Exy.Plugin.Manager.unload(APIPlugin)
   end

@@ -2,9 +2,9 @@ defmodule Exy.EvalTest do
   use ExUnit.Case, async: true
 
   test "one-off eval captures result and io" do
-    assert {:ok, output} = Exy.Eval.once(~s|IO.puts("hello"); 1 + 2|)
-    assert output =~ "hello"
-    assert output =~ "3"
+    assert {:ok, result} = Exy.Eval.once(~s|IO.puts("hello"); 1 + 2|)
+    assert result.output =~ "hello"
+    assert result.output =~ "3"
   end
 
   test "stateful eval requires a session id" do

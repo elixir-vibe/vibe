@@ -36,8 +36,8 @@ defmodule Exy.CommandTest do
 
   test "Cmd alias is available in eval" do
     code = ~S|Cmd.run(["sh", "-c", "printf ok"], timeout: 5_000).output|
-    assert {:ok, output} = Exy.Eval.run(code, session_id: "cmd-alias-test")
+    assert {:ok, result} = Exy.Eval.run(code, session_id: "cmd-alias-test")
 
-    assert output =~ ~s("ok")
+    assert result.output =~ ~s("ok")
   end
 end

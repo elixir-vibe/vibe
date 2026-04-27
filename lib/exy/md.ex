@@ -6,6 +6,9 @@ defmodule Exy.MD do
   @spec to_markdown(term()) :: String.t()
   def to_markdown(term), do: Exy.Markdown.to_markdown(term)
 
+  @spec doc(term()) :: Exy.MD.Doc.t()
+  def doc(term), do: %Exy.MD.Doc{markdown: to_markdown(term)}
+
   @spec puts(term()) :: term()
   def puts(term) do
     IO.puts(to_markdown(term))

@@ -270,9 +270,9 @@ Exy has three execution layers. Use the smallest layer that fits the job:
 | `Exy.Runtime.Standalone` | Supervised child BEAM | Process-local until stopped | Livebook-style stateful `Mix.install/2` experiments isolated from Exy's VM |
 | `Exy.Script` | Disposable OS process or standalone runtime | None by default | One-off `.exs` scripts and Livebook-style notebooks |
 
-`eval` is stateful when called with a session id. Normal Elixir variables, aliases, imports, and requires persist for that session. Use `Exy.Eval.once/2` for explicit one-off evaluation.
+`eval` is stateful when called with a session id. Normal Elixir variables, aliases, imports, and requires persist for that session. Use `Exy.Eval.once/2` for explicit one-off evaluation. Eval returns `%Exy.Eval.Result{output:, format:, value_type:, io:}` so renderers can display typed outputs without guessing from inspected strings.
 
-Eval sessions preload `Cmd` (`Exy.Command`) for supervised OS commands and `MD` (`Exy.MD`) for Markdown rendering. Prefer these over raw `System.cmd/3` and ad-hoc formatting.
+Eval sessions preload `Cmd` (`Exy.Command`) for supervised OS commands and `MD` (`Exy.MD`) for Markdown rendering. Prefer these over raw `System.cmd/3` and ad-hoc formatting. Use `MD.doc/1` when the eval result should be rendered as Markdown in the UI; use `MD.to_markdown/1` when you need the raw Markdown string.
 
 ```elixir
 Exy.Eval.run(~s(query = "weather in washington"), session_id: session_id)
@@ -288,7 +288,7 @@ Exy.Runtime.Standalone.evaluate(runtime, "x * 2")
 Exy.Runtime.Standalone.stop(runtime)
 
 Cmd.run(["mix", "test"], timeout: 120_000)
-|> MD.to_markdown()
+|> MD.doc()
 
 {:ok, job} = Cmd.start(["mix", "phx.server"], cd: "~/Development/my_app")
 Cmd.status(job)
@@ -424,7 +424,7 @@ Hello.some_function("input")
 
 Web.search("ecto sqlite fts", num_results: 5, highlights: true)
 |> Web.filter_domain("hexdocs.pm")
-|> MD.to_markdown()
+|> MD.doc()
 ```
 
 Plugins can render their own values by implementing `Exy.Markdown` for compiled structs, or by exposing `to_markdown/1` on runtime-loaded structs handled by the protocol fallback.

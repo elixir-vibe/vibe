@@ -45,7 +45,7 @@ defmodule Exy.SkillScriptTest do
     )
 
     assert {:ok, result} = Exy.Eval.once(~S|EvalSkill.slug("Hello Eval")|)
-    assert result =~ ~S|"hello-eval"|
+    assert result.output =~ ~S|"hello-eval"|
   end
 
   test "formats matching skills as markdown context", %{dir: dir} do

@@ -3,6 +3,7 @@ defmodule Exy.Eval.Evaluator do
 
   use GenServer
 
+  alias Exy.Eval.Result
   alias Exy.Session.Store
   alias Exy.ToolOutput
 
@@ -13,7 +14,7 @@ defmodule Exy.Eval.Evaluator do
             env: nil,
             persist?: true
 
-  @type result :: {:ok, String.t()} | {:error, String.t()}
+  @type result :: {:ok, Result.t()} | {:error, String.t()}
   @type binding_info :: %{
           name: atom(),
           type: atom() | module(),
@@ -91,12 +92,10 @@ defmodule Exy.Eval.Evaluator do
 
     cond do
       success? and io == "" ->
-        {{:ok, result |> inspect(@inspect_opts) |> ToolOutput.limit_text()}, state}
+        {{:ok, display_result(result)}, state}
 
       success? ->
-        {{:ok,
-          ToolOutput.limit_text("IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}")},
-         state}
+        {{:ok, io_result(result, io)}, state}
 
       true ->
         {{:error, ToolOutput.limit_text(result)}, state}
@@ -122,6 +121,32 @@ defmodule Exy.Eval.Evaluator do
     catch
       kind, reason -> {false, Exception.format(kind, reason, __STACKTRACE__), state}
     end
+  end
+
+  defp display_result(%Exy.MD.Doc{} = doc) do
+    %Result{
+      output: ToolOutput.limit_text(doc.markdown),
+      format: :markdown,
+      value_type: Exy.MD.Doc
+    }
+  end
+
+  defp display_result(result) do
+    %Result{
+      output: result |> inspect(@inspect_opts) |> ToolOutput.limit_text(),
+      format: :inspect,
+      value_type: value_type(result)
+    }
+  end
+
+  defp io_result(result, io) do
+    %Result{
+      output:
+        ToolOutput.limit_text("IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}"),
+      format: :text,
+      io: io,
+      value_type: value_type(result)
+    }
   end
 
   defp merge_binding(previous, current) do

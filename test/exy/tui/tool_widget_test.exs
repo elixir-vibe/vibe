@@ -70,7 +70,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert String.length(header) <= 120
   end
 
-  test "eval renders inspected MD.to_markdown output as markdown" do
+  test "eval renders markdown-formatted output as markdown" do
     markdown = "## Command ok\n\n- Command: `mix test`\n\n```text\n1 test, 0 failures\n```"
 
     plain =
@@ -78,8 +78,9 @@ defmodule Exy.TUI.ToolWidgetTest do
         id: "eval-1",
         name: :eval,
         status: :ok,
-        args: %{code: "Cmd.run([\"mix\", \"test\"]) |> MD.to_markdown()"},
-        output: inspect(markdown)
+        args: %{code: "Cmd.run([\"mix\", \"test\"]) |> MD.doc()"},
+        output: markdown,
+        output_format: :markdown
       }
       |> TUI.tool()
       |> Widget.render(80, Theme.default())

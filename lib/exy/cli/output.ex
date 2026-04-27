@@ -77,6 +77,8 @@ defmodule Exy.CLI.Output do
   defp render(%ReqLLM.Response{} = response),
     do: response |> ReqLLM.Response.text() |> render_markdown()
 
+  defp render(%Exy.Eval.Result{format: :markdown, output: output}), do: render_markdown(output)
+  defp render(%Exy.Eval.Result{output: output}), do: output
   defp render(%{summary: summary}), do: render_markdown(summary)
   defp render(%{output: output}), do: output
   defp render(result) when is_binary(result), do: render_markdown(result)

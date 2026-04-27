@@ -28,7 +28,7 @@ defmodule Exy.Actions.Eval do
              timeout: Map.get(params, :timeout, 30_000),
              session_id: session_id(context)
            ) do
-        {:ok, text} -> ToolResult.ok(%{output: text})
+        {:ok, result} -> ToolResult.ok(Exy.Eval.Result.to_tool_output(result))
         {:error, error} -> ToolResult.error(error)
       end
     end)

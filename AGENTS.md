@@ -2,7 +2,7 @@
 
 - Keep the model-facing tool count minimal.
 - Add Exy helper modules callable from `Exy.Eval` instead of adding narrow external tools.
-- Prefer eval aliases `Cmd` (`Exy.Command`) for supervised shell commands and `MD` (`Exy.MD`) for Markdown rendering. Use `System.cmd/3` only for tiny bounded commands.
+- Prefer eval aliases `Cmd` (`Exy.Command`) for supervised shell commands and `MD` (`Exy.MD`) for Markdown rendering. Use `MD.doc/1` for Markdown UI output and `MD.to_markdown/1` for raw Markdown strings. Use `System.cmd/3` only for tiny bounded commands.
 - Use `Exy.Code.AST`/ExAST for Elixir syntax search, replace, and diff. Do not use grep for code structure.
 - Use OTP supervision for background work and subagents.
 - Self-improvement should prefer skills and helper modules before changing runtime core. Skills may be Markdown (`SKILL.md`) or trusted executable Elixir (`skill.exs` in a skill directory, or single-file `*.skill.exs`) using `Exy.Skill.Script`; review executable skill code before sharing or installing it.

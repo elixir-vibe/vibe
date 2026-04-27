@@ -6,9 +6,9 @@ defmodule Exy.Eval do
   here over growing the external tool list.
   """
 
-  alias Exy.Eval.Evaluator
+  alias Exy.Eval.{Evaluator, Result}
 
-  @type result :: {:ok, String.t()} | {:error, String.t()}
+  @type result :: {:ok, Result.t()} | {:error, String.t()}
 
   @spec run(String.t(), keyword()) :: result()
   def run(code, opts) when is_binary(code) do

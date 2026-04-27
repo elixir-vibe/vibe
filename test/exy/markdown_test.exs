@@ -23,10 +23,17 @@ defmodule Exy.MarkdownTest do
   end
 
   test "MD alias is available in eval" do
-    assert {:ok, output} =
+    assert {:ok, result} =
              Exy.Eval.run(~S|MD.to_markdown(%{ok: true})|, session_id: "md-alias-test")
 
-    assert output =~ "ok: `true`"
+    assert result.output =~ "ok: `true`"
+  end
+
+  test "MD doc marks eval output as markdown" do
+    assert {:ok, result} = Exy.Eval.run(~S|MD.doc(%{ok: true})|, session_id: "md-doc-test")
+
+    assert result.format == :markdown
+    assert result.output =~ "ok: `true`"
   end
 
   test "renders web search results through protocol" do
