@@ -5,6 +5,24 @@ defmodule Exy.TUI.FooterPluginStatusTest do
 
   alias Exy.TUI.{Theme, Widget, Width}
 
+  test "footer renders local session label before server active count is known" do
+    plain =
+      TUI.footer(%{
+        cwd: File.cwd!(),
+        session_id: "session",
+        model: "model",
+        status: :idle,
+        usage: %{total_tokens: 0},
+        active_sessions: nil,
+        plugin_statuses: %{}
+      })
+      |> Widget.render(80, Theme.default())
+      |> Enum.map_join("\n", &Width.visible_text/1)
+
+    assert plain =~ "local"
+    refute plain =~ "server starting"
+  end
+
   test "footer renders sorted plugin status line" do
     plain =
       TUI.footer(%{

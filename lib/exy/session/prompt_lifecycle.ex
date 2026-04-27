@@ -65,7 +65,7 @@ defmodule Exy.Session.PromptLifecycle do
     state =
       emit.(
         state,
-        Event.new(:assistant_aborted, state.state.session_id, %{reason: reason})
+        Event.new(:assistant_aborted, state.state.session_id, %{reason: reason, notify?: false})
       )
 
     emit.(

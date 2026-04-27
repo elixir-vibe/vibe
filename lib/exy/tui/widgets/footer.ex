@@ -31,7 +31,7 @@ defmodule Exy.TUI.Widgets.Footer do
     end
   end
 
-  defp sessions_label(nil), do: "server starting"
+  defp sessions_label(nil), do: "local"
   defp sessions_label(1), do: "1 active"
   defp sessions_label(count), do: "#{count} active"
 

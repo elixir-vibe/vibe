@@ -98,7 +98,14 @@ defmodule Exy.Server do
 
   defp default_node_name do
     user = System.get_env("USER") || "user"
-    String.to_atom("exy_server_#{user}@127.0.0.1")
+
+    home_hash =
+      :sha256
+      |> :crypto.hash(Exy.Paths.home())
+      |> Base.encode16(case: :lower)
+      |> binary_part(0, 12)
+
+    String.to_atom("exy_server_#{user}_#{home_hash}@127.0.0.1")
   end
 
   defp ensure_client_distribution do

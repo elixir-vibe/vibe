@@ -161,7 +161,8 @@ defmodule Exy.TUI.App do
   defp maybe_migrate_to_remote_session(state) do
     current = state.ui_snapshot
 
-    with {:ok, node, _session_id, remote_session} <- state.server_migration_fun.(current),
+    with true <- startup_session?(state),
+         {:ok, node, _session_id, remote_session} <- state.server_migration_fun.(current),
          :ok <- Session.detach(state.ui, self()),
          {:ok, ui_snapshot, _cursor} <- Session.attach(remote_session, self()) do
       Session.dispatch(
@@ -178,10 +179,19 @@ defmodule Exy.TUI.App do
           server_migration_timer: nil
       }
     else
+      false ->
+        %{state | server_migration_timer: nil}
+
       _reason ->
         timer = Process.send_after(self(), :server_migration_tick, 1_000)
         %{state | server_migration_timer: timer}
     end
+  end
+
+  defp startup_session?(state) do
+    editor = EditorServer.state(state.editor)
+
+    state.ui_snapshot.status == :idle and state.ui_snapshot.messages == [] and editor.text == ""
   end
 
   defp default_server_migration(current) do

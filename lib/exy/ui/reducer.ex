@@ -62,9 +62,14 @@ defmodule Exy.UI.Reducer do
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
     notice = %{level: :warning, text: Map.get(data, :reason, "stream aborted")}
 
+    notifications =
+      if Map.get(data, :notify?, true),
+        do: Lists.append(state.notifications, notice),
+        else: state.notifications
+
     %{
       state
-      | notifications: Lists.append(state.notifications, notice),
+      | notifications: notifications,
         streaming_message: nil,
         status: :idle,
         usage_preview: empty_usage_preview()

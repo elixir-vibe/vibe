@@ -83,9 +83,9 @@ defmodule Exy.TUI.AppTest do
 
     :ok = App.key(app, {:insert, "/new"})
     :ok = App.key(app, :submit)
-    Process.sleep(20)
 
-    assert App.snapshot(app).ui.session_id != old_session
+    snapshot = wait_until(app, &(&1.ui.session_id != old_session))
+    assert snapshot.ui.session_id != old_session
   end
 
   test "attach slash command switches to an existing session" do
@@ -129,6 +129,34 @@ defmodule Exy.TUI.AppTest do
     snapshot = App.snapshot(app)
     assert snapshot.ui.session_id == "async-migration-session"
     assert Enum.any?(snapshot.ui.notifications, &(&1.text == "attached to background server"))
+  end
+
+  test "does not migrate after a prompt is submitted" do
+    parent = self()
+
+    migration_fun = fn current ->
+      send(parent, {:migration_attempted, current.session_id})
+      {:error, :should_not_migrate_after_prompt}
+    end
+
+    {:ok, app} =
+      App.start_link(
+        session_id: "busy-local-session",
+        start_server_async: true,
+        server_migration_fun: migration_fun,
+        persist?: false,
+        ask_fun: fn _text, _opts ->
+          Process.sleep(5_000)
+          {:ok, "done"}
+        end
+      )
+
+    :ok = App.key(app, {:insert, "fix this"})
+    :ok = App.key(app, :submit)
+
+    snapshot = wait_until(app, &(&1.ui.status == :working))
+    assert snapshot.ui.session_id == "busy-local-session"
+    refute_receive {:migration_attempted, "busy-local-session"}, 1_000
   end
 
   test "offers generic slash command autocomplete" do

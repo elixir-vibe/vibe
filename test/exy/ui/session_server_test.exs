@@ -185,6 +185,7 @@ defmodule Exy.SessionProcessTest do
 
     state = Exy.Session.state(server)
     assert [%{role: :user}, %{role: :assistant, error: error}] = state.messages
+    assert state.notifications == []
     assert error =~ "ArgumentError"
     assert error =~ "boom"
   end

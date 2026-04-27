@@ -8,8 +8,8 @@ defmodule Exy.CLI.Output do
 
   def print({:ok, results}, opts) when is_list(results) do
     case opts[:mode] do
-      "json" -> IO.puts(Jason.encode!(json_safe(%{ok: true, results: results}), pretty: true))
-      _ -> IO.puts(render(results))
+      "json" -> puts(Jason.encode!(json_safe(%{ok: true, results: results}), pretty: true))
+      _ -> puts(render(results))
     end
 
     :ok
@@ -17,8 +17,8 @@ defmodule Exy.CLI.Output do
 
   def print({:ok, result}, opts) do
     case opts[:mode] do
-      "json" -> IO.puts(Jason.encode!(json_safe(%{ok: true, result: result}), pretty: true))
-      _ -> IO.puts(render(result))
+      "json" -> puts(Jason.encode!(json_safe(%{ok: true, result: result}), pretty: true))
+      _ -> puts(render(result))
     end
 
     :ok
@@ -27,7 +27,7 @@ defmodule Exy.CLI.Output do
   def print({:error, reason}, opts) do
     case opts[:mode] do
       "json" ->
-        IO.puts(Jason.encode!(json_safe(%{ok: false, error: inspect(reason)}), pretty: true))
+        puts(Jason.encode!(json_safe(%{ok: false, error: inspect(reason)}), pretty: true))
 
       _ ->
         error(inspect(reason))
@@ -36,9 +36,21 @@ defmodule Exy.CLI.Output do
     {:error, reason}
   end
 
+  def print(result, opts), do: print({:ok, result}, opts)
+
   @spec error(String.t()) :: :ok
   def error(message) do
-    IO.puts(:stderr, "error: #{message}")
+    puts(:stderr, "error: #{message}")
+  end
+
+  defp puts(message), do: puts(:stdio, message)
+
+  defp puts(device, message) do
+    IO.puts(device, message)
+  rescue
+    ErlangError -> :ok
+  catch
+    :exit, _reason -> :ok
   end
 
   defp json_safe(%DateTime{} = value), do: DateTime.to_iso8601(value)
