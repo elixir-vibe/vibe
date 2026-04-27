@@ -17,10 +17,13 @@ defmodule Exy.TUI.AppTest do
 
     :ok = App.key(app, {:insert, "hello"})
     :ok = App.key(app, :submit)
-    Process.sleep(50)
 
     snapshot = App.snapshot(app)
     assert snapshot.editor.text == ""
+
+    snapshot =
+      wait_until(app, fn snapshot -> Enum.any?(snapshot.ui.messages, &(&1.role == :assistant)) end)
+
     assert Enum.any?(snapshot.ui.messages, &(&1.role == :assistant))
     assert snapshot.width == 80
   end
@@ -31,11 +34,15 @@ defmodule Exy.TUI.AppTest do
     :ok = App.key(app, {:insert, "/model openai_codex:gpt-5.5"})
     :ok = App.key(app, :submit)
 
-    assert Enum.any?(App.snapshot(app).ui.events, fn event ->
-             event.type == :slash_command_submitted and event.data.command == "model"
-           end)
+    snapshot =
+      wait_until(app, fn snapshot ->
+        not is_nil(snapshot.ui.selector) and
+          Enum.any?(snapshot.ui.events, fn event ->
+            event.type == :slash_command_submitted and event.data.command == "model"
+          end)
+      end)
 
-    assert App.snapshot(app).ui.selector.kind == :model_selector
+    assert snapshot.ui.selector.kind == :model_selector
     :ok = App.key(app, :cancel)
     assert App.snapshot(app).ui.selector == nil
   end
@@ -111,5 +118,21 @@ defmodule Exy.TUI.AppTest do
     {:ok, app} = App.start_link()
     :ok = App.resize(app, 120, 40)
     assert %{width: 120, height: 40} = App.snapshot(app)
+  end
+
+  defp wait_until(app, fun, deadline \\ System.monotonic_time(:millisecond) + 1_000) do
+    snapshot = App.snapshot(app)
+
+    cond do
+      fun.(snapshot) ->
+        snapshot
+
+      System.monotonic_time(:millisecond) < deadline ->
+        Process.sleep(10)
+        wait_until(app, fun, deadline)
+
+      true ->
+        snapshot
+    end
   end
 end

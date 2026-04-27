@@ -10,7 +10,7 @@ defmodule Exy.TUI.App do
   use GenServer
 
   alias Exy.Session
-  alias Exy.UI.{Autocomplete, Command, EditorServer, SlashCommands}
+  alias Exy.UI.{Autocomplete, Command, EditorServer, Reducer, SlashCommands}
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -35,7 +35,7 @@ defmodule Exy.TUI.App do
   def init(opts) do
     {:ok, ui} = session_server(opts)
     {:ok, editor} = editor_server(opts)
-    {:ok, _snapshot, _cursor} = Session.attach(ui, self())
+    {:ok, ui_snapshot, _cursor} = Session.attach(ui, self())
     remote_node = Keyword.get(opts, :remote_node)
     active_sessions_timer = Process.send_after(self(), :active_sessions_tick, 0)
     server_migration_timer = maybe_schedule_server_migration(opts)
@@ -44,6 +44,7 @@ defmodule Exy.TUI.App do
     {:ok,
      %{
        ui: ui,
+       ui_snapshot: ui_snapshot,
        editor: editor,
        width: Keyword.get(opts, :width, 100),
        height: Keyword.get(opts, :height, 30),
@@ -87,7 +88,7 @@ defmodule Exy.TUI.App do
 
   def handle_call(:snapshot, _from, state) do
     snapshot = %{
-      ui: Session.state(state.ui),
+      ui: state.ui_snapshot,
       editor: EditorServer.state(state.editor),
       autocomplete: state.autocomplete,
       width: state.width,
@@ -122,7 +123,7 @@ defmodule Exy.TUI.App do
         {:error, reason} -> notify_session_switch_failed(state, session_id, reason)
       end
 
-    {:noreply, %{state | events: [event | state.events]}}
+    {:noreply, remember_event(state, event)}
   end
 
   def handle_info({Session, :event, %{type: :session_new_requested} = event}, state) do
@@ -134,12 +135,12 @@ defmodule Exy.TUI.App do
         {:error, reason} -> notify_session_switch_failed(state, "new", reason)
       end
 
-    {:noreply, %{state | events: [event | state.events]}}
+    {:noreply, remember_event(state, event)}
   end
 
   def handle_info({Session, :event, event}, state) do
     notify_subscribers(state, event)
-    {:noreply, %{state | events: [event | state.events]}}
+    {:noreply, remember_event(state, event)}
   end
 
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
@@ -158,11 +159,11 @@ defmodule Exy.TUI.App do
     do: state
 
   defp maybe_migrate_to_remote_session(state) do
-    current = Session.state(state.ui)
+    current = state.ui_snapshot
 
     with {:ok, node, _session_id, remote_session} <- state.server_migration_fun.(current),
          :ok <- Session.detach(state.ui, self()),
-         {:ok, _snapshot, _cursor} <- Session.attach(remote_session, self()) do
+         {:ok, ui_snapshot, _cursor} <- Session.attach(remote_session, self()) do
       Session.dispatch(
         remote_session,
         Command.new(:notification_added, %{level: :info, text: "attached to background server"})
@@ -171,6 +172,7 @@ defmodule Exy.TUI.App do
       %{
         state
         | ui: remote_session,
+          ui_snapshot: ui_snapshot,
           remote_node: node,
           autocomplete: nil,
           server_migration_timer: nil
@@ -202,18 +204,18 @@ defmodule Exy.TUI.App do
   defp switch_session(state, session_id) do
     with {:ok, session} <- Session.lookup(session_id),
          :ok <- Session.detach(state.ui, self()),
-         {:ok, _snapshot, _cursor} <- Session.attach(session, self()) do
-      {:ok, %{state | ui: session, autocomplete: nil}}
+         {:ok, ui_snapshot, _cursor} <- Session.attach(session, self()) do
+      {:ok, %{state | ui: session, ui_snapshot: ui_snapshot, autocomplete: nil}}
     end
   end
 
   defp start_new_session(state) do
-    current = Session.state(state.ui)
+    current = state.ui_snapshot
 
     with {:ok, session} <- Session.start_link(cwd: current.cwd, model: current.model),
          :ok <- Session.detach(state.ui, self()),
-         {:ok, _snapshot, _cursor} <- Session.attach(session, self()) do
-      {:ok, %{state | ui: session, autocomplete: nil}}
+         {:ok, ui_snapshot, _cursor} <- Session.attach(session, self()) do
+      {:ok, %{state | ui: session, ui_snapshot: ui_snapshot, autocomplete: nil}}
     end
   end
 
@@ -243,9 +245,7 @@ defmodule Exy.TUI.App do
 
         Session.emit_transient_event(
           state.ui,
-          Exy.UI.Event.new(:active_sessions_updated, Session.state(state.ui).session_id, %{
-            count: count
-          })
+          Exy.UI.Event.new(:active_sessions_updated, state.ui_snapshot.session_id, %{count: count})
         )
 
         state
@@ -273,7 +273,7 @@ defmodule Exy.TUI.App do
     end
   end
 
-  defp selector_open?(state), do: not is_nil(Session.state(state.ui).selector)
+  defp selector_open?(state), do: not is_nil(state.ui_snapshot.selector)
 
   defp handle_selector_key(:up, state) do
     Session.dispatch(state.ui, Command.new(:selector_moved, %{direction: -1}))
@@ -286,7 +286,7 @@ defmodule Exy.TUI.App do
   end
 
   defp handle_selector_key(:submit, state) do
-    selector = Session.state(state.ui).selector
+    selector = state.ui_snapshot.selector
     item = selector |> Map.get(:items, []) |> Enum.at(Map.get(selector, :selected, 0))
 
     Session.dispatch(
@@ -331,26 +331,39 @@ defmodule Exy.TUI.App do
     %{state | autocomplete: SlashCommands.autocomplete(editor.text)}
   end
 
+  defp remember_event(state, event) do
+    %{
+      state
+      | ui_snapshot: Reducer.apply_event(state.ui_snapshot, event),
+        events: [event | state.events]
+    }
+  end
+
   defp handle_editor_command({:submit, text}, state) do
-    Session.dispatch(state.ui, Command.new(:submit_prompt, %{text: text}))
+    dispatch_async(state.ui, Command.new(:submit_prompt, %{text: text}))
   end
 
   defp handle_editor_command({:slash_command, command, args}, state) do
-    Session.dispatch(
+    dispatch_async(
       state.ui,
       Command.new(:slash_command_submitted, %{command: command, args: args})
     )
   end
 
   defp handle_editor_command(:cancel, state) do
-    Session.dispatch(state.ui, Command.new(:cancel_stream))
+    dispatch_async(state.ui, Command.new(:cancel_stream))
   end
 
   defp handle_editor_command(:toggle_truncation, state) do
-    Session.dispatch(state.ui, Command.new(:toggle_truncation))
+    dispatch_async(state.ui, Command.new(:toggle_truncation))
   end
 
   defp handle_editor_command({:external_editor, text}, state) do
-    Session.dispatch(state.ui, Command.new(:external_editor_requested, %{text: text}))
+    dispatch_async(state.ui, Command.new(:external_editor_requested, %{text: text}))
+  end
+
+  defp dispatch_async(session, command) do
+    _task = Task.start(fn -> Session.dispatch(session, command) end)
+    :ok
   end
 end
