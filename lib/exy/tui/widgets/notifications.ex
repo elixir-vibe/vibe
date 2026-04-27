@@ -9,17 +9,26 @@ defmodule Exy.TUI.Widgets.Notifications do
   def render(%{props: props}, width, theme) do
     props
     |> Map.get(:items, [])
-    |> Enum.map(&line(&1, width, theme))
+    |> Enum.flat_map(&lines(&1, width, theme))
   end
 
-  defp line(%{level: level, text: text}, width, theme) do
+  defp lines(%{level: level, text: text}, width, theme) do
     color = level_color(level)
     icon = level_icon(level, theme)
-    Widget.inset_line([Theme.fg(theme, color, icon), " ", text], width)
+
+    [[Theme.fg(theme, color, icon), " ", text]]
+    |> Widget.block_lines(width, theme, level_bg(level), fg: color, padding_left: 2)
   end
 
-  defp line(text, width, theme),
-    do: Widget.inset_line([Theme.symbol(theme, :status_icon), " ", to_string(text)], width)
+  defp lines(text, width, theme) do
+    [[Theme.symbol(theme, :status_icon), " ", to_string(text)]]
+    |> Widget.block_lines(width, theme, :tool_pending_bg, padding_left: 2)
+  end
+
+  defp level_bg(:error), do: :tool_error_bg
+  defp level_bg(:warning), do: :tool_pending_bg
+  defp level_bg(:success), do: :tool_success_bg
+  defp level_bg(_level), do: :assistant_message_bg
 
   defp level_color(:error), do: :error
   defp level_color(:warning), do: :warning

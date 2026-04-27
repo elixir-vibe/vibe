@@ -104,16 +104,7 @@ defmodule Exy.TUI.Widgets.Message do
   end
 
   defp render_block_lines(lines, width, theme, bg_key, fg_key) do
-    opts = [fg: fg_key, padding_left: 2]
-    blank = Widget.background_line("", width, theme, bg_key, opts)
-
-    [
-      blank
-      | Exy.TUI.Lines.append(
-          Enum.map(lines, &Widget.background_line(&1, width, theme, bg_key, opts)),
-          blank
-        )
-    ]
+    Widget.block_lines(lines, width, theme, bg_key, fg: fg_key, padding_left: 2)
   end
 
   defp safe_render(width, theme, fun) do

@@ -85,6 +85,19 @@ defmodule Exy.TUI.Widget do
     [" ", pad_line(content, inner_width), " "]
   end
 
+  @spec block_lines([IO.chardata()], pos_integer(), Theme.t(), atom(), keyword()) :: [line()]
+  def block_lines(lines, width, theme, bg_key, opts \\ []) when is_list(lines) do
+    blank = background_line("", width, theme, bg_key, opts)
+
+    [
+      blank
+      | Exy.TUI.Lines.append(
+          Enum.map(lines, &background_line(&1, width, theme, bg_key, opts)),
+          blank
+        )
+    ]
+  end
+
   @spec background_line(IO.chardata(), pos_integer(), Theme.t(), atom(), keyword()) :: line()
   def background_line(content, width, theme, bg_key, opts \\ []) do
     padding_left = Keyword.get(opts, :padding_left, 0)

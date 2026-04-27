@@ -100,6 +100,19 @@ defmodule Exy.TUI.WidgetsTest do
     assert String.length(line) == 12
   end
 
+  test "block lines helper adds vertical padding and shared background" do
+    lines =
+      Widget.block_lines(["! cancelled"], 16, Theme.default(), :tool_pending_bg, padding_left: 2)
+
+    plain = Enum.map(lines, &Width.visible_text/1)
+
+    assert plain == [
+             String.duplicate(" ", 16),
+             "  ! cancelled   ",
+             String.duplicate(" ", 16)
+           ]
+  end
+
   test "background line helper pads and preserves parent background across nested resets" do
     line =
       Exy.TUI.Widget.background_line(
@@ -176,8 +189,9 @@ defmodule Exy.TUI.WidgetsTest do
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert [line] = lines
-    assert String.starts_with?(line, " ")
+    assert [blank, line, blank] = lines
+    assert String.trim(blank) == ""
+    assert String.starts_with?(line, "  ")
     assert String.ends_with?(line, " ")
     assert String.length(line) == 40
     assert line =~ "unknown command: /"
