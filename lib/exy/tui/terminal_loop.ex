@@ -166,7 +166,7 @@ defmodule Exy.TUI.TerminalLoop do
   defp render_body(state, snapshot) do
     snapshot.ui
     |> ViewModel.from_state()
-    |> Map.put(:autocomplete, snapshot.autocomplete)
+    |> Map.put(:picker, picker(snapshot))
     |> apply_loader_phase(state.loader_phase)
     |> Renderer.render(snapshot.width, state.theme)
   end
@@ -233,15 +233,14 @@ defmodule Exy.TUI.TerminalLoop do
     {max(row, 1), max(column, 1)}
   end
 
-  defp render_editor(
-         %{ui: %{selector: %{overlay_kind: :confirmation} = selector}} = snapshot,
-         theme
-       ) do
-    selector
-    |> Map.from_struct()
-    |> TUI.confirmation()
-    |> Widget.render(snapshot.width, theme)
+  defp picker(%{ui: %{selector: %{overlay_kind: :confirmation} = selector}}) do
+    %{type: :confirmation, props: Map.from_struct(selector)}
   end
+
+  defp picker(%{autocomplete: nil}), do: nil
+
+  defp picker(%{autocomplete: autocomplete}),
+    do: %{type: :autocomplete, props: Map.from_struct(autocomplete)}
 
   defp render_editor(snapshot, theme) do
     TUI.textarea(

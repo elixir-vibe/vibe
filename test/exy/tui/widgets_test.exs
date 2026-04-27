@@ -194,7 +194,11 @@ defmodule Exy.TUI.WidgetsTest do
       |> Widget.render(50, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert Enum.any?(lines, &String.contains?(&1, "Commands"))
+    header_index = Enum.find_index(lines, &String.contains?(&1, "Commands"))
+
+    assert header_index
+    assert lines |> Enum.at(header_index - 1) |> String.trim() == ""
+    assert lines |> Enum.at(header_index + 1) |> String.trim() == ""
     assert Enum.any?(lines, &String.contains?(&1, "/sessions"))
     assert Enum.any?(lines, &String.contains?(&1, "Browse sessions"))
   end

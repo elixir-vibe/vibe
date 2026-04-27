@@ -131,7 +131,7 @@ defmodule Exy.TUI.TerminalLoopTest do
     end
   end
 
-  test "confirmation replaces prompt without clearing chat history" do
+  test "confirmation appears above footer like autocomplete without clearing chat history" do
     ask = fn _text, _opts -> {:ok, "ok"} end
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 30, ask_fun: ask)
 
@@ -140,14 +140,23 @@ defmodule Exy.TUI.TerminalLoopTest do
     Process.sleep(50)
     :ok = TerminalLoop.input(loop, "/clear")
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
-    Process.sleep(50)
+
+    wait_until_render(
+      loop,
+      &Enum.any?(&1, fn line -> String.contains?(line, "Clear session?") end)
+    )
 
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
 
+    footer_index = Enum.find_index(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
+    prompt_index = Enum.find_index(plain, &String.contains?(&1, "Prompt"))
+    confirmation_index = Enum.find_index(plain, &String.contains?(&1, "Clear session?"))
+
     assert Enum.any?(plain, &String.contains?(&1, "hello"))
-    assert Enum.any?(plain, &String.contains?(&1, "Clear session?"))
+    assert confirmation_index
     assert Enum.any?(plain, &String.contains?(&1, "→ Yes"))
-    refute Enum.any?(plain, &String.contains?(&1, "Prompt"))
+    assert prompt_index == footer_index + 1
+    assert confirmation_index < footer_index
   end
 
   test "keeps footer directly above prompt when autocomplete is visible" do
@@ -164,6 +173,22 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert footer_index
     assert prompt_index == footer_index + 1
     assert autocomplete_index < footer_index
+  end
+
+  defp wait_until_render(loop, fun, deadline \\ System.monotonic_time(:millisecond) + 1_000) do
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+
+    cond do
+      fun.(plain) ->
+        plain
+
+      System.monotonic_time(:millisecond) < deadline ->
+        Process.sleep(10)
+        wait_until_render(loop, fun, deadline)
+
+      true ->
+        plain
+    end
   end
 
   test "tracks editor cursor position inside the prompt" do

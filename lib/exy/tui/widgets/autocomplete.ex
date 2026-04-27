@@ -23,7 +23,12 @@ defmodule Exy.TUI.Widgets.Autocomplete do
 
     rows = if rows == [], do: [empty_row(autocomplete, inner_width, theme)], else: rows
 
-    [frame_line(header, width, theme) | Enum.map(rows, &frame_line(&1, width, theme))]
+    [
+      blank_line(width, theme),
+      frame_line(header, width, theme),
+      blank_line(width, theme)
+      | Enum.map(rows, &frame_line(&1, width, theme))
+    ]
   end
 
   defp header(%Autocomplete{title: nil, query: ""}, _width, theme),
@@ -63,6 +68,8 @@ defmodule Exy.TUI.Widgets.Autocomplete do
     message = message || "No matches"
     theme |> Theme.fg(:dim, message) |> Widget.pad_line(width)
   end
+
+  defp blank_line(width, theme), do: Theme.bg(theme, :input_bg, Widget.spaces(width))
 
   defp frame_line(content, width, theme) do
     line = Widget.pad_line(["  ", content], max(width - 2, 0))

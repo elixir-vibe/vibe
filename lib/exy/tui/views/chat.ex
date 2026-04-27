@@ -22,10 +22,12 @@ defmodule Exy.TUI.Views.Chat do
     plugin_widgets = Exy.Support.Lists.join(above_editor_widgets, sidebar_widgets)
     notices = if assign(:notifications), do: [notifications(assign(:notifications))], else: []
 
-    autocomplete =
-      if Map.get(assigns, :autocomplete),
-        do: [Exy.TUI.autocomplete(assigns.autocomplete)],
-        else: []
+    picker =
+      case Map.get(assigns, :picker) do
+        %{type: type, props: props} -> [Exy.TUI.node(type, props)]
+        %Exy.TUI.Node{} = node -> [node]
+        _picker -> []
+      end
 
     overlays =
       assign(:overlays)
@@ -33,7 +35,7 @@ defmodule Exy.TUI.Views.Chat do
       |> Enum.map(&overlay/1)
 
     footer_margin =
-      if body == [] and plugin_widgets == [] and notices == [] and autocomplete == [],
+      if body == [] and plugin_widgets == [] and notices == [] and picker == [],
         do: [],
         else: [spacer()]
 
@@ -42,7 +44,7 @@ defmodule Exy.TUI.Views.Chat do
         body,
         plugin_widgets,
         notices,
-        autocomplete,
+        picker,
         footer_margin,
         footer(assign(:footer)),
         below_editor_widgets,
