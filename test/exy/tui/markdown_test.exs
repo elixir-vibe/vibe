@@ -47,6 +47,26 @@ defmodule Exy.TUI.MarkdownTest do
     assert rendered =~ "\e[38;2;"
   end
 
+  test "renders mermaid flowcharts through boxart" do
+    lines =
+      """
+      ```mermaid
+      graph LR
+        A[Start] --> B[Done]
+        A -- yes --> C[Ship]
+      ```
+      """
+      |> Markdown.render(80, Theme.default())
+
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+
+    assert plain =~ "Start"
+    assert plain =~ "Done"
+    assert plain =~ "Ship"
+    assert plain =~ "yes"
+    refute plain =~ "```"
+  end
+
   test "renders blank highlighted code lines" do
     lines = Markdown.render("```elixir\n\n:ok\n```", 80, Theme.default())
     plain = Enum.map(lines, &Width.visible_text/1)

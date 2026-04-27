@@ -71,6 +71,9 @@ defmodule Exy.MixProject do
 
   defp deps do
     [
+      {:abnf_parsec, "~> 2.1", override: true},
+      {:boxart, "~> 0.3.2"},
+      {:dg, "~> 0.4.1"},
       {:ex_ast, "~> 0.5.0"},
       {:jason, "~> 1.4"},
       {:json_spec, "~> 1.1"},

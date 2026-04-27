@@ -3,7 +3,7 @@ defmodule Exy.TUI.Markdown do
   Terminal renderer for Markdown, including MDEx streaming documents.
   """
 
-  alias Exy.TUI.{Theme, Widget, Width}
+  alias Exy.TUI.{Markdown.Mermaid, Theme, Widget, Width}
 
   @mdex_options [extension: [table: true, strikethrough: true, tasklist: true, autolink: true]]
 
@@ -59,27 +59,15 @@ defmodule Exy.TUI.Markdown do
 
   defp block(%MDEx.CodeBlock{literal: literal, info: info}, width, theme, _opts) do
     language = if info in [nil, ""], do: nil, else: String.trim(info)
-    line = Theme.symbol(theme, :section_line)
-    border = Theme.fg(theme, :border, String.duplicate(line, width))
 
-    header =
-      if language do
-        label = Theme.fg(theme, :muted, language)
-        fill = String.duplicate(line, max(width - Width.visible_length(label) - 1, 0))
-        [[label, " ", Theme.fg(theme, :border, fill)]]
-      else
-        [border]
+    if mermaid?(language) do
+      case Mermaid.render(literal, width) do
+        {:ok, lines} -> Enum.map(lines, &Theme.fg(theme, :text, &1)) |> append_blank()
+        :error -> code_block(literal, language, width, theme)
       end
-
-    body =
-      literal
-      |> String.trim_trailing("\n")
-      |> String.split("\n")
-      |> Enum.flat_map(fn line ->
-        Widget.wrap(["  ", highlight_code(line, language, theme)], width)
-      end)
-
-    header |> join_lines(body) |> join_lines([border]) |> append_blank()
+    else
+      code_block(literal, language, width, theme)
+    end
   end
 
   defp block(%MDEx.BlockQuote{nodes: nodes}, width, theme, opts) do
@@ -113,6 +101,33 @@ defmodule Exy.TUI.Markdown do
     do: Widget.wrap(literal, width) |> Enum.map(&Theme.fg(theme, :text, &1))
 
   defp block(_node, _width, _theme, _opts), do: []
+
+  defp code_block(literal, language, width, theme) do
+    line = Theme.symbol(theme, :section_line)
+    border = Theme.fg(theme, :border, String.duplicate(line, width))
+
+    header =
+      if language do
+        label = Theme.fg(theme, :muted, language)
+        fill = String.duplicate(line, max(width - Width.visible_length(label) - 1, 0))
+        [[label, " ", Theme.fg(theme, :border, fill)]]
+      else
+        [border]
+      end
+
+    body =
+      literal
+      |> String.trim_trailing("\n")
+      |> String.split("\n")
+      |> Enum.flat_map(fn line ->
+        Widget.wrap(["  ", highlight_code(line, language, theme)], width)
+      end)
+
+    header |> join_lines(body) |> join_lines([border]) |> append_blank()
+  end
+
+  defp mermaid?(nil), do: false
+  defp mermaid?(language), do: String.downcase(language) == "mermaid"
 
   defp render_list_item_node(
          %MDEx.TaskItem{nodes: nodes, checked: checked},
