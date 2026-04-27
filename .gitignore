@@ -29,3 +29,6 @@ exy-*.tar
 # Ignore local escript builds.
 /exy
 
+
+# Generated web assets.
+/priv/static/assets/

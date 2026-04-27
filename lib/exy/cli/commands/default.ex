@@ -2,6 +2,7 @@ defmodule Exy.CLI.Commands.Default do
   @moduledoc false
 
   alias Exy.CLI.{Output, Runner, Sessions}
+  alias Exy.Web
 
   @version Mix.Project.config()[:version]
 
@@ -18,6 +19,9 @@ defmodule Exy.CLI.Commands.Default do
 
       opts[:login] ->
         Exy.Auth.login(opts[:login])
+
+      opts[:web] ->
+        web(opts)
 
       code = opts[:eval] ->
         Output.print(Exy.Eval.once(code, timeout: opts[:timeout] || 30_000), opts)
@@ -41,6 +45,23 @@ defmodule Exy.CLI.Commands.Default do
 
       true ->
         Sessions.attach_default(opts)
+    end
+  end
+
+  defp web(opts) do
+    port = opts[:port] || 4321
+
+    case Web.start(port: port) do
+      {:ok, _pid} ->
+        IO.puts("Exy web listening on #{Web.url(port: port)}")
+        Process.sleep(:infinity)
+
+      {:error, {:already_started, _pid}} ->
+        IO.puts("Exy web already listening on #{Web.url(port: port)}")
+        Process.sleep(:infinity)
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

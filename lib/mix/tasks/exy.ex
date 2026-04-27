@@ -10,6 +10,7 @@ defmodule Mix.Tasks.Exy do
 
       exy                        # Start server if needed and attach the TUI
       exy [options] [message...]
+      exy --web [--port 4321]
       exy server start [--foreground]
       exy server status
       exy server stop
@@ -49,6 +50,8 @@ defmodule Mix.Tasks.Exy do
     * `--no-stream` - Disable direct ReqLLM streaming.
     * `--eval <code>` - Evaluate Elixir code through `Exy.Eval`.
     * `--compact` - Compact stored trajectory context.
+    * `--web` - Start the prototype Phoenix LiveView web interface.
+    * `--port <port>` - Port for `--web`. Defaults to 4321.
     * `--keep-recent <n>` - Events to keep when compacting. Defaults to `12`.
     * `--checks` - Run Exy validation gates.
     * `--codex-usage` - Show Codex subscription usage via Codex app-server RPC.

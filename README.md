@@ -107,7 +107,10 @@ mix exy --eval "Exy.OTP.runtime_info()"
 mix exy --checks
 mix exy --codex-usage
 mix exy --login codex
+mix exy --web --port 4321
 ```
+
+The prototype web interface is a Phoenix LiveView client over the same `Exy.Session` and `Exy.UI.State` runtime used by the TUI. Assets are served through Volt with Tailwind CSS.
 
 ## Slash commands
 

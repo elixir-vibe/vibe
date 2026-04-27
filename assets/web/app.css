@@ -1,0 +1,11 @@
+@import "tailwindcss" source(none);
+@source "../../lib";
+@source ".";
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+}

@@ -1,38 +1,41 @@
 defmodule Exy.Web.SessionLiveTest do
   use ExUnit.Case, async: false
 
-  setup do
-    session_dir =
-      Path.join(System.tmp_dir!(), "exy-web-session-test-#{System.unique_integer([:positive])}")
+  import Phoenix.ConnTest
 
-    previous = Application.get_env(:exy, :session_dir)
-    Application.put_env(:exy, :session_dir, session_dir)
+  @endpoint Exy.Web.Endpoint
 
-    on_exit(fn ->
-      if previous,
-        do: Application.put_env(:exy, :session_dir, previous),
-        else: Application.delete_env(:exy, :session_dir)
+  setup_all do
+    Application.put_env(
+      :exy,
+      Exy.Web.Endpoint,
+      Keyword.merge(Application.get_env(:exy, Exy.Web.Endpoint, []), server: false)
+    )
 
-      File.rm_rf(session_dir)
-    end)
-
+    start_supervised!(Exy.Web.Endpoint)
     :ok
   end
 
-  test "mounts a session, submits prompts, and applies session events" do
-    socket = %{assigns: %{}}
+  setup do
+    Exy.Session.Store.clear()
+    :ok
+  end
 
-    assert {:ok, socket} = Exy.Web.SessionLive.mount(%{}, %{}, socket)
-    assert socket.assigns.session_id
-    assert socket.assigns.view_model.footer.session_id == socket.assigns.session_id
+  test "sessions page renders stored sessions" do
+    Exy.Session.Store.ensure_session("web-list-session", ~U[2026-01-01 00:00:00Z],
+      cwd: "/tmp/web"
+    )
 
-    assert {:noreply, socket} =
-             Exy.Web.SessionLive.handle_info(
-               {Exy.Session, :event,
-                Exy.UI.Event.new(:notification_added, socket.assigns.session_id, %{text: "hello"})},
-               socket
-             )
+    conn = build_conn() |> get("/")
 
-    assert [%{text: "hello"}] = socket.assigns.ui_state.notifications
+    assert html_response(conn, 200) =~ "Agent sessions"
+    assert html_response(conn, 200) =~ "web-list-session"
+  end
+
+  test "session page starts and renders a session" do
+    conn = build_conn() |> get("/sessions/web-live-session")
+
+    assert html_response(conn, 200) =~ "web-live-session"
+    assert html_response(conn, 200) =~ "Ask Exy"
   end
 end

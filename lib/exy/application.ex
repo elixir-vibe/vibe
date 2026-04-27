@@ -11,6 +11,7 @@ defmodule Exy.Application do
     children = [
       Exy.Repo,
       {Registry, keys: :unique, name: Exy.Registry},
+      {Phoenix.PubSub, name: Exy.PubSub},
       Exy.Telemetry,
       {Jido, name: Jido, otp_app: :exy},
       Exy.Jido,

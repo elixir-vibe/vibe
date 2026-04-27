@@ -10,3 +10,29 @@ config :exy, Exy.Repo,
   busy_timeout: 5_000,
   pool_size: 1,
   log: false
+
+config :exy, Exy.Web.Endpoint,
+  url: [host: "localhost"],
+  render_errors: [formats: [html: Exy.Web.ErrorHTML], layout: false],
+  pubsub_server: Exy.PubSub,
+  secret_key_base:
+    "exy-web-secret-key-base-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  live_view: [signing_salt: "exy-web-signing-salt-2026"]
+
+config :volt,
+  entry: "web/app.ts",
+  root: "assets",
+  outdir: "priv/static/assets",
+  target: :es2020,
+  external: ~w(phoenix phoenix_html phoenix_live_view),
+  tailwind: [
+    css: "web/app.css",
+    sources: [
+      %{base: "lib/", pattern: "**/*.{ex,heex}"},
+      %{base: "assets/", pattern: "**/*.{ts,css}"}
+    ]
+  ]
+
+config :volt, :server,
+  prefix: "/assets",
+  watch_dirs: ["lib/", "assets/"]

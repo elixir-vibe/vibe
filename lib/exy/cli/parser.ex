@@ -32,7 +32,9 @@ defmodule Exy.CLI.Parser do
     no_fts: :boolean,
     rebuild_fts: :boolean,
     batch_size: :integer,
-    overwrite: :boolean
+    overwrite: :boolean,
+    web: :boolean,
+    port: :integer
   ]
 
   @aliases [h: :help, v: :version, p: :print]
