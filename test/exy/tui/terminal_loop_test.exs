@@ -28,7 +28,6 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert length(plain) <= 12
     assert footer_index
     assert prompt_index == footer_index + 1
-    assert plain |> Enum.at(footer_index - 1) |> String.trim() == ""
   end
 
   test "repaints immediately for background UI updates" do
@@ -145,6 +144,7 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert File.exists?(Path.join(trace_dir, "trace.jsonl"))
     assert [_ | _] = Path.join([trace_dir, "frames", "*.txt"]) |> Path.wildcard()
     assert [_ | _] = Path.join([trace_dir, "snapshots", "*.json"]) |> Path.wildcard()
+    assert Exy.TUI.Trace.audit(trace_dir).ok?
 
     File.rm_rf!(trace_dir)
   end

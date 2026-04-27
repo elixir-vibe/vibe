@@ -23,13 +23,24 @@ defmodule Exy.CLI.Commands.TUITrace do
     print_frame(dir, opts[:frame] || :last)
   end
 
+  def run([_name, "audit", dir], _opts) do
+    dir
+    |> Trace.audit()
+    |> render_audit()
+    |> IO.puts()
+
+    :ok
+  end
+
+  def run([_name, "frame", dir, "last"], _opts), do: print_frame(dir, :last)
+
   def run([_name, "frame", dir, index], _opts) do
     case Integer.parse(index) do
       {index, ""} ->
         print_frame(dir, index)
 
       _error ->
-        Output.error("Frame index must be an integer")
+        Output.error("Frame index must be an integer or last")
         {:error, :invalid_frame_index}
     end
   end
@@ -40,7 +51,8 @@ defmodule Exy.CLI.Commands.TUITrace do
     IO.puts("""
     Usage:
       exy tui-trace summary <trace-dir>
-      exy tui-trace frame <trace-dir> [index]
+      exy tui-trace audit <trace-dir>
+      exy tui-trace frame <trace-dir> [index | last]
       exy tui-trace frame <trace-dir> --frame N
 
     Capture a trace in debug builds with:
@@ -64,6 +76,32 @@ defmodule Exy.CLI.Commands.TUITrace do
         {:error, reason}
     end
   end
+
+  defp render_audit(%{ok?: true} = audit) do
+    "Trace audit passed (#{audit.frames} frames, 0 issues)."
+  end
+
+  defp render_audit(audit) do
+    header = "Trace audit found #{length(audit.issues)} issue(s) in #{audit.frames} frames."
+
+    issues =
+      Enum.map(audit.issues, fn issue ->
+        location =
+          [frame_label(issue.frame), line_label(issue.line)]
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.join(" ")
+
+        location = if location == "", do: "trace", else: location
+        "#{issue.severity} #{issue.check} #{location}: #{issue.message}"
+      end)
+
+    Enum.join([header | issues], "\n")
+  end
+
+  defp frame_label(nil), do: ""
+  defp frame_label(frame), do: "frame #{frame}"
+  defp line_label(nil), do: ""
+  defp line_label(line), do: "line #{line}"
 
   defp render_summary(summary) do
     metadata = summary.metadata

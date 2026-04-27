@@ -42,7 +42,7 @@ defmodule Exy.TUI.Trace do
 
   @spec frame(Path.t(), pos_integer() | :last) :: {:ok, String.t()} | {:error, term()}
   def frame(dir, index \\ :last) do
-    frames = Path.wildcard(Path.join([Path.expand(dir), "frames", "*.txt"]))
+    frames = frame_paths(dir)
 
     path =
       case index do
@@ -54,6 +54,28 @@ defmodule Exy.TUI.Trace do
       nil -> {:error, :frame_not_found}
       path -> File.read(path)
     end
+  end
+
+  @spec audit(Path.t()) :: map()
+  def audit(dir) do
+    dir = Path.expand(dir)
+    metadata = read_json(Path.join(dir, "metadata.json"))
+    width = metadata["width"]
+    height = metadata["height"]
+    frames = frame_paths(dir)
+
+    issues =
+      []
+      |> maybe_missing_trace(dir)
+      |> maybe_missing_frames(frames)
+      |> audit_frames(frames, width, height)
+
+    %{
+      dir: dir,
+      ok?: issues == [],
+      frames: length(frames),
+      issues: Enum.reverse(issues)
+    }
   end
 
   @spec start(keyword()) :: t() | nil
@@ -140,6 +162,152 @@ defmodule Exy.TUI.Trace do
 
     append_jsonl(Path.join(trace.dir, "trace.jsonl"), entry)
     trace
+  end
+
+  defp frame_paths(dir), do: Path.wildcard(Path.join([Path.expand(dir), "frames", "*.txt"]))
+
+  defp maybe_missing_trace(issues, dir) do
+    if File.exists?(Path.join(dir, "trace.jsonl")) do
+      issues
+    else
+      [issue(:error, :missing_trace, "trace.jsonl is missing") | issues]
+    end
+  end
+
+  defp maybe_missing_frames(issues, []),
+    do: [issue(:error, :missing_frames, "no frame snapshots were captured") | issues]
+
+  defp maybe_missing_frames(issues, _frames), do: issues
+
+  defp audit_frames(issues, frames, width, height) do
+    frames
+    |> Enum.with_index(1)
+    |> Enum.reduce(issues, fn {path, index}, issues ->
+      path
+      |> File.read!()
+      |> audit_frame(index, width, height, issues)
+    end)
+  end
+
+  defp audit_frame(text, index, width, height, issues) do
+    lines = String.split(text, "\n")
+
+    issues
+    |> audit_frame_height(index, lines, height)
+    |> audit_line_widths(index, lines, width)
+    |> audit_prompt_regions(index, lines)
+    |> audit_adjacent_duplicates(index, lines)
+  end
+
+  defp audit_frame_height(issues, _index, _lines, height) when not is_integer(height), do: issues
+
+  defp audit_frame_height(issues, index, lines, height) do
+    if length(lines) > height do
+      [
+        issue(:warning, :frame_height, "frame has more lines than terminal height", index)
+        | issues
+      ]
+    else
+      issues
+    end
+  end
+
+  defp audit_line_widths(issues, _index, _lines, width) when not is_integer(width), do: issues
+
+  defp audit_line_widths(issues, index, lines, width) do
+    lines
+    |> Enum.with_index(1)
+    |> Enum.reduce(issues, fn {line, line_number}, issues ->
+      visible_width = Width.visible_length(line)
+
+      if visible_width > width do
+        message = "line width #{visible_width} exceeds terminal width #{width}"
+        [issue(:error, :line_width, message, index, line_number) | issues]
+      else
+        issues
+      end
+    end)
+  end
+
+  defp audit_prompt_regions(issues, index, lines) do
+    prompt_tops = matching_line_indexes(lines, &String.contains?(&1, " Prompt "))
+    prompt_bottoms = matching_line_indexes(lines, &prompt_bottom?/1)
+
+    issues
+    |> audit_single_prompt(index, prompt_tops)
+    |> audit_prompt_bottom(index, prompt_tops, prompt_bottoms)
+    |> audit_content_below_prompt(index, lines, prompt_bottoms)
+  end
+
+  defp audit_single_prompt(issues, index, prompt_tops) do
+    if length(prompt_tops) > 1 do
+      [issue(:error, :duplicate_prompt, "multiple prompt boxes are visible", index) | issues]
+    else
+      issues
+    end
+  end
+
+  defp audit_prompt_bottom(issues, index, [_top | _rest], []),
+    do: [
+      issue(:error, :prompt_region, "prompt box top is visible without a bottom", index) | issues
+    ]
+
+  defp audit_prompt_bottom(issues, _index, _prompt_tops, _prompt_bottoms), do: issues
+
+  defp audit_content_below_prompt(issues, index, lines, prompt_bottoms) do
+    case List.last(prompt_bottoms) do
+      nil ->
+        issues
+
+      bottom_index ->
+        content_below? =
+          lines
+          |> Enum.drop(bottom_index + 1)
+          |> Enum.any?(&(String.trim(&1) != ""))
+
+        if content_below? do
+          [
+            issue(:error, :content_below_prompt, "non-blank content appears below prompt", index)
+            | issues
+          ]
+        else
+          issues
+        end
+    end
+  end
+
+  defp audit_adjacent_duplicates(issues, index, lines) do
+    lines
+    |> Enum.map(&String.trim/1)
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.with_index(1)
+    |> Enum.reduce(issues, fn {[left, right], line_number}, issues ->
+      if duplicate_content_line?(left, right) do
+        message = "adjacent duplicate visible line: #{String.slice(left, 0, 60)}"
+        [issue(:warning, :adjacent_duplicate, message, index, line_number) | issues]
+      else
+        issues
+      end
+    end)
+  end
+
+  defp duplicate_content_line?(left, right) do
+    left == right and Width.visible_length(left) >= 12 and not border_line?(left)
+  end
+
+  defp border_line?(line), do: String.match?(line, ~r/^[╭╮╰╯─│\s]+$/u)
+
+  defp prompt_bottom?(line), do: String.contains?(line, "╰") and String.contains?(line, "─")
+
+  defp matching_line_indexes(lines, fun) do
+    lines
+    |> Enum.with_index()
+    |> Enum.filter(fn {line, _index} -> fun.(line) end)
+    |> Enum.map(fn {_line, index} -> index end)
+  end
+
+  defp issue(severity, check, message, frame \\ nil, line \\ nil) do
+    %{severity: severity, check: check, message: message, frame: frame, line: line}
   end
 
   defp read_json(path) do
