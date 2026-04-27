@@ -131,6 +131,9 @@ defmodule Exy.TUI do
     node(:dialog, Map.put(Map.new(opts), :title, title), List.wrap(children))
   end
 
+  @spec confirmation(keyword() | map()) :: Node.t()
+  def confirmation(props), do: node(:confirmation, Map.new(props))
+
   @spec diff(keyword() | map()) :: Node.t()
   def diff(props), do: node(:diff, Map.new(props))
 

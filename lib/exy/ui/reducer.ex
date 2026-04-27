@@ -268,13 +268,19 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :selector_opened, data: data}) do
-    selector = Selector.new(data)
+    open_selector(state, data)
+  end
 
-    %{
-      state
-      | selector: selector,
-        overlays: Lists.append(state.overlays, Selector.overlay(selector))
-    }
+  defp reduce(state, %Event{type: :confirmation_requested, data: data}) do
+    open_selector(
+      state,
+      data
+      |> Map.put_new(:kind, :confirmation)
+      |> Map.put(:overlay_kind, :confirmation)
+      |> Map.put_new(:items, [Map.get(data, :confirm, "Yes"), Map.get(data, :cancel, "No")])
+      |> Map.put_new(:selected, 0)
+      |> Map.put_new(:limit, 2)
+    )
   end
 
   defp reduce(state, %Event{type: :selector_moved, data: %{direction: direction}}) do
@@ -295,7 +301,17 @@ defmodule Exy.UI.Reducer do
 
   defp reduce(state, _event), do: state
 
-  defp selector_overlay?(%{kind: :selector}), do: true
+  defp open_selector(state, data) do
+    selector = Selector.new(data)
+
+    %{
+      state
+      | selector: selector,
+        overlays: Lists.append(state.overlays, Selector.overlay(selector))
+    }
+  end
+
+  defp selector_overlay?(%{kind: kind}) when kind in [:selector, :confirmation], do: true
   defp selector_overlay?(_overlay), do: false
 
   defp move_selector(nil, _direction), do: nil
@@ -307,8 +323,13 @@ defmodule Exy.UI.Reducer do
 
   defp update_selector_overlay(overlays, direction) do
     Enum.map(overlays, fn
-      %{kind: :selector} = overlay ->
-        overlay |> Selector.new() |> Selector.move(direction) |> Selector.overlay()
+      %{kind: kind} = overlay when kind in [:selector, :confirmation] ->
+        overlay
+        |> Map.put(:kind, Map.get(overlay, :selector_kind, kind))
+        |> Map.put(:overlay_kind, kind)
+        |> Selector.new()
+        |> Selector.move(direction)
+        |> Selector.overlay()
 
       overlay ->
         overlay

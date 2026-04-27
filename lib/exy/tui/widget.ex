@@ -32,6 +32,7 @@ defmodule Exy.TUI.Widget do
     spacer: Exy.TUI.Widgets.Spacer,
     truncate: Exy.TUI.Widgets.Truncate,
     dialog: Exy.TUI.Widgets.Dialog,
+    confirmation: Exy.TUI.Widgets.Confirmation,
     diff: Exy.TUI.Widgets.Diff,
     footer: Exy.TUI.Widgets.Footer,
     overlay: Exy.TUI.Widgets.Overlay

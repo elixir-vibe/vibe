@@ -47,6 +47,36 @@ defmodule Exy.TUI.AppTest do
     assert App.snapshot(app).ui.selector == nil
   end
 
+  test "clear slash command asks for confirmation" do
+    {:ok, app} = App.start_link()
+
+    :ok = App.key(app, {:insert, "hello"})
+    :ok = App.key(app, :submit)
+    assert wait_until(app, &Enum.any?(&1.ui.messages, fn message -> message.role == :user end))
+
+    :ok = App.key(app, {:insert, "/clear"})
+    :ok = App.key(app, :submit)
+
+    snapshot = wait_until(app, &match?(%{kind: :clear_session_confirmation}, &1.ui.selector))
+    assert snapshot.ui.selector.title == "Clear session?"
+    assert snapshot.ui.selector.message == "This will delete all messages in the current session."
+    assert snapshot.ui.messages != []
+
+    :ok = App.key(app, :down)
+    :ok = App.key(app, :submit)
+    snapshot = App.snapshot(app)
+    assert snapshot.ui.selector == nil
+    assert snapshot.ui.messages != []
+
+    :ok = App.key(app, {:insert, "/clear"})
+    :ok = App.key(app, :submit)
+    assert wait_until(app, &match?(%{kind: :clear_session_confirmation}, &1.ui.selector))
+
+    :ok = App.key(app, :submit)
+    snapshot = wait_until(app, &(&1.ui.selector == nil and &1.ui.messages == []))
+    assert snapshot.ui.messages == []
+  end
+
   test "new slash command switches to a fresh session" do
     {:ok, app} = App.start_link()
     old_session = App.snapshot(app).ui.session_id

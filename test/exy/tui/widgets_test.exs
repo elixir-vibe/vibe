@@ -27,6 +27,23 @@ defmodule Exy.TUI.WidgetsTest do
     assert plain =~ "+new"
   end
 
+  test "confirmation widget renders title message and choices" do
+    lines =
+      TUI.confirmation(
+        title: "Clear session?",
+        message: "This will delete all messages in the current session.",
+        items: ["Yes", "No"],
+        selected: 0
+      )
+      |> Widget.render(60, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(lines, &String.contains?(&1, "Clear session?"))
+    assert Enum.any?(lines, &String.contains?(&1, "This will delete all messages"))
+    assert Enum.any?(lines, &String.contains?(&1, "→ Yes"))
+    assert Enum.any?(lines, &String.contains?(&1, "  No"))
+  end
+
   test "dialog keeps right border on every framed row" do
     lines =
       TUI.dialog("Resume", [TUI.text("session")], hint: "enter opens")

@@ -86,7 +86,7 @@ defmodule Exy.UI.SelectorTest do
     assert Exy.Session.state(server).model == "new-model"
   end
 
-  test "clear slash command clears visible messages" do
+  test "clear slash command asks before clearing visible messages" do
     {:ok, server} =
       Exy.Session.start_link(
         session_id: "selector-clear-session",
@@ -101,6 +101,16 @@ defmodule Exy.UI.SelectorTest do
       Exy.Session.dispatch(
         server,
         Command.new(:slash_command_submitted, %{command: "clear", args: ""})
+      )
+
+    state = Exy.Session.state(server)
+    assert state.messages != []
+    assert state.selector.kind == :clear_session_confirmation
+
+    :ok =
+      Exy.Session.dispatch(
+        server,
+        Command.new(:selector_confirmed, %{selector: :clear_session_confirmation, item: "Yes"})
       )
 
     assert Exy.Session.state(server).messages == []
