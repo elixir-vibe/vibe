@@ -264,6 +264,8 @@ Exy.Code.Checks.analyze(checks: [:test, :ex_slop])
 
 `eval` is stateful when called with a session id. Normal Elixir variables, aliases, imports, and requires persist for that session. Serializable eval state is snapshotted to the canonical session log and restored without replaying old eval code. Use `Exy.Eval.once/2` for explicit one-off evaluation.
 
+Eval sessions preload `Cmd` (`Exy.Command`) for supervised OS commands and `MD` (`Exy.MD`) for Markdown rendering. Prefer these over raw `System.cmd/3` and ad-hoc formatting.
+
 ```elixir
 Exy.Eval.run(~s(query = "weather in washington"), session_id: session_id)
 Exy.Eval.run(~s(query <> " tomorrow"), session_id: session_id)
@@ -276,6 +278,14 @@ Exy.Eval.once("Exy.OTP.runtime_info()")
 Exy.Runtime.Standalone.evaluate(runtime, "Mix.install([])\nx = 1 + 2")
 Exy.Runtime.Standalone.evaluate(runtime, "x * 2")
 Exy.Runtime.Standalone.stop(runtime)
+
+Cmd.run(["mix", "test"], timeout: 120_000)
+|> MD.to_markdown()
+
+{:ok, job} = Cmd.start(["mix", "phx.server"], cd: "~/Development/my_app")
+Cmd.status(job)
+Cmd.output(job, tail: 100)
+Cmd.cancel(job)
 
 Exy.Script.run_string("Mix.install([])\nIO.puts(:ok)")
 Exy.Runtime.Python.run("x = 1 + 2\nx", %{})
@@ -397,8 +407,10 @@ Hello.some_function("input")
 
 Web.search("ecto sqlite fts", num_results: 5, highlights: true)
 |> Web.filter_domain("hexdocs.pm")
-|> Web.format()
+|> MD.to_markdown()
 ```
+
+Plugins can render their own values by implementing `Exy.Markdown` for compiled structs, or by exposing `to_markdown/1` on runtime-loaded structs handled by the protocol fallback.
 
 Plugins can update renderer-neutral UI state:
 

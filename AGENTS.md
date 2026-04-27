@@ -2,6 +2,7 @@
 
 - Keep the model-facing tool count minimal.
 - Add Exy helper modules callable from `Exy.Eval` instead of adding narrow external tools.
+- Prefer eval aliases `Cmd` (`Exy.Command`) for supervised shell commands and `MD` (`Exy.MD`) for Markdown rendering. Use `System.cmd/3` only for tiny bounded commands.
 - Use `Exy.Code.AST`/ExAST for Elixir syntax search, replace, and diff. Do not use grep for code structure.
 - Use OTP supervision for background work and subagents.
 - Self-improvement should prefer skills and helper modules before changing runtime core. Skills may be Markdown (`SKILL.md`) or trusted executable Elixir (`skill.exs` in a skill directory, or single-file `*.skill.exs`) using `Exy.Skill.Script`; review executable skill code before sharing or installing it.
@@ -28,7 +29,7 @@
 - Use Ghostty.TTY for the interactive current-terminal runtime; do not add Exy-local `stty`, `/dev/tty`, or raw terminal-mode adapters.
 - Use Ghostty.KeyDecoder for terminal byte decoding; Exy-local key handling should only map `Ghostty.KeyEvent` values into semantic editor/UI commands.
 - Use Ghostty.Test and Ghostty.KeyEvent in TUI harness tests for keyboard input and terminal snapshots instead of hard-coding VT byte sequences wherever possible.
-- Plugins may run supervised background children, update semantic UI state through `Exy.Plugin.UI`, and register slash command modules through `Exy.Plugin.commands/1`; keep plugin UI/command APIs renderer-neutral so TUI and future LiveView consume the same state.
+- Plugins may run supervised background children, update semantic UI state through `Exy.Plugin.UI`, register slash command modules through `Exy.Plugin.commands/1`, and define `defimpl Exy.Markdown` for their result structs; keep plugin UI/command/rendering APIs renderer-neutral so TUI and future LiveView consume the same state.
 - Store durable runtime state in local SQLite through Ecto schemas, migrations, and `Exy.Repo`; do not add app-level raw SQL storage helpers. Use `Exy.Storage.migrate!/0`, `Exy.Storage.status/0`, `Exy.Storage.Search`, and storage CLI commands for schema/search lifecycle. Keep SQLite FTS5 DDL and MATCH/snippet/bm25/optimize fragments isolated under `Exy.Storage.FTS.Migration` / `Exy.Storage.FTS` / `Exy.Storage.Search`.
 - Store runtime observability under `Exy.Telemetry` backed by SQLite; agents should introspect local telemetry through `Exy.Telemetry.recent/1`, `Exy.Telemetry.all/1`, and `Exy.Telemetry.summary/1` instead of scraping logs.
 - Keep memory scopes separate: session eval state stays in `Exy.Eval`, per-agent scratch state in `Exy.Agent.Memory`, and curated long-term user/global/workspace facts in `Exy.Memory` / `Exy.Memory.Manager`. Durable eval snapshots and curated memory are SQLite-backed. Subagents should report findings to the parent instead of writing global memory directly.

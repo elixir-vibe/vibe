@@ -53,28 +53,6 @@ defmodule Exy.Plugins.WebSearch.API do
   def take(%{results: results} = search, count),
     do: %{search | results: Enum.take(results, count)}
 
-  @spec format({:ok, search()} | search()) :: String.t()
-  def format({:ok, search}), do: format(search)
-  def format({:error, reason}), do: "Error: #{inspect(reason)}"
-
-  def format(%{results: results}) do
-    results
-    |> Enum.map_join("\n\n---\n\n", fn result ->
-      [
-        "Title: ",
-        result.title || "Untitled",
-        "\nURL: ",
-        result.url || "",
-        optional("\nAuthor: ", result.author),
-        optional("\nDate: ", result.published_date),
-        optional("\nSummary: ", result.summary),
-        highlights(result.highlights),
-        body(result.text)
-      ]
-      |> IO.iodata_to_binary()
-    end)
-  end
-
   defp search_body(query, opts) do
     num_results = opts |> Keyword.get(:num_results, Keyword.get(opts, :numResults, 8)) |> min(100)
     context_max = Keyword.get(opts, :context_max_characters, 10_000)
@@ -139,16 +117,4 @@ defmodule Exy.Plugins.WebSearch.API do
   defp put_if(map, _key, nil), do: map
   defp put_if(map, _key, []), do: map
   defp put_if(map, key, value), do: Map.put(map, key, value)
-
-  defp optional(_prefix, nil), do: []
-  defp optional(_prefix, ""), do: []
-  defp optional(prefix, value), do: [prefix, value]
-
-  defp highlights([]), do: []
-
-  defp highlights(values) when is_list(values),
-    do: ["\nHighlights:\n", Enum.map(values, &["- ", &1, "\n"])]
-
-  defp body(""), do: []
-  defp body(text), do: ["\n\n", text]
 end

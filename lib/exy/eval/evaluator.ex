@@ -162,8 +162,11 @@ defmodule Exy.Eval.Evaluator do
 
   defp plugin_env(env) do
     aliases =
-      (Exy.Plugin.Manager.apis() ++ Exy.Skill.apis())
-      |> Enum.map(&{Module.concat([&1.alias]), &1.module})
+      [{Cmd, Exy.Command}, {MD, Exy.MD}] ++
+        Enum.map(
+          Exy.Plugin.Manager.apis() ++ Exy.Skill.apis(),
+          &{Module.concat([&1.alias]), &1.module}
+        )
 
     %{env | aliases: Keyword.merge(env.aliases, aliases)}
   end

@@ -44,7 +44,9 @@ defmodule Exy.UI.PromptRunner do
       notify_stream_owner(opts[:stream_owner], agent)
 
       try do
-        Exy.ask(agent, text, Keyword.put_new(ask_opts, :timeout, 120_000))
+        # Match the coding agent's one-day tool ceiling so long installs or test
+        # suites fail at the command/eval layer, not at the outer prompt await.
+        Exy.ask(agent, text, Keyword.put_new(ask_opts, :timeout, 86_400_000))
       after
         if Process.alive?(agent), do: GenServer.stop(agent)
       end

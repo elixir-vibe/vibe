@@ -14,6 +14,11 @@ defmodule Exy.Agent.Coding do
       Exy.Actions.AST,
       Exy.Actions.LSP
     ],
+    # Tool calls may intentionally run project generators, dependency installs,
+    # or long test suites. Keep this finite so cancellation still has a ceiling,
+    # but high enough that eval/Exy.Command own normal command timeouts.
+    tool_timeout_ms: 86_400_000,
+    stream_timeout_ms: 86_460_000,
     plugins: [Exy.Agent.Streaming.Plugin],
     system_prompt: false
 end

@@ -89,7 +89,7 @@ defmodule Exy.Script do
         :stderr_to_stdout,
         args: args,
         cd: Keyword.fetch!(opts, :cwd),
-        env: normalize_env(Keyword.fetch!(opts, :env))
+        env: Exy.Env.to_charlist_pairs(Keyword.fetch!(opts, :env))
       ])
 
     collect(port, Keyword.fetch!(opts, :timeout), [])
@@ -114,12 +114,6 @@ defmodule Exy.Script do
         %{status: :timeout, exit_status: nil, output: output(chunks)}
     end
   end
-
-  defp normalize_env(env) when is_map(env),
-    do: Enum.map(env, fn {key, value} -> {to_charlist(key), to_charlist(value)} end)
-
-  defp normalize_env(env),
-    do: Enum.map(env, fn {key, value} -> {to_charlist(key), to_charlist(value)} end)
 
   defp output(chunks), do: chunks |> Enum.reverse() |> IO.iodata_to_binary()
 
