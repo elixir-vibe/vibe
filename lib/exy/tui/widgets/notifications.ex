@@ -15,11 +15,16 @@ defmodule Exy.TUI.Widgets.Notifications do
   defp line(%{level: level, text: text}, width, theme) do
     color = level_color(level)
     icon = level_icon(level, theme)
-    Widget.fit_line([Theme.fg(theme, color, icon), " ", text], width)
+    padded_line([Theme.fg(theme, color, icon), " ", text], width)
   end
 
   defp line(text, width, theme),
-    do: Widget.fit_line([Theme.symbol(theme, :status_icon), " ", to_string(text)], width)
+    do: padded_line([Theme.symbol(theme, :status_icon), " ", to_string(text)], width)
+
+  defp padded_line(content, width) do
+    inner_width = max(width - 2, 1)
+    [" ", Widget.pad_line(content, inner_width), " "]
+  end
 
   defp level_color(:error), do: :error
   defp level_color(:warning), do: :warning

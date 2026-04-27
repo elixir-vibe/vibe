@@ -114,6 +114,20 @@ defmodule Exy.TUI.AppTest do
     assert snapshot.autocomplete == nil
   end
 
+  test "escape closes autocomplete without cancelling the session" do
+    {:ok, app} = App.start_link()
+
+    :ok = App.key(app, {:insert, "/se"})
+    assert %{autocomplete: %{items: [_ | _]}} = App.snapshot(app)
+
+    :ok = App.key(app, :cancel)
+    snapshot = App.snapshot(app)
+
+    assert snapshot.autocomplete == nil
+    assert snapshot.editor.text == "/se"
+    refute Enum.any?(snapshot.ui.notifications, &(&1.text == "cancelled"))
+  end
+
   test "submit applies selected slash command from autocomplete" do
     {:ok, app} = App.start_link()
 

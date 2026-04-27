@@ -146,6 +146,19 @@ defmodule Exy.TUI.WidgetsTest do
     assert placeholder =~ "› Ask..."
   end
 
+  test "notification widget uses message-like horizontal padding" do
+    lines =
+      TUI.notifications(items: [%{level: :warning, text: "unknown command: /"}])
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert [line] = lines
+    assert String.starts_with?(line, " ")
+    assert String.ends_with?(line, " ")
+    assert String.length(line) == 40
+    assert line =~ "unknown command: /"
+  end
+
   test "autocomplete widget renders reusable suggestions" do
     lines =
       TUI.autocomplete(

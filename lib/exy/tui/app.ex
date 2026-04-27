@@ -311,7 +311,9 @@ defmodule Exy.TUI.App do
     |> command_prefix_only?()
   end
 
-  defp autocomplete_key?(key, %{autocomplete: %Autocomplete{}}), do: key in [:up, :down, :tab]
+  defp autocomplete_key?(key, %{autocomplete: %Autocomplete{}}),
+    do: key in [:up, :down, :tab, :cancel]
+
   defp autocomplete_key?(_key, _state), do: false
 
   defp command_prefix_only?("/" <> text) do
@@ -327,6 +329,8 @@ defmodule Exy.TUI.App do
   defp handle_autocomplete_key(:down, state) do
     %{state | autocomplete: Autocomplete.move(state.autocomplete, 1)}
   end
+
+  defp handle_autocomplete_key(:cancel, state), do: %{state | autocomplete: nil}
 
   defp handle_autocomplete_key(:tab, state) do
     case Autocomplete.selected_item(state.autocomplete) do
