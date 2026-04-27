@@ -131,6 +131,37 @@ defmodule Exy.TUI.TerminalLoopTest do
     end
   end
 
+  test "notice blocks keep a gap from preceding messages" do
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 60,
+        height: 24,
+        ask_fun: fn _text, _opts ->
+          Process.sleep(5_000)
+          {:ok, "ok"}
+        end
+      )
+
+    :ok = TerminalLoop.input(loop, "hello")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+    Process.sleep(100)
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :escape})
+
+    plain =
+      wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "cancelled") end))
+
+    message_index = Enum.find_index(plain, &String.contains?(&1, "hello"))
+    notice_index = Enum.find_index(plain, &String.contains?(&1, "! cancelled"))
+
+    assert message_index
+    assert notice_index
+
+    assert plain
+           |> Enum.slice((message_index + 1)..(notice_index - 1)//1)
+           |> Enum.any?(&(String.trim(&1) == ""))
+  end
+
   test "confirmation appears above footer like autocomplete without clearing chat history" do
     ask = fn _text, _opts -> {:ok, "ok"} end
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 30, ask_fun: ask)

@@ -34,6 +34,9 @@ defmodule Exy.TUI.Views.Chat do
       |> Enum.reject(&(&1.kind == :confirmation))
       |> Enum.map(&overlay/1)
 
+    notice_margin =
+      if notices != [] and (body != [] or plugin_widgets != []), do: [spacer()], else: []
+
     footer_margin =
       if body == [] and plugin_widgets == [] and notices == [] and picker == [],
         do: [],
@@ -43,6 +46,7 @@ defmodule Exy.TUI.Views.Chat do
       List.flatten([
         body,
         plugin_widgets,
+        notice_margin,
         notices,
         picker,
         footer_margin,
