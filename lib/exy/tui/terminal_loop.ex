@@ -48,15 +48,16 @@ defmodule Exy.TUI.TerminalLoop do
     {:ok, app} = app(opts)
     :ok = App.subscribe(app, self())
 
-    {:ok,
-     %{
-       app: app,
-       output: Keyword.get(opts, :output, :stdio),
-       event_target: Keyword.get(opts, :event_target),
-       loader_phase: 0,
-       loader_timer: nil,
-       theme: Keyword.get_lazy(opts, :theme, &Theme.default/0)
-     }}
+    state = %{
+      app: app,
+      output: Keyword.get(opts, :output, :stdio),
+      event_target: Keyword.get(opts, :event_target),
+      loader_phase: 0,
+      loader_timer: nil,
+      theme: Keyword.get_lazy(opts, :theme, &Theme.default/0)
+    }
+
+    {:ok, maybe_start_loader_timer(state)}
   end
 
   @impl true

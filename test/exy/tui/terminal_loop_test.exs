@@ -67,6 +67,28 @@ defmodule Exy.TUI.TerminalLoopTest do
            )
   end
 
+  test "starts loader ticks when attaching to an already-working session" do
+    session_id = "loader-attach-#{System.unique_integer([:positive])}"
+    {:ok, session} = Exy.Session.start_link(session_id: session_id, persist?: false)
+
+    assert :ok =
+             Exy.Session.emit_transient_event(
+               session,
+               Exy.UI.Event.new(:assistant_stream_started, session_id, %{})
+             )
+
+    {:ok, _loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 60,
+        height: 12,
+        session_server: session,
+        event_target: self()
+      )
+
+    assert_receive {TerminalLoop, :event, :loader_tick}, 300
+  end
+
   test "notifies event target for asynchronous UI updates" do
     ask = fn _text, _opts -> {:ok, "done"} end
 
