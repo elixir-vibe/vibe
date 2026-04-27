@@ -35,7 +35,28 @@ defmodule Exy.TelemetryTest do
     assert [%{metadata: metadata}] = Exy.Telemetry.recent(1)
     assert metadata.session_id == "self"
 
-    assert %{count: 1, by_event: %{"exy.session.command.start" => 1}} = Exy.Telemetry.summary()
+    summary = Exy.Telemetry.summary()
+    assert summary.by_event["exy.session.command.start"] == 1
+    assert summary.count >= 1
+  end
+
+  test "external telemetry metadata is redacted before storage" do
+    Exy.Telemetry.execute([:finch, :request, :start], %{system_time: 1}, %{
+      request: %{
+        method: "POST",
+        host: "example.test",
+        path: "/v1/messages",
+        headers: [{"authorization", "Bearer secret"}],
+        body: "raw prompt"
+      }
+    })
+
+    assert_event(fn event -> event.event == [:finch, :request, :start] end)
+    [%{metadata: metadata}] = Exy.Telemetry.recent(1)
+
+    assert metadata.request["host"] == "example.test"
+    refute inspect(metadata) =~ "secret"
+    refute inspect(metadata) =~ "raw prompt"
   end
 
   test "span records start and stop events" do

@@ -27,6 +27,7 @@ defmodule Exy.Telemetry do
     "model" => :model,
     "operation" => :operation,
     "provider" => :provider,
+    "request" => :request,
     "request_id" => :request_id,
     "session_id" => :session_id,
     "status" => :status,
@@ -231,7 +232,7 @@ defmodule Exy.Telemetry do
       at: DateTime.utc_now() |> DateTime.to_iso8601(),
       event: event_name,
       measurements: measurements |> json_safe() |> atomize_known(),
-      metadata: metadata |> json_safe() |> atomize_known()
+      metadata: metadata |> sanitize_metadata() |> json_safe() |> atomize_known()
     }
   end
 
@@ -275,6 +276,64 @@ defmodule Exy.Telemetry do
 
   defp maybe_reverse_limited(events, :infinity), do: events
   defp maybe_reverse_limited(events, limit) when is_integer(limit), do: Enum.reverse(events)
+
+  defp sanitize_metadata(metadata), do: scrub_sensitive(metadata)
+
+  defp scrub_sensitive(%_{} = struct), do: struct |> Map.from_struct() |> scrub_sensitive()
+
+  defp scrub_sensitive(map) when is_map(map) do
+    Map.new(map, fn {key, value} -> scrub_entry(key, value) end)
+  end
+
+  defp scrub_sensitive(list) when is_list(list) do
+    Enum.map(list, fn
+      {key, value} when is_binary(key) or is_atom(key) -> elem(scrub_entry(key, value), 1)
+      value -> scrub_sensitive(value)
+    end)
+  end
+
+  defp scrub_sensitive(value) when is_binary(value), do: scrub_string(value)
+  defp scrub_sensitive(value), do: value
+
+  defp scrub_entry(key, value) do
+    normalized_key = key |> to_string() |> String.downcase()
+
+    cond do
+      normalized_key in [
+        "authorization",
+        "cookie",
+        "set-cookie",
+        "api_key",
+        "api-key",
+        "token",
+        "access_token",
+        "refresh_token"
+      ] ->
+        {key, "[REDACTED]"}
+
+      normalized_key in ["headers", "body", "input", "messages", "prompt", "instructions"] ->
+        {key, "[REDACTED]"}
+
+      normalized_key == "request" ->
+        {key, sanitize_request(value)}
+
+      true ->
+        {key, scrub_sensitive(value)}
+    end
+  end
+
+  defp sanitize_request(%_{} = request), do: request |> Map.from_struct() |> sanitize_request()
+
+  defp sanitize_request(request) when is_map(request) do
+    request
+    |> Map.take([:method, :scheme, :host, :port, :path])
+    |> Map.merge(Map.take(request, ["method", "scheme", "host", "port", "path"]))
+  end
+
+  defp sanitize_request(_request), do: "[REDACTED]"
+
+  defp scrub_string("Bearer " <> _token), do: "Bearer [REDACTED]"
+  defp scrub_string(value), do: value
 
   defp json_safe(%_{} = struct), do: struct |> Map.from_struct() |> json_safe()
 

@@ -5,15 +5,29 @@ defmodule Exy.OTP do
 
   @spec top(:memory | :reductions | :message_queue_len, keyword()) :: [map()]
   def top(sort \\ :memory, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 15)
-
-    Process.list()
+    sort
+    |> sorted_processes()
+    |> Enum.take(Keyword.get(opts, :limit, 15))
     |> Enum.flat_map(&process_summary/1)
-    |> Enum.sort_by(&Map.get(&1, sort, 0), :desc)
-    |> Enum.take(limit)
+    |> Enum.with_index(1)
+    |> Enum.map(fn {summary, index} -> Map.put(summary, :index, index) end)
   end
 
-  @spec process_info(pid() | atom() | String.t()) :: map() | nil
+  @spec process_at(:memory | :reductions | :message_queue_len, pos_integer()) :: pid() | nil
+  def process_at(sort \\ :memory, index \\ 1) when is_integer(index) and index > 0 do
+    sort
+    |> sorted_processes()
+    |> Enum.at(index - 1)
+  end
+
+  @spec process_info(
+          pid()
+          | atom()
+          | String.t()
+          | {:pid, pid()}
+          | {:registered, atom() | String.t()}
+        ) ::
+          map() | nil
   def process_info(process) do
     process
     |> resolve_process()
@@ -81,6 +95,20 @@ defmodule Exy.OTP do
     }
   end
 
+  defp sorted_processes(sort) do
+    Process.list()
+    |> Enum.flat_map(&process_sort_value(&1, sort))
+    |> Enum.sort_by(&elem(&1, 1), :desc)
+    |> Enum.map(&elem(&1, 0))
+  end
+
+  defp process_sort_value(pid, sort) do
+    case Process.info(pid, sort) do
+      {^sort, value} when is_integer(value) -> [{pid, value}]
+      _info -> []
+    end
+  end
+
   defp process_summary(pid) do
     keys = [
       :registered_name,
@@ -113,29 +141,26 @@ defmodule Exy.OTP do
   end
 
   defp resolve_process(pid) when is_pid(pid), do: pid
+  defp resolve_process({:pid, pid}) when is_pid(pid), do: pid
+  defp resolve_process({:registered, name}), do: resolve_registered_name(name)
+  defp resolve_process(name) when is_atom(name), do: Process.whereis(name)
+  defp resolve_process(name) when is_binary(name), do: resolve_registered_name(name)
+  defp resolve_process(_process), do: nil
 
-  defp resolve_process(name) when is_atom(name) do
-    case Process.whereis(name) do
-      nil -> if match?({:registered_name, _}, Process.info(self(), :registered_name)), do: nil
-      pid -> pid
-    end
+  defp resolve_registered_name(name) when is_atom(name), do: Process.whereis(name)
+
+  defp resolve_registered_name(text) when is_binary(text) do
+    text
+    |> registered_name_from_string()
+    |> resolve_process()
   end
 
-  defp resolve_process(text) when is_binary(text) do
-    cond do
-      String.starts_with?(text, "#PID<") -> pid_from_inspect(text)
-      String.starts_with?(text, "#Port<") -> nil
-      true -> text |> String.to_existing_atom() |> resolve_process()
-    end
-  rescue
-    ArgumentError -> nil
-  end
+  defp resolve_registered_name(_name), do: nil
 
-  defp pid_from_inspect(text) do
-    [a, b, c] = Regex.run(~r/#PID<(\d+)\.(\d+)\.(\d+)>/, text, capture: :all_but_first)
-    "<#{a}.#{b}.#{c}>" |> String.to_charlist() |> :erlang.list_to_pid()
-  rescue
-    _ -> nil
+  defp registered_name_from_string(text) do
+    Enum.find(Process.registered(), fn name ->
+      Atom.to_string(name) == text or inspect(name) == text
+    end)
   end
 
   defp resolve_root_supervisor(nil) do
