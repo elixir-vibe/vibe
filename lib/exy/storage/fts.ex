@@ -16,15 +16,9 @@ defmodule Exy.Storage.FTS do
 
   @spec index_ui_event_rows([map() | struct()]) :: :ok
   def index_ui_event_rows(rows) when is_list(rows) do
-    fts_rows = Enum.flat_map(rows, &ui_event_fts_row/1)
-    event_ids = Enum.map(fts_rows, & &1.event_id)
-
-    if event_ids != [] do
-      Exy.Repo.delete_all(from(row in UIEventFTS, where: row.event_id in ^event_ids))
-      insert_ui_event_fts_rows(fts_rows)
-    end
-
-    :ok
+    rows
+    |> Enum.flat_map(&ui_event_fts_row/1)
+    |> insert_ui_event_fts_rows()
   end
 
   @spec remove_ui_event(String.t()) :: :ok
