@@ -85,7 +85,7 @@ defmodule Exy.MixProject do
       {:phoenix_live_view, "~> 1.1"},
       {:plug_cowboy, "~> 2.7"},
       {:lazy_html, ">= 0.1.0", only: :test},
-      {:volt, path: "../volt"},
+      {:volt, "~> 0.8.1"},
       {:opentelemetry_api, "~> 1.5"},
       {:opentelemetry, "~> 1.7"},
       {:opentelemetry_telemetry, "~> 1.1"},
@@ -95,7 +95,7 @@ defmodule Exy.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:reach, "~> 1.7", runtime: false, override: true},
       {:pythonx, "~> 0.4.9", optional: true},
-      {:quickbeam, "~> 0.10.6", optional: true},
+      {:quickbeam, "~> 0.10.4", optional: true},
       {:jido, "~> 2.2"},
       {:jido_ai, "~> 2.1"},
       {:ghostty, "~> 0.4"}
