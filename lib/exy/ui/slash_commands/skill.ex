@@ -6,7 +6,7 @@ defmodule Exy.UI.SlashCommands.Skill do
   alias Exy.UI.Event
 
   @impl true
-  def spec, do: %{name: "skill", description: "Choose skill"}
+  def spec, do: %{name: "skill", description: "Choose skill", selectors: [:skill_selector]}
 
   @impl true
   def run(_args, ui_state) do

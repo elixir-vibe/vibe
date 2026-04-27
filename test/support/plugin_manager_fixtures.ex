@@ -107,18 +107,11 @@ defmodule Exy.Test.PluginManagerFixtures.APIPlugin do
 
   use Exy.Plugin
 
-  alias Exy.Test.PluginManagerFixtures.SearchAPI
-
-  @impl true
-  def apis(_state) do
-    [
-      %Exy.Plugin.API{
-        name: :fixture_search,
-        module: SearchAPI,
-        alias: Search,
-        description: "Fixture search API",
-        examples: ["Search.remember(query)"]
-      }
-    ]
-  end
+  api(
+    name: :fixture_search,
+    module: Exy.Test.PluginManagerFixtures.SearchAPI,
+    alias: Search,
+    description: "Fixture search API",
+    examples: ["Search.remember(query)"]
+  )
 end

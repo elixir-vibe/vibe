@@ -91,6 +91,7 @@ defmodule Exy.PluginManagerTest do
     assert :ok = Exy.Plugin.Manager.load(CommandPlugin, session_id: "plugin-command")
 
     assert Enum.any?(Exy.UI.SlashCommands.Registry.specs(), &(&1.name == "fixture"))
+    assert Exy.UI.SlashCommands.Registry.find_selector(:missing_selector) == nil
 
     {:ok, server} = Exy.Session.start_link(session_id: "plugin-command-session")
 

@@ -28,9 +28,18 @@ defmodule Exy.UI.SlashCommands.Registry do
 
     Enum.find(commands(), fn module ->
       spec = normalize_spec(module.spec())
-      name == spec.name or name in Map.get(spec, :aliases, [])
+      name == spec.name or name in spec.aliases
     end)
   end
+
+  @spec find_selector(atom()) :: module() | nil
+  def find_selector(selector) when is_atom(selector) do
+    Enum.find(commands(), fn module ->
+      selector in normalize_spec(module.spec()).selectors
+    end)
+  end
+
+  def find_selector(_selector), do: nil
 
   defp plugin_commands do
     if Process.whereis(Exy.Plugin.Manager) do
@@ -53,5 +62,6 @@ defmodule Exy.UI.SlashCommands.Registry do
     spec
     |> Map.put_new(:aliases, [])
     |> Map.put_new(:description, "")
+    |> Map.put_new(:selectors, [])
   end
 end

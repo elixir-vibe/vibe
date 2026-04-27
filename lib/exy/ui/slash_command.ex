@@ -7,7 +7,8 @@ defmodule Exy.UI.SlashCommand do
   @type spec :: %{
           required(:name) => String.t(),
           optional(:aliases) => [String.t()],
-          optional(:description) => String.t()
+          optional(:description) => String.t(),
+          optional(:selectors) => [atom()]
         }
 
   @type result :: {:events, [Event.t()]} | :compact | :ignore

@@ -26,7 +26,7 @@ defmodule Exy.UI.SlashCommands do
 
   @spec selector_action(map(), map()) :: Exy.UI.SlashCommand.result() | {:command, String.t()}
   def selector_action(%{selector: selector, item: item}, ui_state) do
-    case selector_command(selector) do
+    case Registry.find_selector(selector) do
       nil -> :ignore
       module -> run_selector_action(module, item, ui_state)
     end
@@ -36,12 +36,6 @@ defmodule Exy.UI.SlashCommands do
 
   defp run_selector_action(module, item, ui_state) when is_atom(module),
     do: module.selector_action(item, ui_state)
-
-  defp selector_command(:model_selector), do: Exy.UI.SlashCommands.Model
-  defp selector_command(:session_selector), do: Exy.UI.SlashCommands.Sessions
-  defp selector_command(:skill_selector), do: Exy.UI.SlashCommands.Skill
-  defp selector_command(:command_palette), do: Exy.UI.SlashCommands.Commands
-  defp selector_command(_selector), do: nil
 
   defp autocomplete_item(spec) do
     %{

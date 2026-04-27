@@ -6,7 +6,7 @@ defmodule Exy.UI.SlashCommands.Model do
   alias Exy.UI.Event
 
   @impl true
-  def spec, do: %{name: "model", description: "Choose model"}
+  def spec, do: %{name: "model", description: "Choose model", selectors: [:model_selector]}
 
   @impl true
   def run(_args, ui_state) do

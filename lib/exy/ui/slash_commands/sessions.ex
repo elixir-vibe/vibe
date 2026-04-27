@@ -7,7 +7,12 @@ defmodule Exy.UI.SlashCommands.Sessions do
 
   @impl true
   def spec,
-    do: %{name: "sessions", aliases: ["session", "s"], description: "Browse stored sessions"}
+    do: %{
+      name: "sessions",
+      aliases: ["session", "s"],
+      description: "Browse stored sessions",
+      selectors: [:session_selector]
+    }
 
   @impl true
   def run(_args, ui_state) do

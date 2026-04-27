@@ -7,7 +7,8 @@ defmodule Exy.UI.SlashCommands.Commands do
   alias Exy.UI.SlashCommands.Registry
 
   @impl true
-  def spec, do: %{name: "commands", description: "Open command palette"}
+  def spec,
+    do: %{name: "commands", description: "Open command palette", selectors: [:command_palette]}
 
   @impl true
   def run(_args, ui_state) do
