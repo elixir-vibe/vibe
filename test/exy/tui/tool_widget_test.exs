@@ -293,6 +293,17 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert ansi =~ "38;2;204;102;102"
   end
 
+  test "eval truncates large output before wrapping" do
+    output = Enum.map_join(1..10_000, "\n", &"line #{&1} #{String.duplicate("x", 100)}")
+    tool = %{id: "tool", name: :eval, status: :ok, args: %{code: "many()"}, output: output}
+
+    {us, lines} = :timer.tc(fn -> tool |> TUI.tool() |> Widget.render(120, Theme.default()) end)
+    plain = Enum.map(lines, &Width.visible_text/1)
+
+    assert us < 50_000
+    assert Enum.any?(plain, &String.contains?(&1, "line 10000"))
+  end
+
   test "eval truncation keeps the tail and shows the shortcut hint first" do
     output = Enum.map_join(1..12, "\n", &"line #{&1}")
 

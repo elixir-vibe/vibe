@@ -227,7 +227,28 @@ defmodule Exy.TUI.ToolWidget do
 
   defp append_section(lines, _label, nil, _width, _theme, _tool, _opts), do: lines
 
-  defp append_section(lines, label, value, width, theme, tool, opts) do
+  defp append_section(
+         lines,
+         :output,
+         value,
+         width,
+         theme,
+         %{output_format: :inspect} = tool,
+         opts
+       )
+       when is_binary(value) do
+    append_default_section(lines, :output, value, width, theme, tool, opts)
+  end
+
+  defp append_section(lines, :output, value, width, theme, tool, opts) when is_binary(value) do
+    value_lines = binary_output_lines(value, width, theme, tool, opts)
+    lines |> Lines.join(section_label_lines(:output, width, theme)) |> Lines.join(value_lines)
+  end
+
+  defp append_section(lines, label, value, width, theme, tool, opts),
+    do: append_default_section(lines, label, value, width, theme, tool, opts)
+
+  defp append_default_section(lines, label, value, width, theme, tool, opts) do
     label_lines = section_label_lines(label, width, theme)
 
     value_lines =
@@ -241,6 +262,22 @@ defmodule Exy.TUI.ToolWidget do
 
   defp section_label_lines(label, width, theme) do
     Widget.render(TUI.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
+  end
+
+  defp binary_output_lines(value, width, theme, tool, opts) do
+    mode = Keyword.get(opts, :truncation, :head)
+
+    truncation =
+      value
+      |> String.split("\n")
+      |> TextTruncation.lines(enabled?: Map.get(tool, :truncate?, true), limit: 8, mode: mode)
+
+    lines =
+      Enum.flat_map(truncation.lines, fn line ->
+        Widget.wrap([Widget.spaces(2), Theme.fg(theme, :tool_output, line)], width)
+      end)
+
+    truncated_lines(%{truncation | lines: lines}, mode, theme, width)
   end
 
   defp value_lines(:output, %{error: error}, width, theme, _tool),

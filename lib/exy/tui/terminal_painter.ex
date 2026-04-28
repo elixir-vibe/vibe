@@ -139,21 +139,39 @@ defmodule Exy.TUI.TerminalPainter do
   end
 
   defp changed_range(old, new) do
-    max_length = max(length(old), length(new))
+    case first_changed_index(old, new, 0) do
+      nil ->
+        nil
 
-    first =
-      Enum.find(0..max(max_length - 1, 0), fn index ->
-        Enum.at(old, index) != Enum.at(new, index)
-      end)
+      first ->
+        max_length = max(length(old), length(new))
+        max_tail = max(max_length - first - 1, 0)
+        tail = common_tail_length(Enum.reverse(old), Enum.reverse(new), max_tail, 0)
+        {first, max_length - tail - 1}
+    end
+  end
 
-    if is_nil(first) do
-      nil
+  defp first_changed_index([], [], _index), do: nil
+  defp first_changed_index([], _new, index), do: index
+  defp first_changed_index(_old, [], index), do: index
+
+  defp first_changed_index([old_line | old], [new_line | new], index) do
+    if old_line == new_line do
+      first_changed_index(old, new, index + 1)
     else
-      last =
-        (max_length - 1)..first//-1
-        |> Enum.find(fn index -> Enum.at(old, index) != Enum.at(new, index) end)
+      index
+    end
+  end
 
-      {first, last}
+  defp common_tail_length(_old, _new, 0, count), do: count
+  defp common_tail_length([], _new, _remaining, count), do: count
+  defp common_tail_length(_old, [], _remaining, count), do: count
+
+  defp common_tail_length([old_line | old], [new_line | new], remaining, count) do
+    if old_line == new_line do
+      common_tail_length(old, new, remaining - 1, count + 1)
+    else
+      count
     end
   end
 
