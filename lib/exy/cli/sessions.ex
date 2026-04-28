@@ -51,9 +51,7 @@ defmodule Exy.CLI.Sessions do
 
     case Exy.Remote.connect() do
       {:ok, node} ->
-        session_id =
-          opts[:session] || latest_live_remote_session_id() || new_remote_session_id(opts)
-
+        session_id = opts[:session] || new_remote_session_id(opts)
         attach(session_id, Keyword.put(opts, :remote_node, node))
 
       {:error, _reason} ->

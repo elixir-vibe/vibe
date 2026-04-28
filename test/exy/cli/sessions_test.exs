@@ -24,7 +24,7 @@ defmodule Exy.CLI.SessionsTest do
     assert is_nil(Exy.CLI.Sessions.latest_live_remote_session_id())
   end
 
-  test "latest_live_session_id handles raw remote session listings" do
+  test "latest_live_session_id handles raw remote session listings for explicit attach" do
     sessions = [
       %{id: "old", live?: false},
       %{id: "current", live?: true},
