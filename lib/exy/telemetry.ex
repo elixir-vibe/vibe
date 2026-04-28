@@ -242,8 +242,8 @@ defmodule Exy.Telemetry do
     %TelemetryEvent{
       name: Enum.join(event.event, "."),
       at: parse_datetime!(event.at),
-      measurements: event.measurements,
-      metadata: event.metadata
+      measurements: json_safe(event.measurements),
+      metadata: json_safe(event.metadata)
     }
     |> Exy.Repo.insert()
   end

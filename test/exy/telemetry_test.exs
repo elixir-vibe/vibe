@@ -59,6 +59,23 @@ defmodule Exy.TelemetryTest do
     refute inspect(metadata) =~ "raw prompt"
   end
 
+  test "stores mixed atom and string telemetry metadata as JSON-safe maps" do
+    Exy.Telemetry.execute([:finch, :request, :stop], %{duration: 1}, %{
+      :request => %{method: "POST", host: "auth.openai.com", path: "/oauth/token"},
+      :result => {:ok, %{:status => 200, "body" => <<1, 2, 3>>}},
+      "name" => Req.Finch
+    })
+
+    assert_event(fn event -> event.event == [:finch, :request, :stop] end)
+    [%{metadata: metadata}] = Exy.Telemetry.recent(1)
+
+    assert metadata.request["host"] == "auth.openai.com"
+    assert metadata["result"] == ["ok", %{:status => 200, "body" => <<1, 2, 3>>}]
+    assert [%{metadata: stored_metadata}] = Exy.Telemetry.all(limit: 1)
+    assert stored_metadata.request["host"] == "auth.openai.com"
+    assert stored_metadata["result"] == ["ok", %{:status => 200, "body" => <<1, 2, 3>>}]
+  end
+
   test "span records start and stop events" do
     assert Exy.Telemetry.span([:exy, :plugin, :dispatch], %{event_type: :test}, fn -> :ok end) ==
              :ok
