@@ -82,27 +82,15 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
   defp normalize_format("text"), do: :text
   defp normalize_format(format), do: format
 
-  defp part_lines(%{format: :inspect, output: output}, width, _theme) do
-    output
-    |> Exy.TUI.Syntax.highlight_elixir()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line -> Exy.TUI.Widget.wrap([Exy.TUI.Widget.spaces(2), line], width) end)
-  end
+  defp part_lines(%{format: :inspect, output: output}, width, theme),
+    do: ToolWidget.inspect_lines(output, width, theme)
 
   defp part_lines(%{format: :markdown, output: output}, width, theme) do
     Markdown.render(output, max(width - 2, 1), theme)
   end
 
-  defp part_lines(%{output: output}, width, theme) do
-    output
-    |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Exy.TUI.Widget.wrap(
-        [Exy.TUI.Widget.spaces(2), Exy.TUI.Theme.fg(theme, :tool_output, line)],
-        width
-      )
-    end)
-  end
+  defp part_lines(%{output: output}, width, theme),
+    do: ToolWidget.plain_lines(output, width, theme)
 
   defp markdown_output?(%{output_format: :markdown}), do: true
   defp markdown_output?(_tool), do: false

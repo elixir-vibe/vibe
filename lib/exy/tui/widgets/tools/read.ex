@@ -18,14 +18,8 @@ defmodule Exy.TUI.Widgets.Tools.Read do
     )
   end
 
-  defp output_lines(%{error: error}, width, theme) do
-    error
-    |> format_error()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :error, line)], width)
-    end)
-  end
+  defp output_lines(%{error: error}, width, theme),
+    do: ToolWidget.error_lines(error, width, theme)
 
   defp output_lines(%{content: content} = result, width, theme) when is_binary(content) do
     content_lines =
@@ -44,14 +38,7 @@ defmodule Exy.TUI.Widgets.Tools.Read do
     end
   end
 
-  defp output_lines(value, width, theme) do
-    value
-    |> ToolWidget.format_value()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :tool_output, line)], width)
-    end)
-  end
+  defp output_lines(value, width, theme), do: ToolWidget.plain_lines(value, width, theme)
 
   defp truncation_footer(result, theme) do
     omitted_lines = Map.get(result, :omitted_lines, 0)
@@ -78,7 +65,4 @@ defmodule Exy.TUI.Widgets.Tools.Read do
   rescue
     _error -> Theme.fg(theme, :tool_output, line)
   end
-
-  defp format_error(error) when is_binary(error), do: error
-  defp format_error(error), do: inspect(error, pretty: true, limit: 20)
 end

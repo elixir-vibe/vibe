@@ -5,14 +5,7 @@ defmodule Exy.TUI.Widgets.Tools.FileMutation do
   alias Exy.TUI.{Lines, Theme, ToolWidget, Widget}
 
   @spec output_lines(term(), pos_integer(), Theme.t()) :: [IO.chardata()]
-  def output_lines(%{error: error}, width, theme) do
-    error
-    |> format_error()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :error, line)], width)
-    end)
-  end
+  def output_lines(%{error: error}, width, theme), do: ToolWidget.error_lines(error, width, theme)
 
   def output_lines(%{message: message, change: %{diff: diff}}, width, theme)
       when is_binary(diff) do
@@ -23,14 +16,7 @@ defmodule Exy.TUI.Widgets.Tools.FileMutation do
     output_diff(message, diff, width, theme)
   end
 
-  def output_lines(value, width, theme) do
-    value
-    |> ToolWidget.format_value()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :tool_output, line)], width)
-    end)
-  end
+  def output_lines(value, width, theme), do: ToolWidget.plain_lines(value, width, theme)
 
   defp output_diff(message, diff, width, theme) do
     message_lines = Widget.wrap([Widget.spaces(2), Theme.fg(theme, :muted, message)], width)
@@ -42,7 +28,4 @@ defmodule Exy.TUI.Widgets.Tools.FileMutation do
 
     message_lines |> Lines.join([""]) |> Lines.join(diff_lines)
   end
-
-  defp format_error(error) when is_binary(error), do: error
-  defp format_error(error), do: inspect(error, pretty: true, limit: 20)
 end

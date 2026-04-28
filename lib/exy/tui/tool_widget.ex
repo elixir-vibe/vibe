@@ -109,7 +109,6 @@ defmodule Exy.TUI.ToolWidget do
     if available > 0, do: Widget.fit_line(summary, available), else: nil
   end
 
-  @doc false
   def generic_lines(tool, width, theme),
     do: block(tool, width, theme, summary: compact_summary(tool))
 
@@ -166,6 +165,31 @@ defmodule Exy.TUI.ToolWidget do
   def format_value(value) when is_binary(value), do: value
   def format_value(value), do: inspect(value, pretty: true, limit: 20)
 
+  def error_lines(error, width, theme) do
+    error
+    |> format_error()
+    |> plain_lines(width, theme, fg: :error)
+  end
+
+  def plain_lines(value, width, theme, opts \\ []) do
+    fg = Keyword.get(opts, :fg, :tool_output)
+
+    value
+    |> format_value()
+    |> String.split("\n")
+    |> Enum.flat_map(fn line ->
+      Widget.wrap([Widget.spaces(2), Theme.fg(theme, fg, line)], width)
+    end)
+  end
+
+  def inspect_lines(value, width, _theme) do
+    value
+    |> format_value()
+    |> Syntax.highlight_elixir()
+    |> String.split("\n")
+    |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), line], width) end)
+  end
+
   defp raw_output(tool), do: Map.get(tool, :output) || Map.get(tool, :result)
 
   defp unwrap_output(%{output: output}), do: output
@@ -216,31 +240,13 @@ defmodule Exy.TUI.ToolWidget do
     Widget.render(TUI.text([Theme.fg(theme, :muted, [to_string(label), ":"])]), width, theme)
   end
 
-  defp value_lines(:output, %{error: error}, width, theme, _tool) do
-    error
-    |> format_error()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :error, line)], width)
-    end)
-  end
+  defp value_lines(:output, %{error: error}, width, theme, _tool),
+    do: error_lines(error, width, theme)
 
-  defp value_lines(:output, value, width, _theme, %{output_format: :inspect}) do
-    value
-    |> format_value()
-    |> Syntax.highlight_elixir()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), line], width) end)
-  end
+  defp value_lines(:output, value, width, theme, %{output_format: :inspect}),
+    do: inspect_lines(value, width, theme)
 
-  defp value_lines(:output, value, width, theme, _tool) do
-    value
-    |> format_value()
-    |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Widget.wrap([Widget.spaces(2), Theme.fg(theme, :tool_output, line)], width)
-    end)
-  end
+  defp value_lines(:output, value, width, theme, _tool), do: plain_lines(value, width, theme)
 
   defp value_lines(_label, value, width, theme, _tool) do
     Widget.render(

@@ -416,6 +416,28 @@ defmodule Exy.TUI.ToolWidgetTest do
            |> Enum.any?(&String.contains?(&1, "0 diagnostics"))
   end
 
+  test "ast hides raw params and keeps action and path context visible" do
+    lines =
+      TUI.tool(%{
+        id: "ast-search",
+        name: :ast,
+        status: :ok,
+        args: %{"action" => "search", "path" => "lib/demo.ex", "pattern" => "IO.puts(_)"},
+        output: [%{path: "lib/demo.ex", line: 1}],
+        expanded?: true
+      })
+      |> Widget.render(100, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    rendered = Enum.join(lines, "\n")
+
+    assert rendered =~ "ast"
+    assert rendered =~ "search"
+    assert rendered =~ "lib/demo.ex"
+    refute rendered =~ "params:"
+    refute rendered =~ "pattern"
+  end
+
   test "lsp hides raw params and keeps action in the header" do
     lines =
       TUI.tool(%{
