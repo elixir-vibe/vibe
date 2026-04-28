@@ -2,6 +2,7 @@ defmodule Exy.CLI.Server do
   @moduledoc false
 
   alias Exy.CLI.Output
+  alias Exy.Server.Metadata
 
   @spec command([String.t()], keyword()) :: :ok | {:error, term()}
   def command(["start"], opts), do: command(["start", "--auto"], opts)
@@ -18,7 +19,9 @@ defmodule Exy.CLI.Server do
   def command(["stop"], opts), do: Output.print(Exy.Server.stop(), opts)
 
   def command(["restart"], opts) do
+    node = current_server_node()
     _ = Exy.Server.stop()
+    wait_for_shutdown(node, 5_000)
 
     if opts[:foreground] do
       Exy.Server.start(foreground: true)
@@ -75,8 +78,46 @@ defmodule Exy.CLI.Server do
   end
 
   defp restart_background(timeout_ms) do
+    node = current_server_node()
     _ = Exy.Server.stop()
+    wait_for_shutdown(node, min(timeout_ms, 5_000))
     start_background(timeout_ms)
+  end
+
+  defp current_server_node do
+    with {:ok, %{"node" => node_name}} <- Metadata.read(),
+         true <- is_binary(node_name) do
+      String.to_atom(node_name)
+    else
+      _other -> Exy.Server.default_node_name()
+    end
+  end
+
+  defp wait_for_shutdown(nil, _timeout_ms), do: :ok
+
+  defp wait_for_shutdown(node, timeout_ms) do
+    Node.monitor(node, true)
+
+    if Node.connect(node) do
+      receive do
+        {:nodedown, ^node} -> :ok
+      after
+        timeout_ms -> :timeout
+      end
+    else
+      :ok
+    end
+  after
+    Node.monitor(node, false)
+    flush_nodedown(node)
+  end
+
+  defp flush_nodedown(node) do
+    receive do
+      {:nodedown, ^node} -> :ok
+    after
+      0 -> :ok
+    end
   end
 
   defp wait(timeout_ms) do

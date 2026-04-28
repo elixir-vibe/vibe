@@ -38,25 +38,13 @@ defmodule Exy.Server do
 
   @spec stop() :: :ok | {:error, term()}
   def stop do
-    with {:ok, %{"node" => node_name}} <- Metadata.read(),
-         {:ok, node} <- parse_node(node_name),
-         :ok <- ensure_client_distribution(),
-         true <- connect_node(node) do
-      _ = :rpc.call(node, :init, :stop, [])
-      cleanup_metadata()
-      :ok
-    else
-      {:error, :enoent} ->
-        cleanup_metadata()
-        :ok
+    node =
+      case Metadata.read() do
+        {:ok, %{"node" => node_name}} when is_binary(node_name) -> String.to_atom(node_name)
+        _other -> default_node_name()
+      end
 
-      false ->
-        cleanup_metadata()
-        {:error, :not_connected}
-
-      error ->
-        error
-    end
+    stop_node(node)
   end
 
   @spec cleanup_metadata() :: :ok
@@ -67,15 +55,20 @@ defmodule Exy.Server do
   defp ensure_distribution(name) do
     cookie = Cookie.get()
 
-    ensure_epmd()
+    result =
+      cond do
+        Node.alive?() and Node.self() == name ->
+          :ok
 
-    case Node.start(name) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, {{:already_started, _pid}, _child}} -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-    |> case do
+        Node.alive?() ->
+          {:error, {:already_started_as, Node.self()}}
+
+        true ->
+          ensure_epmd()
+          start_distribution(name)
+      end
+
+    case result do
       :ok ->
         Node.set_cookie(cookie)
         :ok
@@ -83,6 +76,19 @@ defmodule Exy.Server do
       error ->
         error
     end
+  end
+
+  defp start_distribution(name) do
+    case Node.start(name) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> distribution_already_started(name)
+      {:error, {{:already_started, _pid}, _child}} -> distribution_already_started(name)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp distribution_already_started(name) do
+    if Node.self() == name, do: :ok, else: {:error, {:already_started_as, Node.self()}}
   end
 
   defp write_metadata(name) do
@@ -96,7 +102,8 @@ defmodule Exy.Server do
     })
   end
 
-  defp default_node_name do
+  @spec default_node_name() :: node()
+  def default_node_name do
     user = System.get_env("USER") || "user"
 
     home_hash =
@@ -106,6 +113,22 @@ defmodule Exy.Server do
       |> binary_part(0, 12)
 
     String.to_atom("exy_server_#{user}_#{home_hash}@127.0.0.1")
+  end
+
+  defp stop_node(node) do
+    with :ok <- ensure_client_distribution(),
+         true <- connect_node(node) do
+      _ = :rpc.call(node, :init, :stop, [])
+      cleanup_metadata()
+      :ok
+    else
+      false ->
+        cleanup_metadata()
+        {:error, :not_connected}
+
+      error ->
+        error
+    end
   end
 
   defp ensure_client_distribution do

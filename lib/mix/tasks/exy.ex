@@ -12,6 +12,7 @@ defmodule Mix.Tasks.Exy do
       exy [options] [message...]
       exy --web [--port 4321]
       exy server start [--foreground]
+      exy server restart
       exy server status
       exy server stop
       exy new                    # Create and attach a fresh session. Alias: exy n
