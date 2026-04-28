@@ -264,7 +264,8 @@ defmodule Exy.Files do
 
   defp line_count(content), do: content |> split_lines() |> length()
 
-  defp language(path) do
+  @spec language(Path.t()) :: String.t()
+  def language(path) do
     case Path.extname(path) do
       ".ex" -> "elixir"
       ".exs" -> "elixir"

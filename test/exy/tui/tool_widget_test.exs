@@ -384,6 +384,63 @@ defmodule Exy.TUI.ToolWidgetTest do
            )
   end
 
+  test "write for newly created files renders highlighted source instead of diff markers" do
+    lines =
+      %{
+        id: "write-1",
+        name: :write,
+        status: :ok,
+        args: %{path: "lib/demo.ex"},
+        output: %{
+          path: "lib/demo.ex",
+          change: %{
+            path: "lib/demo.ex",
+            old: "",
+            new: "defmodule Demo do\n  @answer 42\nend\n",
+            diff: "+ 1  defmodule Demo do\n+ 2    @answer 42\n+ 3  end"
+          }
+        }
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+
+    rendered = IO.iodata_to_binary(lines)
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+
+    assert plain =~ "defmodule Demo do"
+    refute plain =~ "+ 1  defmodule Demo do"
+    assert rendered =~ "\e[38;2;"
+  end
+
+  test "edit diffs syntax-highlight changed source" do
+    lines =
+      %{
+        id: "edit-1",
+        name: :edit,
+        status: :ok,
+        args: %{path: "lib/demo.ex"},
+        output: %{
+          path: "lib/demo.ex",
+          change: %{
+            path: "lib/demo.ex",
+            old: "defmodule Demo do\n  def answer, do: 41\nend\n",
+            new: "defmodule Demo do\n  def answer, do: 42\nend\n",
+            diff:
+              " 1  defmodule Demo do\n-2    def answer, do: 41\n+2    def answer, do: 42\n 3  end"
+          }
+        }
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+
+    rendered = IO.iodata_to_binary(lines)
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+
+    assert plain =~ "-2    def answer, do: 41"
+    assert plain =~ "+2    def answer, do: 42"
+    assert rendered =~ "\e[38;2;"
+  end
+
   test "read truncates large file content before rendering" do
     content =
       Enum.map_join(1..@large_output_lines, "\n", &"line #{&1} #{String.duplicate("x", 200)}")
