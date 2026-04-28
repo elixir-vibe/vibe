@@ -112,6 +112,37 @@ defmodule Exy.TUI.TerminalLoopTest do
            )
   end
 
+  test "loader says working while local tool work is running" do
+    session_id = "loader-tool-#{System.unique_integer([:positive])}"
+
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 60,
+        height: 12,
+        session_id: session_id,
+        event_target: self()
+      )
+
+    assert :ok = Exy.UI.Bus.emit(session_id, :assistant_stream_started, %{})
+
+    assert :ok =
+             Exy.UI.Bus.emit(
+               session_id,
+               :tool_started,
+               Exy.UI.ToolEvent.started(id: "eval-1", name: :eval)
+             )
+
+    assert_receive {TerminalLoop, :event, :loader_tick}, 300
+
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(
+             plain,
+             &(&1 in ["  ⋰ Working…", "  ⋱ Working…", "  ✧ Working…", "  ✦ Working…"])
+           )
+  end
+
   test "starts loader ticks when attaching to an already-working session" do
     session_id = "loader-attach-#{System.unique_integer([:positive])}"
     {:ok, session} = Exy.Session.start_link(session_id: session_id, persist?: false)

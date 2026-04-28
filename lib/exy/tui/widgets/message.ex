@@ -23,7 +23,13 @@ defmodule Exy.TUI.Widgets.Message do
 
   def render(%{props: %{role: :assistant} = props}, width, theme) do
     safe_render(width, theme, fn ->
-      render_assistant(Map.get(props, :text), width, theme, Map.get(props, :loader_phase, 0))
+      render_assistant(
+        Map.get(props, :text),
+        width,
+        theme,
+        Map.get(props, :loader_phase, 0),
+        Map.get(props, :loader_label)
+      )
     end)
   end
 
@@ -84,11 +90,15 @@ defmodule Exy.TUI.Widgets.Message do
   defp role_name(nil), do: "worker"
   defp role_name(role), do: to_string(role)
 
-  defp render_assistant(text, width, theme, loader_phase) do
+  defp render_assistant(text, width, theme, loader_phase, loader_label) do
     text = text |> to_string() |> String.trim()
 
     if text == "" do
-      Loader.render(%{props: %{label: "Thinking", phase: loader_phase}}, width, theme)
+      Loader.render(
+        %{props: %{label: loader_label || "Thinking", phase: loader_phase}},
+        width,
+        theme
+      )
     else
       text
       |> Markdown.render(max(width - 4, 1), theme)

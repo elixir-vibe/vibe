@@ -124,9 +124,25 @@ defmodule Exy.UI.ViewModel do
 
       _message ->
         [
-          %AssistantMessage{id: "streaming", text: "", at: state.streaming_message[:at]}
+          %AssistantMessage{
+            id: "streaming",
+            text: "",
+            at: state.streaming_message[:at],
+            loader_label: loader_label(state)
+          }
           |> Map.put(:role, :assistant)
         ]
+    end
+  end
+
+  defp loader_label(%{working_message: message}) when is_binary(message) and message != "",
+    do: message
+
+  defp loader_label(%{pending_tools: pending_tools}) do
+    if Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end) do
+      "Working"
+    else
+      "Thinking"
     end
   end
 

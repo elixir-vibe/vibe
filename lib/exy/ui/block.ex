@@ -10,7 +10,7 @@ defmodule Exy.UI.Block do
 
   defmodule AssistantMessage do
     @moduledoc false
-    defstruct [:id, :text, :error, :result, :at]
+    defstruct [:id, :text, :error, :result, :at, :loader_label]
   end
 
   defmodule ToolCall do

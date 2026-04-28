@@ -29,6 +29,34 @@ defmodule Exy.UI.ViewModelTest do
     assert Exy.UI.ViewModel.from_state(state).footer.usage.total_tokens == 13
   end
 
+  test "labels the loader as working while a local tool is running" do
+    state =
+      Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "s1", %{}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(
+          :tool_started,
+          "s1",
+          Exy.UI.ToolEvent.started(id: "tool-1", name: "eval")
+        )
+      )
+
+    assert [_, %Exy.UI.Block.AssistantMessage{loader_label: "Working"}] =
+             Exy.UI.ViewModel.from_state(state).body
+  end
+
+  test "uses explicit working messages for the loader" do
+    state =
+      Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "s1", %{}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:working_message_updated, "s1", %{message: "Indexing"})
+      )
+
+    assert [%Exy.UI.Block.AssistantMessage{loader_label: "Indexing"}] =
+             Exy.UI.ViewModel.from_state(state).body
+  end
+
   test "keeps tool calls between surrounding assistant text blocks" do
     state =
       Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")
