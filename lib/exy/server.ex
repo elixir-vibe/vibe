@@ -44,12 +44,23 @@ defmodule Exy.Server do
         _other -> default_node_name()
       end
 
-    stop_node(node)
+    result = stop_node(node)
+    cleanup_orphan_processes()
+    result
   end
 
   @spec cleanup_metadata() :: :ok
   def cleanup_metadata do
     Metadata.delete()
+  end
+
+  @spec cleanup_orphan_processes() :: :ok
+  def cleanup_orphan_processes do
+    foreground_server_pids()
+    |> Enum.reject(&(&1 == System.pid()))
+    |> Enum.each(&terminate_os_process/1)
+
+    :ok
   end
 
   defp ensure_distribution(name) do
@@ -141,6 +152,34 @@ defmodule Exy.Server do
         )
       )
     end
+  end
+
+  defp foreground_server_pids do
+    "exy server start --foreground"
+    |> pgrep()
+    |> Enum.uniq()
+  end
+
+  defp pgrep(pattern) do
+    case System.cmd("pgrep", ["-f", pattern], stderr_to_stdout: true) do
+      {output, 0} ->
+        output
+        |> String.split("\n", trim: true)
+        |> Enum.map(&String.trim/1)
+        |> Enum.filter(&Regex.match?(~r/^\d+$/, &1))
+
+      {_output, _status} ->
+        []
+    end
+  rescue
+    _error -> []
+  end
+
+  defp terminate_os_process(pid) do
+    _ = System.cmd("kill", [pid], stderr_to_stdout: true)
+    :ok
+  rescue
+    _error -> :ok
   end
 
   defp parse_node(node_name) when is_binary(node_name), do: {:ok, String.to_atom(node_name)}
