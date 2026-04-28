@@ -109,6 +109,8 @@ defmodule Exy.TUI.TerminalPainter do
 
     screen_cursor = screen_cursor(cursor, viewport_top)
 
+    patch_count = last - first + 1
+
     frame = [
       begin_synchronized_update(),
       hide_cursor(),
@@ -116,7 +118,7 @@ defmodule Exy.TUI.TerminalPainter do
       move,
       "\r",
       lines
-      |> Enum.slice(first..last//1)
+      |> replacement_lines(first, patch_count)
       |> Enum.map_intersperse("\r\n", &[ANSI.clear_line(), &1]),
       end_synchronized_update(),
       ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
@@ -125,6 +127,11 @@ defmodule Exy.TUI.TerminalPainter do
     ]
 
     {frame, put_render_state(painter, lines, cursor, viewport_top)}
+  end
+
+  defp replacement_lines(lines, first, count) do
+    replacement = lines |> Enum.drop(first) |> Enum.take(count)
+    Exy.TUI.Lines.join(replacement, List.duplicate("", count - length(replacement)))
   end
 
   defp put_render_state(painter, lines, cursor, viewport_top) do

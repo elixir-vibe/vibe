@@ -27,6 +27,20 @@ defmodule Exy.TUI.TerminalPainterTest do
     assert painter.viewport_top == 1
   end
 
+  test "clears stale rows when a document shrinks" do
+    {:ok, terminal} = Ghostty.Terminal.start_link(cols: 40, rows: 5)
+    painter = TerminalPainter.new(40, 5)
+    {frame, painter} = TerminalPainter.render(painter, ["one", "two", "three", "four"], {4, 1})
+    :ok = Ghostty.Terminal.write(terminal, frame)
+
+    {frame, _painter} = TerminalPainter.render(painter, ["one", "two"], {2, 1})
+    :ok = Ghostty.Terminal.write(terminal, frame)
+
+    assert {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+    refute screen =~ "three"
+    refute screen =~ "four"
+  end
+
   test "single-line updates patch without clearing scrollback" do
     painter = TerminalPainter.new(20, 5)
     {_frame, painter} = TerminalPainter.render(painter, ["one", "two"], {2, 4})

@@ -59,6 +59,40 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert rendered =~ "38;2;152;195;121"
   end
 
+  test "keeps prompt visible after a tool-heavy phoenix session replay" do
+    session_id = "phoenix-replay-#{System.unique_integer([:positive])}"
+    {:ok, session} = Exy.Session.start_link(session_id: session_id, persist?: false)
+
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 160,
+        height: 24,
+        session_server: session,
+        event_target: self()
+      )
+
+    emit_replayed_phoenix_events(session, session_id)
+    :ok = TerminalLoop.input(loop, "keep typing responsive")
+
+    assert {:ok, terminal} = Ghostty.Terminal.start_link(cols: 160, rows: 24)
+
+    {frame, _painter} =
+      Exy.TUI.TerminalPainter.render(
+        Exy.TUI.TerminalPainter.new(160, 24),
+        TerminalLoop.render_full(loop),
+        TerminalLoop.full_cursor_position(loop)
+      )
+
+    :ok = Ghostty.Terminal.write(terminal, frame)
+    assert {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+
+    assert screen =~ "openai_codex:gpt-5.5"
+    assert screen =~ "Prompt"
+    assert screen =~ "keep typing responsive"
+    refute last_non_blank_line(screen) =~ "openai_codex:gpt-5.5"
+  end
+
   test "keeps editor visible in a bounded viewport" do
     ask = fn text, _opts -> {:ok, Enum.map_join(1..20, "\n", &"line #{&1}: #{text}")} end
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 12, ask_fun: ask)
@@ -183,6 +217,82 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert_receive {TerminalLoop, :event, %{type: :prompt_submitted}}, 500
     assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 500
     assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 500
+  end
+
+  defp emit_replayed_phoenix_events(session, session_id) do
+    prompt =
+      "Create a new phoenix project in ~/Development and let's implement tic tac toe game there"
+
+    events = [
+      Exy.UI.Event.new(:user_message_added, session_id, %{text: prompt}),
+      Exy.UI.Event.new(:assistant_stream_started, session_id, %{}),
+      tool_started(session_id, "eval-1", :eval, %{
+        code: "Cmd.run([\"mix\", \"phx.new\"], timeout: 120_000)"
+      }),
+      tool_finished(session_id, "eval-1", :eval, phoenix_output(70), :text),
+      tool_started(session_id, "read-router", :read, %{
+        path: "/Users/dannote/Development/tic_tac_toe/lib/tic_tac_toe_web/router.ex"
+      }),
+      tool_started(session_id, "read-home", :read, %{
+        path:
+          "/Users/dannote/Development/tic_tac_toe/lib/tic_tac_toe_web/controllers/page_html/home.html.heex"
+      }),
+      tool_started(session_id, "read-css", :read, %{
+        path: "/Users/dannote/Development/tic_tac_toe/assets/css/app.css"
+      }),
+      tool_finished(session_id, "read-router", :read, read_output("router.ex", 45), nil),
+      tool_finished(session_id, "read-home", :read, read_output("home.html.heex", 180), nil),
+      tool_finished(session_id, "read-css", :read, read_output("app.css", 90), nil),
+      tool_started(session_id, "read-mix", :read, %{
+        path: "/Users/dannote/Development/tic_tac_toe/mix.exs"
+      }),
+      tool_finished(session_id, "read-mix", :read, read_output("mix.exs", 100), nil)
+    ]
+
+    Enum.each(events, &Exy.Session.emit_transient_event(session, &1))
+  end
+
+  defp tool_started(session_id, id, name, args) do
+    Exy.UI.Event.new(
+      :tool_started,
+      session_id,
+      Exy.UI.ToolEvent.started(id: id, name: name, args: args)
+    )
+  end
+
+  defp tool_finished(session_id, id, name, output, format) do
+    Exy.UI.Event.new(
+      :tool_finished,
+      session_id,
+      Exy.UI.ToolEvent.finished(
+        id: id,
+        name: name,
+        output: %{output: output, output_format: format || :text}
+      )
+    )
+  end
+
+  defp phoenix_output(lines) do
+    Enum.map_join(1..lines, "\n", fn index ->
+      "* creating tic_tac_toe/generated_file_#{index}.ex"
+    end)
+  end
+
+  defp read_output(name, lines) do
+    %{
+      path: name,
+      language: "elixir",
+      omitted_lines: 0,
+      omitted_bytes: 0,
+      content: Enum.map_join(1..lines, "\n", &"#{name} line #{&1}")
+    }
+  end
+
+  defp last_non_blank_line(screen) do
+    screen
+    |> String.split("\n")
+    |> Enum.reverse()
+    |> Enum.find("", &(String.trim(&1) != ""))
   end
 
   defp wait_for_output(output, text) do
