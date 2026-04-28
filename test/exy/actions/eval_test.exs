@@ -1,6 +1,10 @@
 defmodule Exy.Actions.EvalTest do
   use ExUnit.Case, async: false
 
+  test "default timeout leaves long command timeouts to Cmd.run" do
+    assert Exy.Actions.Eval.default_timeout_ms() == 86_400_000
+  end
+
   test "schema uses JSONSpec directly" do
     assert %{code: "1 + 1"} = JSONSpec.atomize(Exy.Actions.Eval.schema(), %{"code" => "1 + 1"})
     assert %{code: "1 + 1"} = JSONSpec.atomize(Exy.Actions.Eval.schema(), %{code: "1 + 1"})

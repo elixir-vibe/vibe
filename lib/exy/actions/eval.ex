@@ -13,13 +13,16 @@ defmodule Exy.Actions.Eval do
             doc: [code: "Elixir code to evaluate", timeout: "Timeout in milliseconds"]
           )
 
-  @default_timeout_ms 30_000
+  @default_timeout_ms 86_400_000
 
   use Jido.Action,
     name: "eval",
     description:
       "Evaluate Elixir code inside Exy's BEAM runtime. Prefer this for OTP introspection, profiling, docs, and helper modules.",
     schema: @schema
+
+  @doc false
+  def default_timeout_ms, do: @default_timeout_ms
 
   @impl true
   def run(params, context) do
