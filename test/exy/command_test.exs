@@ -41,6 +41,29 @@ defmodule Exy.CommandTest do
     assert result.output =~ ~s("ok")
   end
 
+  test "Cmd.run streams output into the running eval tool" do
+    session_id = "cmd-stream-test-#{System.unique_integer([:positive])}"
+    {:ok, session} = Exy.Session.start_link(session_id: session_id, persist?: false)
+
+    :ok =
+      Exy.Session.emit_event(
+        session,
+        Exy.UI.Event.new(
+          :tool_started,
+          session_id,
+          Exy.UI.ToolEvent.started(id: "eval-tool", name: :eval, args: %{code: "Cmd.run(...)"})
+        )
+      )
+
+    Exy.Command.Streaming.with_eval_session(session_id, fn ->
+      Command.run(["sh", "-c", "printf streamed"], timeout: 5_000)
+    end)
+
+    assert %{pending_tools: %{"eval-tool" => tool}} = Exy.Session.state(session)
+    assert tool.output =~ "streamed"
+    assert tool.status == :running
+  end
+
   test "Cmd results display command output in eval" do
     code = ~S|Cmd.run(["sh", "-c", "printf ok"], timeout: 5_000)|
     assert {:ok, result} = Exy.Eval.run(code, session_id: "cmd-result-display-test")

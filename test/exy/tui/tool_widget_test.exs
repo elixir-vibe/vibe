@@ -293,6 +293,29 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert ansi =~ "38;2;204;102;102"
   end
 
+  test "eval truncation keeps the tail and shows the shortcut hint first" do
+    output = Enum.map_join(1..12, "\n", &"line #{&1}")
+
+    plain =
+      %{id: "tool", name: :eval, status: :ok, args: %{code: "many()"}, output: output}
+      |> TUI.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    hint_index =
+      Enum.find_index(plain, &String.contains?(&1, "… (4 more lines, ctrl+o to expand)"))
+
+    line_5_index = Enum.find_index(plain, &String.contains?(&1, "line 5"))
+    line_12_index = Enum.find_index(plain, &String.contains?(&1, "line 12"))
+
+    assert hint_index
+    assert line_5_index
+    assert line_12_index
+    assert line_5_index > hint_index
+    assert line_12_index > line_5_index
+    refute Enum.any?(plain, &(String.trim(&1) == "line 1"))
+  end
+
   test "truncates tool output with reusable shortcut hint" do
     output = Enum.map_join(1..12, "\n", &"line #{&1}")
 

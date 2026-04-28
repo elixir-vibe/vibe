@@ -18,6 +18,7 @@ defmodule Exy.Command.Worker do
     :started_at,
     :exit_status,
     :status,
+    :on_output,
     awaiters: [],
     output: ""
   ]
@@ -47,6 +48,7 @@ defmodule Exy.Command.Worker do
     env = opts |> Keyword.get(:env, []) |> Exy.Env.to_charlist_pairs()
     id = Keyword.get_lazy(opts, :id, &new_id/0)
     output_path = Keyword.get_lazy(opts, :output_path, fn -> default_output_path(id) end)
+    on_output = Keyword.get(opts, :on_output)
     File.mkdir_p!(Path.dirname(output_path))
     File.write!(output_path, "")
 
@@ -68,6 +70,7 @@ defmodule Exy.Command.Worker do
        env: env,
        port: port,
        output_path: output_path,
+       on_output: on_output,
        started_mono: System.monotonic_time(:millisecond),
        started_at: DateTime.utc_now(),
        status: :running
@@ -98,7 +101,9 @@ defmodule Exy.Command.Worker do
   @impl true
   def handle_info({port, {:data, data}}, %{port: port} = state) do
     File.write!(state.output_path, data, [:append])
-    {:noreply, append_output(state, data)}
+    state = append_output(state, data)
+    maybe_stream_output(state)
+    {:noreply, state}
   end
 
   def handle_info({port, {:exit_status, status}}, %{port: port, status: :running} = state) do
@@ -156,6 +161,11 @@ defmodule Exy.Command.Worker do
       %{state | output: output}
     end
   end
+
+  defp maybe_stream_output(%{on_output: callback, output: output}) when is_function(callback, 1),
+    do: callback.(output)
+
+  defp maybe_stream_output(_state), do: :ok
 
   defp read_output(path, opts) do
     output = File.read!(path)

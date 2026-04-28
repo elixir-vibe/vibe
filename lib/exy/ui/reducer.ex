@@ -100,6 +100,18 @@ defmodule Exy.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{type: :tool_updated, data: %Exy.UI.ToolEvent{id: id} = data}) do
+    data = tool_event_map(data)
+    pending_tools = Map.update(state.pending_tools, id, data, &Map.merge(&1, data))
+
+    %{
+      state
+      | messages: update_tool_message(state.messages, id, data),
+        pending_tools: pending_tools,
+        status: :working
+    }
+  end
+
   defp reduce(state, %Event{type: :truncation_toggled}) do
     %{state | truncate?: !state.truncate?}
   end

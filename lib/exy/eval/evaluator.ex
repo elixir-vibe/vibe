@@ -88,7 +88,10 @@ defmodule Exy.Eval.Evaluator do
   end
 
   defp eval_with_captured_io(code, state) do
-    {{success?, result, state}, io} = capture_io(fn -> eval_code(code, state) end)
+    {{success?, result, state}, io} =
+      capture_io(fn ->
+        Exy.Command.Streaming.with_eval_session(state.session_id, fn -> eval_code(code, state) end)
+      end)
 
     cond do
       success? and io == "" ->

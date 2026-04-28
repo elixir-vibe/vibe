@@ -213,23 +213,26 @@ defmodule Exy.TUI.ToolWidget do
   defp append_output(lines, tool, width, theme, opts) do
     case Keyword.get(opts, :output_lines) do
       nil ->
-        append_section(lines, :output, output(tool), width, theme, tool)
+        append_section(lines, :output, output(tool), width, theme, tool, opts)
 
       output_lines ->
         lines
         |> Lines.join([""])
-        |> Lines.join(maybe_truncate(output_lines, :output, tool, width, theme))
+        |> Lines.join(maybe_truncate(output_lines, :output, tool, width, theme, opts))
     end
   end
 
-  defp append_section(lines, _label, nil, _width, _theme, _tool), do: lines
+  defp append_section(lines, label, value, width, theme, tool),
+    do: append_section(lines, label, value, width, theme, tool, [])
 
-  defp append_section(lines, label, value, width, theme, tool) do
+  defp append_section(lines, _label, nil, _width, _theme, _tool, _opts), do: lines
+
+  defp append_section(lines, label, value, width, theme, tool, opts) do
     label_lines = section_label_lines(label, width, theme)
 
     value_lines =
       value_lines(label, value, width, theme, tool)
-      |> maybe_truncate(label, tool, width, theme)
+      |> maybe_truncate(label, tool, width, theme, opts)
 
     lines |> Lines.join(label_lines) |> Lines.join(value_lines)
   end
@@ -259,18 +262,32 @@ defmodule Exy.TUI.ToolWidget do
   defp format_error(error) when is_binary(error), do: error
   defp format_error(error), do: inspect(error, pretty: true, limit: 20)
 
-  defp maybe_truncate(lines, :params, _tool, _width, _theme), do: lines
+  defp maybe_truncate(lines, :params, _tool, _width, _theme, _opts), do: lines
 
-  defp maybe_truncate(lines, _label, tool, width, theme) do
-    truncation = TextTruncation.lines(lines, enabled?: Map.get(tool, :truncate?, true), limit: 8)
+  defp maybe_truncate(lines, _label, tool, width, theme, opts) do
+    mode = Keyword.get(opts, :truncation, :head)
 
-    if truncation.truncated? do
-      truncation.lines
-      |> Lines.join([""])
-      |> Lines.join([TextTruncation.hint(truncation.omitted, theme, width)])
-    else
-      truncation.lines
-    end
+    truncation =
+      TextTruncation.lines(lines,
+        enabled?: Map.get(tool, :truncate?, true),
+        limit: 8,
+        mode: mode
+      )
+
+    truncated_lines(truncation, mode, theme, width)
+  end
+
+  defp truncated_lines(%{truncated?: false, lines: lines}, _mode, _theme, _width), do: lines
+
+  defp truncated_lines(%{lines: lines, omitted: omitted}, :tail, theme, width) do
+    [TextTruncation.hint(omitted, theme, width), ""]
+    |> Lines.join(lines)
+  end
+
+  defp truncated_lines(%{lines: lines, omitted: omitted}, _mode, theme, width) do
+    lines
+    |> Lines.join([""])
+    |> Lines.join([TextTruncation.hint(omitted, theme, width)])
   end
 
   defp ensure_renderer_loaded(renderer) do

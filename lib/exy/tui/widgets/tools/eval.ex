@@ -13,7 +13,8 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
       summary: eval_summary(tool),
       summary_style: summary_style(tool),
       output_lines: structured_output_lines(tool, width, theme),
-      params?: false
+      params?: false,
+      truncation: :tail
     )
   end
 

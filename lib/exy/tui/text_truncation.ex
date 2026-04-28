@@ -11,7 +11,7 @@ defmodule Exy.TUI.TextTruncation do
     limit = Keyword.get(opts, :limit, 8)
 
     if enabled? and length(lines) > limit do
-      visible = Enum.take(lines, limit)
+      visible = visible_lines(lines, limit, Keyword.get(opts, :mode, :head))
       omitted = length(lines) - limit
       %{lines: visible, omitted: omitted, truncated?: true}
     else
@@ -31,6 +31,9 @@ defmodule Exy.TUI.TextTruncation do
     ]
     |> Widget.fit_line(width)
   end
+
+  defp visible_lines(lines, limit, :tail), do: Enum.take(lines, -limit)
+  defp visible_lines(lines, limit, _mode), do: Enum.take(lines, limit)
 
   defp plural(1, word), do: word
   defp plural(_count, word), do: word <> "s"

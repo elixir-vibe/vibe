@@ -13,6 +13,7 @@ defmodule Exy.Command do
   @spec run([String.Chars.t()], keyword()) :: Result.t() | {:error, term()}
   def run(argv, opts \\ []) when is_list(argv) do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
+    opts = Keyword.put_new_lazy(opts, :on_output, &Exy.Command.Streaming.callback_from_process/0)
 
     with {:ok, %Job{} = job} <- start(argv, opts) do
       await(job, timeout)
