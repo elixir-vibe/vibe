@@ -81,6 +81,27 @@ defmodule Exy.Eval.EvaluatorTest do
     assert error =~ "cannot compile file"
   end
 
+  test "captured IO with boring return displays plain IO only", %{session_id: session_id} do
+    assert {:ok, result} = Exy.Eval.run(~S|IO.puts("hello")|, session_id: session_id)
+
+    assert result.output == "hello\n"
+    assert result.format == :text
+    assert result.parts == [%{output: "hello\n", format: :text}]
+  end
+
+  test "captured IO with meaningful return keeps typed output parts", %{session_id: session_id} do
+    assert {:ok, result} =
+             Exy.Eval.run(~S|IO.puts("hello"); {:ok, %{answer: 42}}|,
+               session_id: session_id
+             )
+
+    assert result.output =~ "hello\n"
+    assert result.output =~ "{:ok, %{answer: 42}}"
+    assert [text, inspect] = result.parts
+    assert text == %{output: "hello\n", format: :text}
+    assert inspect == %{output: "{:ok, %{answer: 42}}", format: :inspect}
+  end
+
   test "preloads plugin API aliases into session evaluators", %{session_id: session_id} do
     assert :ok = Exy.Plugin.Manager.load(APIPlugin, session_id: session_id)
 

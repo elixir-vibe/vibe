@@ -12,7 +12,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
       action: timeout_summary(tool),
       summary: eval_summary(tool),
       summary_style: summary_style(tool),
-      output_lines: markdown_output_lines(tool, width, theme),
+      output_lines: structured_output_lines(tool, width, theme),
       params?: false
     )
   end
@@ -48,12 +48,60 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   defp command_expression?(_code), do: false
 
-  defp markdown_output_lines(tool, width, theme) do
+  defp structured_output_lines(%{output_parts: parts}, width, theme) when is_list(parts) do
+    parts
+    |> Enum.map(&normalize_part/1)
+    |> Enum.reject(&(Map.get(&1, :output) in [nil, ""]))
+    |> Enum.map(&part_lines(&1, width, theme))
+    |> Enum.intersperse([""])
+    |> List.flatten()
+    |> case do
+      [] -> nil
+      lines -> lines
+    end
+  end
+
+  defp structured_output_lines(tool, width, theme) do
     if markdown_output?(tool) do
       tool
       |> ToolWidget.output()
       |> Markdown.render(max(width - 2, 1), theme)
     end
+  end
+
+  defp normalize_part(%{format: _format, output: _output} = part), do: part
+
+  defp normalize_part(%{"format" => format, "output" => output}) do
+    %{format: normalize_format(format), output: output}
+  end
+
+  defp normalize_part(part), do: part
+
+  defp normalize_format("inspect"), do: :inspect
+  defp normalize_format("markdown"), do: :markdown
+  defp normalize_format("text"), do: :text
+  defp normalize_format(format), do: format
+
+  defp part_lines(%{format: :inspect, output: output}, width, _theme) do
+    output
+    |> Exy.TUI.Syntax.highlight_elixir()
+    |> String.split("\n")
+    |> Enum.flat_map(fn line -> Exy.TUI.Widget.wrap([Exy.TUI.Widget.spaces(2), line], width) end)
+  end
+
+  defp part_lines(%{format: :markdown, output: output}, width, theme) do
+    Markdown.render(output, max(width - 2, 1), theme)
+  end
+
+  defp part_lines(%{output: output}, width, theme) do
+    output
+    |> String.split("\n")
+    |> Enum.flat_map(fn line ->
+      Exy.TUI.Widget.wrap(
+        [Exy.TUI.Widget.spaces(2), Exy.TUI.Theme.fg(theme, :tool_output, line)],
+        width
+      )
+    end)
   end
 
   defp markdown_output?(%{output_format: :markdown}), do: true

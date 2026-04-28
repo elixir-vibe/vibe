@@ -148,14 +148,32 @@ defmodule Exy.Eval.Evaluator do
   end
 
   defp io_result(result, io) do
-    %Result{
-      output:
-        ToolOutput.limit_text("IO:\n\n#{io}\n\nResult:\n\n#{inspect(result, @inspect_opts)}"),
-      format: :text,
-      io: io,
-      value_type: value_type(result)
-    }
+    if boring_result?(result) do
+      %Result{
+        output: ToolOutput.limit_text(io),
+        format: :text,
+        parts: [%{output: ToolOutput.limit_text(io), format: :text}],
+        io: io,
+        value_type: value_type(result)
+      }
+    else
+      inspected = result |> inspect(@inspect_opts) |> ToolOutput.limit_text()
+
+      %Result{
+        output: [io, "\n", inspected] |> IO.iodata_to_binary() |> ToolOutput.limit_text(),
+        format: :text,
+        parts: [
+          %{output: ToolOutput.limit_text(io), format: :text},
+          %{output: inspected, format: :inspect}
+        ],
+        io: io,
+        value_type: value_type(result)
+      }
+    end
   end
+
+  defp boring_result?(result),
+    do: result in [:ok, nil, :done, :"do not show this result in output"]
 
   defp merge_binding(previous, current) do
     current_names = MapSet.new(current, &elem(&1, 0))

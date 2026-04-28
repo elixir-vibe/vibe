@@ -174,6 +174,46 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert String.length(header) <= 120
   end
 
+  test "eval renders mixed IO and returned value with spacing and inspect highlighting" do
+    lines =
+      TUI.tool(%{
+        id: "eval-io-value",
+        name: :eval,
+        status: :ok,
+        args: %{code: ~S|IO.puts("hello"); {:ok, %{answer: 42}}|},
+        output: "hello\n\n{:ok, %{answer: 42}}",
+        output_format: :text,
+        output_parts: [
+          %{output: "hello\n", format: :text},
+          %{output: "{:ok, %{answer: 42}}", format: :inspect}
+        ]
+      })
+      |> Widget.render(100, Theme.default())
+
+    rendered = IO.iodata_to_binary(lines)
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+
+    assert plain =~ "hello"
+    assert plain =~ "{:ok, %{answer: 42}}"
+
+    hello_index = Enum.find_index(lines, &(Width.visible_text(&1) =~ "hello"))
+
+    result_index =
+      Enum.find_index(lines, fn line ->
+        line |> Width.visible_text() |> String.trim_leading() |> String.starts_with?("{:ok")
+      end)
+
+    assert is_integer(hello_index)
+    assert is_integer(result_index)
+    assert result_index > hello_index
+
+    assert Enum.any?(Enum.slice(lines, (hello_index + 1)..(result_index - 1)), fn line ->
+             line |> Width.visible_text() |> String.trim() == ""
+           end)
+
+    assert rendered =~ "38;2;224;108;117"
+  end
+
   test "eval renders markdown-formatted output as markdown" do
     markdown = "## Command ok\n\n- Command: `mix test`\n\n```text\n1 test, 0 failures\n```"
 

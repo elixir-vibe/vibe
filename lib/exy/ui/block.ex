@@ -15,7 +15,17 @@ defmodule Exy.UI.Block do
 
   defmodule ToolCall do
     @moduledoc false
-    defstruct [:id, :name, :status, :args, :output, :output_format, :expanded?, :truncate?]
+    defstruct [
+      :id,
+      :name,
+      :status,
+      :args,
+      :output,
+      :output_format,
+      :output_parts,
+      :expanded?,
+      :truncate?
+    ]
   end
 
   defmodule SubagentLifecycle do
