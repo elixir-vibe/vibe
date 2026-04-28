@@ -53,6 +53,7 @@ defmodule Exy.TUI.App do
        subscribers: %{},
        remote_node: remote_node,
        active_sessions_timer: active_sessions_timer,
+       active_sessions_task: nil,
        server_migration_timer: server_migration_timer,
        server_migration_fun: server_migration_fun
      }}
@@ -106,9 +107,18 @@ defmodule Exy.TUI.App do
   end
 
   def handle_info(:active_sessions_tick, state) do
-    state = publish_active_sessions(state)
+    state = start_active_sessions_count(state)
     timer = Process.send_after(self(), :active_sessions_tick, 1_000)
     {:noreply, %{state | active_sessions_timer: timer}}
+  end
+
+  def handle_info({ref, result}, %{active_sessions_task: ref} = state) when is_reference(ref) do
+    Process.demonitor(ref, [:flush])
+    {:noreply, finish_active_sessions_count(%{state | active_sessions_task: nil}, result)}
+  end
+
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, %{active_sessions_task: ref} = state) do
+    {:noreply, %{state | active_sessions_task: nil, remote_node: nil}}
   end
 
   def handle_info(
@@ -241,29 +251,36 @@ defmodule Exy.TUI.App do
     state
   end
 
-  defp publish_active_sessions(%{remote_node: nil} = state) do
-    case Exy.Remote.connect() do
-      {:ok, node} -> publish_active_sessions(%{state | remote_node: node})
-      {:error, _reason} -> state
+  defp start_active_sessions_count(%{active_sessions_task: ref} = state) when is_reference(ref),
+    do: state
+
+  defp start_active_sessions_count(state) do
+    task = Task.Supervisor.async_nolink(Exy.TaskSupervisor, &active_sessions_count/0)
+    %{state | active_sessions_task: task.ref}
+  end
+
+  defp active_sessions_count do
+    with {:ok, node} <- Exy.Remote.connect(),
+         count when is_integer(count) <- Exy.Remote.Session.active_count() do
+      {:ok, node, count}
+    else
+      reason -> {:error, reason}
     end
   end
 
-  defp publish_active_sessions(state) do
-    case Exy.Remote.Session.active_count() do
-      count when is_integer(count) ->
-        count = max(count, minimum_visible_session_count(state))
+  defp finish_active_sessions_count(state, {:ok, node, count}) do
+    state = %{state | remote_node: node}
+    count = max(count, minimum_visible_session_count(state))
 
-        Session.emit_transient_event(
-          state.ui,
-          Exy.UI.Event.new(:active_sessions_updated, state.ui_snapshot.session_id, %{count: count})
-        )
+    Session.emit_transient_event(
+      state.ui,
+      Exy.UI.Event.new(:active_sessions_updated, state.ui_snapshot.session_id, %{count: count})
+    )
 
-        state
-
-      _other ->
-        %{state | remote_node: nil}
-    end
+    state
   end
+
+  defp finish_active_sessions_count(state, _result), do: %{state | remote_node: nil}
 
   defp minimum_visible_session_count(state) do
     if is_pid(state.ui) and node(state.ui) == state.remote_node, do: 1, else: 0

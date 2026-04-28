@@ -102,39 +102,56 @@ defmodule Exy.TUI.Runtime do
   defp recent_interrupt?(last_interrupt_at, now), do: now - last_interrupt_at <= 1_500
 
   defp drain_pending_events(tty, loop, last_interrupt_at, painter) do
-    receive do
-      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]} = event}} ->
-        if recent_interrupt?(last_interrupt_at) do
-          :stop
-        else
+    deadline = System.monotonic_time(:millisecond) + 8
+    drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, 0)
+  end
+
+  defp drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained) do
+    if drained >= 25 or System.monotonic_time(:millisecond) >= deadline do
+      {:continue, painter}
+    else
+      receive do
+        {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]} = event}} ->
+          if recent_interrupt?(last_interrupt_at) do
+            :stop
+          else
+            TerminalLoop.input_key(loop, event)
+
+            drain_pending_events(
+              tty,
+              loop,
+              System.monotonic_time(:millisecond),
+              painter,
+              deadline,
+              drained + 1
+            )
+          end
+
+        {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}} ->
           TerminalLoop.input_key(loop, event)
-          drain_pending_events(tty, loop, System.monotonic_time(:millisecond), painter)
-        end
+          drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained + 1)
 
-      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}} ->
-        TerminalLoop.input_key(loop, event)
-        drain_pending_events(tty, loop, last_interrupt_at, painter)
+        {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{} = event}} ->
+          TerminalLoop.input_key(loop, event)
+          drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
 
-      {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{} = event}} ->
-        TerminalLoop.input_key(loop, event)
-        drain_pending_events(tty, loop, nil, painter)
+        {Ghostty.TTY, ^tty, {:data, data}} when is_binary(data) ->
+          TerminalLoop.input(loop, data)
+          drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
 
-      {Ghostty.TTY, ^tty, {:data, data}} when is_binary(data) ->
-        TerminalLoop.input(loop, data)
-        drain_pending_events(tty, loop, nil, painter)
+        {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
+          TerminalLoop.resize(loop, columns, rows)
+          painter = TerminalPainter.resize(painter, columns, rows)
+          drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
 
-      {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
-        TerminalLoop.resize(loop, columns, rows)
-        painter = TerminalPainter.resize(painter, columns, rows)
-        drain_pending_events(tty, loop, nil, painter)
+        {TerminalLoop, :event, _event} ->
+          drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained + 1)
 
-      {TerminalLoop, :event, _event} ->
-        drain_pending_events(tty, loop, last_interrupt_at, painter)
-
-      {Ghostty.TTY, ^tty, :eof} ->
-        :stop
-    after
-      0 -> {:continue, painter}
+        {Ghostty.TTY, ^tty, :eof} ->
+          :stop
+      after
+        0 -> {:continue, painter}
+      end
     end
   end
 
