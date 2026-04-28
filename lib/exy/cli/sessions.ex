@@ -103,10 +103,16 @@ defmodule Exy.CLI.Sessions do
     end
   end
 
-  defp latest_live_remote_session_id do
+  @doc false
+  def latest_live_remote_session_id do
     case server_call(&Exy.Remote.Session.list/0) do
-      {:ok, sessions} -> sessions |> Enum.find(& &1[:live?]) |> then(&(&1 && &1.id))
-      {:error, _reason} -> nil
+      {:ok, sessions} when is_list(sessions) ->
+        sessions
+        |> Enum.find(fn session -> Map.get(session, :live?, false) end)
+        |> then(fn session -> session && Map.get(session, :id) end)
+
+      {:error, _reason} ->
+        nil
     end
   end
 
