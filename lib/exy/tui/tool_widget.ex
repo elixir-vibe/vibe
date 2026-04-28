@@ -79,7 +79,7 @@ defmodule Exy.TUI.ToolWidget do
       if(action in [nil, ""], do: "", else: [" ", action]),
       if(headline in [nil, ""],
         do: "",
-        else: [" ", Theme.symbol(theme, :separator), " ", headline]
+        else: [Theme.symbol(theme, :separator), headline]
       ),
       suffix
     ]
@@ -108,7 +108,7 @@ defmodule Exy.TUI.ToolWidget do
   defp fitted_summary(summary, _prefix, _action, _suffix, nil, _theme), do: summary
 
   defp fitted_summary(summary, prefix, action, suffix, width, theme) do
-    separator_width = Width.visible_length(Theme.symbol(theme, :separator)) + 2
+    separator_width = Width.visible_length(Theme.symbol(theme, :separator))
     action_width = if action in [nil, ""], do: 0, else: Width.visible_length([" ", action])
 
     available =

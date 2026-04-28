@@ -43,10 +43,10 @@ defmodule Exy.TUI.Widgets.Tools.AST do
 
     case result.action do
       :search ->
-        compact([pattern_meta(args), match_meta(result.result)])
+        compact([match_meta(result.result), contextual_pattern_meta(args)])
 
       :replace ->
-        compact([replacement_meta(args), match_meta(result.result), dry_run_meta(result)])
+        compact([match_meta(result.result), replacement_meta(args), dry_run_meta(result)])
 
       :diff ->
         compact([edit_meta(result.result)])
@@ -56,7 +56,10 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     end
   end
 
-  defp meta(tool, result), do: compact([pattern_meta(args(tool)), collapsed_summary(result)])
+  defp meta(tool, result) do
+    args = args(tool)
+    compact([collapsed_summary(result), contextual_pattern_meta(args)])
+  end
 
   defp output_lines(%Exy.Code.AST.Result{action: :search} = result, width, theme),
     do: search_lines(result, width, theme)
@@ -132,6 +135,10 @@ defmodule Exy.TUI.Widgets.Tools.AST do
       is_binary(pattern) -> "pattern: #{short(pattern)}"
       true -> nil
     end
+  end
+
+  defp contextual_pattern_meta(args) do
+    if get_arg(args, :path) || get_arg(args, :file), do: pattern_meta(args)
   end
 
   defp pattern_meta(args) do

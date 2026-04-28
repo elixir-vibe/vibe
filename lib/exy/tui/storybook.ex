@@ -15,6 +15,7 @@ defmodule Exy.TUI.Storybook do
       :chat_basic,
       :tool_eval_ok,
       :tool_ast_matches,
+      :tool_ast_replace,
       :tool_lsp_diagnostics,
       :footer_usage,
       :footer_plugin_status,
@@ -68,6 +69,36 @@ defmodule Exy.TUI.Storybook do
       status: :ok,
       args: %{action: :search, pattern: "def handle_call(_, _, _) do _ end"},
       output: [%{file: "lib/exy/trajectory/store.ex", line: 35}],
+      expanded?: true
+    })
+  end
+
+  def story(:tool_ast_replace) do
+    TUI.tool(%{
+      id: "ast-replace-1",
+      name: :ast,
+      status: :ok,
+      args: %{
+        action: :replace,
+        path: "lib/tic_tac_toe_web/router.ex",
+        pattern: ~S|get "/", PageController, :home|,
+        replacement: ~S|live "/", GameLive, :index|
+      },
+      output: %Exy.Code.AST.Result{
+        action: :replace,
+        path: "lib/tic_tac_toe_web/router.ex",
+        pattern: ~S|get "/", PageController, :home|,
+        replacement: ~S|live "/", GameLive, :index|,
+        dry_run: false,
+        result: [{"lib/tic_tac_toe_web/router.ex", 1}],
+        diff: [
+          %{
+            path: "lib/tic_tac_toe_web/router.ex",
+            diff:
+              ~s|--- lib/tic_tac_toe_web/router.ex\n+++ lib/tic_tac_toe_web/router.ex\n@@\n-    get "/", PageController, :home\n+    live "/", GameLive, :index|
+          }
+        ]
+      },
       expanded?: true
     })
   end
