@@ -44,9 +44,15 @@ defmodule Exy.Auth.Codex do
 
       with {:ok, credentials} <- exchange_code(code, verifier),
            {:ok, credentials} <- attach_account_id(credentials) do
+        credentials = Map.put(credentials, :type, "oauth")
         Store.save(id(), credentials)
         put_credentials(credentials)
-        {:ok, credentials}
+        IO.puts("Signed in with ChatGPT/Codex.")
+        {:ok, login_result(credentials)}
+      else
+        {:error, reason} = error ->
+          IO.puts(:stderr, "ChatGPT/Codex sign-in failed: #{format_error(reason)}")
+          error
       end
     end
   end
@@ -115,6 +121,17 @@ defmodule Exy.Auth.Codex do
     Application.put_env(:req_llm, :oauth_file, Exy.Paths.auth_file())
     :ok
   end
+
+  defp login_result(credentials) do
+    %{
+      provider: id(),
+      account_id: credentials[:accountId] || credentials["accountId"],
+      expires: credentials[:expires] || credentials["expires"]
+    }
+  end
+
+  defp format_error(reason) when is_binary(reason), do: reason
+  defp format_error(reason), do: inspect(reason, pretty: true)
 
   defp exchange_code(code, verifier) do
     %{
