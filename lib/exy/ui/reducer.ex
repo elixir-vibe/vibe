@@ -382,11 +382,21 @@ defmodule Exy.UI.Reducer do
     |> Map.new()
   end
 
-  defp maybe_idle_after_tool_finished(state, pending_tools) do
-    if Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end) do
-      state.status
-    else
-      :idle
+  defp maybe_idle_after_tool_finished(
+         %{streaming_message: streaming_message} = state,
+         pending_tools
+       ) do
+    cond do
+      Enum.any?(pending_tools, fn {_id, tool} ->
+        Map.get(tool, :status) in [:running, "running"]
+      end) ->
+        state.status
+
+      not is_nil(streaming_message) ->
+        :working
+
+      true ->
+        :idle
     end
   end
 

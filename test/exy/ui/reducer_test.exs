@@ -111,6 +111,40 @@ defmodule Exy.UI.ReducerTest do
     assert Enum.any?(state.notifications, &String.contains?(&1.text, "exy a child-1"))
   end
 
+  test "keeps session working between ReAct tool calls while stream is open" do
+    state =
+      Exy.UI.State.new(session_id: "ui-test")
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:user_message_added, "ui-test", %{text: "work"})
+      )
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(
+          :tool_started,
+          "ui-test",
+          Exy.UI.ToolEvent.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
+        )
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(
+          :tool_finished,
+          "ui-test",
+          Exy.UI.ToolEvent.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
+        )
+      )
+
+    assert state.status == :working
+    assert state.streaming_message
+
+    state =
+      Exy.UI.Reducer.apply_event(
+        state,
+        Exy.UI.Event.new(:assistant_stream_finished, "ui-test", %{})
+      )
+
+    assert state.status == :idle
+  end
+
   test "keeps assistant text and tool calls in chronological order" do
     state =
       Exy.UI.State.new(session_id: "ui-test")
