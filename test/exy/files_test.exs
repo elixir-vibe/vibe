@@ -43,28 +43,37 @@ defmodule Exy.FilesTest do
     assert result.change.diff =~ "+2  TWO"
   end
 
-  test "rejects symlinks that resolve outside the workspace", %{dir: dir} do
+  test "allows symlinks that resolve outside the root", %{dir: dir} do
     outside = Path.join(System.tmp_dir!(), "exy-outside-#{System.unique_integer([:positive])}")
     File.mkdir_p!(outside)
-    File.write!(Path.join(outside, "secret.txt"), "secret")
+    File.write!(Path.join(outside, "shared.txt"), "shared")
     File.ln_s!(outside, Path.join(dir, "link"))
 
     try do
-      assert {:error, error} = Exy.Files.read_file("link/secret.txt", root: dir)
-      assert error =~ "resolves outside workspace"
+      assert {:ok, result} = Exy.Files.read_file("link/shared.txt", root: dir)
+      assert result.content == "shared"
     after
       File.rm_rf(outside)
     end
   end
 
-  test "rejects paths that escape the workspace", %{dir: dir} do
-    assert {:error, error} = Exy.Files.read_file("../outside.txt", root: dir)
-    assert error =~ "escapes workspace"
+  test "allows absolute and parent-relative paths outside the root", %{dir: dir} do
+    external =
+      Path.join(System.tmp_dir!(), "exy-extra-path-#{System.unique_integer([:positive])}")
 
-    assert {:error, error} =
-             Exy.Files.write_file(Path.join(dir, "absolute.txt"), "x", root: dir)
+    File.mkdir_p!(external)
 
-    assert error =~ "absolute paths are not allowed"
+    try do
+      absolute = Path.join(external, "sample.txt")
+      relative = Path.relative_to(absolute, dir)
+
+      assert {:ok, result} = Exy.Files.write_file(absolute, "hello", root: dir)
+      assert result.path == absolute
+      assert {:ok, result} = Exy.Files.read_file(relative, root: dir)
+      assert result.content == "hello"
+    after
+      File.rm_rf(external)
+    end
   end
 
   test "rejects duplicate exact edit matches", %{dir: dir} do

@@ -14,6 +14,10 @@ defmodule Exy.Agent.Coding do
       Exy.Actions.AST,
       Exy.Actions.LSP
     ],
+    # Exy sessions are long-lived and can span days or weeks. Jido.AI currently
+    # requires a positive integer here, so use a practically unreachable ceiling
+    # instead of the upstream default of 10 tool iterations.
+    max_iterations: 2_147_483_647,
     # Tool calls may intentionally run project generators, dependency installs,
     # or long test suites. Keep this finite so cancellation still has a ceiling,
     # but high enough that eval/Exy.Command own normal command timeouts.

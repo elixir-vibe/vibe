@@ -20,6 +20,10 @@ defmodule Exy.AgentTest do
     {:ok, session_dir: session_dir}
   end
 
+  test "coding agent has a practically unbounded iteration ceiling" do
+    assert Exy.Agent.Coding.strategy_opts()[:max_iterations] >= 1_000_000
+  end
+
   test "sessions are optional and attached to the pid" do
     {:ok, pid} = Exy.start_link(session_id: "agent-session")
 
