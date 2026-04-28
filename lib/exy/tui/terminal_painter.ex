@@ -82,12 +82,16 @@ defmodule Exy.TUI.TerminalPainter do
   end
 
   defp render_native(lines, cursor, painter) do
+    desired_viewport_top = viewport_top(lines, painter.height)
+
     case changed_range(painter.lines, lines) do
       nil ->
-        viewport_top = viewport_top(lines, painter.height)
-        screen_cursor = screen_cursor(cursor, viewport_top)
+        screen_cursor = screen_cursor(cursor, desired_viewport_top)
         frame = [ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1))]
-        {frame, put_render_state(painter, lines, cursor, viewport_top)}
+        {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
+
+      _range when desired_viewport_top != painter.viewport_top ->
+        render_native(lines, cursor, %{painter | lines: []})
 
       {first, _last} when first + 1 < painter.viewport_top ->
         render_native(lines, cursor, %{painter | lines: []})

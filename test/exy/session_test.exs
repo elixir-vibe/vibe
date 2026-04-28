@@ -49,6 +49,27 @@ defmodule Exy.SessionTest do
     assert restored_event.data.text == "hello"
   end
 
+  test "restores tool UI events as tool event structs" do
+    session_id = "tool-ui-event-#{System.unique_integer([:positive])}"
+
+    assert :ok =
+             Exy.Session.Store.append_ui_event(
+               Exy.UI.Event.new(
+                 :tool_started,
+                 session_id,
+                 Exy.UI.ToolEvent.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
+               ),
+               1
+             )
+
+    assert [{1, %{type: :tool_started, data: %Exy.UI.ToolEvent{} = event}}] =
+             Exy.Session.Store.ui_events(session_id)
+
+    assert event.id == "tool-1"
+    assert event.name == :eval
+    assert event.status == :running
+  end
+
   test "trajectory-only sessions project basic visible history" do
     session_id = "trajectory-only"
 

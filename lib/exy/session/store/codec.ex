@@ -169,9 +169,11 @@ defmodule Exy.Session.Store.Codec do
   defp decode_ui_event(map) do
     with {:ok, at, _offset} <- DateTime.from_iso8601(map["at"]),
          {:ok, type} <- decode_event_type(map["type"]) do
+      data = map |> Map.get("data", %{}) |> atomize() |> decode_ui_event_data(type)
+
       {:ok,
        {map["seq"],
-        Event.new(type, map["session_id"], atomize(map["data"] || %{}),
+        Event.new(type, map["session_id"], data,
           id: map["id"],
           at: at
         )}}
@@ -228,6 +230,16 @@ defmodule Exy.Session.Store.Codec do
   end
 
   defp project_trajectory_event(_event), do: []
+
+  defp decode_ui_event_data(data, type)
+       when type in [:tool_started, :tool_finished] and is_map(data) do
+    struct(
+      Exy.UI.ToolEvent,
+      Map.take(data, [:id, :name, :args, :output, :output_format, :output_parts, :status])
+    )
+  end
+
+  defp decode_ui_event_data(data, _type), do: data
 
   defp decode_event_type(type) when is_binary(type), do: Map.fetch(@event_types, type)
   defp decode_event_type(_type), do: :error

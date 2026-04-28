@@ -72,20 +72,25 @@ defmodule Exy.TUI.TerminalLoopTest do
         event_target: self()
       )
 
-    emit_replayed_phoenix_events(session, session_id)
-    :ok = TerminalLoop.input(loop, "keep typing responsive")
-
     assert {:ok, terminal} = Ghostty.Terminal.start_link(cols: 160, rows: 24)
 
-    {frame, _painter} =
-      Exy.TUI.TerminalPainter.render(
+    painter =
+      Enum.reduce(
+        replayed_phoenix_events(session_id),
         Exy.TUI.TerminalPainter.new(160, 24),
-        TerminalLoop.render_full(loop),
-        TerminalLoop.full_cursor_position(loop)
+        fn event, painter ->
+          :ok = Exy.Session.emit_transient_event(session, event)
+          {screen, painter} = paint_screen(loop, terminal, painter)
+
+          assert screen =~ "Prompt"
+          refute last_non_blank_line(screen) =~ "openai_codex:gpt-5.5"
+
+          painter
+        end
       )
 
-    :ok = Ghostty.Terminal.write(terminal, frame)
-    assert {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+    :ok = TerminalLoop.input(loop, "keep typing responsive")
+    {screen, _painter} = paint_screen(loop, terminal, painter)
 
     assert screen =~ "openai_codex:gpt-5.5"
     assert screen =~ "Prompt"
@@ -219,11 +224,11 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 500
   end
 
-  defp emit_replayed_phoenix_events(session, session_id) do
+  defp replayed_phoenix_events(session_id) do
     prompt =
       "Create a new phoenix project in ~/Development and let's implement tic tac toe game there"
 
-    events = [
+    [
       Exy.UI.Event.new(:user_message_added, session_id, %{text: prompt}),
       Exy.UI.Event.new(:assistant_stream_started, session_id, %{}),
       tool_started(session_id, "eval-1", :eval, %{
@@ -248,8 +253,19 @@ defmodule Exy.TUI.TerminalLoopTest do
       }),
       tool_finished(session_id, "read-mix", :read, read_output("mix.exs", 100), nil)
     ]
+  end
 
-    Enum.each(events, &Exy.Session.emit_transient_event(session, &1))
+  defp paint_screen(loop, terminal, painter) do
+    {frame, painter} =
+      Exy.TUI.TerminalPainter.render(
+        painter,
+        TerminalLoop.render_full(loop),
+        TerminalLoop.full_cursor_position(loop)
+      )
+
+    :ok = Ghostty.Terminal.write(terminal, frame)
+    {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+    {screen, painter}
   end
 
   defp tool_started(session_id, id, name, args) do
