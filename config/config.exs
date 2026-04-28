@@ -6,9 +6,11 @@ config :exy, ecto_repos: [Exy.Repo]
 config :exy, env: config_env()
 config :exy, compile_time_debug: config_env() != :prod
 
+sqlite_busy_timeout_ms = 5_000
+
 config :exy, Exy.Repo,
   journal_mode: :wal,
-  busy_timeout: 5_000,
+  busy_timeout: sqlite_busy_timeout_ms,
   pool_size: 1,
   log: false
 

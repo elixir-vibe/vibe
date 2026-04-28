@@ -10,6 +10,9 @@ defmodule Exy.TUI.App do
   use GenServer
 
   alias Exy.Session
+
+  @active_sessions_tick_ms 1_000
+  @server_migration_tick_ms 1_000
   alias Exy.UI.{Autocomplete, Command, EditorServer, Reducer, SlashCommands}
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -108,7 +111,7 @@ defmodule Exy.TUI.App do
 
   def handle_info(:active_sessions_tick, state) do
     state = start_active_sessions_count(state)
-    timer = Process.send_after(self(), :active_sessions_tick, 1_000)
+    timer = Process.send_after(self(), :active_sessions_tick, @active_sessions_tick_ms)
     {:noreply, %{state | active_sessions_timer: timer}}
   end
 
@@ -193,7 +196,7 @@ defmodule Exy.TUI.App do
         %{state | server_migration_timer: nil}
 
       _reason ->
-        timer = Process.send_after(self(), :server_migration_tick, 1_000)
+        timer = Process.send_after(self(), :server_migration_tick, @server_migration_tick_ms)
         %{state | server_migration_timer: timer}
     end
   end

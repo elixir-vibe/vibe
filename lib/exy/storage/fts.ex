@@ -6,6 +6,9 @@ defmodule Exy.Storage.FTS do
   alias Exy.Repo
   alias Exy.Storage.Schema.{Memory, MemoryFTS, UIEvent, UIEventFTS}
 
+  @rebuild_batch_size 2_000
+  @insert_chunk_size 1_000
+
   @message_types %{
     "user_message_added" => "user",
     "assistant_message_added" => "assistant"
@@ -76,7 +79,7 @@ defmodule Exy.Storage.FTS do
       UIEvent
       |> where([event], event.id > ^last_id)
       |> order_by([event], event.id)
-      |> limit(2_000)
+      |> limit(@rebuild_batch_size)
       |> Exy.Repo.all()
 
     case rows do
@@ -99,7 +102,7 @@ defmodule Exy.Storage.FTS do
       Memory
       |> where([memory], memory.id > ^last_id)
       |> order_by([memory], memory.id)
-      |> limit(2_000)
+      |> limit(@rebuild_batch_size)
       |> Exy.Repo.all()
 
     case rows do
@@ -121,7 +124,7 @@ defmodule Exy.Storage.FTS do
 
   defp insert_ui_event_fts_rows(rows) do
     rows
-    |> Enum.chunk_every(1_000)
+    |> Enum.chunk_every(@insert_chunk_size)
     |> Enum.each(&Exy.Repo.insert_all(UIEventFTS, &1))
   end
 
@@ -129,7 +132,7 @@ defmodule Exy.Storage.FTS do
 
   defp insert_memory_fts_rows(rows) do
     rows
-    |> Enum.chunk_every(1_000)
+    |> Enum.chunk_every(@insert_chunk_size)
     |> Enum.each(&Exy.Repo.insert_all(MemoryFTS, &1))
   end
 

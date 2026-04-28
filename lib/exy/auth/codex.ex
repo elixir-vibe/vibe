@@ -11,6 +11,9 @@ defmodule Exy.Auth.Codex do
   @redirect_uri "http://localhost:1455/auth/callback"
   @scope "openid profile email offline_access"
   @claim_path "https://api.openai.com/auth"
+  @oauth_callback_timeout_ms 180_000
+  @refresh_before_expiry_ms 60_000
+  @seconds_to_milliseconds 1_000
   alias Exy.Auth.Codex.CallbackServer
   alias Exy.Auth.Store
 
@@ -31,7 +34,10 @@ defmodule Exy.Auth.Codex do
       IO.puts("Waiting on #{@redirect_uri} ...")
 
       code =
-        CallbackServer.wait_for_code(server, Keyword.get(opts, :timeout, 180_000)) ||
+        CallbackServer.wait_for_code(
+          server,
+          Keyword.get(opts, :timeout, @oauth_callback_timeout_ms)
+        ) ||
           prompt_code(state)
 
       CallbackServer.stop(server)
@@ -87,7 +93,8 @@ defmodule Exy.Auth.Codex do
   @spec ensure_fresh() :: {:ok, map()} | {:error, term()}
   def ensure_fresh do
     with {:ok, credentials} <- load() do
-      if Map.get(credentials, :expires, 0) < System.system_time(:millisecond) + 60_000 do
+      if Map.get(credentials, :expires, 0) <
+           System.system_time(:millisecond) + @refresh_before_expiry_ms do
         with {:ok, refreshed} <- refresh(credentials) do
           Store.save(id(), refreshed)
           put_credentials(refreshed)
@@ -143,7 +150,7 @@ defmodule Exy.Auth.Codex do
      %{
        access: access,
        refresh: refresh,
-       expires: System.system_time(:millisecond) + expires_in * 1_000
+       expires: System.system_time(:millisecond) + expires_in * @seconds_to_milliseconds
      }}
   end
 

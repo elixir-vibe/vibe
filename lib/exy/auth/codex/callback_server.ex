@@ -2,6 +2,9 @@ defmodule Exy.Auth.Codex.CallbackServer do
   @moduledoc false
 
   @redirect_port 1455
+  @startup_timeout_ms 2_000
+  @accept_timeout_ms 180_000
+  @recv_timeout_ms 5_000
 
   @spec start_link(String.t()) :: {:ok, pid()} | {:error, term()}
   def start_link(state) do
@@ -25,7 +28,7 @@ defmodule Exy.Auth.Codex.CallbackServer do
     receive do
       {__MODULE__, :ready, ^pid} -> {:ok, pid}
     after
-      2_000 -> {:error, :callback_server_timeout}
+      @startup_timeout_ms -> {:error, :callback_server_timeout}
     end
   rescue
     exception -> {:error, exception}
@@ -53,9 +56,9 @@ defmodule Exy.Auth.Codex.CallbackServer do
   def stop(pid) when is_pid(pid), do: Process.exit(pid, :shutdown)
 
   defp accept_once(listen, parent, state) do
-    case :gen_tcp.accept(listen, 180_000) do
+    case :gen_tcp.accept(listen, @accept_timeout_ms) do
       {:ok, socket} ->
-        {:ok, request} = :gen_tcp.recv(socket, 0, 5_000)
+        {:ok, request} = :gen_tcp.recv(socket, 0, @recv_timeout_ms)
         {status, body, code} = parse_callback(request, state)
 
         response =

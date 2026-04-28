@@ -3,6 +3,9 @@ defmodule Exy.Application do
 
   use Application
 
+  @slow_jido_signal_threshold_ms 1_000
+  @slow_jido_directive_threshold_ms 1_000
+
   @impl true
   def start(_type, _args) do
     configure_dependency_logging()
@@ -47,8 +50,8 @@ defmodule Exy.Application do
     Application.put_env(:jido, :telemetry,
       log_level: :error,
       log_args: :none,
-      slow_signal_threshold_ms: 1_000,
-      slow_directive_threshold_ms: 1_000
+      slow_signal_threshold_ms: @slow_jido_signal_threshold_ms,
+      slow_directive_threshold_ms: @slow_jido_directive_threshold_ms
     )
 
     Application.put_env(:jido, :observability, log_level: :warning)

@@ -5,11 +5,14 @@ defmodule Exy.Subagents do
 
   alias Exy.Subagents.{Manager, Scheduler}
 
+  @default_timeout_ms 120_000
+  @default_max_concurrency 3
+
   @type task_spec :: %{required(:task) => String.t(), optional(atom()) => term()}
 
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(task, opts \\ []) when is_binary(task) do
-    timeout = Keyword.get(opts, :timeout, 120_000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
 
     with {:ok, job} <- start(task, opts),
          {:ok, finished} <- await(job.id, timeout) do
@@ -25,8 +28,10 @@ defmodule Exy.Subagents do
 
   @spec run_many([task_spec() | map()], keyword()) :: {:ok, [map()]} | {:error, term(), [map()]}
   def run_many(specs, opts \\ []) when is_list(specs) do
-    max_concurrency = Keyword.get(opts, :max_concurrency, min(length(specs), 3))
-    timeout = Keyword.get(opts, :timeout, 120_000)
+    max_concurrency =
+      Keyword.get(opts, :max_concurrency, min(length(specs), @default_max_concurrency))
+
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
 
     specs
     |> Task.async_stream(&run_spec(&1, opts),
@@ -49,7 +54,7 @@ defmodule Exy.Subagents do
   end
 
   @spec await(String.t(), timeout()) :: {:ok, term()} | {:error, term()}
-  def await(id, timeout \\ 120_000) do
+  def await(id, timeout \\ @default_timeout_ms) do
     started = System.monotonic_time(:millisecond)
     await_loop(id, timeout, started)
   end
@@ -93,7 +98,7 @@ defmodule Exy.Subagents do
     task_opts = Keyword.merge(opts, Map.to_list(Map.delete(spec, :task)))
 
     with {:ok, job} <- start(task, task_opts),
-         {:ok, result} <- await(job.id, Keyword.get(task_opts, :timeout, 120_000)) do
+         {:ok, result} <- await(job.id, Keyword.get(task_opts, :timeout, @default_timeout_ms)) do
       {:ok, Map.from_struct(result)}
     end
   end

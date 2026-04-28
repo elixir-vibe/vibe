@@ -3,6 +3,10 @@ defmodule Exy.TUI.TerminalLoopTest do
 
   alias Exy.TUI.{TerminalLoop, Width}
 
+  @long_prompt_sleep_ms 5_000
+  @render_wait_timeout_ms 1_000
+  @long_command_timeout_ms 120_000
+
   test "decodes input into app/editor and renders textarea" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
 
@@ -232,7 +236,7 @@ defmodule Exy.TUI.TerminalLoopTest do
       Exy.UI.Event.new(:user_message_added, session_id, %{text: prompt}),
       Exy.UI.Event.new(:assistant_stream_started, session_id, %{}),
       tool_started(session_id, "eval-1", :eval, %{
-        code: "Cmd.run([\"mix\", \"phx.new\"], timeout: 120_000)"
+        code: "Cmd.run([\"mix\", \"phx.new\"], timeout: #{@long_command_timeout_ms})"
       }),
       tool_finished(session_id, "eval-1", :eval, phoenix_output(70), :text),
       tool_started(session_id, "read-router", :read, %{
@@ -359,7 +363,7 @@ defmodule Exy.TUI.TerminalLoopTest do
         width: 60,
         height: 24,
         ask_fun: fn _text, _opts ->
-          Process.sleep(5_000)
+          Process.sleep(@long_prompt_sleep_ms)
           {:ok, "ok"}
         end
       )
@@ -427,7 +431,11 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert autocomplete_index < footer_index
   end
 
-  defp wait_until_render(loop, fun, deadline \\ System.monotonic_time(:millisecond) + 1_000) do
+  defp wait_until_render(
+         loop,
+         fun,
+         deadline \\ System.monotonic_time(:millisecond) + @render_wait_timeout_ms
+       ) do
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
 
     cond do

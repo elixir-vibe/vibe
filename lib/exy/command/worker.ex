@@ -5,7 +5,7 @@ defmodule Exy.Command.Worker do
 
   alias Exy.Command.{Job, Result}
 
-  @max_memory_output 65_536
+  @max_memory_output_bytes 65_536
 
   defstruct [
     :id,
@@ -152,10 +152,15 @@ defmodule Exy.Command.Worker do
   defp append_output(state, data) do
     output = state.output <> data
 
-    if byte_size(output) > @max_memory_output do
+    if byte_size(output) > @max_memory_output_bytes do
       %{
         state
-        | output: binary_part(output, byte_size(output) - @max_memory_output, @max_memory_output)
+        | output:
+            binary_part(
+              output,
+              byte_size(output) - @max_memory_output_bytes,
+              @max_memory_output_bytes
+            )
       }
     else
       %{state | output: output}

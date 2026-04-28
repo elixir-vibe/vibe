@@ -7,6 +7,8 @@ defmodule Exy.Sandbox.Policy do
   sandbox for malicious code with filesystem/network access.
   """
 
+  @default_timeout_ms 30_000
+
   @type isolation :: :same_process | :process | :node | :os_process | :container | :remote
 
   @type t :: %__MODULE__{
@@ -20,7 +22,7 @@ defmodule Exy.Sandbox.Policy do
         }
 
   defstruct isolation: :os_process,
-            timeout: 30_000,
+            timeout: @default_timeout_ms,
             max_heap_size: nil,
             cwd: nil,
             env: %{},

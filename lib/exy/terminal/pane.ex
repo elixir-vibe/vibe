@@ -8,6 +8,9 @@ defmodule Exy.Terminal.Pane do
 
   use GenServer
 
+  @default_shutdown_ms 5_000
+  @default_max_scrollback_lines 10_000
+
   @type snapshot_format :: :plain | :html | :vt
 
   @spec child_spec(keyword()) :: Supervisor.child_spec()
@@ -16,7 +19,7 @@ defmodule Exy.Terminal.Pane do
       id: Keyword.get(opts, :id, {__MODULE__, make_ref()}),
       start: {__MODULE__, :start_link, [opts]},
       restart: :temporary,
-      shutdown: 5_000
+      shutdown: @default_shutdown_ms
     }
   end
 
@@ -103,7 +106,7 @@ defmodule Exy.Terminal.Pane do
     Ghostty.Terminal.start_link(
       cols: Keyword.get(opts, :cols, 100),
       rows: Keyword.get(opts, :rows, 30),
-      max_scrollback: Keyword.get(opts, :max_scrollback, 10_000)
+      max_scrollback: Keyword.get(opts, :max_scrollback, @default_max_scrollback_lines)
     )
   end
 

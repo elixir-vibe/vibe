@@ -5,6 +5,11 @@ defmodule Exy.UI.SlashCommands.Sessions do
 
   alias Exy.UI.Event
 
+  @seconds_per_minute 60
+  @seconds_per_hour 3_600
+  @seconds_per_day 86_400
+  @seconds_per_week 604_800
+
   @impl true
   def spec,
     do: %{
@@ -77,11 +82,11 @@ defmodule Exy.UI.SlashCommands.Sessions do
     seconds = max(DateTime.diff(DateTime.utc_now(), at), 0)
 
     cond do
-      seconds < 60 -> "now"
-      seconds < 3_600 -> "#{div(seconds, 60)}m"
-      seconds < 86_400 -> "#{div(seconds, 3_600)}h"
-      seconds < 604_800 -> "#{div(seconds, 86_400)}d"
-      true -> "#{div(seconds, 604_800)}w"
+      seconds < @seconds_per_minute -> "now"
+      seconds < @seconds_per_hour -> "#{div(seconds, @seconds_per_minute)}m"
+      seconds < @seconds_per_day -> "#{div(seconds, @seconds_per_hour)}h"
+      seconds < @seconds_per_week -> "#{div(seconds, @seconds_per_day)}d"
+      true -> "#{div(seconds, @seconds_per_week)}w"
     end
   end
 

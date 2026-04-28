@@ -4,6 +4,10 @@ defmodule Exy.CLI.Server do
   alias Exy.CLI.Output
   alias Exy.Server.Metadata
 
+  @default_start_timeout_ms 20_000
+  @shutdown_grace_ms 5_000
+  @connect_poll_interval_ms 100
+
   @spec command([String.t()], keyword()) :: :ok | {:error, term()}
   def command(["start"], opts), do: command(["start", "--auto"], opts)
 
@@ -21,7 +25,7 @@ defmodule Exy.CLI.Server do
   def command(["restart"], opts) do
     node = current_server_node()
     _ = Exy.Server.stop()
-    wait_for_shutdown(node, 5_000)
+    wait_for_shutdown(node, @shutdown_grace_ms)
 
     if opts[:foreground] do
       Exy.Server.start(foreground: true)
@@ -39,7 +43,7 @@ defmodule Exy.CLI.Server do
   end
 
   @spec ensure_running(non_neg_integer()) :: :ok | {:error, term()}
-  def ensure_running(timeout_ms \\ 20_000) do
+  def ensure_running(timeout_ms \\ @default_start_timeout_ms) do
     case Exy.Remote.connect() do
       {:ok, _node} -> :ok
       {:error, {:stale_server, _metadata}} -> restart_background(timeout_ms)
@@ -48,7 +52,7 @@ defmodule Exy.CLI.Server do
   end
 
   @spec start_background(non_neg_integer()) :: :ok | {:error, term()}
-  def start_background(timeout_ms \\ 20_000) do
+  def start_background(timeout_ms \\ @default_start_timeout_ms) do
     launch_background()
 
     case wait(timeout_ms) do
@@ -80,7 +84,7 @@ defmodule Exy.CLI.Server do
   defp restart_background(timeout_ms) do
     node = current_server_node()
     _ = Exy.Server.stop()
-    wait_for_shutdown(node, min(timeout_ms, 5_000))
+    wait_for_shutdown(node, min(timeout_ms, @shutdown_grace_ms))
     start_background(timeout_ms)
   end
 
@@ -134,7 +138,7 @@ defmodule Exy.CLI.Server do
         if System.monotonic_time(:millisecond) >= deadline do
           {:error, reason}
         else
-          Process.sleep(100)
+          Process.sleep(@connect_poll_interval_ms)
           wait_until(deadline)
         end
     end

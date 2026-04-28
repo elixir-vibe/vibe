@@ -8,6 +8,10 @@ defmodule Exy.Code.LSP do
 
   alias Exy.Code.LSP.Client
 
+  @default_wait_ms 1_000
+  @diagnostics_open_wait_ms 500
+  @position_open_wait_ms 200
+
   @spec run(map() | keyword()) :: {:ok, term()} | {:error, String.t() | map()}
   def run(params) when is_map(params) or is_list(params) do
     params = Map.new(params, fn {key, value} -> {normalize_key(key), value} end)
@@ -21,7 +25,7 @@ defmodule Exy.Code.LSP do
   defp dispatch(pid, %{action: action} = params) when action in [:diagnostics, "diagnostics"] do
     with {:ok, file} <- fetch(params, :file) do
       open_file(pid, file)
-      Process.sleep(Map.get(params, :wait_ms, 500))
+      Process.sleep(Map.get(params, :wait_ms, @diagnostics_open_wait_ms))
       {:ok, Client.diagnostics(pid, file)}
     end
   end
@@ -44,14 +48,14 @@ defmodule Exy.Code.LSP do
 
   defp dispatch(pid, %{action: action} = params) when action in [:symbols, "symbols"] do
     with {:ok, file} <- fetch(params, :file) do
-      timeout = Map.get(params, :wait_ms, 1_000)
+      timeout = Map.get(params, :wait_ms, @default_wait_ms)
       Client.request(pid, "textDocument/documentSymbol", text_document_params(file), timeout)
     end
   end
 
   defp dispatch(pid, %{action: action} = params)
        when action in [:workspace_symbols, "workspace_symbols"] do
-    timeout = Map.get(params, :wait_ms, 1_000)
+    timeout = Map.get(params, :wait_ms, @default_wait_ms)
     Client.request(pid, "workspace/symbol", %{query: Map.get(params, :query, "")}, timeout)
   end
 
@@ -64,7 +68,7 @@ defmodule Exy.Code.LSP do
         end: position(Map.get(params, :end_line, line), Map.get(params, :end_column, column))
       }
 
-      timeout = Map.get(params, :wait_ms, 1_000)
+      timeout = Map.get(params, :wait_ms, @default_wait_ms)
 
       Client.request(
         pid,
@@ -83,10 +87,10 @@ defmodule Exy.Code.LSP do
          {:ok, line} <- fetch(params, :line),
          {:ok, column} <- fetch(params, :column) do
       open_file(pid, file)
-      Process.sleep(Map.get(params, :open_wait_ms, 200))
+      Process.sleep(Map.get(params, :open_wait_ms, @position_open_wait_ms))
       extra = Map.take(params, [:context])
 
-      timeout = Map.get(params, :wait_ms, 1_000)
+      timeout = Map.get(params, :wait_ms, @default_wait_ms)
 
       Client.request(
         pid,

@@ -9,6 +9,7 @@ defmodule Exy.TUI.RuntimeTest do
   @startup_timeout_ms 20_000
   @input_timeout_ms 1_000
   @exit_timeout_ms 5_000
+  @reader_start_timeout_ms 5_000
 
   test "render frame uses synchronized full-frame repaint controls" do
     frame =
@@ -111,7 +112,7 @@ defmodule Exy.TUI.RuntimeTest do
         args: ["-lc", "cd #{File.cwd!()} && EXY_HOME=#{shell_quote(exy_home)} mix exy"],
         cols: @cols,
         rows: @rows,
-        reader_start_timeout: 5_000
+        reader_start_timeout: @reader_start_timeout_ms
       )
 
     try do

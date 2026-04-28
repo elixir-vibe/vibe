@@ -6,6 +6,9 @@ defmodule Exy.Plugins.WebSearch.API do
   alias Exy.Plugins.WebSearch.Result
 
   @endpoint "https://api.exa.ai/search"
+  @default_timeout_ms 30_000
+  @default_context_max_characters 10_000
+  @highlight_max_characters 2_000
   @restricted_categories MapSet.new([
                            "company",
                            "people",
@@ -25,7 +28,7 @@ defmodule Exy.Plugins.WebSearch.API do
       Req.post(endpoint(),
         json: body,
         auth: {:bearer, api_key},
-        receive_timeout: Keyword.get(opts, :timeout, 30_000)
+        receive_timeout: Keyword.get(opts, :timeout, @default_timeout_ms)
       )
       |> case do
         {:ok, %{status: status, body: body}} when status in 200..299 ->
@@ -55,7 +58,7 @@ defmodule Exy.Plugins.WebSearch.API do
 
   defp search_body(query, opts) do
     num_results = opts |> Keyword.get(:num_results, Keyword.get(opts, :numResults, 8)) |> min(100)
-    context_max = Keyword.get(opts, :context_max_characters, 10_000)
+    context_max = Keyword.get(opts, :context_max_characters, @default_context_max_characters)
     category = Keyword.get(opts, :category)
     restricted? = category && MapSet.member?(@restricted_categories, category)
 
@@ -68,7 +71,10 @@ defmodule Exy.Plugins.WebSearch.API do
     |> put_if(:additionalQueries, Keyword.get(opts, :additional_queries))
     |> put_if(:category, category)
     |> put_if(:userLocation, Keyword.get(opts, :user_location))
-    |> put_if(:highlights, if(Keyword.get(opts, :highlights), do: %{maxCharacters: 2_000}))
+    |> put_if(
+      :highlights,
+      if(Keyword.get(opts, :highlights), do: %{maxCharacters: @highlight_max_characters})
+    )
     |> put_if(:summary, if(Keyword.get(opts, :summary), do: true))
     |> put_if(:maxAgeHours, Keyword.get(opts, :max_age_hours))
     |> maybe_put_filters(opts, restricted?)

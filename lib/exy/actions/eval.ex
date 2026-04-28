@@ -13,6 +13,8 @@ defmodule Exy.Actions.Eval do
             doc: [code: "Elixir code to evaluate", timeout: "Timeout in milliseconds"]
           )
 
+  @default_timeout_ms 30_000
+
   use Jido.Action,
     name: "eval",
     description:
@@ -25,7 +27,7 @@ defmodule Exy.Actions.Eval do
 
     ToolResult.run(fn ->
       case Exy.Eval.run(params.code,
-             timeout: Map.get(params, :timeout, 30_000),
+             timeout: Map.get(params, :timeout, @default_timeout_ms),
              session_id: session_id(context)
            ) do
         {:ok, result} -> ToolResult.ok(Exy.Eval.Result.to_tool_output(result))

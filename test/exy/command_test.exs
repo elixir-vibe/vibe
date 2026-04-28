@@ -4,8 +4,10 @@ defmodule Exy.CommandTest do
   alias Exy.Command
   alias Exy.Command.Result
 
+  @command_timeout_ms 5_000
+
   test "run waits for command result and writes full output log" do
-    result = Command.run(["sh", "-c", "printf hello"], timeout: 5_000)
+    result = Command.run(["sh", "-c", "printf hello"], timeout: @command_timeout_ms)
 
     assert %Result{status: :ok, exit_status: 0, output: "hello"} = result
     assert File.read!(result.output_path) == "hello"
@@ -13,7 +15,7 @@ defmodule Exy.CommandTest do
   end
 
   test "run returns errors with exit status" do
-    result = Command.run(["sh", "-c", "echo nope; exit 7"], timeout: 5_000)
+    result = Command.run(["sh", "-c", "echo nope; exit 7"], timeout: @command_timeout_ms)
 
     assert %Result{status: :error, exit_status: 7} = result
     assert result.output =~ "nope"
@@ -35,7 +37,7 @@ defmodule Exy.CommandTest do
   end
 
   test "Cmd alias is available in eval" do
-    code = ~S|Cmd.run(["sh", "-c", "printf ok"], timeout: 5_000).output|
+    code = "Cmd.run([\"sh\", \"-c\", \"printf ok\"], timeout: #{@command_timeout_ms}).output"
     assert {:ok, result} = Exy.Eval.run(code, session_id: "cmd-alias-test")
 
     assert result.output =~ ~s("ok")
@@ -56,7 +58,7 @@ defmodule Exy.CommandTest do
       )
 
     Exy.Command.Streaming.with_eval_session(session_id, fn ->
-      Command.run(["sh", "-c", "printf streamed"], timeout: 5_000)
+      Command.run(["sh", "-c", "printf streamed"], timeout: @command_timeout_ms)
     end)
 
     assert %{pending_tools: %{"eval-tool" => tool}} = Exy.Session.state(session)
@@ -65,7 +67,7 @@ defmodule Exy.CommandTest do
   end
 
   test "Cmd results display command output in eval" do
-    code = ~S|Cmd.run(["sh", "-c", "printf ok"], timeout: 5_000)|
+    code = "Cmd.run([\"sh\", \"-c\", \"printf ok\"], timeout: #{@command_timeout_ms})"
     assert {:ok, result} = Exy.Eval.run(code, session_id: "cmd-result-display-test")
 
     assert result.output == "ok"

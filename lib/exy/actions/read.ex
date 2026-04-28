@@ -16,6 +16,8 @@ defmodule Exy.Actions.Read do
             ]
           )
 
+  @default_limit_lines 2_000
+
   use Jido.Action,
     name: "read",
     description:
@@ -28,7 +30,7 @@ defmodule Exy.Actions.Read do
 
     Exy.Actions.ToolResult.run(fn ->
       Exy.Files.read_file(params.path,
-        limit_lines: Map.get(params, :limit_lines, 2_000),
+        limit_lines: Map.get(params, :limit_lines, @default_limit_lines),
         limit_bytes: Map.get(params, :limit_bytes, Exy.ToolOutput.default_max_bytes())
       )
     end)

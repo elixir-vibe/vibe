@@ -12,15 +12,16 @@ defmodule Exy.Runtime.Standalone do
 
   @behaviour Exy.Runtime
 
-  @default_timeout 30_000
+  @default_timeout_ms 30_000
+  @call_overhead_ms 1_000
 
   @impl Exy.Runtime
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts)
 
   @impl Exy.Runtime
   def evaluate(runtime, code, opts \\ []) when is_binary(code) do
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
-    GenServer.call(runtime, {:evaluate, code, opts}, timeout + 1_000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
+    GenServer.call(runtime, {:evaluate, code, opts}, timeout + @call_overhead_ms)
   end
 
   @impl Exy.Runtime
@@ -39,7 +40,7 @@ defmodule Exy.Runtime.Standalone do
   @impl true
   def handle_call({:evaluate, code, opts}, from, state) do
     id = state.next_id
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     message = {:eval, id, code, Keyword.take(opts, [:file])}
     Port.command(state.port, encode(message))
     timer = Process.send_after(self(), {:request_timeout, id}, timeout)

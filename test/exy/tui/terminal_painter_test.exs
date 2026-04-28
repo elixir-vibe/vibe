@@ -3,15 +3,22 @@ defmodule Exy.TUI.TerminalPainterTest do
 
   alias Exy.TUI.TerminalPainter
 
+  @large_history_lines 10_000
+  @last_large_history_index 9_999
+  @patch_budget_us 50_000
+
   test "patches large histories without quadratic scans" do
-    lines = Enum.map(1..10_000, &["line ", Integer.to_string(&1)])
-    {_, painter} = TerminalPainter.render(TerminalPainter.new(120, 30), lines, {10_000, 1})
-    changed = List.replace_at(lines, 9_999, "changed")
+    lines = Enum.map(1..@large_history_lines, &["line ", Integer.to_string(&1)])
+
+    {_, painter} =
+      TerminalPainter.render(TerminalPainter.new(120, 30), lines, {@large_history_lines, 1})
+
+    changed = List.replace_at(lines, @last_large_history_index, "changed")
 
     {us, {_frame, _painter}} =
-      :timer.tc(fn -> TerminalPainter.render(painter, changed, {10_000, 1}) end)
+      :timer.tc(fn -> TerminalPainter.render(painter, changed, {@large_history_lines, 1}) end)
 
-    assert us < 50_000
+    assert us < @patch_budget_us
   end
 
   test "first render paints a synchronized full frame" do

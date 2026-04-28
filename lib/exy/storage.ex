@@ -1,6 +1,8 @@
 defmodule Exy.Storage do
   @moduledoc false
 
+  @sqlite_busy_timeout_ms 5_000
+
   @schemas [
     sessions: Exy.Storage.Schema.Session,
     ui_events: Exy.Storage.Schema.UIEvent,
@@ -26,7 +28,7 @@ defmodule Exy.Storage do
       current
       |> Keyword.put(:database, database)
       |> Keyword.put_new(:journal_mode, :wal)
-      |> Keyword.put_new(:busy_timeout, 5_000)
+      |> Keyword.put_new(:busy_timeout, @sqlite_busy_timeout_ms)
       |> Keyword.put_new(:pool_size, 1)
       |> Keyword.put_new(:log, false)
     )

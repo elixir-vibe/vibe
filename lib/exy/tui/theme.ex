@@ -17,6 +17,11 @@ defmodule Exy.TUI.Theme do
 
   defstruct name: "default", fg: %{}, bg: %{}, symbols: %{}
 
+  @luma_red_weight 299
+  @luma_green_weight 587
+  @luma_blue_weight 114
+  @light_luma_threshold 2_500
+
   @dark_fg %{
     accent: {178, 148, 187},
     border: {74, 78, 88},
@@ -201,7 +206,8 @@ defmodule Exy.TUI.Theme do
     green = div(rem(index, 36), 6)
     blue = rem(index, 6)
 
-    if red * 299 + green * 587 + blue * 114 >= 2_500, do: :light, else: :dark
+    luma = red * @luma_red_weight + green * @luma_green_weight + blue * @luma_blue_weight
+    if luma >= @light_luma_threshold, do: :light, else: :dark
   end
 
   defp terminal_color_luma(_color), do: :unknown

@@ -5,6 +5,12 @@ defmodule Exy.TUI.ToolWidgetTest do
 
   alias Exy.TUI.{Theme, Widget, Width}
 
+  @long_command_timeout_ms 120_000
+  @expanded_command_timeout_ms 10_000
+  @large_output_lines 10_000
+  @eval_render_budget_us 50_000
+  @read_render_budget_us 1_000_000
+
   test "dispatches eval by atom name" do
     lines =
       TUI.tool(%{
@@ -56,7 +62,9 @@ defmodule Exy.TUI.ToolWidgetTest do
         id: "eval-1",
         name: :eval,
         status: :ok,
-        args: %{code: ~S|Cmd.run(["bash", "-lc", "pwd"], timeout: 120_000)|},
+        args: %{
+          code: "Cmd.run([\"bash\", \"-lc\", \"pwd\"], timeout: #{@long_command_timeout_ms})"
+        },
         output: "ok"
       }
       |> TUI.tool()
@@ -64,7 +72,9 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> List.first()
       |> IO.iodata_to_binary()
 
-    assert Width.visible_text(line) =~ ~S|Cmd.run(["bash", "-lc", "pwd"], timeout: 120_000)|
+    assert Width.visible_text(line) =~
+             "Cmd.run([\"bash\", \"-lc\", \"pwd\"], timeout: #{@long_command_timeout_ms})"
+
     assert line =~ "38;2;154;154;154"
     assert Width.visible_length(line) <= 100
   end
@@ -163,7 +173,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         id: "eval-1",
         name: :eval,
         status: :ok,
-        args: %{"code" => code, "timeout" => 120_000},
+        args: %{"code" => code, "timeout" => @long_command_timeout_ms},
         output: "[]"
       }
       |> TUI.tool()
@@ -247,7 +257,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         id: "eval-1",
         name: :eval,
         status: :ok,
-        args: %{"code" => code, "timeout" => 10_000},
+        args: %{"code" => code, "timeout" => @expanded_command_timeout_ms},
         output: "total 0",
         truncate?: false
       }
@@ -295,13 +305,15 @@ defmodule Exy.TUI.ToolWidgetTest do
   end
 
   test "eval truncates large output before wrapping" do
-    output = Enum.map_join(1..10_000, "\n", &"line #{&1} #{String.duplicate("x", 100)}")
+    output =
+      Enum.map_join(1..@large_output_lines, "\n", &"line #{&1} #{String.duplicate("x", 100)}")
+
     tool = %{id: "tool", name: :eval, status: :ok, args: %{code: "many()"}, output: output}
 
     {us, lines} = :timer.tc(fn -> tool |> TUI.tool() |> Widget.render(120, Theme.default()) end)
     plain = Enum.map(lines, &Width.visible_text/1)
 
-    assert us < 50_000
+    assert us < @eval_render_budget_us
     assert Enum.any?(plain, &String.contains?(&1, "line 10000"))
   end
 
@@ -373,7 +385,8 @@ defmodule Exy.TUI.ToolWidgetTest do
   end
 
   test "read truncates large file content before rendering" do
-    content = Enum.map_join(1..10_000, "\n", &"line #{&1} #{String.duplicate("x", 200)}")
+    content =
+      Enum.map_join(1..@large_output_lines, "\n", &"line #{&1} #{String.duplicate("x", 200)}")
 
     {us, lines} =
       :timer.tc(fn ->
@@ -390,7 +403,7 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     plain = Enum.map(lines, &Width.visible_text/1)
 
-    assert us < 1_000_000
+    assert us < @read_render_budget_us
     assert Enum.any?(plain, &String.contains?(&1, "ctrl+o"))
     refute Enum.any?(plain, &String.contains?(&1, "line 9999"))
   end

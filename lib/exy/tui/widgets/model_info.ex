@@ -5,6 +5,9 @@ defmodule Exy.TUI.Widgets.ModelInfo do
 
   alias Exy.TUI.{Theme, Widget}
 
+  @thousand_tokens 1_000
+  @million_tokens 1_000_000
+
   @impl true
   def render(%{props: props}, width, theme) do
     model = Map.get(props, :model, "no-model")
@@ -50,9 +53,12 @@ defmodule Exy.TUI.Widgets.ModelInfo do
   defp context_color(_percent), do: :muted
 
   defp format_tokens(nil), do: "0"
-  defp format_tokens(count) when count < 1_000, do: to_string(count)
-  defp format_tokens(count) when count < 1_000_000, do: "#{Float.round(count / 1_000, 1)}K"
-  defp format_tokens(count), do: "#{Float.round(count / 1_000_000, 1)}M"
+  defp format_tokens(count) when count < @thousand_tokens, do: to_string(count)
+
+  defp format_tokens(count) when count < @million_tokens,
+    do: "#{Float.round(count / @thousand_tokens, 1)}K"
+
+  defp format_tokens(count), do: "#{Float.round(count / @million_tokens, 1)}M"
 
   defp format_percent(percent) when is_float(percent), do: "#{Float.round(percent, 1)}%"
   defp format_percent(percent), do: "#{percent}%"

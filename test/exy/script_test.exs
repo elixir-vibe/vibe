@@ -1,8 +1,11 @@
 defmodule Exy.ScriptTest do
   use ExUnit.Case, async: false
 
+  @blocking_sleep_ms 5_000
+  @blocking_script "Process.sleep(#{@blocking_sleep_ms})"
+
   test "standalone errors keep result map shape" do
-    result = Exy.Script.run_string("Process.sleep(5_000)", runtime: :standalone, timeout: 20)
+    result = Exy.Script.run_string(@blocking_script, runtime: :standalone, timeout: 20)
 
     assert %{status: :timeout, exit_status: 1, output: output} = result
     assert is_binary(output)

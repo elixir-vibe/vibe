@@ -9,6 +9,8 @@ defmodule Exy.Codex.Usage do
   """
 
   @rpc_args ["-s", "read-only", "-a", "untrusted", "app-server"]
+  @rpc_line_length 65_536
+  @rpc_response_timeout_ms 10_000
 
   @spec limits(keyword()) :: {:ok, map()} | {:error, term()}
   def limits(opts \\ []) do
@@ -50,7 +52,7 @@ defmodule Exy.Codex.Usage do
         :binary,
         :exit_status,
         args: Keyword.get(opts, :args, @rpc_args),
-        line: 65_536
+        line: @rpc_line_length
       ])
 
     {:ok, %{port: port}}
@@ -68,7 +70,7 @@ defmodule Exy.Codex.Usage do
     payload = %{jsonrpc: "2.0", id: id, method: method}
     payload = if params, do: Map.put(payload, :params, params), else: payload
     send_json(rpc, payload)
-    await_response(id, 10_000)
+    await_response(id, @rpc_response_timeout_ms)
   end
 
   defp notify(rpc, method) do

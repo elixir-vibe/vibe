@@ -1,6 +1,8 @@
 defmodule Exy.UI.PromptRunner do
   @moduledoc false
 
+  @default_prompt_timeout_ms 86_400_000
+
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})
 
   @spec start(ask_fun(), String.t(), keyword(), pid(), reference()) :: {:ok, pid()}
@@ -46,7 +48,7 @@ defmodule Exy.UI.PromptRunner do
       try do
         # Match the coding agent's one-day tool ceiling so long installs or test
         # suites fail at the command/eval layer, not at the outer prompt await.
-        Exy.ask(agent, text, Keyword.put_new(ask_opts, :timeout, 86_400_000))
+        Exy.ask(agent, text, Keyword.put_new(ask_opts, :timeout, @default_prompt_timeout_ms))
       after
         if Process.alive?(agent), do: GenServer.stop(agent)
       end

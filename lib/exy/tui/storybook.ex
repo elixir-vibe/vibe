@@ -9,6 +9,9 @@ defmodule Exy.TUI.Storybook do
   alias Exy.TUI.{Node, Theme, Widget, Width}
   alias Exy.UI.{Event, Reducer, State, ViewModel}
 
+  @sample_footer_tokens 12_345
+  @sample_model_tokens 123_456
+
   @spec stories() :: [atom()]
   def stories do
     [
@@ -120,7 +123,7 @@ defmodule Exy.TUI.Storybook do
       session_id: "story-footer",
       model: "openai_codex:gpt-5.5",
       status: :idle,
-      usage: %{total_tokens: 12_345}
+      usage: %{total_tokens: @sample_footer_tokens}
     })
   end
 
@@ -130,7 +133,7 @@ defmodule Exy.TUI.Storybook do
       session_id: "story-footer",
       model: "openai_codex:gpt-5.5",
       status: :idle,
-      usage: %{total_tokens: 12_345},
+      usage: %{total_tokens: @sample_footer_tokens},
       plugin_statuses: %{
         "git" => " main",
         "worker" => "background index ready",
@@ -226,7 +229,7 @@ defmodule Exy.TUI.Storybook do
       reasoning: "medium",
       context_percent: 88.5,
       subscription: "chatgpt",
-      usage: %{total_tokens: 123_456, total_cost: 0.023}
+      usage: %{total_tokens: @sample_model_tokens, total_cost: 0.023}
     )
   end
 

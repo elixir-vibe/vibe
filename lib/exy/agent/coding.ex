@@ -3,6 +3,19 @@ defmodule Exy.Agent.Coding do
   Minimal Jido.AI ReAct agent wired to Exy's coding tools.
   """
 
+  @practical_max_iterations 2_147_483_647
+  @tool_timeout_ms 86_400_000
+  @stream_timeout_ms 86_460_000
+
+  @doc "Named value mirrored into the Jido.AI macro's literal max_iterations option."
+  def practical_max_iterations, do: @practical_max_iterations
+
+  @doc "Named value mirrored into the Jido.AI macro's literal tool_timeout_ms option."
+  def tool_timeout_ms, do: @tool_timeout_ms
+
+  @doc "Named value mirrored into the Jido.AI macro's literal stream_timeout_ms option."
+  def stream_timeout_ms, do: @stream_timeout_ms
+
   use Jido.AI.Agent,
     name: "exy_coding_agent",
     model: :exy,
@@ -15,8 +28,7 @@ defmodule Exy.Agent.Coding do
       Exy.Actions.LSP
     ],
     # Exy sessions are long-lived and can span days or weeks. Jido.AI currently
-    # requires a positive integer here, so use a practically unreachable ceiling
-    # instead of the upstream default of 10 tool iterations.
+    # requires compile-time literal options, so mirror practical_max_iterations/0.
     max_iterations: 2_147_483_647,
     # Tool calls may intentionally run project generators, dependency installs,
     # or long test suites. Keep this finite so cancellation still has a ceiling,

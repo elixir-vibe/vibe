@@ -9,6 +9,8 @@ defmodule Exy.Script do
 
   alias Exy.Runtime.Standalone
 
+  @default_timeout_ms 120_000
+
   @type result :: %{
           status: :ok | :error | :timeout,
           exit_status: non_neg_integer() | nil,
@@ -47,7 +49,7 @@ defmodule Exy.Script do
           source = File.read!(path)
 
           case Standalone.evaluate(runtime, source,
-                 timeout: Keyword.get(opts, :timeout, 120_000),
+                 timeout: Keyword.get(opts, :timeout, @default_timeout_ms),
                  file: path
                ) do
             {:ok, result} ->
@@ -76,7 +78,7 @@ defmodule Exy.Script do
     args = Exy.Support.Lists.append(Keyword.get(opts, :args, []), path)
     cwd = Keyword.get(opts, :cwd, File.cwd!())
     env = Keyword.get(opts, :env, [])
-    timeout = Keyword.get(opts, :timeout, 120_000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
 
     run_port(executable, args, cwd: cwd, env: env, timeout: timeout)
   end

@@ -5,6 +5,8 @@ defmodule Exy.CLI.Runner do
 
   require Exy.Debug
 
+  @default_print_timeout_ms 120_000
+
   @spec ask(String.t(), keyword()) :: :ok | {:error, term()}
   def ask("", _opts) do
     Output.error("No prompt provided. Run `mix exy --help` for usage.")
@@ -28,7 +30,10 @@ defmodule Exy.CLI.Runner do
           end
         else
           with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
-            Exy.ask(pid, prompt, timeout: opts[:timeout] || 120_000, session_id: session_id)
+            Exy.ask(pid, prompt,
+              timeout: opts[:timeout] || @default_print_timeout_ms,
+              session_id: session_id
+            )
           end
         end
       end)

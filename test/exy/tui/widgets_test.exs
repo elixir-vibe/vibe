@@ -3,13 +3,19 @@ defmodule Exy.TUI.WidgetsTest do
 
   alias Exy.TUI
 
+  @sample_token_count 1_200
+
   alias Exy.TUI.{Theme, Widget, Width}
 
   test "renders section, status, model info, dialog, and diff widgets" do
     nodes = [
       TUI.section("Tools", [TUI.text("eval")]),
       TUI.status(title: "Expert", description: "ready", color: :success),
-      TUI.model_info(model: "gpt-5.5", provider: "openai_codex", usage: %{total_tokens: 1_200}),
+      TUI.model_info(
+        model: "gpt-5.5",
+        provider: "openai_codex",
+        usage: %{total_tokens: @sample_token_count}
+      ),
       TUI.dialog("Resume", [TUI.text("session")]),
       TUI.diff(lines: [{:del, "old"}, {:add, "new"}])
     ]

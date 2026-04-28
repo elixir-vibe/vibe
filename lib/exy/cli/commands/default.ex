@@ -5,6 +5,8 @@ defmodule Exy.CLI.Commands.Default do
   alias Exy.Web
 
   @version Mix.Project.config()[:version]
+  @default_eval_timeout_ms 30_000
+  @default_web_port 4321
 
   @spec run([String.t()], keyword()) :: :ok | {:error, term()}
   def run(args, opts) do
@@ -24,7 +26,10 @@ defmodule Exy.CLI.Commands.Default do
         web(opts)
 
       code = opts[:eval] ->
-        Output.print(Exy.Eval.once(code, timeout: opts[:timeout] || 30_000), opts)
+        Output.print(
+          Exy.Eval.once(code, timeout: opts[:timeout] || @default_eval_timeout_ms),
+          opts
+        )
 
       opts[:compact] ->
         compact(opts)
@@ -49,7 +54,7 @@ defmodule Exy.CLI.Commands.Default do
   end
 
   defp web(opts) do
-    port = opts[:port] || 4321
+    port = opts[:port] || @default_web_port
 
     case Web.start(port: port) do
       {:ok, _pid} ->

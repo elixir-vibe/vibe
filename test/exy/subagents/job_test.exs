@@ -1,6 +1,8 @@
 defmodule Exy.Subagents.JobTest do
   use ExUnit.Case, async: false
 
+  @await_timeout_ms 2_000
+
   setup do
     session_dir =
       Path.join(System.tmp_dir!(), "exy-subagent-job-#{System.unique_integer([:positive])}")
@@ -32,7 +34,7 @@ defmodule Exy.Subagents.JobTest do
     assert job.status == :running
     assert is_binary(job.child_session_id)
 
-    assert {:ok, finished} = Exy.Subagents.await(job.id, 2_000)
+    assert {:ok, finished} = Exy.Subagents.await(job.id, @await_timeout_ms)
     assert finished.status == :ok
     assert finished.result == "child saw: hello subagent"
 
@@ -65,7 +67,7 @@ defmodule Exy.Subagents.JobTest do
              String.contains?(notification.text, "read-only")
            end)
 
-    assert {:ok, _finished} = Exy.Subagents.await(job.id, 2_000)
+    assert {:ok, _finished} = Exy.Subagents.await(job.id, @await_timeout_ms)
   end
 
   test "unknown roles fail unless explicit model or system is provided" do
@@ -79,14 +81,14 @@ defmodule Exy.Subagents.JobTest do
                ask_fun: fn _text, _opts -> {:ok, "ok"} end
              )
 
-    assert {:ok, _finished} = Exy.Subagents.await(job.id, 2_000)
+    assert {:ok, _finished} = Exy.Subagents.await(job.id, @await_timeout_ms)
   end
 
   test "synchronous ask uses the same job path" do
     assert {:ok, "answer: question"} =
              Exy.Subagents.ask("question",
                ask_fun: fn text, _opts -> {:ok, "answer: #{text}"} end,
-               timeout: 2_000
+               timeout: @await_timeout_ms
              )
   end
 

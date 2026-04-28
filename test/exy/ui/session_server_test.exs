@@ -1,6 +1,8 @@
 defmodule Exy.SessionProcessTest do
   use ExUnit.Case, async: true
 
+  @late_prompt_sleep_ms 5_000
+
   test "dispatches commands, emits events, and records usage" do
     ask_fun = fn _text, _opts ->
       {:ok, %{model: "test-model", usage: %{input_tokens: 4, output_tokens: 6, total_tokens: 10}}}
@@ -144,7 +146,7 @@ defmodule Exy.SessionProcessTest do
 
   test "cancel aborts active prompt task and ignores late results" do
     ask_fun = fn _text, _opts ->
-      Process.sleep(5_000)
+      Process.sleep(@late_prompt_sleep_ms)
       {:ok, "too late"}
     end
 

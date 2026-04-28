@@ -1,6 +1,8 @@
 defmodule Exy.Subagents.SchedulerTest do
   use ExUnit.Case, async: false
 
+  @schedule_interval_ms 60_000
+
   setup do
     subagents_dir =
       Path.join(System.tmp_dir!(), "exy-subagent-schedules-#{System.unique_integer([:positive])}")
@@ -26,7 +28,7 @@ defmodule Exy.Subagents.SchedulerTest do
   test "schedules, persists, runs, and unschedules background subagents" do
     assert {:ok, schedule} =
              Exy.Subagents.schedule("scheduled task",
-               every: 60_000,
+               every: @schedule_interval_ms,
                ask_fun: fn text, _opts -> {:ok, "scheduled: #{text}"} end
              )
 

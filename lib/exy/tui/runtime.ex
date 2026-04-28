@@ -6,6 +6,8 @@ defmodule Exy.TUI.Runtime do
   alias Exy.TUI.{RuntimeSupervisor, TerminalLoop, TerminalPainter}
   alias IO.ANSI
 
+  @interrupt_repeat_window_ms 1_500
+
   @spec run(keyword()) :: :ok | {:error, term()}
   def run(opts \\ []) do
     {columns, rows} = Ghostty.TTY.size()
@@ -99,7 +101,9 @@ defmodule Exy.TUI.Runtime do
 
   defp recent_interrupt?(last_interrupt_at, now \\ System.monotonic_time(:millisecond))
   defp recent_interrupt?(nil, _now), do: false
-  defp recent_interrupt?(last_interrupt_at, now), do: now - last_interrupt_at <= 1_500
+
+  defp recent_interrupt?(last_interrupt_at, now),
+    do: now - last_interrupt_at <= @interrupt_repeat_window_ms
 
   defp drain_pending_events(tty, loop, last_interrupt_at, painter) do
     deadline = System.monotonic_time(:millisecond) + 8

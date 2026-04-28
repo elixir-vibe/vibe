@@ -3,6 +3,9 @@ defmodule Exy.TUI.AppTest do
 
   alias Exy.TUI.App
 
+  @long_prompt_sleep_ms 5_000
+  @migration_assert_timeout_ms 1_000
+
   test "coordinates editor submit and ui events" do
     ask = fn text, opts ->
       if opts[:on_result] do
@@ -123,7 +126,7 @@ defmodule Exy.TUI.AppTest do
         persist?: false
       )
 
-    assert_receive {:migrated, "async-migration-session"}, 1_000
+    assert_receive {:migrated, "async-migration-session"}, @migration_assert_timeout_ms
     Process.sleep(20)
 
     snapshot = App.snapshot(app)
@@ -146,7 +149,7 @@ defmodule Exy.TUI.AppTest do
         server_migration_fun: migration_fun,
         persist?: false,
         ask_fun: fn _text, _opts ->
-          Process.sleep(5_000)
+          Process.sleep(@long_prompt_sleep_ms)
           {:ok, "done"}
         end
       )
@@ -156,7 +159,7 @@ defmodule Exy.TUI.AppTest do
 
     snapshot = wait_until(app, &(&1.ui.status == :working))
     assert snapshot.ui.session_id == "busy-local-session"
-    refute_receive {:migration_attempted, "busy-local-session"}, 1_000
+    refute_receive {:migration_attempted, "busy-local-session"}, @migration_assert_timeout_ms
   end
 
   test "offers generic slash command autocomplete" do
@@ -214,7 +217,11 @@ defmodule Exy.TUI.AppTest do
     assert %{width: 120, height: 40} = App.snapshot(app)
   end
 
-  defp wait_until(app, fun, deadline \\ System.monotonic_time(:millisecond) + 1_000) do
+  defp wait_until(
+         app,
+         fun,
+         deadline \\ System.monotonic_time(:millisecond) + @migration_assert_timeout_ms
+       ) do
     snapshot = App.snapshot(app)
 
     cond do

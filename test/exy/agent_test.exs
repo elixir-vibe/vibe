@@ -1,6 +1,8 @@
 defmodule Exy.AgentTest do
   use ExUnit.Case, async: false
 
+  @practical_iteration_floor 1_000_000
+
   setup do
     session_dir =
       Path.join(System.tmp_dir!(), "exy-agent-session-test-#{System.unique_integer([:positive])}")
@@ -21,7 +23,7 @@ defmodule Exy.AgentTest do
   end
 
   test "coding agent has a practically unbounded iteration ceiling" do
-    assert Exy.Agent.Coding.strategy_opts()[:max_iterations] >= 1_000_000
+    assert Exy.Agent.Coding.strategy_opts()[:max_iterations] >= @practical_iteration_floor
   end
 
   test "sessions are optional and attached to the pid" do

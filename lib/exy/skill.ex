@@ -7,6 +7,8 @@ defmodule Exy.Skill do
   """
 
   @allowed_name ~r/^[a-z0-9][a-z0-9._-]*$/
+  @default_context_max_bytes 6_000
+  @max_skill_file_chars 100_000
 
   @spec dir() :: String.t()
   def dir, do: Exy.Paths.skills_dir()
@@ -195,7 +197,7 @@ defmodule Exy.Skill do
   end
 
   defp skill_markdown(skill, opts) do
-    max_bytes = Keyword.get(opts, :max_bytes, 6_000)
+    max_bytes = Keyword.get(opts, :max_bytes, @default_context_max_bytes)
 
     [
       "### ",
@@ -361,7 +363,7 @@ defmodule Exy.Skill do
   end
 
   defp validate_size(content) do
-    if String.length(content) > 100_000, do: {:error, "skill too large"}, else: :ok
+    if String.length(content) > @max_skill_file_chars, do: {:error, "skill too large"}, else: :ok
   end
 
   defp require_frontmatter_key(metadata, key) do

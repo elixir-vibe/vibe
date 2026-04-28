@@ -3,6 +3,8 @@ defmodule Exy.Memory.BuiltinProvider do
 
   use Exy.Memory.Provider
 
+  @subagent_result_preview_chars 2_000
+
   @impl true
   def system_prompt_block(_state) do
     blocks =
@@ -28,7 +30,9 @@ defmodule Exy.Memory.BuiltinProvider do
     with parent_session_id when is_binary(parent_session_id) <-
            Map.get(context, :parent_session_id),
          true <- byte_size(result) > 0 do
-      text = "Subagent completed: #{task}\nResult: #{String.slice(result, 0, 2_000)}"
+      text =
+        "Subagent completed: #{task}\nResult: #{String.slice(result, 0, @subagent_result_preview_chars)}"
+
       _ = Exy.Memory.add({:session, parent_session_id}, text)
     end
 

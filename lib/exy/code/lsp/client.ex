@@ -3,7 +3,11 @@ defmodule Exy.Code.LSP.Client do
 
   use GenServer
 
-  @timeout 30_000
+  @default_request_timeout_ms 30_000
+  @request_call_overhead_ms 1_000
+  @default_diagnostics_timeout_ms 2_000
+  @diagnostics_call_overhead_ms 500
+  @initialize_timeout_ms 5_000
 
   def start_link(opts) do
     cwd = Keyword.fetch!(opts, :cwd)
@@ -32,8 +36,8 @@ defmodule Exy.Code.LSP.Client do
     end
   end
 
-  def request(pid, method, params \\ %{}, timeout \\ @timeout) do
-    GenServer.call(pid, {:request, method, params}, timeout + 1_000)
+  def request(pid, method, params \\ %{}, timeout \\ @default_request_timeout_ms) do
+    GenServer.call(pid, {:request, method, params}, timeout + @request_call_overhead_ms)
   catch
     :exit, {:timeout, _call} -> {:error, "Expert LSP request timed out"}
     :exit, reason -> {:error, "Expert LSP request failed: #{inspect(reason)}"}
@@ -43,8 +47,12 @@ defmodule Exy.Code.LSP.Client do
     GenServer.cast(pid, {:notify, method, params})
   end
 
-  def diagnostics(pid, file, timeout \\ 2_000) do
-    GenServer.call(pid, {:diagnostics, Path.expand(file)}, timeout + 500)
+  def diagnostics(pid, file, timeout \\ @default_diagnostics_timeout_ms) do
+    GenServer.call(
+      pid,
+      {:diagnostics, Path.expand(file)},
+      timeout + @diagnostics_call_overhead_ms
+    )
   end
 
   @impl true
@@ -93,7 +101,7 @@ defmodule Exy.Code.LSP.Client do
     }
 
     send_payload(state.port, payload)
-    {:noreply, %{state | seq: 1, pending: %{1 => :initialize}}, 5_000}
+    {:noreply, %{state | seq: 1, pending: %{1 => :initialize}}, @initialize_timeout_ms}
   end
 
   @impl true

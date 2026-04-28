@@ -3,6 +3,10 @@ defmodule Exy.Code.Checks do
   Validation gates Exy can run before and after self-modification.
   """
 
+  @max_failure_output_chars 8_000
+  @max_issue_details 20
+  @max_clone_details 10
+
   @type check_result :: %{name: atom(), status: :ok | :error, details: term()}
 
   @spec analyze(keyword()) :: map()
@@ -198,14 +202,14 @@ defmodule Exy.Code.Checks do
   defp detail_count(_details), do: nil
 
   defp compact_details(%{output: output} = details) when is_binary(output) do
-    %{details | output: String.slice(output, 0, 8_000)}
+    %{details | output: String.slice(output, 0, @max_failure_output_chars)}
   end
 
   defp compact_details(%{issues: issues} = details) when is_list(issues),
-    do: %{details | issues: Enum.take(issues, 20)}
+    do: %{details | issues: Enum.take(issues, @max_issue_details)}
 
   defp compact_details(%{clones: clones} = details) when is_list(clones),
-    do: %{details | clones: Enum.take(clones, 10)}
+    do: %{details | clones: Enum.take(clones, @max_clone_details)}
 
   defp compact_details(details), do: details
 

@@ -1,6 +1,9 @@
 defmodule Exy.ToolOutputTest do
   use ExUnit.Case, async: true
 
+  @large_item_count 10_000
+  @structured_limit_bytes 1_000
+
   test "keeps text under the default context limit" do
     text = String.duplicate("x", Exy.ToolOutput.default_max_bytes() + 10)
 
@@ -19,12 +22,12 @@ defmodule Exy.ToolOutputTest do
   end
 
   test "large structured values become a bounded textual tool result" do
-    value = %{items: Enum.map(1..10_000, &%{n: &1, text: String.duplicate("x", 20)})}
+    value = %{items: Enum.map(1..@large_item_count, &%{n: &1, text: String.duplicate("x", 20)})}
 
-    output = Exy.ToolOutput.limit_value(value, 1_000)
+    output = Exy.ToolOutput.limit_value(value, @structured_limit_bytes)
 
-    assert %{truncated: true, limit_bytes: 1_000, output: text} = output
-    assert byte_size(text) > 1_000
+    assert %{truncated: true, limit_bytes: @structured_limit_bytes, output: text} = output
+    assert byte_size(text) > @structured_limit_bytes
     assert text =~ "tool output truncated"
   end
 end

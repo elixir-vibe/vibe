@@ -1,9 +1,12 @@
 defmodule Exy.Storage.Migrations do
   @moduledoc false
 
+  @create_storage_tables_version 20_260_426_104_000
+  @create_fts_indexes_version 20_260_426_121_000
+
   @migrations [
-    {20_260_426_104_000, Exy.Storage.Migrations.CreateStorageTables},
-    {20_260_426_121_000, Exy.Storage.Migrations.CreateFTSIndexes}
+    {@create_storage_tables_version, Exy.Storage.Migrations.CreateStorageTables},
+    {@create_fts_indexes_version, Exy.Storage.Migrations.CreateFTSIndexes}
   ]
 
   @spec versions() :: [non_neg_integer()]

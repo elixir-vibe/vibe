@@ -1,6 +1,8 @@
 defmodule Exy.Actions.ASTTest do
   use ExUnit.Case, async: true
 
+  @large_source_chars 80_000
+
   test "successful list results are wrapped in a map for action runtime validation" do
     dir = Path.join(System.tmp_dir!(), "exy-ast-action-#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
@@ -28,7 +30,11 @@ defmodule Exy.Actions.ASTTest do
   test "large errors are context-limited" do
     assert {:ok, %{error: output}} =
              Exy.Actions.AST.run(
-               %{action: :diff, old_source: "", new_source: String.duplicate("x", 80_000)},
+               %{
+                 action: :diff,
+                 old_source: "",
+                 new_source: String.duplicate("x", @large_source_chars)
+               },
                %{}
              )
 

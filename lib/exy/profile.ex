@@ -6,6 +6,10 @@ defmodule Exy.Profile do
   be redirected to artifact files by the caller when needed.
   """
 
+  @default_top_calls_limit 25
+  @default_timeout_ms 30_000
+  @default_growth_duration_ms 1_000
+
   @spec cprof((-> term()), keyword()) :: map()
   def cprof(fun, opts \\ []) when is_function(fun, 0) do
     modules = Keyword.get(opts, :modules, :all)
@@ -15,7 +19,7 @@ defmodule Exy.Profile do
     try do
       result = fun.()
       total = call(:cprof, :pause, [])
-      calls = collect_cprof(modules, Keyword.get(opts, :limit, 25))
+      calls = collect_cprof(modules, Keyword.get(opts, :limit, @default_top_calls_limit))
 
       %{
         profiler: :cprof,
@@ -31,7 +35,7 @@ defmodule Exy.Profile do
 
   @spec eprof((-> term()), keyword()) :: map()
   def eprof(fun, opts \\ []) when is_function(fun, 0) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     parent = self()
 
     {pid, ref} =
@@ -75,7 +79,7 @@ defmodule Exy.Profile do
 
   @spec fprof((-> term()), keyword()) :: map()
   def fprof(fun, opts \\ []) when is_function(fun, 0) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     parent = self()
 
     {pid, ref} =
@@ -114,7 +118,7 @@ defmodule Exy.Profile do
   end
 
   @spec process_growth(non_neg_integer(), keyword()) :: [map()]
-  def process_growth(duration_ms \\ 1_000, opts \\ []) do
+  def process_growth(duration_ms \\ @default_growth_duration_ms, opts \\ []) do
     limit = Keyword.get(opts, :limit, 15)
     before = process_metrics()
     Process.sleep(duration_ms)

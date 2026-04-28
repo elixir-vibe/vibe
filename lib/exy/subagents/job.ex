@@ -7,6 +7,8 @@ defmodule Exy.Subagents.Job do
   alias Exy.Subagents.JobInfo
   alias Exy.UI.Event
 
+  @default_job_timeout_ms 120_000
+
   @spec start_link(JobInfo.t(), keyword()) :: GenServer.on_start()
   def start_link(%JobInfo{} = job, opts) do
     GenServer.start_link(__MODULE__, {job, opts}, name: via(job.id))
@@ -42,7 +44,14 @@ defmodule Exy.Subagents.Job do
     :ok = Session.lock(session, state.job.id, self())
     emit_parent_event(state.job, :subagent_started, trajectory_start(state.job))
     :ok = Session.dispatch(session, {:submit_prompt, %{text: state.job.task}})
-    timeout_ref = Process.send_after(self(), :timeout, Keyword.get(state.opts, :timeout, 120_000))
+
+    timeout_ref =
+      Process.send_after(
+        self(),
+        :timeout,
+        Keyword.get(state.opts, :timeout, @default_job_timeout_ms)
+      )
+
     {:noreply, %{state | session: session, timeout_ref: timeout_ref}}
   end
 

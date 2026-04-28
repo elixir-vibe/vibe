@@ -8,6 +8,8 @@ defmodule Exy.Eval do
 
   alias Exy.Eval.{Evaluator, Result}
 
+  @default_timeout_ms 30_000
+
   @type result :: {:ok, Result.t()} | {:error, String.t()}
 
   @spec run(String.t(), keyword()) :: result()
@@ -52,7 +54,7 @@ defmodule Exy.Eval do
   end
 
   defp evaluate_with_timeout(code, session_id, persist?, opts) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     caller = self()
 
     {pid, ref} =
