@@ -412,7 +412,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     plain = Enum.map(lines, &Width.visible_text/1)
     ansi = IO.iodata_to_binary(lines)
 
-    assert Enum.any?(plain, &String.contains?(&1, "Successfully replaced"))
+    refute Enum.any?(plain, &String.contains?(&1, "Successfully replaced"))
     assert Enum.any?(plain, &String.contains?(&1, "-1  old"))
     assert Enum.any?(plain, &String.contains?(&1, "+1  new"))
     assert ansi =~ "38;2;204;102;102"
@@ -489,7 +489,9 @@ defmodule Exy.TUI.ToolWidgetTest do
     refute rendered =~ "params:"
     assert rendered =~ "left - right"
     assert rendered =~ "left + right"
-    assert rendered =~ "matches: 1"
+    refute rendered =~ "matches: 1\n"
+    assert rendered =~ "dry-run"
+    refute rendered =~ "lib/demo.ex\n   ---"
     assert rendered =~ "-  left - right"
     assert rendered =~ "+  left + right"
   end

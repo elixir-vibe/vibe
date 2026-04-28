@@ -64,11 +64,8 @@ defmodule Exy.TUI.Widgets.Tools.AST do
   defp output_lines(%Exy.Code.AST.Result{action: :search} = result, width, theme),
     do: search_lines(result, width, theme)
 
-  defp output_lines(%Exy.Code.AST.Result{action: :replace, diff: diff} = result, width, theme) do
-    result
-    |> replace_summary_lines(width, theme)
-    |> Lines.join(diff_lines(diff, width, theme))
-  end
+  defp output_lines(%Exy.Code.AST.Result{action: :replace, diff: diff}, width, theme),
+    do: diff_lines(diff, width, theme)
 
   defp output_lines(result, width, theme) when is_list(result),
     do: search_lines(%{result: result}, width, theme)
@@ -92,33 +89,26 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     |> maybe_append_omitted(length(matches), width, theme)
   end
 
-  defp replace_summary_lines(result, width, theme) do
-    ["matches: #{match_count(result.result)}", "dry-run: #{inspect(result.dry_run)}"]
-    |> Enum.flat_map(&detail_line(&1, width, theme))
-  end
-
   defp diff_lines(diff, width, theme) do
     diff
     |> List.wrap()
-    |> Enum.flat_map(fn %{path: path, diff: diff} ->
-      header = detail_line(path, width, theme)
-
-      rendered_diff =
-        Exy.TUI.diff(text: diff)
-        |> Widget.render(max(width - 2, 1), theme)
-        |> Enum.map(&[Widget.spaces(2), &1])
-
-      header |> Lines.join(rendered_diff)
+    |> Enum.flat_map(fn %{diff: diff} ->
+      Exy.TUI.diff(text: diff)
+      |> Widget.render(max(width - 2, 1), theme)
+      |> Enum.map(&[Widget.spaces(2), &1])
     end)
   end
-
-  defp detail_line(text, width, theme),
-    do: Widget.wrap([Widget.spaces(2), Theme.fg(theme, :muted, text)], width)
 
   defp maybe_append_omitted(lines, total, _width, _theme) when total <= 20, do: lines
 
   defp maybe_append_omitted(lines, total, width, theme) do
-    Lines.join(lines, detail_line("… #{total - 20} more matches", width, theme))
+    omitted =
+      Widget.wrap(
+        [Widget.spaces(2), Theme.fg(theme, :muted, "… #{total - 20} more matches")],
+        width
+      )
+
+    Lines.join(lines, omitted)
   end
 
   defp match_location(%{file: file, line: line}), do: "#{file}:#{line}"
