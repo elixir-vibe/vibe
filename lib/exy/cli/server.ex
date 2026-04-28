@@ -17,8 +17,21 @@ defmodule Exy.CLI.Server do
   def command(["status"], opts), do: Output.print(Exy.Server.status(), opts)
   def command(["stop"], opts), do: Output.print(Exy.Server.stop(), opts)
 
+  def command(["restart"], opts) do
+    _ = Exy.Server.stop()
+
+    if opts[:foreground] do
+      Exy.Server.start(foreground: true)
+    else
+      Output.print(start_background(), opts)
+    end
+  end
+
   def command(_args, _opts) do
-    Output.error("Usage: exy server start [--foreground] | status | stop")
+    Output.error(
+      "Usage: exy server start [--foreground] | restart [--foreground] | status | stop"
+    )
+
     {:error, :invalid_server_command}
   end
 
