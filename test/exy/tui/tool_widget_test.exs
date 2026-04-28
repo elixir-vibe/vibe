@@ -433,6 +433,8 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     assert rendered =~ "lsp"
     assert rendered =~ "diagnostics"
+    assert rendered =~ "1s"
+    assert rendered =~ "/tmp/project"
     assert rendered =~ "missing required parameter: file"
     refute rendered =~ "params:"
     refute rendered =~ "wait_ms"

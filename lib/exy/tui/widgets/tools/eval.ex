@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{Markdown, ToolWidget}
+  alias Exy.TUI.{Duration, Markdown, ToolWidget}
 
   @impl true
   def render(tool, width, theme) do
@@ -115,10 +115,7 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
     end
   end
 
-  defp format_timeout(timeout) when is_integer(timeout) and rem(timeout, 1000) == 0,
-    do: "#{div(timeout, 1000)}s"
-
-  defp format_timeout(timeout) when is_integer(timeout), do: "#{Float.round(timeout / 1000, 1)}s"
+  defp format_timeout(timeout) when is_integer(timeout), do: Duration.milliseconds(timeout)
   defp format_timeout(timeout), do: to_string(timeout)
 
   defp code_from_args(%{code: code}), do: code

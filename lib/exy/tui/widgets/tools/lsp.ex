@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.ToolWidget
+  alias Exy.TUI.{Duration, ToolWidget}
 
   @impl true
   def render(tool, width, theme) do
@@ -18,17 +18,33 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
   end
 
   defp action(tool) do
-    case args(tool) do
-      %{action: action} -> to_string(action)
-      %{"action" => action} -> to_string(action)
-      _ -> nil
+    tool
+    |> args()
+    |> then(fn args -> [action_name(args), wait_summary(args)] end)
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.join(" ")
+    |> case do
+      "" -> nil
+      action -> action
     end
   end
+
+  defp action_name(%{action: action}), do: to_string(action)
+  defp action_name(%{"action" => action}), do: to_string(action)
+  defp action_name(_args), do: nil
+
+  defp wait_summary(%{wait_ms: wait_ms}), do: format_wait(wait_ms)
+  defp wait_summary(%{"wait_ms" => wait_ms}), do: format_wait(wait_ms)
+  defp wait_summary(_args), do: nil
+
+  defp format_wait(wait_ms), do: Duration.milliseconds(wait_ms)
 
   defp lsp_summary(tool, output) do
     case {args(tool), output} do
       {%{file: file}, _output} when is_binary(file) -> file
       {%{"file" => file}, _output} when is_binary(file) -> file
+      {%{cwd: cwd}, _output} when is_binary(cwd) -> cwd
+      {%{"cwd" => cwd}, _output} when is_binary(cwd) -> cwd
       {%{query: query}, _output} when is_binary(query) -> query
       {%{"query" => query}, _output} when is_binary(query) -> query
       {_args, output} -> collapsed_summary(output)
