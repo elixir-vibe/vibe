@@ -3,6 +3,9 @@ defmodule Exy.Server do
 
   alias Exy.Server.{Cookie, Metadata}
 
+  @remote_stop_timeout_ms 5_000
+  @server_command_marker "exy server start --foreground"
+
   @spec start(keyword()) :: :ok | {:error, term()}
   def start(opts \\ []) do
     name = Keyword.get_lazy(opts, :name, &default_node_name/0)
@@ -38,14 +41,12 @@ defmodule Exy.Server do
 
   @spec stop() :: :ok | {:error, term()}
   def stop do
-    node =
-      case Metadata.read() do
-        {:ok, %{"node" => node_name}} when is_binary(node_name) -> String.to_atom(node_name)
-        _other -> default_node_name()
-      end
+    metadata = Metadata.read()
+    node = server_node(metadata)
+    pid = server_os_pid(metadata)
 
     result = stop_node(node)
-    cleanup_orphan_processes()
+    cleanup_orphan_process(pid)
     result
   end
 
@@ -56,11 +57,9 @@ defmodule Exy.Server do
 
   @spec cleanup_orphan_processes() :: :ok
   def cleanup_orphan_processes do
-    foreground_server_pids()
-    |> Enum.reject(&(&1 == System.pid()))
-    |> Enum.each(&terminate_os_process/1)
-
-    :ok
+    Metadata.read()
+    |> server_os_pid()
+    |> cleanup_orphan_process()
   end
 
   defp ensure_distribution(name) do
@@ -129,7 +128,7 @@ defmodule Exy.Server do
   defp stop_node(node) do
     with :ok <- ensure_client_distribution(),
          true <- connect_node(node) do
-      _ = :rpc.call(node, :init, :stop, [])
+      stop_connected_node(node)
       cleanup_metadata()
       :ok
     else
@@ -139,6 +138,37 @@ defmodule Exy.Server do
 
       error ->
         error
+    end
+  end
+
+  defp stop_connected_node(node) do
+    Node.monitor(node, true)
+
+    try do
+      _ = :erpc.call(node, :init, :stop, [], @remote_stop_timeout_ms)
+      wait_for_nodedown(node, @remote_stop_timeout_ms)
+    catch
+      :exit, _reason -> :ok
+      _kind, _reason -> :ok
+    after
+      Node.monitor(node, false)
+      flush_nodedown(node)
+    end
+  end
+
+  defp wait_for_nodedown(node, timeout_ms) do
+    receive do
+      {:nodedown, ^node} -> :ok
+    after
+      timeout_ms -> :timeout
+    end
+  end
+
+  defp flush_nodedown(node) do
+    receive do
+      {:nodedown, ^node} -> :ok
+    after
+      0 -> :ok
     end
   end
 
@@ -154,25 +184,31 @@ defmodule Exy.Server do
     end
   end
 
-  defp foreground_server_pids do
-    "exy server start --foreground"
-    |> pgrep()
-    |> Enum.uniq()
+  defp server_node({:ok, %{"node" => node_name}}) when is_binary(node_name),
+    do: String.to_atom(node_name)
+
+  defp server_node(_metadata), do: default_node_name()
+
+  defp server_os_pid({:ok, %{"pid" => pid}}) when is_binary(pid), do: pid
+  defp server_os_pid(_metadata), do: nil
+
+  defp cleanup_orphan_process(nil), do: :ok
+
+  defp cleanup_orphan_process(pid) do
+    cond do
+      pid == System.pid() -> :ok
+      server_os_process?(pid) -> terminate_os_process(pid)
+      true -> :ok
+    end
   end
 
-  defp pgrep(pattern) do
-    case System.cmd("pgrep", ["-f", pattern], stderr_to_stdout: true) do
-      {output, 0} ->
-        output
-        |> String.split("\n", trim: true)
-        |> Enum.map(&String.trim/1)
-        |> Enum.filter(&Regex.match?(~r/^\d+$/, &1))
-
-      {_output, _status} ->
-        []
+  defp server_os_process?(pid) do
+    case System.cmd("ps", ["-p", pid, "-o", "command="], stderr_to_stdout: true) do
+      {command, 0} -> String.contains?(command, @server_command_marker)
+      {_output, _status} -> false
     end
   rescue
-    _error -> []
+    _error -> false
   end
 
   defp terminate_os_process(pid) do
