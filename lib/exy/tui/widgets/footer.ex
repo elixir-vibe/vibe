@@ -10,7 +10,12 @@ defmodule Exy.TUI.Widgets.Footer do
     usage = Map.get(props, :usage, %{}) || %{}
     tokens = Map.get(usage, :total_tokens, 0)
     separator = Theme.symbol(theme, :separator)
-    left = [short_cwd(Map.get(props, :cwd)), separator, Map.get(props, :session_id)]
+
+    left = [
+      short_cwd(Map.get(props, :cwd)),
+      separator,
+      short_session_id(Map.get(props, :session_id), width)
+    ]
 
     right = [
       to_string(Map.get(props, :model)),
@@ -29,6 +34,12 @@ defmodule Exy.TUI.Widgets.Footer do
       nil -> [footer]
       status_line -> [footer, status_line]
     end
+  end
+
+  defp short_session_id(session_id, width) do
+    session_id
+    |> to_string()
+    |> Widget.fit_line(max(div(width, 4), 12))
   end
 
   defp sessions_label(nil), do: "local"
