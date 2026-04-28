@@ -164,6 +164,7 @@ defmodule Exy.UI.ViewModel do
       status: Map.get(tool, :status),
       args: Map.get(tool, :args),
       output: Map.get(tool, :output),
+      output_format: Map.get(tool, :output_format),
       expanded?: Map.get(tool, :expanded?, false),
       truncate?: state.truncate?
     }

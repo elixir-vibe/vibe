@@ -13,6 +13,52 @@ defmodule Exy.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "hello"))
   end
 
+  test "preserves eval inspect highlighting through session view model" do
+    session_id = "terminal-color-#{System.unique_integer([:positive])}"
+    {:ok, session} = Exy.Session.start_link(session_id: session_id, persist?: false)
+
+    {:ok, loop} =
+      TerminalLoop.start_link(output: false, width: 120, height: 30, session_server: session)
+
+    code =
+      ~S|%{answer: 42, elixir: System.version(), example_struct: %URI{scheme: "https", host: "example.com"}}|
+
+    assert {:ok, action_result} = Exy.Actions.Eval.run(%{code: code}, %{session_id: session_id})
+
+    assert :ok =
+             Exy.Session.emit_transient_event(
+               session,
+               Exy.UI.Event.new(
+                 :tool_started,
+                 session_id,
+                 Exy.UI.ToolEvent.started(id: "eval-1", name: :eval, args: %{code: code})
+               )
+             )
+
+    assert :ok =
+             Exy.Session.emit_transient_event(
+               session,
+               Exy.UI.Event.new(
+                 :tool_finished,
+                 session_id,
+                 Exy.UI.ToolEvent.finished(
+                   id: "eval-1",
+                   name: :eval,
+                   args: %{code: code},
+                   output: {:ok, action_result, []}
+                 )
+               )
+             )
+
+    Process.sleep(50)
+
+    rendered = loop |> TerminalLoop.render() |> IO.iodata_to_binary()
+
+    assert rendered =~ "answer"
+    assert rendered =~ "38;2;224;108;117"
+    assert rendered =~ "38;2;152;195;121"
+  end
+
   test "keeps editor visible in a bounded viewport" do
     ask = fn text, _opts -> {:ok, Enum.map_join(1..20, "\n", &"line #{&1}: #{text}")} end
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 12, ask_fun: ask)

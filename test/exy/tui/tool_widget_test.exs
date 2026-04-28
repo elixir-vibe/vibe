@@ -125,6 +125,34 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert IO.iodata_to_binary(output_line) =~ "\e[38;2;"
   end
 
+  test "eval map and struct return values stay syntax highlighted through tool event path" do
+    code =
+      ~S|%{answer: 42, elixir: System.version(), example_struct: %URI{scheme: "https", host: "example.com"}}|
+
+    assert {:ok, action_result} =
+             Exy.Actions.Eval.run(%{code: code}, %{session_id: "tui-color-eval"})
+
+    lines =
+      Exy.UI.ToolEvent.finished(
+        id: "eval-1",
+        name: :eval,
+        args: %{code: code},
+        output: {:ok, action_result, []}
+      )
+      |> Map.from_struct()
+      |> Map.put(:truncate?, false)
+      |> TUI.tool()
+      |> Widget.render(120, Theme.default())
+
+    rendered = IO.iodata_to_binary(lines)
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+
+    assert plain =~ "%{"
+    assert plain =~ "answer: 42"
+    assert plain =~ ~S|example_struct: %URI{|
+    assert rendered =~ "\e[38;2;"
+  end
+
   test "eval header uses available line width for long commands" do
     code =
       "dev = Path.join(System.user_home!(), \"Development\") base = Path.join(dev, \"exy\") File.ls!(base)"
