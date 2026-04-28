@@ -6,6 +6,8 @@ defmodule Exy.Code.AST do
   appropriate for plain text, docs, config keys, and non-Elixir assets.
   """
 
+  alias Exy.Code.AST.Result
+
   @type action :: :search | :replace | :diff
 
   @spec run(map() | keyword()) :: {:ok, term()} | {:error, String.t()}
@@ -26,7 +28,14 @@ defmodule Exy.Code.AST do
     with {:ok, path} <- fetch(params, :path),
          {:ok, pattern} <- fetch(params, :pattern) do
       opts = where_opts(params)
-      {:ok, ExAST.search(path, pattern, opts)}
+
+      {:ok,
+       %Result{
+         action: :search,
+         path: path,
+         pattern: pattern,
+         result: ExAST.search(path, pattern, opts)
+       }}
     end
   end
 
@@ -34,22 +43,59 @@ defmodule Exy.Code.AST do
     with {:ok, path} <- fetch(params, :path),
          {:ok, pattern} <- fetch(params, :pattern),
          {:ok, replacement} <- fetch(params, :replacement) do
-      opts = Keyword.put(where_opts(params), :dry_run, Map.get(params, :dry_run, true))
-      {:ok, ExAST.replace(path, pattern, replacement, opts)}
+      dry_run = Map.get(params, :dry_run, true)
+      opts = Keyword.put(where_opts(params), :dry_run, dry_run)
+      diff = replacement_diff(path, pattern, replacement, where_opts(params))
+
+      {:ok,
+       %Result{
+         action: :replace,
+         path: path,
+         pattern: pattern,
+         replacement: replacement,
+         dry_run: dry_run,
+         result: ExAST.replace(path, pattern, replacement, opts),
+         diff: diff
+       }}
     end
   end
 
   defp diff(params) do
     cond do
       Map.has_key?(params, :old_file) and Map.has_key?(params, :new_file) ->
-        {:ok, ExAST.diff_files(params.old_file, params.new_file)}
+        {:ok,
+         %Result{
+           action: :diff,
+           path: params.old_file,
+           replacement: params.new_file,
+           result: ExAST.diff_files(params.old_file, params.new_file)
+         }}
 
       Map.has_key?(params, :old_source) and Map.has_key?(params, :new_source) ->
-        {:ok, ExAST.diff(params.old_source, params.new_source)}
+        {:ok,
+         %Result{
+           action: :diff,
+           result: ExAST.diff(params.old_source, params.new_source)
+         }}
 
       true ->
         {:error, "diff requires old_file/new_file or old_source/new_source"}
     end
+  end
+
+  defp replacement_diff(path, pattern, replacement, where_opts) do
+    path
+    |> resolve_paths()
+    |> Enum.flat_map(fn file ->
+      source = File.read!(file)
+      replaced = ExAST.Patcher.replace_all(source, pattern, replacement, where_opts)
+
+      if source == replaced do
+        []
+      else
+        [%{path: file, diff: Exy.Code.AST.TextDiff.unified(source, replaced, file)}]
+      end
+    end)
   end
 
   defp where_opts(params) do
@@ -62,6 +108,17 @@ defmodule Exy.Code.AST do
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
 
   defp fetch(params, key), do: Exy.Params.fetch_required(params, key)
+
+  defp resolve_paths(paths) when is_list(paths), do: Enum.flat_map(paths, &resolve_paths/1)
+
+  defp resolve_paths(glob) when is_binary(glob) do
+    cond do
+      String.contains?(glob, "*") -> Path.wildcard(glob)
+      File.dir?(glob) -> Path.wildcard(Path.join(glob, "**/*.ex"))
+      true -> [glob]
+    end
+    |> Enum.filter(&String.ends_with?(&1, ".ex"))
+  end
 
   defp normalize_params(params) do
     params

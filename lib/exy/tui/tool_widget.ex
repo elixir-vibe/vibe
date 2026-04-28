@@ -59,6 +59,7 @@ defmodule Exy.TUI.ToolWidget do
     name = opts[:name] || tool_name(tool) || "tool"
     action = opts[:action]
     summary = opts[:summary]
+    meta = opts |> Keyword.get(:meta, []) |> Enum.reject(&(&1 in [nil, ""]))
     status = status(tool)
 
     prefix = [
@@ -67,22 +68,18 @@ defmodule Exy.TUI.ToolWidget do
       Theme.bold(to_string(name))
     ]
 
-    suffix = [
-      if(action in [nil, ""], do: "", else: [" ", Theme.fg(theme, :muted, action)]),
-      "  ",
-      status_icon(status, theme)
-    ]
+    suffix = ["  ", status_icon(status, theme)]
 
-    summary =
-      summary
-      |> format_summary(Keyword.get(opts, :summary_style))
-      |> fitted_summary(prefix, suffix, width, theme)
+    headline =
+      headline(summary, meta, Keyword.get(opts, :summary_style), theme)
+      |> fitted_summary(prefix, action, suffix, width, theme)
 
     text = [
       prefix,
-      if(summary in [nil, ""],
+      if(action in [nil, ""], do: "", else: [" ", action]),
+      if(headline in [nil, ""],
         do: "",
-        else: [Theme.symbol(theme, :separator), Theme.fg(theme, :dim, summary)]
+        else: [" ", Theme.symbol(theme, :separator), " ", headline]
       ),
       suffix
     ]
@@ -95,16 +92,28 @@ defmodule Exy.TUI.ToolWidget do
 
   defp format_summary(summary, _style), do: summary
 
-  defp fitted_summary(summary, _prefix, _suffix, _width, _theme) when summary in [nil, ""],
-    do: summary
+  defp headline(summary, meta, summary_style, theme) do
+    summary = format_summary(summary, summary_style)
+    meta = Enum.map(meta, &Theme.fg(theme, :muted, &1))
 
-  defp fitted_summary(summary, _prefix, _suffix, nil, _theme), do: summary
+    [summary | meta]
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.intersperse([" ", Theme.fg(theme, :muted, "·"), " "])
+  end
 
-  defp fitted_summary(summary, prefix, suffix, width, theme) do
-    separator_width = Width.visible_length(Theme.symbol(theme, :separator))
+  defp fitted_summary(summary, _prefix, _action, _suffix, _width, _theme)
+       when summary in [nil, "", []],
+       do: summary
+
+  defp fitted_summary(summary, _prefix, _action, _suffix, nil, _theme), do: summary
+
+  defp fitted_summary(summary, prefix, action, suffix, width, theme) do
+    separator_width = Width.visible_length(Theme.symbol(theme, :separator)) + 2
+    action_width = if action in [nil, ""], do: 0, else: Width.visible_length([" ", action])
 
     available =
-      width - Width.visible_length(prefix) - Width.visible_length(suffix) - separator_width
+      width - Width.visible_length(prefix) - action_width - Width.visible_length(suffix) -
+        separator_width
 
     if available > 0, do: Widget.fit_line(summary, available), else: nil
   end

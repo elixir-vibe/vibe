@@ -38,7 +38,7 @@ defmodule Exy.Actions.AST do
 
     Exy.Actions.ToolResult.run(fn ->
       case Exy.Code.AST.run(params) do
-        {:ok, result} -> {:ok, %{result: Exy.ToolOutput.limit_value(result)}}
+        {:ok, result} -> {:ok, Exy.ToolOutput.limit_value(result)}
         other -> other
       end
     end)

@@ -42,7 +42,8 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> Enum.map(&Width.visible_text/1)
 
     header = List.first(plain)
-    assert String.contains?(header, "File.cwd!() 1s")
+    assert String.contains?(header, "File.cwd!()")
+    assert String.contains?(header, "1s")
     refute String.contains?(header, "timeout")
     refute String.contains?(header, "1000ms")
     refute Enum.any?(plain, &String.contains?(&1, "%{output:"))
@@ -450,7 +451,50 @@ defmodule Exy.TUI.ToolWidgetTest do
            |> Enum.any?(&String.contains?(&1, "0 diagnostics"))
   end
 
-  test "ast hides raw params and keeps action and path context visible" do
+  test "ast replace shows params and rendered diff" do
+    result = %Exy.Code.AST.Result{
+      action: :replace,
+      path: "lib/demo.ex",
+      pattern: "left - right",
+      replacement: "left + right",
+      dry_run: true,
+      result: [{"lib/demo.ex", 1}],
+      diff: [
+        %{
+          path: "lib/demo.ex",
+          diff: "--- lib/demo.ex\n+++ lib/demo.ex\n@@\n-  left - right\n+  left + right"
+        }
+      ]
+    }
+
+    lines =
+      TUI.tool(%{
+        id: "ast-replace",
+        name: :ast,
+        status: :ok,
+        args: %{
+          action: :replace,
+          path: "lib/demo.ex",
+          pattern: "left - right",
+          replacement: "left + right"
+        },
+        output: result,
+        expanded?: true
+      })
+      |> Widget.render(120, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    rendered = Enum.join(lines, "\n")
+
+    refute rendered =~ "params:"
+    assert rendered =~ "left - right"
+    assert rendered =~ "left + right"
+    assert rendered =~ "matches: 1"
+    assert rendered =~ "-  left - right"
+    assert rendered =~ "+  left + right"
+  end
+
+  test "ast shows curated params in the header and match list in the body" do
     lines =
       TUI.tool(%{
         id: "ast-search",
@@ -469,7 +513,8 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert rendered =~ "search"
     assert rendered =~ "lib/demo.ex"
     refute rendered =~ "params:"
-    refute rendered =~ "pattern"
+    assert rendered =~ "pattern: IO.puts(_)"
+    assert rendered =~ "lib/demo.ex:1"
   end
 
   test "lsp hides raw params and keeps action in the header" do
