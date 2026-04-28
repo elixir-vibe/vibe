@@ -27,22 +27,6 @@ defmodule Exy.Auth.Store do
         _ -> %{}
       end
 
-    File.write!(
-      path,
-      Jason.encode!(Map.put(auth, provider, json_safe(credentials)), pretty: true)
-    )
+    File.write!(path, Jason.encode!(Map.put(auth, provider, credentials), pretty: true))
   end
-
-  defp json_safe(%_{} = value), do: value |> Map.from_struct() |> json_safe()
-
-  defp json_safe(map) when is_map(map) do
-    Map.new(map, fn {key, value} -> {json_key(key), json_safe(value)} end)
-  end
-
-  defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
-  defp json_safe(value), do: value
-
-  defp json_key(key) when is_atom(key), do: Atom.to_string(key)
-  defp json_key(key) when is_binary(key), do: key
-  defp json_key(key), do: inspect(key)
 end
