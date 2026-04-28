@@ -12,16 +12,30 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
     ToolWidget.block(tool, width, theme,
       name: :lsp,
       action: action(tool),
-      summary: collapsed_summary(output)
+      summary: lsp_summary(tool, output),
+      params?: false
     )
   end
 
   defp action(tool) do
-    case Map.get(tool, :args) do
+    case args(tool) do
       %{action: action} -> to_string(action)
+      %{"action" => action} -> to_string(action)
       _ -> nil
     end
   end
+
+  defp lsp_summary(tool, output) do
+    case {args(tool), output} do
+      {%{file: file}, _output} when is_binary(file) -> file
+      {%{"file" => file}, _output} when is_binary(file) -> file
+      {%{query: query}, _output} when is_binary(query) -> query
+      {%{"query" => query}, _output} when is_binary(query) -> query
+      {_args, output} -> collapsed_summary(output)
+    end
+  end
+
+  defp args(tool), do: Map.get(tool, :args) || %{}
 
   defp collapsed_summary([]), do: "0 diagnostics"
   defp collapsed_summary(list) when is_list(list), do: "#{length(list)} diagnostics"

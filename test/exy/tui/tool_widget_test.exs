@@ -415,4 +415,26 @@ defmodule Exy.TUI.ToolWidgetTest do
            |> Enum.map(&Width.visible_text/1)
            |> Enum.any?(&String.contains?(&1, "0 diagnostics"))
   end
+
+  test "lsp hides raw params and keeps action in the header" do
+    lines =
+      TUI.tool(%{
+        id: "lsp-error",
+        name: :lsp,
+        status: :error,
+        args: %{"action" => "diagnostics", "cwd" => "/tmp/project", "wait_ms" => 1000},
+        output: %{error: "missing required parameter: file"},
+        expanded?: true
+      })
+      |> Widget.render(100, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    rendered = Enum.join(lines, "\n")
+
+    assert rendered =~ "lsp"
+    assert rendered =~ "diagnostics"
+    assert rendered =~ "missing required parameter: file"
+    refute rendered =~ "params:"
+    refute rendered =~ "wait_ms"
+  end
 end

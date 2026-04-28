@@ -115,35 +115,36 @@ defmodule Exy.UI.ViewModel do
 
   defp content_text(_content), do: nil
 
-  defp loader_blocks(%{streaming_message: nil}), do: []
+  defp loader_blocks(%{streaming_message: nil} = state) do
+    if running_tool?(state), do: [loader_block(state)], else: []
+  end
 
   defp loader_blocks(state) do
     case List.last(state.messages) do
-      %{role: :assistant, text: text} when is_binary(text) and text != "" ->
-        []
-
-      _message ->
-        [
-          %AssistantMessage{
-            id: "streaming",
-            text: "",
-            at: state.streaming_message[:at],
-            loader_label: loader_label(state)
-          }
-          |> Map.put(:role, :assistant)
-        ]
+      %{role: :assistant, text: text} when is_binary(text) and text != "" -> []
+      _message -> [loader_block(state)]
     end
+  end
+
+  defp loader_block(state) do
+    %AssistantMessage{
+      id: "streaming",
+      text: "",
+      at: state.streaming_message && state.streaming_message[:at],
+      loader_label: loader_label(state)
+    }
+    |> Map.put(:role, :assistant)
   end
 
   defp loader_label(%{working_message: message}) when is_binary(message) and message != "",
     do: message
 
-  defp loader_label(%{pending_tools: pending_tools}) do
-    if Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end) do
-      "Working"
-    else
-      "Thinking"
-    end
+  defp loader_label(%{} = state) do
+    if running_tool?(state), do: "Working", else: "Thinking"
+  end
+
+  defp running_tool?(%{pending_tools: pending_tools}) do
+    Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) in [:running, "running"] end)
   end
 
   defp notification_block([]), do: nil

@@ -29,6 +29,23 @@ defmodule Exy.UI.ViewModelTest do
     assert Exy.UI.ViewModel.from_state(state).footer.usage.total_tokens == 13
   end
 
+  test "shows a working loader for a running tool even without assistant stream" do
+    state =
+      Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(
+          :tool_started,
+          "s1",
+          Exy.UI.ToolEvent.started(id: "tool-1", name: "read")
+        )
+      )
+
+    assert [
+             %Exy.UI.Block.ToolCall{id: "tool-1"},
+             %Exy.UI.Block.AssistantMessage{loader_label: "Working"}
+           ] = Exy.UI.ViewModel.from_state(state).body
+  end
+
   test "labels the loader as working while a local tool is running" do
     state =
       Exy.UI.State.new(session_id: "s1", cwd: "/tmp", model: "openai_codex:gpt-5.5")
