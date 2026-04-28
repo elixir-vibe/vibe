@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.Read do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{Lines, Theme, ToolWidget, Widget}
+  alias Exy.TUI.{Lines, TextTruncation, Theme, ToolWidget, Widget}
   alias Exy.TUI.Widgets.Tools.FileTool
 
   @impl true
@@ -14,20 +14,26 @@ defmodule Exy.TUI.Widgets.Tools.Read do
       name: :read,
       summary: FileTool.path_summary(tool, result),
       params?: false,
-      output_lines: output_lines(result, max(width - 2, 1), theme)
+      output_lines: output_lines(tool, result, max(width - 2, 1), theme)
     )
   end
 
-  defp output_lines(%{error: error}, width, theme),
+  defp output_lines(_tool, %{error: error}, width, theme),
     do: ToolWidget.error_lines(error, width, theme)
 
-  defp output_lines(%{content: content} = result, width, theme) when is_binary(content) do
-    content_lines =
+  defp output_lines(tool, %{content: content} = result, width, theme) when is_binary(content) do
+    truncation =
       content
       |> String.split("\n")
+      |> TextTruncation.lines(enabled?: Map.get(tool, :truncate?, true), limit: 8)
+
+    content_lines =
+      truncation.lines
       |> Enum.flat_map(fn line ->
+        line = display_line(line, width)
         Widget.wrap([Widget.spaces(2), highlight(line, Map.get(result, :language), theme)], width)
       end)
+      |> maybe_append_render_hint(truncation, theme, width)
 
     footer = truncation_footer(result, theme)
 
@@ -38,7 +44,15 @@ defmodule Exy.TUI.Widgets.Tools.Read do
     end
   end
 
-  defp output_lines(value, width, theme), do: ToolWidget.plain_lines(value, width, theme)
+  defp output_lines(_tool, value, width, theme), do: ToolWidget.plain_lines(value, width, theme)
+
+  defp maybe_append_render_hint(lines, %{truncated?: false}, _theme, _width), do: lines
+
+  defp maybe_append_render_hint(lines, %{omitted: omitted}, theme, width) do
+    lines
+    |> Lines.join([""])
+    |> Lines.join([TextTruncation.hint(omitted, theme, width)])
+  end
 
   defp truncation_footer(result, theme) do
     omitted_lines = Map.get(result, :omitted_lines, 0)
@@ -54,6 +68,12 @@ defmodule Exy.TUI.Widgets.Tools.Read do
       true ->
         []
     end
+  end
+
+  defp display_line(line, width) do
+    limit = max(width * 2, 200)
+    shortened = String.slice(line, 0, limit)
+    if byte_size(shortened) < byte_size(line), do: shortened <> "…", else: line
   end
 
   defp highlight(line, language, theme) when language in [nil, ""],

@@ -372,6 +372,29 @@ defmodule Exy.TUI.ToolWidgetTest do
            )
   end
 
+  test "read truncates large file content before rendering" do
+    content = Enum.map_join(1..10_000, "\n", &"line #{&1} #{String.duplicate("x", 200)}")
+
+    {us, lines} =
+      :timer.tc(fn ->
+        %{
+          id: "read-large",
+          name: :read,
+          status: :ok,
+          args: %{path: "large.ex"},
+          output: %{path: "large.ex", content: content, language: "elixir"}
+        }
+        |> TUI.tool()
+        |> Widget.render(120, Theme.default())
+      end)
+
+    plain = Enum.map(lines, &Width.visible_text/1)
+
+    assert us < 1_000_000
+    assert Enum.any?(plain, &String.contains?(&1, "ctrl+o"))
+    refute Enum.any?(plain, &String.contains?(&1, "line 9999"))
+  end
+
   test "renders read output as highlighted code" do
     lines =
       %{

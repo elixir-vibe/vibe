@@ -33,6 +33,9 @@ defmodule Exy.TUI.TerminalLoop do
   @spec render(GenServer.server()) :: [IO.chardata()]
   def render(server), do: GenServer.call(server, :render)
 
+  @spec render_snapshot(GenServer.server()) :: {[IO.chardata()], {pos_integer(), pos_integer()}}
+  def render_snapshot(server), do: GenServer.call(server, :render_snapshot, :infinity)
+
   @spec render_full(GenServer.server()) :: [IO.chardata()]
   def render_full(server), do: GenServer.call(server, :render_full)
 
@@ -117,6 +120,13 @@ defmodule Exy.TUI.TerminalLoop do
 
   def handle_call(:render_full, _from, state) do
     {:reply, render_full_lines(state), state}
+  end
+
+  def handle_call(:render_snapshot, _from, state) do
+    snapshot = App.snapshot(state.app)
+    lines = render_full_lines(state, snapshot)
+    cursor = calculate_full_cursor_position(state, snapshot, length(lines))
+    {:reply, {lines, cursor}, state}
   end
 
   def handle_call(:cursor_position, _from, state) do
@@ -229,6 +239,10 @@ defmodule Exy.TUI.TerminalLoop do
 
   defp render_full_lines(state) do
     snapshot = App.snapshot(state.app)
+    render_full_lines(state, snapshot)
+  end
+
+  defp render_full_lines(state, snapshot) do
     editor = render_editor(snapshot, state.theme)
 
     state
@@ -280,6 +294,12 @@ defmodule Exy.TUI.TerminalLoop do
   defp calculate_full_cursor_position(state) do
     snapshot = App.snapshot(state.app)
     editor_start_row = state |> render_body(snapshot) |> length()
+    editor_cursor_position(snapshot, editor_start_row)
+  end
+
+  defp calculate_full_cursor_position(state, snapshot, full_line_count) do
+    editor = render_editor(snapshot, state.theme)
+    editor_start_row = max(full_line_count - length(editor), 0)
     editor_cursor_position(snapshot, editor_start_row)
   end
 

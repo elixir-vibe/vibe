@@ -156,8 +156,7 @@ defmodule Exy.TUI.Runtime do
   end
 
   defp render(loop, painter) do
-    lines = TerminalLoop.render_full(loop)
-    cursor = TerminalLoop.full_cursor_position(loop)
+    {lines, cursor} = TerminalLoop.render_snapshot(loop)
     {frame, painter} = TerminalPainter.render(painter, lines, cursor)
     write_output(frame)
     painter
