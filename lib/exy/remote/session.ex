@@ -1,8 +1,13 @@
 defmodule Exy.Remote.Session do
   @moduledoc false
 
-  @spec list() :: {:ok, [map()]} | {:error, term()}
-  def list, do: call(Exy.Session, :list, [])
+  @spec list() :: {:ok, [map()]} | {:error, term()} | {:badrpc, term()}
+  def list do
+    case call(Exy.Session, :list, []) do
+      sessions when is_list(sessions) -> {:ok, sessions}
+      other -> other
+    end
+  end
 
   @spec active_count() :: non_neg_integer() | {:badrpc, term()} | {:error, term()}
   def active_count, do: call(Exy.Session, :active_count, [])

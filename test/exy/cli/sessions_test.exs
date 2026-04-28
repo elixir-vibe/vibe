@@ -23,4 +23,14 @@ defmodule Exy.CLI.SessionsTest do
   test "latest_live_remote_session_id returns nil without remote server" do
     assert is_nil(Exy.CLI.Sessions.latest_live_remote_session_id())
   end
+
+  test "latest_live_session_id handles raw remote session listings" do
+    sessions = [
+      %{id: "old", live?: false},
+      %{id: "current", live?: true},
+      %{id: "other", live?: true}
+    ]
+
+    assert Exy.CLI.Sessions.latest_live_session_id(sessions) == "current"
+  end
 end
