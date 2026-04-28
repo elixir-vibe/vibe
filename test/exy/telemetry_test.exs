@@ -70,10 +70,11 @@ defmodule Exy.TelemetryTest do
     [%{metadata: metadata}] = Exy.Telemetry.recent(1)
 
     assert metadata.request["host"] == "auth.openai.com"
-    assert metadata["result"] == ["ok", %{:status => 200, "body" => <<1, 2, 3>>}]
+    assert metadata["result"] == ["ok", %{:status => 200}]
     assert [%{metadata: stored_metadata}] = Exy.Telemetry.all(limit: 1)
     assert stored_metadata.request["host"] == "auth.openai.com"
-    assert stored_metadata["result"] == ["ok", %{:status => 200, "body" => <<1, 2, 3>>}]
+    assert stored_metadata["result"] == ["ok", %{:status => 200}]
+    refute inspect(stored_metadata) =~ <<1, 2, 3>>
   end
 
   test "span records start and stop events" do

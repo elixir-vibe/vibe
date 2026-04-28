@@ -246,6 +246,8 @@ defmodule Exy.Telemetry do
       metadata: json_safe(event.metadata)
     }
     |> Exy.Repo.insert()
+  rescue
+    _exception -> {:error, :telemetry_insert_failed}
   end
 
   defp remember(recent, event), do: [event | Enum.take(recent, @max_recent - 1)]
@@ -317,6 +319,9 @@ defmodule Exy.Telemetry do
       normalized_key == "request" ->
         {key, sanitize_request(value)}
 
+      normalized_key == "result" ->
+        {key, sanitize_result(value)}
+
       true ->
         {key, scrub_sensitive(value)}
     end
@@ -332,8 +337,27 @@ defmodule Exy.Telemetry do
 
   defp sanitize_request(_request), do: "[REDACTED]"
 
+  defp sanitize_result({status, response}), do: [json_safe(status), sanitize_response(response)]
+  defp sanitize_result(%_{} = response), do: sanitize_response(response)
+  defp sanitize_result(response) when is_map(response), do: sanitize_response(response)
+  defp sanitize_result(_result), do: "[REDACTED]"
+
+  defp sanitize_response(%_{} = response),
+    do: response |> Map.from_struct() |> sanitize_response()
+
+  defp sanitize_response(response) when is_map(response) do
+    response
+    |> Map.take([:status, :headers, :trailers, "status", "headers", "trailers"])
+    |> scrub_sensitive()
+  end
+
+  defp sanitize_response(_response), do: "[REDACTED]"
+
   defp scrub_string("Bearer " <> _token), do: "Bearer [REDACTED]"
-  defp scrub_string(value), do: value
+
+  defp scrub_string(value) do
+    if String.valid?(value), do: value, else: "[BINARY #{byte_size(value)} bytes]"
+  end
 
   defp json_safe(%_{} = struct), do: struct |> Map.from_struct() |> json_safe()
 
