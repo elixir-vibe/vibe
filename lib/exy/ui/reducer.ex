@@ -81,13 +81,24 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :tool_started, at: at, data: %Exy.UI.ToolEvent{id: id} = data}) do
-    tool = data |> tool_event_map() |> Map.put_new(:expanded?, false)
-    tool_message = tool |> Map.put(:role, :tool) |> Map.put(:at, at)
+    data = tool_event_map(data)
+
+    {messages, pending_tools} =
+      case Map.fetch(state.pending_tools, id) do
+        {:ok, _tool} ->
+          tool = Map.update!(state.pending_tools, id, &Map.merge(&1, data))
+          {update_tool_message(state.messages, id, data), tool}
+
+        :error ->
+          tool = Map.put_new(data, :expanded?, false)
+          tool_message = tool |> Map.put(:role, :tool) |> Map.put(:at, at)
+          {Lists.append(state.messages, tool_message), Map.put(state.pending_tools, id, tool)}
+      end
 
     %{
       state
-      | messages: Lists.append(state.messages, tool_message),
-        pending_tools: Map.put(state.pending_tools, id, tool),
+      | messages: messages,
+        pending_tools: pending_tools,
         status: :working
     }
   end

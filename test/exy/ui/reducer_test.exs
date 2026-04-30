@@ -100,6 +100,33 @@ defmodule Exy.UI.ReducerTest do
     assert %{"call-1" => %{status: :preparing, args: %{code: "IO."}}} = state.pending_tools
   end
 
+  test "tool start updates the preparing card instead of duplicating it" do
+    state = Exy.UI.State.new(session_id: "s1")
+
+    state =
+      Exy.UI.Reducer.apply_event(
+        state,
+        Exy.UI.Event.new(
+          :tool_updated,
+          "s1",
+          Exy.UI.ToolEvent.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
+        )
+      )
+
+    state =
+      Exy.UI.Reducer.apply_event(
+        state,
+        Exy.UI.Event.new(
+          :tool_started,
+          "s1",
+          Exy.UI.ToolEvent.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
+        )
+      )
+
+    assert [%{role: :tool, id: "call-1", status: :running, args: %{code: "IO.puts(:ok)"}}] =
+             state.messages
+  end
+
   test "turns subagent lifecycle events into transcript blocks and notifications" do
     state =
       Exy.UI.State.new(session_id: "ui-test")
