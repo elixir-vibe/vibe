@@ -184,7 +184,7 @@ default_model = "openai_codex:gpt-5.5"
 
 [providers.openrouter]
 app_title = "Exy"
-app_referer = "https://github.com/dannote/exy"
+app_referer = "https://github.com/elixir-vibe/exy"
 
 [roles.scout]
 model = "openrouter:anthropic/claude-3.5-haiku"

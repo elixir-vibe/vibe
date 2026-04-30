@@ -1,5 +1,7 @@
 # Exy Agent Guidelines
 
+This repository is part of the Elixir Vibe organization.
+
 - Keep the model-facing tool count minimal.
 - Add Exy helper modules callable from `Exy.Eval` instead of adding narrow external tools.
 - Prefer eval aliases `Cmd` (`Exy.Command`) for supervised shell commands and `MD` (`Exy.MD`) for Markdown rendering. Use `MD.doc/1` for Markdown UI output and `MD.to_markdown/1` for raw Markdown strings. Use `System.cmd/3` only for tiny bounded commands.

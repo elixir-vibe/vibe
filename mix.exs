@@ -2,7 +2,7 @@ defmodule Exy.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/dannote/exy"
+  @source_url "https://github.com/elixir-vibe/exy"
 
   def project do
     [
