@@ -8,27 +8,13 @@ defmodule Exy.TUI.ToolWidget do
   alias Exy.TUI.{Lines, Markdown, Syntax, TextTruncation, Theme, Widget, Width}
 
   @type tool :: map()
-  @type renderer :: module()
-
   @callback render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
-
-  @renderers %{
-    read: Exy.TUI.Widgets.Tools.Read,
-    write: Exy.TUI.Widgets.Tools.Write,
-    edit: Exy.TUI.Widgets.Tools.Edit,
-    eval: Exy.TUI.Widgets.Tools.Eval,
-    ast: Exy.TUI.Widgets.Tools.AST,
-    lsp: Exy.TUI.Widgets.Tools.LSP
-  }
 
   @spec render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
   def render(%Display{} = display, width, theme), do: render_display(display, width, theme)
 
   def render(tool, width, theme) when is_map(tool) do
-    case Display.from_tool(tool) do
-      %Display{} = display -> render_display(display, width, theme)
-      {:legacy, tool} -> tool |> tool_name() |> renderer() |> do_render(tool, width, theme)
-    end
+    tool |> Display.from_tool() |> render_display(width, theme)
   end
 
   def render_display(%Display{} = display, width, theme) do
@@ -44,14 +30,6 @@ defmodule Exy.TUI.ToolWidget do
       params?: false,
       truncation: :tail
     )
-  end
-
-  @spec renderer(atom() | String.t() | nil) :: renderer()
-  def renderer(name) do
-    name
-    |> normalize_name()
-    |> then(&Map.get(@renderers, &1, Exy.TUI.Widgets.Tools.Generic))
-    |> ensure_renderer_loaded()
   end
 
   @spec block(tool(), pos_integer(), Theme.t(), keyword()) :: [IO.chardata()]
@@ -305,7 +283,12 @@ defmodule Exy.TUI.ToolWidget do
   end
 
   defp display_block_lines({:lines, lines, _opts}, _width, _theme, _truncate?),
-    do: Lines.join(lines, [""])
+    do: Lines.join(lines || [], [""])
+
+  defp display_block_lines({:render, renderer, _opts}, width, theme, _truncate?)
+       when is_function(renderer, 2) do
+    renderer.(width, theme) || []
+  end
 
   defp text_block_lines(text, width, theme, kind, truncate?, opts) do
     truncation = line_window(text, truncate?, opts)
@@ -538,42 +521,7 @@ defmodule Exy.TUI.ToolWidget do
     |> Lines.join([TextTruncation.hint(omitted, theme, width)])
   end
 
-  defp ensure_renderer_loaded(renderer) do
-    case Code.ensure_loaded(renderer) do
-      {:module, ^renderer} -> renderer
-      _other -> Exy.TUI.Widgets.Tools.Generic
-    end
-  end
-
-  defp do_render(renderer, tool, width, theme) do
-    renderer.render(tool, width, theme)
-  rescue
-    error -> render_failure(tool, width, theme, Exception.format(:error, error, __STACKTRACE__))
-  catch
-    kind, reason ->
-      render_failure(tool, width, theme, Exception.format(kind, reason, __STACKTRACE__))
-  end
-
-  defp render_failure(tool, width, theme, error) do
-    tool
-    |> Map.put(:status, :error)
-    |> Map.put(:output, %{error: error})
-    |> block(width, theme, summary: "render failed", params?: false)
-  end
-
   defp tool_name(tool), do: Map.get(tool, :name)
-
-  defp normalize_name(name) when is_atom(name), do: name
-
-  defp normalize_name(name) when is_binary(name) do
-    name
-    |> String.replace("-", "_")
-    |> String.to_existing_atom()
-  rescue
-    ArgumentError -> nil
-  end
-
-  defp normalize_name(_name), do: nil
 
   defp normalize_status(:success), do: :ok
   defp normalize_status(status), do: status

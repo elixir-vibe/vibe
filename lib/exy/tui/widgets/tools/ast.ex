@@ -27,7 +27,7 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     end
   end
 
-  defp summary(tool, _result) do
+  def summary(tool, _result) do
     args = args(tool)
     path = get_arg(args, :path) || get_arg(args, :file)
 
@@ -38,7 +38,7 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     end
   end
 
-  defp meta(tool, %Exy.Code.AST.Result{} = result) do
+  def meta(tool, %Exy.Code.AST.Result{} = result) do
     args = args(tool)
 
     case result.action do
@@ -56,27 +56,27 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     end
   end
 
-  defp meta(tool, result) do
+  def meta(tool, result) do
     args = args(tool)
     compact([collapsed_summary(result), contextual_pattern_meta(args)])
   end
 
-  defp output_lines(%Exy.Code.AST.Result{action: :search} = result, width, theme),
+  def output_lines(%Exy.Code.AST.Result{action: :search} = result, width, theme),
     do: search_lines(result, width, theme)
 
-  defp output_lines(%Exy.Code.AST.Result{action: :replace, diff: diff}, width, theme),
+  def output_lines(%Exy.Code.AST.Result{action: :replace, diff: diff}, width, theme),
     do: diff_lines(diff, width, theme)
 
-  defp output_lines(result, width, theme) when is_list(result),
+  def output_lines(result, width, theme) when is_list(result),
     do: search_lines(%{result: result}, width, theme)
 
-  defp output_lines(%Exy.Code.AST.Result{} = result, width, theme) do
+  def output_lines(%Exy.Code.AST.Result{} = result, width, theme) do
     result
     |> Exy.Markdown.to_markdown()
     |> Markdown.render(width, theme)
   end
 
-  defp output_lines(_result, _width, _theme), do: nil
+  def output_lines(_result, _width, _theme), do: nil
 
   defp search_lines(%{result: matches}, width, theme) when is_list(matches) do
     matches

@@ -12,9 +12,16 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
     ToolWidget.block(tool, width, theme,
       name: :lsp,
       action: action(tool),
-      summary: lsp_summary(tool, output),
+      summary: summary(tool, output),
       params?: false
     )
+  end
+
+  def meta(tool) do
+    case action(tool) do
+      nil -> []
+      action -> [action]
+    end
   end
 
   defp action(tool) do
@@ -39,7 +46,7 @@ defmodule Exy.TUI.Widgets.Tools.LSP do
 
   defp format_wait(wait_ms), do: Duration.milliseconds(wait_ms)
 
-  defp lsp_summary(tool, output) do
+  def summary(tool, output) do
     case {args(tool), output} do
       {%{file: file}, _output} when is_binary(file) -> file
       {%{"file" => file}, _output} when is_binary(file) -> file
