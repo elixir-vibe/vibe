@@ -129,13 +129,13 @@ defmodule Exy.Session.PromptLifecycle do
     )
   end
 
-  defp record_successful_response(
-         %{state: %{streaming_message: %{text: text}}} = state,
-         _response,
-         emit
-       )
-       when is_binary(text) and text != "" do
-    emit.(state, Event.new(:assistant_stream_finished, state.state.session_id, %{}))
+  defp record_successful_response(%{state: %{streaming_message: %{}}} = state, response, emit) do
+    emit.(
+      state,
+      Event.new(:assistant_stream_finished, state.state.session_id, %{
+        text: response_text(response)
+      })
+    )
   end
 
   defp record_successful_response(state, response, emit) do

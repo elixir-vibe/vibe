@@ -190,6 +190,49 @@ defmodule Exy.UI.ReducerTest do
     assert state.status == :idle
   end
 
+  test "stream finish reconciles final response text" do
+    state =
+      Exy.UI.State.new(session_id: "ui-test")
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:assistant_delta, "ui-test", %{text: "Reviewed../ `actsprogram_f`"})
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:assistant_stream_finished, "ui-test", %{
+          text: "Reviewed `../program_facts`"
+        })
+      )
+
+    assert [%{role: :assistant, text: "Reviewed `../program_facts`"}] = state.messages
+    assert is_nil(state.streaming_message)
+    assert state.status == :idle
+  end
+
+  test "stream finish appends final response when no delta created an assistant segment" do
+    state =
+      Exy.UI.State.new(session_id: "ui-test")
+      |> Exy.UI.Reducer.apply_event(Exy.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(
+          :tool_started,
+          "ui-test",
+          Exy.UI.ToolEvent.started(id: "tool-1", name: "eval")
+        )
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(
+          :tool_finished,
+          "ui-test",
+          Exy.UI.ToolEvent.finished(id: "tool-1", name: "eval", output: "ok")
+        )
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:assistant_stream_finished, "ui-test", %{text: "Done"})
+      )
+
+    assert [%{role: :tool, id: "tool-1"}, %{role: :assistant, text: "Done"}] = state.messages
+  end
+
   test "keeps assistant text and tool calls in chronological order" do
     state =
       Exy.UI.State.new(session_id: "ui-test")

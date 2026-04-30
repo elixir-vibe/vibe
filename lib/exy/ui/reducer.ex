@@ -55,8 +55,10 @@ defmodule Exy.UI.Reducer do
     append_streaming_delta(state, :thinking, text, at)
   end
 
-  defp reduce(state, %Event{type: :assistant_stream_finished}) do
-    %{state | streaming_message: nil, status: :idle}
+  defp reduce(state, %Event{type: :assistant_stream_finished, at: at, data: data}) do
+    state
+    |> finalize_streaming_text(Map.get(data, :text), at)
+    |> Map.merge(%{streaming_message: nil, status: :idle})
   end
 
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
@@ -383,9 +385,29 @@ defmodule Exy.UI.Reducer do
   defp notification_id(%{id: id}), do: id
   defp notification_id(_notification), do: nil
 
+  defp finalize_streaming_text(state, text, _at) when not is_binary(text) or text == "", do: state
+
+  defp finalize_streaming_text(state, text, at) do
+    {messages, message} = replace_or_append_assistant_segment(state.messages, :text, text, at)
+    %{state | messages: messages, streaming_message: message}
+  end
+
   defp append_streaming_delta(state, key, delta, at) do
     {messages, message} = append_or_update_assistant_segment(state.messages, key, delta, at)
     %{state | messages: messages, streaming_message: message, status: :working}
+  end
+
+  defp replace_or_append_assistant_segment(messages, key, value, at) do
+    case List.pop_at(messages, -1) do
+      {%{role: :assistant, streaming?: true} = message, rest} ->
+        updated = Map.put(message, key, value)
+        {Lists.append(rest, updated), updated}
+
+      {_last, _rest} ->
+        message = %{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
+        updated = Map.put(message, key, value)
+        {Lists.append(messages, updated), updated}
+    end
   end
 
   defp append_or_update_assistant_segment(messages, key, delta, at) do

@@ -210,10 +210,13 @@ defmodule Exy.SessionProcessTest do
     :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
     assert_receive {Exy.Session, :event, %{type: :assistant_stream_started}}, 500
-    assert_receive {Exy.Session, :event, %{type: :assistant_message_added}}, 500
+
+    assert_receive {Exy.Session, :event,
+                    %{type: :assistant_stream_finished, data: %{text: "done"}}},
+                   500
 
     state = Exy.Session.state(server)
-    assert [%{role: :user}, %{role: :assistant, result: "done"}] = state.messages
+    assert [%{role: :user}, %{role: :assistant, text: "done"}] = state.messages
     assert is_nil(state.streaming_message)
   end
 
