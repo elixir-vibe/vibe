@@ -34,6 +34,24 @@ defmodule Exy.TUI.ToolWidgetTest do
     refute Enum.any?(plain, &String.contains?(&1, "ok"))
   end
 
+  test "eval renders output when output_parts is empty" do
+    plain =
+      %{
+        id: "eval-empty-parts",
+        name: :eval,
+        status: :ok,
+        args: %{code: "File.cwd!()"},
+        output: ~s("/Users/dannote/Development/exy"),
+        output_format: :inspect,
+        output_parts: []
+      }
+      |> TUI.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "/Users/dannote/Development/exy"))
+  end
+
   test "eval shows timeout in header and unwraps output envelope" do
     plain =
       %{

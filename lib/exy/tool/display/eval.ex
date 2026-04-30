@@ -36,7 +36,7 @@ defmodule Exy.Tool.Display.Eval do
   defp add_output_blocks(blocks, _tool, %{error: error}),
     do: blocks ++ [{:error, to_string(error), []}]
 
-  defp add_output_blocks(blocks, %{output_parts: parts}, _output) when is_list(parts) do
+  defp add_output_blocks(blocks, %{output_parts: [_ | _] = parts}, _output) do
     blocks ++ (parts |> Enum.map(&normalize_part/1) |> Enum.reject(&is_nil/1))
   end
 
