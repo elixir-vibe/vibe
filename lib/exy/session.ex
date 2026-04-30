@@ -203,6 +203,10 @@ defmodule Exy.Session do
      emit(state, Event.new(:assistant_thinking_delta, state.state.session_id, %{text: text}))}
   end
 
+  def handle_info({:tool_preparing, %Exy.UI.ToolEvent{} = data}, state) do
+    {:noreply, emit(state, Event.new(:tool_updated, state.state.session_id, data))}
+  end
+
   def handle_info({:tool_started, %Exy.UI.ToolEvent{} = data}, state) do
     {:noreply, emit(state, Event.new(:tool_started, state.state.session_id, data))}
   end

@@ -12,10 +12,16 @@ defmodule Exy.UI.ToolEvent do
           output: term(),
           output_format: atom() | nil,
           output_parts: [map()] | nil,
-          status: status() | nil
+          status: status() | nil,
+          phase: atom() | nil
         }
 
-  defstruct [:id, :name, :args, :output, :output_format, :output_parts, :status]
+  defstruct [:id, :name, :args, :output, :output_format, :output_parts, :status, :phase]
+
+  @spec preparing(keyword()) :: t()
+  def preparing(fields),
+    do:
+      build(fields |> Keyword.put_new(:status, :preparing) |> Keyword.put_new(:phase, :preparing))
 
   @spec started(keyword()) :: t()
   def started(fields), do: build(Keyword.put_new(fields, :status, :running))
@@ -40,7 +46,8 @@ defmodule Exy.UI.ToolEvent do
       output: Keyword.get(fields, :output),
       output_format: Keyword.get(fields, :output_format),
       output_parts: Keyword.get(fields, :output_parts),
-      status: Keyword.get(fields, :status)
+      status: Keyword.get(fields, :status),
+      phase: Keyword.get(fields, :phase)
     }
   end
 

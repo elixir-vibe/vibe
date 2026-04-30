@@ -5,13 +5,25 @@ defmodule Exy.Agent.Streaming.Plugin do
     name: "exy_streaming",
     state_key: :exy_streaming,
     actions: [],
-    signal_patterns: ["ai.llm.delta", "ai.tool.started", "ai.tool.result"]
+    signal_patterns: ["ai.llm.delta", "ai.tool.params", "ai.tool.started", "ai.tool.result"]
 
   alias Exy.UI.ToolEvent
 
   @impl true
   def handle_signal(%{type: "ai.llm.delta", data: data}, %{agent: %{id: agent_id}}) do
     Exy.Agent.Streaming.dispatch(agent_id, data || %{})
+    {:ok, :continue}
+  end
+
+  def handle_signal(
+        %{type: "ai.tool.params", data: %{call_id: call_id, tool_name: tool_name} = data},
+        %{agent: %{id: agent_id}}
+      ) do
+    Exy.Agent.Streaming.dispatch_tool_preparing(
+      agent_id,
+      ToolEvent.preparing(id: call_id, name: tool_name, args: Map.get(data, :arguments))
+    )
+
     {:ok, :continue}
   end
 

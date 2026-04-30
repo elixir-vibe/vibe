@@ -41,6 +41,7 @@ defmodule Exy.Session.Store.Codec do
     "title_updated" => :title_updated,
     "tool_finished" => :tool_finished,
     "tool_started" => :tool_started,
+    "tool_updated" => :tool_updated,
     "tool_toggled" => :tool_toggled,
     "truncation_toggled" => :truncation_toggled,
     "usage_updated" => :usage_updated,
@@ -232,10 +233,10 @@ defmodule Exy.Session.Store.Codec do
   defp project_trajectory_event(_event), do: []
 
   defp decode_ui_event_data(data, type)
-       when type in [:tool_started, :tool_finished] and is_map(data) do
+       when type in [:tool_started, :tool_updated, :tool_finished] and is_map(data) do
     struct(
       Exy.UI.ToolEvent,
-      Map.take(data, [:id, :name, :args, :output, :output_format, :output_parts, :status])
+      Map.take(data, [:id, :name, :args, :output, :output_format, :output_parts, :status, :phase])
     )
   end
 

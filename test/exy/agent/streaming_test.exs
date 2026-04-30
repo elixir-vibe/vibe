@@ -52,6 +52,33 @@ defmodule Exy.Agent.StreamingTest do
     assert :ok = Exy.Agent.Streaming.unregister(pid)
   end
 
+  test "plugin forwards streamed tool params", %{agent: agent, agent_id: agent_id} do
+    test_pid = self()
+
+    Exy.Agent.Streaming.register(agent,
+      on_tool_preparing: &send(test_pid, {:tool_preparing, &1})
+    )
+
+    signal = %{
+      type: "ai.tool.params",
+      data: %{call_id: "call-1", tool_name: "eval", arguments: %{code: "IO."}}
+    }
+
+    assert {:ok, :continue} =
+             Exy.Agent.Streaming.Plugin.handle_signal(signal, %{agent: %{id: agent_id}})
+
+    assert_receive {:tool_preparing,
+                    %Exy.UI.ToolEvent{
+                      id: "call-1",
+                      name: "eval",
+                      args: %{code: "IO."},
+                      status: :preparing,
+                      phase: :preparing
+                    }}
+  after
+    Exy.Agent.Streaming.unregister(agent)
+  end
+
   test "plugin forwards tool lifecycle signals", %{agent: agent, agent_id: agent_id} do
     test_pid = self()
 

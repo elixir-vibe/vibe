@@ -54,6 +54,11 @@ defmodule Exy.Agent.Streaming do
     {:ok, %{}}
   end
 
+  @spec dispatch_tool_preparing(String.t(), ToolEvent.t()) :: :ok
+  def dispatch_tool_preparing(agent_id, %ToolEvent{} = event) when is_binary(agent_id) do
+    dispatch_tool(agent_id, :tool_preparing, event)
+  end
+
   @spec dispatch_tool_started(String.t(), ToolEvent.t()) :: :ok
   def dispatch_tool_started(agent_id, %ToolEvent{} = event) when is_binary(agent_id) do
     dispatch_tool(agent_id, :tool_started, event)
@@ -68,6 +73,7 @@ defmodule Exy.Agent.Streaming do
     %{}
     |> maybe_put_callback(:content, Keyword.get(opts, :on_result))
     |> maybe_put_callback(:thinking, Keyword.get(opts, :on_thinking))
+    |> maybe_put_callback(:tool_preparing, Keyword.get(opts, :on_tool_preparing))
     |> maybe_put_callback(:tool_started, Keyword.get(opts, :on_tool_started))
     |> maybe_put_callback(:tool_finished, Keyword.get(opts, :on_tool_finished))
   end
