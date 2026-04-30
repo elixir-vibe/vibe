@@ -36,6 +36,14 @@ defmodule Exy.CommandTest do
     assert %Result{status: :cancelled} = Command.cancel(job)
   end
 
+  test "output supports explicit byte windows" do
+    assert {:ok, job} = Command.start(["sh", "-c", "printf abcdef"])
+    assert %Result{status: :ok} = Command.await(job, @command_timeout_ms)
+
+    assert Command.output(job, bytes: 3) == "abc"
+    assert Command.output(job, tail_bytes: 3) == "def"
+  end
+
   test "Cmd alias is available in eval" do
     code = "Cmd.run([\"sh\", \"-c\", \"printf ok\"], timeout: #{@command_timeout_ms}).output"
     assert {:ok, result} = Exy.Eval.run(code, session_id: "cmd-alias-test")

@@ -30,9 +30,9 @@ defmodule Exy.EvalTest do
     assert error =~ "evaluation process exited"
   end
 
-  test "command result exposes exit_code alias" do
+  test "command result exposes exit_status" do
     assert {:ok, result} =
-             Exy.Eval.once(~S|Cmd.run(["bash", "-lc", "exit 0"]).exit_code|,
+             Exy.Eval.once(~S|Cmd.run(["bash", "-lc", "exit 0"]).exit_status|,
                timeout: 5_000
              )
 

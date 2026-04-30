@@ -147,7 +147,6 @@ defmodule Exy.Command.Worker do
       cwd: state.cwd,
       status: state.status,
       exit_status: state.exit_status,
-      exit_code: state.exit_status,
       output: state.output,
       output_path: state.output_path,
       duration_ms: max(System.monotonic_time(:millisecond) - state.started_mono, 0)
@@ -180,14 +179,24 @@ defmodule Exy.Command.Worker do
   defp read_output(path, opts) do
     output = File.read!(path)
 
-    case Keyword.get(opts, :tail) do
-      tail when is_integer(tail) and tail > 0 ->
+    cond do
+      tail = positive_integer(opts[:tail]) ->
         output |> String.split("\n") |> Enum.take(-tail) |> Enum.join("\n")
 
-      _tail ->
+      bytes = positive_integer(opts[:bytes]) ->
+        binary_part(output, 0, min(byte_size(output), bytes))
+
+      tail_bytes = positive_integer(opts[:tail_bytes]) ->
+        start = max(byte_size(output) - tail_bytes, 0)
+        binary_part(output, start, byte_size(output) - start)
+
+      true ->
         output
     end
   end
+
+  defp positive_integer(value) when is_integer(value) and value > 0, do: value
+  defp positive_integer(_value), do: nil
 
   defp normalize_argv(argv) when is_list(argv), do: Enum.map(argv, &to_string/1)
   defp executable([executable | _args]), do: System.find_executable(executable) || executable

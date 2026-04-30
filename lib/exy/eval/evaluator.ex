@@ -296,6 +296,12 @@ defmodule Exy.Eval.Evaluator do
     |> Enum.all?(&serializable_term?/1)
   end
 
+  defp serializable_term?(%_module{} = term) do
+    term
+    |> Map.from_struct()
+    |> serializable_term?()
+  end
+
   defp serializable_term?(term) when is_map(term) do
     Enum.all?(term, fn {key, value} -> serializable_term?(key) and serializable_term?(value) end)
   end
