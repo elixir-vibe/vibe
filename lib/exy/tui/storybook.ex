@@ -7,7 +7,7 @@ defmodule Exy.TUI.Storybook do
 
   alias Exy.TUI
   alias Exy.TUI.{Node, Theme, Widget, Width}
-  alias Exy.UI.{Event, Reducer, State, ViewModel}
+  alias Exy.UI.{Event, Reducer, State, ToolEvent, ViewModel}
 
   @sample_footer_tokens 12_345
   @sample_model_tokens 123_456
@@ -21,6 +21,9 @@ defmodule Exy.TUI.Storybook do
       :tool_eval_running,
       :tool_eval_expanded,
       :tool_read_markdown,
+      :tool_write_created_file,
+      :tool_edit_diff,
+      :chat_tool_stress,
       :tool_ast_matches,
       :tool_ast_replace,
       :tool_lsp_diagnostics,
@@ -140,6 +143,163 @@ end|,
         """
       }
     })
+  end
+
+  def story(:tool_write_created_file) do
+    TUI.tool(%{
+      id: "write-created",
+      name: :write,
+      status: :ok,
+      args: %{path: "lib/my_app_web/live/dashboard_live.ex"},
+      output: %{
+        path: "lib/my_app_web/live/dashboard_live.ex",
+        language: "elixir",
+        change: %{
+          path: "lib/my_app_web/live/dashboard_live.ex",
+          old: "",
+          new: """
+          defmodule MyAppWeb.DashboardLive do
+            use MyAppWeb, :live_view
+
+            def mount(_params, _session, socket) do
+              {:ok, assign(socket, count: 0, status: :ready)}
+            end
+
+            def handle_event("inc", _params, socket) do
+              {:noreply, update(socket, :count, &(&1 + 1))}
+            end
+          end
+          """
+        }
+      }
+    })
+  end
+
+  def story(:tool_edit_diff) do
+    TUI.tool(%{
+      id: "edit-diff",
+      name: :edit,
+      status: :ok,
+      args: %{path: "lib/my_app_web/router.ex"},
+      output: %{
+        path: "lib/my_app_web/router.ex",
+        language: "elixir",
+        diff: """
+        --- lib/my_app_web/router.ex
+        +++ lib/my_app_web/router.ex
+        @@
+        -    get "/", PageController, :home
+        +    live "/", DashboardLive, :index
+        +    live "/metrics", MetricsLive, :index
+        """
+      }
+    })
+  end
+
+  def story(:chat_tool_stress) do
+    session_id = "story-stress"
+
+    State.new(session_id: session_id, cwd: File.cwd!(), model: "openai_codex:gpt-5.5")
+    |> apply_events([
+      Event.new(:user_message_added, session_id, %{
+        text: "Run the test matrix, inspect the README, and stop if it takes too long."
+      }),
+      Event.new(:assistant_stream_started, session_id, %{}),
+      Event.new(
+        :tool_updated,
+        session_id,
+        ToolEvent.preparing(
+          id: "eval-matrix",
+          name: :eval,
+          args: %{
+            code:
+              ~S|for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex) do
+  path = "/Users/dannote/Development/#{dir}"
+  Cmd.run(["mix", "test"], cd: path, timeout: 900_000)
+end|,
+            timeout: 900_000
+          }
+        )
+      ),
+      Event.new(
+        :tool_started,
+        session_id,
+        ToolEvent.started(
+          id: "eval-matrix",
+          name: :eval,
+          args: %{
+            code:
+              ~S|for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex) do
+  path = "/Users/dannote/Development/#{dir}"
+  Cmd.run(["mix", "test"], cd: path, timeout: 900_000)
+end|,
+            timeout: 900_000
+          }
+        )
+      ),
+      Event.new(
+        :tool_finished,
+        session_id,
+        ToolEvent.finished(
+          id: "eval-matrix",
+          name: :eval,
+          args: %{
+            code:
+              ~S|for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex) do
+  path = "/Users/dannote/Development/#{dir}"
+  Cmd.run(["mix", "test"], cd: path, timeout: 900_000)
+end|,
+            timeout: 900_000
+          },
+          output: %{
+            output:
+              Enum.map_join(1..24, "\n", fn index ->
+                "project_#{index}: #{if(rem(index, 5) == 0, do: "FAILED", else: "ok")}"
+              end),
+            output_format: :text,
+            output_parts: [
+              %{
+                output:
+                  Enum.map_join(1..24, "\n", fn index ->
+                    "project_#{index}: #{if(rem(index, 5) == 0, do: "FAILED", else: "ok")}"
+                  end),
+                format: :text
+              }
+            ]
+          }
+        )
+      ),
+      Event.new(
+        :tool_started,
+        session_id,
+        ToolEvent.started(
+          id: "read-reach",
+          name: :read,
+          args: %{path: "/Users/dannote/Development/reach/README.md"}
+        )
+      ),
+      Event.new(
+        :tool_finished,
+        session_id,
+        ToolEvent.finished(
+          id: "read-reach",
+          name: :read,
+          args: %{path: "/Users/dannote/Development/reach/README.md"},
+          output: %{
+            output: %{
+              path: "/Users/dannote/Development/reach/README.md",
+              language: "markdown",
+              omitted_lines: 391,
+              content:
+                "# Reach\n\nProgram dependence graph.\n\n```elixir\nReach.graph(:demo)\n```"
+            }
+          }
+        )
+      ),
+      Event.new(:assistant_aborted, session_id, %{reason: "Cancelled."}),
+      Event.new(:usage_updated, session_id, %{input_tokens: 12_000, output_tokens: 3_500})
+    ])
+    |> ViewModel.from_state()
   end
 
   def story(:tool_ast_matches) do
@@ -343,6 +503,8 @@ end|,
       lines: [{:context, "def hello do"}, {:del, "  :old"}, {:add, "  :new"}, {:context, "end"}]
     )
   end
+
+  defp apply_events(state, events), do: Enum.reduce(events, state, &Reducer.apply_event(&2, &1))
 
   @spec render(atom(), keyword()) :: [IO.chardata()]
   def render(name, opts \\ []) do

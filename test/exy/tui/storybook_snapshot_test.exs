@@ -10,7 +10,10 @@ defmodule Exy.TUI.StorybookSnapshotTest do
     :tool_eval_preparing,
     :tool_eval_running,
     :tool_eval_expanded,
-    :tool_read_markdown
+    :tool_read_markdown,
+    :tool_write_created_file,
+    :tool_edit_diff,
+    :chat_tool_stress
   ]
   @tool_visual_widths [40, 80, 120]
 

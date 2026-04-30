@@ -1,0 +1,35 @@
+                                                                                                                        
+  Run the test matrix, inspect the README, and stop if it takes too long.                                               
+                                                                                                                        
+
+ ◆ eval • for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex) do   p… · 900s  ✓ 
+                                                                                                                        
+   … (16 more lines, ctrl+o to expand)                                                                                  
+                                                                                                                        
+   project_17: ok                                                                                                       
+   project_18: ok                                                                                                       
+   project_19: ok                                                                                                       
+   project_20: FAILED                                                                                                   
+   project_21: ok                                                                                                       
+   project_22: ok                                                                                                       
+   project_23: ok                                                                                                       
+   project_24: ok                                                                                                       
+
+ ◆ read • /Users/dannote/Development/reach/README.md  ✓                                                                
+                                                                                                                        
+   Reach                                                                                                                
+   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+                                                                                                                        
+   Program dependence graph.                                                                                            
+                                                                                                                        
+   elixir ───────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+     Reach.graph(:demo)                                                                                                 
+   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+                                                                                                                        
+   … (391 more lines)                                                                                                   
+
+                                                                                                                        
+  Cancelled.                                                                                                            
+                                                                                                                        
+
+~/Development/exy • story-stress                                         openai_codex:gpt-5.5 • idle • local • 15500 tok
