@@ -71,8 +71,16 @@ defmodule Exy.TUI.ToolWidget do
     suffix = ["  ", status_icon(status, theme)]
 
     headline =
-      headline(summary, meta, Keyword.get(opts, :summary_style), theme)
-      |> fitted_summary(prefix, action, suffix, width, theme)
+      fitted_headline(
+        summary,
+        meta,
+        Keyword.get(opts, :summary_style),
+        prefix,
+        action,
+        suffix,
+        width,
+        theme
+      )
 
     text = [
       prefix,
@@ -92,22 +100,30 @@ defmodule Exy.TUI.ToolWidget do
 
   defp format_summary(summary, _style), do: summary
 
-  defp headline(summary, meta, summary_style, theme) do
+  defp fitted_headline(summary, meta, summary_style, prefix, action, suffix, width, theme) do
     summary = format_summary(summary, summary_style)
     meta = Enum.map(meta, &Theme.fg(theme, :muted, &1))
+    headline = join_headline(summary, meta, theme)
 
+    cond do
+      headline in [nil, "", []] ->
+        headline
+
+      is_nil(width) ->
+        headline
+
+      true ->
+        fit_headline(summary, meta, prefix, action, suffix, width, theme)
+    end
+  end
+
+  defp join_headline(summary, meta, theme) do
     [summary | meta]
     |> Enum.reject(&(&1 in [nil, ""]))
     |> Enum.intersperse([" ", Theme.fg(theme, :muted, "·"), " "])
   end
 
-  defp fitted_summary(summary, _prefix, _action, _suffix, _width, _theme)
-       when summary in [nil, "", []],
-       do: summary
-
-  defp fitted_summary(summary, _prefix, _action, _suffix, nil, _theme), do: summary
-
-  defp fitted_summary(summary, prefix, action, suffix, width, theme) do
+  defp fit_headline(summary, meta, prefix, action, suffix, width, theme) do
     separator_width = Width.visible_length(Theme.symbol(theme, :separator))
     action_width = if action in [nil, ""], do: 0, else: Width.visible_length([" ", action])
 
@@ -115,7 +131,32 @@ defmodule Exy.TUI.ToolWidget do
       width - Width.visible_length(prefix) - action_width - Width.visible_length(suffix) -
         separator_width
 
-    if available > 0, do: Widget.fit_line(summary, available), else: nil
+    cond do
+      available <= 0 ->
+        nil
+
+      meta == [] ->
+        Widget.fit_line(summary, available, ellipsis?: true)
+
+      summary in [nil, ""] ->
+        Widget.fit_line(join_headline(nil, meta, theme), available, ellipsis?: true)
+
+      true ->
+        meta_tail = [
+          " ",
+          Theme.fg(theme, :muted, "·"),
+          " ",
+          Enum.intersperse(meta, [" ", Theme.fg(theme, :muted, "·"), " "])
+        ]
+
+        summary_available = available - Width.visible_length(meta_tail)
+
+        if summary_available > 0 do
+          [Widget.fit_line(summary, summary_available, ellipsis?: true), meta_tail]
+        else
+          Widget.fit_line(join_headline(summary, meta, theme), available, ellipsis?: true)
+        end
+    end
   end
 
   def generic_lines(tool, width, theme),
@@ -186,17 +227,33 @@ defmodule Exy.TUI.ToolWidget do
     value
     |> format_value()
     |> String.split("\n")
-    |> Enum.flat_map(fn line ->
-      Widget.wrap([Widget.spaces(2), Theme.fg(theme, fg, line)], width)
-    end)
+    |> Enum.flat_map(&plain_line(&1, width, theme, fg: fg))
   end
 
-  def inspect_lines(value, width, _theme) do
+  def plain_line(line, width, theme, opts \\ []) do
+    fg = Keyword.get(opts, :fg, :tool_output)
+    wrap_output_line(Theme.fg(theme, fg, line), width)
+  end
+
+  def inspect_lines(value, width, theme) do
     value
     |> format_value()
-    |> Syntax.highlight_elixir()
     |> String.split("\n")
-    |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), line], width) end)
+    |> Enum.flat_map(&inspect_line(&1, width, theme))
+  end
+
+  def inspect_line(line, width, _theme) do
+    line
+    |> Syntax.highlight_elixir()
+    |> output_line(width)
+  end
+
+  def output_line(line, width), do: wrap_output_line(line, width)
+
+  defp wrap_output_line(line, width) do
+    line
+    |> Widget.wrap(max(width - 2, 1))
+    |> Enum.map(&[Widget.spaces(2), &1])
   end
 
   defp raw_output(tool), do: Map.get(tool, :output) || Map.get(tool, :result)
@@ -227,7 +284,7 @@ defmodule Exy.TUI.ToolWidget do
       output_lines ->
         lines
         |> Lines.join([""])
-        |> Lines.join(maybe_truncate(output_lines, :output, tool, width, theme, opts))
+        |> Lines.join(output_lines)
     end
   end
 

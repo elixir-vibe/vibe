@@ -3,16 +3,16 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{Duration, Markdown, ToolWidget}
+  alias Exy.TUI.{Duration, Lines, Markdown, Syntax, TextTruncation, ToolWidget}
 
   @impl true
   def render(tool, width, theme) do
     ToolWidget.block(tool, width, theme,
       name: :eval,
-      action: timeout_summary(tool),
       summary: eval_summary(tool),
+      meta: [timeout_summary(tool)],
       summary_style: summary_style(tool),
-      output_lines: structured_output_lines(tool, width, theme),
+      output_lines: structured_output_lines(tool, max(width - 2, 1), theme),
       params?: false,
       truncation: :tail
     )
@@ -20,6 +20,9 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
 
   defp eval_summary(tool) do
     cond do
+      expanded?(tool) ->
+        nil
+
       code = Map.get(tool, :code) ->
         ToolWidget.summarize_value(code, :infinity)
 
@@ -32,30 +35,25 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
   end
 
   defp summary_style(tool) do
-    tool
-    |> Map.get(:args)
-    |> code_from_args()
-    |> command_expression?()
-    |> case do
-      true -> :elixir_dim
-      false -> nil
+    cond do
+      expanded?(tool) -> nil
+      is_binary(code_from_tool(tool)) -> :elixir_dim
+      true -> nil
     end
   end
 
-  defp command_expression?(code) when is_binary(code) do
-    code = String.trim_leading(code)
-    String.starts_with?(code, ["Cmd.run(", "Cmd.start(", "System.cmd("])
-  end
+  defp structured_output_lines(%{output_parts: parts} = tool, width, theme) when is_list(parts) do
+    output_lines =
+      parts
+      |> Enum.map(&normalize_part/1)
+      |> Enum.reject(&(Map.get(&1, :output) in [nil, ""]))
+      |> Enum.map(&part_lines(&1, tool, width, theme))
+      |> Enum.intersperse([""])
+      |> Enum.flat_map(& &1)
 
-  defp command_expression?(_code), do: false
-
-  defp structured_output_lines(%{output_parts: parts}, width, theme) when is_list(parts) do
-    parts
-    |> Enum.map(&normalize_part/1)
-    |> Enum.reject(&(Map.get(&1, :output) in [nil, ""]))
-    |> Enum.map(&part_lines(&1, width, theme))
-    |> Enum.intersperse([""])
-    |> List.flatten()
+    tool
+    |> expanded_code_lines(width, theme)
+    |> join_expanded_output(output_lines)
     |> case do
       [] -> nil
       lines -> lines
@@ -63,10 +61,31 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
   end
 
   defp structured_output_lines(tool, width, theme) do
-    if markdown_output?(tool) do
-      tool
-      |> ToolWidget.output()
-      |> Markdown.render(max(width - 2, 1), theme)
+    output_lines =
+      cond do
+        markdown_output?(tool) ->
+          tool
+          |> ToolWidget.output()
+          |> Markdown.render(max(width - 2, 1), theme)
+
+        expanded?(tool) and not is_nil(ToolWidget.output(tool)) ->
+          part_lines(
+            %{output: ToolWidget.output(tool), format: Map.get(tool, :output_format)},
+            tool,
+            width,
+            theme
+          )
+
+        true ->
+          []
+      end
+
+    tool
+    |> expanded_code_lines(width, theme)
+    |> join_expanded_output(output_lines)
+    |> case do
+      [] -> nil
+      lines -> lines
     end
   end
 
@@ -83,15 +102,81 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
   defp normalize_format("text"), do: :text
   defp normalize_format(format), do: format
 
-  defp part_lines(%{format: :inspect, output: output}, width, theme),
-    do: ToolWidget.inspect_lines(output, width, theme)
+  defp part_lines(%{format: :inspect, output: output}, tool, width, theme) do
+    output
+    |> output_line_window(tool)
+    |> render_output_window(:inspect, width, theme)
+  end
 
-  defp part_lines(%{format: :markdown, output: output}, width, theme) do
+  defp part_lines(%{format: :markdown, output: output}, _tool, width, theme) do
     Markdown.render(output, max(width - 2, 1), theme)
   end
 
-  defp part_lines(%{output: output}, width, theme),
-    do: ToolWidget.plain_lines(output, width, theme)
+  defp part_lines(%{output: output}, tool, width, theme) do
+    output
+    |> output_line_window(tool)
+    |> render_output_window(:text, width, theme)
+  end
+
+  defp output_line_window(output, tool) do
+    output
+    |> ToolWidget.format_value()
+    |> String.split("\n")
+    |> TextTruncation.lines(enabled?: Map.get(tool, :truncate?, true), limit: 8, mode: :tail)
+  end
+
+  defp render_output_window(%{lines: lines, truncated?: false}, format, width, theme),
+    do: Enum.flat_map(lines, &render_output_line(&1, format, width, theme))
+
+  defp render_output_window(%{lines: lines, omitted: omitted}, format, width, theme) do
+    [TextTruncation.hint(omitted, theme, width), ""]
+    |> Lines.join(Enum.flat_map(lines, &render_output_line(&1, format, width, theme)))
+  end
+
+  defp render_output_line(line, :inspect, width, theme),
+    do: ToolWidget.inspect_line(line, width, theme)
+
+  defp render_output_line(line, _format, width, theme),
+    do: ToolWidget.plain_line(line, width, theme)
+
+  defp expanded_code_lines(tool, width, _theme) do
+    if expanded?(tool) do
+      tool
+      |> code_from_tool()
+      |> case do
+        code when is_binary(code) and code != "" -> code_lines(code, width)
+        _code -> []
+      end
+    else
+      []
+    end
+  end
+
+  defp join_expanded_output([], output_lines), do: output_lines
+  defp join_expanded_output(code_lines, []), do: code_lines
+
+  defp join_expanded_output(code_lines, output_lines),
+    do: code_lines |> Lines.join([""]) |> Lines.join(output_lines)
+
+  defp code_lines(code, width) do
+    code
+    |> String.split("\n")
+    |> Enum.flat_map(fn line ->
+      line
+      |> Syntax.highlight_elixir()
+      |> ToolWidget.output_line(width)
+    end)
+  end
+
+  defp expanded?(tool), do: Map.get(tool, :expanded?, false) or Map.get(tool, :truncate?) == false
+
+  defp code_from_tool(tool) do
+    cond do
+      code = Map.get(tool, :code) -> code
+      args = Map.get(tool, :args) -> code_from_args(args)
+      true -> nil
+    end
+  end
 
   defp markdown_output?(%{output_format: :markdown}), do: true
   defp markdown_output?(_tool), do: false

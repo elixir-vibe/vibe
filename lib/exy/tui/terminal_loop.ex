@@ -186,6 +186,8 @@ defmodule Exy.TUI.TerminalLoop do
     do: send(target, {__MODULE__, :event, event})
 
   if Exy.Debug.enabled?() do
+    defp paint(%{output: false, trace: nil} = state, _reason), do: state
+
     defp paint(%{output: false} = state, reason) do
       trace_frame(state, reason)
     end

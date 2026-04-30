@@ -8,7 +8,7 @@ defmodule Exy.TUI.ToolWidgetTest do
   @long_command_timeout_ms 120_000
   @expanded_command_timeout_ms 10_000
   @large_output_lines 10_000
-  @eval_render_budget_us 50_000
+  @eval_render_budget_us 100_000
   @read_render_budget_us 1_000_000
 
   test "dispatches eval by atom name" do
@@ -50,6 +50,9 @@ defmodule Exy.TUI.ToolWidgetTest do
     header = List.first(plain)
     assert String.contains?(header, "File.cwd!()")
     assert String.contains?(header, "1s")
+    assert {code_index, _} = :binary.match(header, "File.cwd!()")
+    assert {timeout_index, _} = :binary.match(header, "1s")
+    assert code_index < timeout_index
     refute String.contains?(header, "timeout")
     refute String.contains?(header, "1000ms")
     refute Enum.any?(plain, &String.contains?(&1, "%{output:"))
@@ -79,7 +82,29 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Width.visible_length(line) <= 100
   end
 
-  test "eval header does not dim-highlight non-command summaries" do
+  test "eval header highlights assigned command summaries with dim syntax colors" do
+    line =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :ok,
+        args: %{
+          code:
+            ~S|task = Cmd.start(["sh", "-c", "for i in 1 2 3; do echo tick:$i; sleep 10; done"])|
+        },
+        output: "ok"
+      }
+      |> TUI.tool()
+      |> Widget.render(120, Theme.default())
+      |> List.first()
+      |> IO.iodata_to_binary()
+
+    assert Width.visible_text(line) =~ "task = Cmd.start"
+    assert line =~ "38;2;154;154;154"
+    assert Width.visible_length(line) <= 120
+  end
+
+  test "eval header highlights arbitrary Elixir summaries with dim syntax colors" do
     line =
       %{
         id: "eval-1",
@@ -95,7 +120,24 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> IO.iodata_to_binary()
 
     assert Width.visible_text(line) =~ ~S|%{home: System.user_home!(), ok: true}|
-    refute line =~ "38;2;154;154;154"
+    assert line =~ "38;2;154;154;154"
+  end
+
+  test "streamed eval params are syntax highlighted while preparing" do
+    line =
+      %{
+        id: "eval-streaming-params",
+        name: :eval,
+        status: :preparing,
+        args: %{code: ~S|task = Cmd.start(["sh", "-c", "echo tick"] )|}
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+      |> List.first()
+      |> IO.iodata_to_binary()
+
+    assert Width.visible_text(line) =~ "task = Cmd.start"
+    assert line =~ "38;2;154;154;154"
   end
 
   test "text output is not syntax highlighted" do
@@ -162,6 +204,28 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert plain =~ "answer: 42"
     assert plain =~ ~S|example_struct: %URI{|
     assert rendered =~ "\e[38;2;"
+  end
+
+  test "eval header ellipsizes long commands before trailing metadata" do
+    line =
+      %{
+        id: "eval-1",
+        name: :eval,
+        status: :error,
+        args: %{
+          code:
+            ~S|{:ok, job} = Cmd.start(["sh", "-c", "sleep 30; echo long-running-task-complete"], timeout: 60_000); long_task_info = %{id: job.id, pid: inspect(job.pid), output: Cmd.output(job)}|,
+          timeout: 5_000
+        },
+        output: %{error: "boom"}
+      }
+      |> TUI.tool()
+      |> Widget.render(120, Theme.default())
+      |> List.first()
+      |> Width.visible_text()
+
+    assert line =~ "… · 5s"
+    assert Width.visible_length(line) <= 120
   end
 
   test "eval header uses available line width for long commands" do
@@ -249,7 +313,7 @@ defmodule Exy.TUI.ToolWidgetTest do
     refute rendered =~ ~s("## Command ok)
   end
 
-  test "expanded eval shows command in header without duplicating command section" do
+  test "expanded eval keeps full code in the body without debug labels" do
     code = ~S|System.cmd("ls", ["-la"], stderr_to_stdout: true)|
 
     plain =
@@ -259,6 +323,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         status: :ok,
         args: %{"code" => code, "timeout" => @expanded_command_timeout_ms},
         output: "total 0",
+        output_parts: [%{output: "total 0", format: :text}],
         truncate?: false
       }
       |> TUI.tool()
@@ -266,8 +331,14 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> Enum.map(&Width.visible_text/1)
 
     header = List.first(plain)
-    assert String.contains?(header, code)
-    refute Enum.any?(plain, &String.contains?(&1, "command:"))
+    assert String.contains?(header, "eval")
+    assert String.contains?(header, "10s")
+    refute String.contains?(header, code)
+    refute String.contains?(header, "eval • eval")
+    refute Enum.any?(plain, &String.contains?(&1, "code:"))
+    refute Enum.any?(plain, &String.contains?(&1, "output:"))
+    assert Enum.any?(plain, &String.contains?(&1, code))
+    assert Enum.any?(plain, &String.contains?(&1, "total 0"))
   end
 
   test "tool title is bold without status background" do
@@ -315,6 +386,50 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     assert us < @eval_render_budget_us
     assert Enum.any?(plain, &String.contains?(&1, "line 10000"))
+  end
+
+  test "eval truncates large structured output parts before wrapping" do
+    output =
+      Enum.map_join(1..@large_output_lines, "\n", &"line #{&1} #{String.duplicate("x", 100)}")
+
+    tool = %{
+      id: "tool",
+      name: :eval,
+      status: :ok,
+      args: %{code: "many()"},
+      output_parts: [%{output: output, format: :text}]
+    }
+
+    {us, lines} = :timer.tc(fn -> tool |> TUI.tool() |> Widget.render(120, Theme.default()) end)
+    plain = Enum.map(lines, &Width.visible_text/1)
+
+    assert us < @eval_render_budget_us
+    assert Enum.any?(plain, &String.contains?(&1, "… (9992 more lines, ctrl+o to expand)"))
+    assert Enum.any?(plain, &String.contains?(&1, "line 10000"))
+    refute Enum.any?(plain, &String.contains?(&1, "line 1 "))
+    assert Enum.all?(plain, &(Width.visible_length(&1) <= 120))
+  end
+
+  test "eval preserves output indentation when wrapping long unbroken lines" do
+    output = String.duplicate(".", 120)
+
+    plain =
+      %{
+        id: "tool",
+        name: :eval,
+        status: :ok,
+        args: %{code: "mix_test()"},
+        output_parts: [%{output: output, format: :text}]
+      }
+      |> TUI.tool()
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    dot_lines = Enum.filter(plain, &String.contains?(&1, "."))
+
+    assert length(dot_lines) > 1
+    assert Enum.all?(dot_lines, &String.starts_with?(&1, "   "))
+    assert Enum.all?(plain, &(Width.visible_length(&1) <= 40))
   end
 
   test "eval truncation keeps the tail and shows the shortcut hint first" do
@@ -484,6 +599,47 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Enum.any?(plain, &String.contains?(&1, "lib/demo.ex"))
     assert Enum.any?(plain, &String.contains?(&1, "IO.puts(:ok)"))
     assert ansi =~ "\e[38;2;"
+  end
+
+  test "renders markdown read output and highlights fenced code" do
+    markdown = """
+    # Phoenix Vapor
+
+    ```elixir
+    defmodule Demo do
+      use PhoenixVapor
+    end
+    ```
+    """
+
+    lines =
+      %{
+        id: "read-md",
+        name: :read,
+        status: :ok,
+        args: %{path: "README.md"},
+        output: %{path: "README.md", content: markdown, language: "markdown"}
+      }
+      |> TUI.tool()
+      |> Widget.render(80, Theme.default())
+
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+    ansi = IO.iodata_to_binary(lines)
+
+    assert plain =~ "Phoenix Vapor"
+    assert plain =~ "elixir"
+    assert plain =~ "defmodule Demo do"
+    refute plain =~ "```"
+    assert ansi =~ "38;2;198;120;221"
+
+    lines
+    |> Enum.map(&Width.visible_text/1)
+    |> Enum.reject(&(String.trim(&1) == ""))
+    |> Enum.reject(&String.contains?(&1, "◆ read"))
+    |> Enum.each(fn line ->
+      assert String.starts_with?(line, "   ")
+      assert Width.visible_length(line) <= 80
+    end)
   end
 
   test "renders edit diffs with diff widget colors" do

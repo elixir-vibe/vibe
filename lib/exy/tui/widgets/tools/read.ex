@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widgets.Tools.Read do
 
   @behaviour Exy.TUI.ToolWidget
 
-  alias Exy.TUI.{Lines, TextTruncation, Theme, ToolWidget, Widget}
+  alias Exy.TUI.{Lines, Markdown, TextTruncation, Theme, ToolWidget, Widget}
   alias Exy.TUI.Widgets.Tools.FileTool
 
   @impl true
@@ -28,12 +28,20 @@ defmodule Exy.TUI.Widgets.Tools.Read do
       |> TextTruncation.lines(enabled?: Map.get(tool, :truncate?, true), limit: 8)
 
     content_lines =
-      truncation.lines
-      |> Enum.flat_map(fn line ->
-        line = display_line(line, width)
-        Widget.wrap([Widget.spaces(2), highlight(line, Map.get(result, :language), theme)], width)
-      end)
-      |> maybe_append_render_hint(truncation, theme, width)
+      if markdown?(result) do
+        truncation.lines
+        |> Enum.join("\n")
+        |> Markdown.render(max(width - 2, 1), theme)
+        |> Enum.map(&[Widget.spaces(2), &1])
+        |> maybe_append_render_hint(truncation, theme, width)
+      else
+        truncation.lines
+        |> Enum.flat_map(fn line ->
+          line = display_line(line, width)
+          ToolWidget.output_line(highlight(line, Map.get(result, :language), theme), width)
+        end)
+        |> maybe_append_render_hint(truncation, theme, width)
+      end
 
     footer = truncation_footer(result, theme)
 
@@ -69,6 +77,14 @@ defmodule Exy.TUI.Widgets.Tools.Read do
         []
     end
   end
+
+  defp markdown?(%{language: language}) when is_binary(language),
+    do: language in ["markdown", "md"]
+
+  defp markdown?(%{path: path}) when is_binary(path),
+    do: String.downcase(Path.extname(path)) in [".md", ".markdown"]
+
+  defp markdown?(_result), do: false
 
   defp display_line(line, width) do
     limit = max(width * 2, 200)

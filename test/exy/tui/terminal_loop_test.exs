@@ -59,7 +59,7 @@ defmodule Exy.TUI.TerminalLoopTest do
     rendered = loop |> TerminalLoop.render() |> IO.iodata_to_binary()
 
     assert rendered =~ "answer"
-    assert rendered =~ "38;2;224;108;117"
+    assert rendered =~ "38;2;97;175;239"
     assert rendered =~ "38;2;152;195;121"
   end
 
@@ -356,7 +356,7 @@ defmodule Exy.TUI.TerminalLoopTest do
     File.rm_rf!(trace_dir)
   end
 
-  test "notice blocks keep a gap from preceding messages" do
+  test "cancelled prompt is rendered in chat history" do
     {:ok, loop} =
       TerminalLoop.start_link(
         output: false,
@@ -374,17 +374,18 @@ defmodule Exy.TUI.TerminalLoopTest do
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :escape})
 
     plain =
-      wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "cancelled") end))
+      wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "Cancelled.") end))
 
     message_index = Enum.find_index(plain, &String.contains?(&1, "hello"))
-    notice_index = Enum.find_index(plain, &String.contains?(&1, "! cancelled"))
+    cancelled_index = Enum.find_index(plain, &String.contains?(&1, "Cancelled."))
+    footer_index = Enum.find_index(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
 
     assert message_index
-    assert notice_index
-
-    assert plain
-           |> Enum.slice((message_index + 1)..(notice_index - 1)//1)
-           |> Enum.any?(&(String.trim(&1) == ""))
+    assert cancelled_index
+    assert footer_index
+    assert message_index < cancelled_index
+    assert cancelled_index < footer_index
+    refute Enum.any?(plain, &String.contains?(&1, "! Cancelled."))
   end
 
   test "confirmation appears above footer like autocomplete without clearing chat history" do

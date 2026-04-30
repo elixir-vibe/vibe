@@ -57,13 +57,21 @@ defmodule Exy.TUI.Widget do
   end
 
   @spec fit_line(IO.chardata(), pos_integer()) :: line()
-  def fit_line(line, width) do
+  def fit_line(line, width), do: fit_line(line, width, ellipsis?: false)
+
+  @spec fit_line(IO.chardata(), pos_integer(), keyword()) :: line()
+  def fit_line(line, width, opts) do
     line = IO.iodata_to_binary(line)
 
-    if Width.visible_length(line) <= width do
-      line
-    else
-      Width.take(line, width)
+    cond do
+      Width.visible_length(line) <= width ->
+        line
+
+      Keyword.get(opts, :ellipsis?, false) and width > 0 ->
+        [Width.take(line, max(width - 1, 0)), "…"]
+
+      true ->
+        Width.take(line, width)
     end
   end
 
