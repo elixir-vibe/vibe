@@ -41,7 +41,7 @@ defmodule Exy.TUI.ToolWidgetTest do
         name: :eval,
         status: :ok,
         args: %{code: "File.cwd!()"},
-        output: ~s("/Users/dannote/Development/exy"),
+        output: ~s("/workspace"),
         output_format: :inspect,
         output_parts: []
       }
@@ -49,7 +49,7 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert Enum.any?(plain, &String.contains?(&1, "/Users/dannote/Development/exy"))
+    assert Enum.any?(plain, &String.contains?(&1, "/workspace"))
   end
 
   test "eval shows timeout in header and unwraps output envelope" do
