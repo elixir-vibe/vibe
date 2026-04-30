@@ -7,6 +7,7 @@ defmodule Exy.TUI.Runtime do
   alias IO.ANSI
 
   @interrupt_repeat_window_ms 1_500
+  @resize_poll_interval_ms 250
 
   @spec run(keyword()) :: :ok | {:error, term()}
   def run(opts \\ []) do
@@ -35,6 +36,7 @@ defmodule Exy.TUI.Runtime do
 
         try do
           painter = render(loop, TerminalPainter.new(columns, rows))
+          schedule_resize_poll()
           receive_events(tty, loop, nil, painter)
         after
           write_output(TerminalPainter.cleanup())
@@ -66,8 +68,12 @@ defmodule Exy.TUI.Runtime do
         repaint_or_stop(tty, loop, nil, painter)
 
       {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
-        TerminalLoop.resize(loop, columns, rows)
-        repaint_or_stop(tty, loop, nil, TerminalPainter.resize(painter, columns, rows))
+        {painter, _changed?} = resize_painter(loop, painter, {columns, rows})
+        repaint_or_stop(tty, loop, nil, painter)
+
+      :resize_poll ->
+        schedule_resize_poll()
+        handle_resize_poll(tty, loop, last_interrupt_at, painter)
 
       {TerminalLoop, :event, _event} ->
         repaint_or_stop(tty, loop, last_interrupt_at, painter)
@@ -144,9 +150,13 @@ defmodule Exy.TUI.Runtime do
           drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
 
         {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
-          TerminalLoop.resize(loop, columns, rows)
-          painter = TerminalPainter.resize(painter, columns, rows)
+          {painter, _changed?} = resize_painter(loop, painter, {columns, rows})
           drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
+
+        :resize_poll ->
+          schedule_resize_poll()
+          {painter, _changed?} = resize_painter(loop, painter, Ghostty.TTY.size())
+          drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained + 1)
 
         {TerminalLoop, :event, _event} ->
           drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained + 1)
@@ -157,6 +167,30 @@ defmodule Exy.TUI.Runtime do
         0 -> {:continue, painter}
       end
     end
+  end
+
+  defp handle_resize_poll(tty, loop, last_interrupt_at, painter) do
+    case resize_painter(loop, painter, Ghostty.TTY.size()) do
+      {painter, true} -> repaint_or_stop(tty, loop, last_interrupt_at, painter)
+      {painter, false} -> receive_events(tty, loop, last_interrupt_at, painter)
+    end
+  end
+
+  @doc false
+  def resize_painter(
+        _loop,
+        %TerminalPainter{width: columns, height: rows} = painter,
+        {columns, rows}
+      ),
+      do: {painter, false}
+
+  def resize_painter(loop, %TerminalPainter{} = painter, {columns, rows}) do
+    TerminalLoop.resize(loop, columns, rows)
+    {TerminalPainter.resize(painter, columns, rows), true}
+  end
+
+  defp schedule_resize_poll do
+    Process.send_after(self(), :resize_poll, @resize_poll_interval_ms)
   end
 
   defp render(loop, painter) do

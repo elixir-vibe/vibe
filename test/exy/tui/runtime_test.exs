@@ -66,6 +66,22 @@ defmodule Exy.TUI.RuntimeTest do
     end)
   end
 
+  test "runtime resize sync updates loop and invalidates painter" do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 100, height: 30)
+    painter = Exy.TUI.TerminalPainter.new(100, 30)
+
+    assert {^painter, false} = Exy.TUI.Runtime.resize_painter(loop, painter, {100, 30})
+
+    {resized, true} = Exy.TUI.Runtime.resize_painter(loop, painter, {60, 20})
+    assert resized.width == 60
+    assert resized.height == 20
+    assert resized.lines == []
+    assert resized.clear_scrollback?
+
+    lines = TerminalLoop.render_full(loop)
+    assert Enum.max(Enum.map(lines, &Exy.TUI.Width.visible_length/1)) <= 60
+  end
+
   test "runtime supervisor preserves caller-provided live session server" do
     {:ok, session} = Exy.Session.start_link(persist?: false, session_id: "remote-runtime")
     runtime_id = make_ref()
@@ -119,6 +135,18 @@ defmodule Exy.TUI.RuntimeTest do
       assert {:ok, _output} = wait_for_screen_text(pty, terminal, "Exy", "", @startup_timeout_ms)
 
       assert {:ok, output} = wait_for_screen_text(pty, terminal, "╯", "", @input_timeout_ms)
+
+      Ghostty.PTY.resize(pty, 60, 20)
+      Terminal.resize(terminal, 60, 20)
+
+      assert {:ok, output} =
+               wait_for_screen(
+                 pty,
+                 terminal,
+                 &textarea_shape?/1,
+                 output,
+                 @input_timeout_ms
+               )
 
       type_and_assert_stable_frames(pty, terminal, "abc wraps across the prompt", output)
 
@@ -176,45 +204,52 @@ defmodule Exy.TUI.RuntimeTest do
   end
 
   defp assert_textarea_shape!(screen) do
+    assert textarea_shape?(screen)
+  end
+
+  defp textarea_shape?(screen) do
     lines = String.split(screen, "\n")
 
     top = Enum.find(lines, &String.starts_with?(&1, "╭"))
     bottom = Enum.find(lines, &String.starts_with?(&1, "╰"))
     body = Enum.filter(lines, &(String.starts_with?(&1, "│") and String.ends_with?(&1, "│")))
 
-    assert top && String.ends_with?(top, "╮")
-    assert bottom && String.ends_with?(bottom, "╯")
-    assert length(body) >= 3
+    top && String.ends_with?(top, "╮") && bottom && String.ends_with?(bottom, "╯") &&
+      length(body) >= 3
   end
 
   defp wait_for_screen_text(pty, terminal, text, output, timeout) do
-    deadline = System.monotonic_time(:millisecond) + timeout
-    do_wait_for_screen_text(pty, terminal, text, output, deadline)
+    wait_for_screen(pty, terminal, &String.contains?(&1, text), output, timeout)
   end
 
-  defp do_wait_for_screen_text(pty, terminal, text, output, deadline) do
+  defp wait_for_screen(pty, terminal, predicate, output, timeout) do
+    deadline = System.monotonic_time(:millisecond) + timeout
+    do_wait_for_screen(pty, terminal, predicate, output, deadline)
+  end
+
+  defp do_wait_for_screen(pty, terminal, predicate, output, deadline) do
     receive do
       {:data, data} ->
         Terminal.write(terminal, data)
         {:ok, screen} = Terminal.snapshot(terminal, :plain)
         output = IO.iodata_to_binary([output, data])
 
-        if String.contains?(screen, text) do
+        if predicate.(screen) do
           {:ok, output}
         else
-          do_wait_for_screen_text(pty, terminal, text, output, deadline)
+          do_wait_for_screen(pty, terminal, predicate, output, deadline)
         end
 
       {:pty_write, data} ->
         Ghostty.PTY.write(pty, data)
-        do_wait_for_screen_text(pty, terminal, text, output, deadline)
+        do_wait_for_screen(pty, terminal, predicate, output, deadline)
 
       {:exit, status} ->
         {:exit, status, output}
     after
       remaining_timeout(deadline) ->
         {:ok, screen} = Terminal.snapshot(terminal, :plain)
-        {:error, {:missing_text, text, screen, output}}
+        {:error, {:screen_predicate_timeout, screen, output}}
     end
   end
 
