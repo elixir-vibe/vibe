@@ -1,0 +1,7 @@
+ ◆ eval • Cmd.run(["sh", "-c", "printf '\e[31mred\e[0m\n'"] )  ✓               
+                                                                                
+   red normal                                                                   
+   start                                                                        
+   final                                                                        
+   after-clear                                                                  
+   after-osc                                                                    

@@ -28,7 +28,7 @@
      Reach.graph(:demo)                 
    ──────────────────────────────────── 
                                         
-   … (391 more lines)                   
+   … file truncated by read limit       
 
                                         
   Cancelled.                            

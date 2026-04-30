@@ -19,8 +19,10 @@ defmodule Exy.TUI.Storybook do
       :tool_eval_ok,
       :tool_eval_preparing,
       :tool_eval_running,
+      :tool_eval_ansi_output,
       :tool_eval_expanded,
       :tool_read_markdown,
+      :tool_read_markdown_expanded,
       :tool_write_created_file,
       :tool_edit_diff,
       :chat_tool_stress,
@@ -99,6 +101,22 @@ defmodule Exy.TUI.Storybook do
     })
   end
 
+  def story(:tool_eval_ansi_output) do
+    TUI.tool(%{
+      id: "eval-ansi",
+      name: :eval,
+      status: :ok,
+      args: %{code: ~S|Cmd.run(["sh", "-c", "printf '\e[31mred\e[0m\n'"] )|},
+      output_parts: [
+        %{
+          output:
+            "\e[31mred\e[0m normal\nstart\rfinal\n\e[2J\e[Hafter-clear\n\e]0;title\aafter-osc",
+          format: :text
+        }
+      ]
+    })
+  end
+
   def story(:tool_eval_expanded) do
     TUI.tool(%{
       id: "eval-expanded",
@@ -143,6 +161,12 @@ end|,
         """
       }
     })
+  end
+
+  def story(:tool_read_markdown_expanded) do
+    :tool_read_markdown
+    |> story()
+    |> Map.update!(:props, &Map.put(&1, :truncate?, false))
   end
 
   def story(:tool_write_created_file) do

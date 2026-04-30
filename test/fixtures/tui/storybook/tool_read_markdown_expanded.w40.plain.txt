@@ -13,4 +13,4 @@
      end                                
    ──────────────────────────────────── 
                                         
-   … (2 more lines, ctrl+o to expand)   
+   … file truncated by read limit       

@@ -9,8 +9,10 @@ defmodule Exy.TUI.StorybookSnapshotTest do
   @tool_visual_stories [
     :tool_eval_preparing,
     :tool_eval_running,
+    :tool_eval_ansi_output,
     :tool_eval_expanded,
     :tool_read_markdown,
+    :tool_read_markdown_expanded,
     :tool_write_created_file,
     :tool_edit_diff,
     :chat_tool_stress

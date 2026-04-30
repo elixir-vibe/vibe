@@ -1,0 +1,7 @@
+ ◆ eval • Cmd.run(["sh", "-c", "pr…  ✓ 
+                                        
+   red normal                           
+   start                                
+   final                                
+   after-clear                          
+   after-osc                            

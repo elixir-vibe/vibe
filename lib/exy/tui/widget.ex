@@ -3,7 +3,7 @@ defmodule Exy.TUI.Widget do
   Behaviour, renderer dispatch, and shared helpers for declarative TUI widgets.
   """
 
-  alias Exy.TUI.{Node, Theme, Width}
+  alias Exy.TUI.{Node, TerminalText, Theme, Width}
 
   @type line :: IO.chardata()
 
@@ -51,7 +51,7 @@ defmodule Exy.TUI.Widget do
   @spec wrap(IO.chardata(), pos_integer()) :: [line()]
   def wrap(content, width) do
     content
-    |> IO.iodata_to_binary()
+    |> TerminalText.sanitize()
     |> String.split("\n")
     |> Enum.flat_map(&wrap_line(&1, width))
   end
@@ -61,7 +61,7 @@ defmodule Exy.TUI.Widget do
 
   @spec fit_line(IO.chardata(), pos_integer(), keyword()) :: line()
   def fit_line(line, width, opts) do
-    line = IO.iodata_to_binary(line)
+    line = TerminalText.sanitize(line)
 
     cond do
       Width.visible_length(line) <= width ->
