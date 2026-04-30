@@ -68,13 +68,23 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
           |> ToolWidget.output()
           |> Markdown.render(max(width - 2, 1), theme)
 
-        expanded?(tool) and not is_nil(ToolWidget.output(tool)) ->
-          part_lines(
-            %{output: ToolWidget.output(tool), format: Map.get(tool, :output_format)},
-            tool,
-            width,
-            theme
-          )
+        expanded?(tool) ->
+          case error_output(ToolWidget.output(tool)) do
+            nil ->
+              if is_nil(ToolWidget.output(tool)) do
+                []
+              else
+                part_lines(
+                  %{output: ToolWidget.output(tool), format: Map.get(tool, :output_format)},
+                  tool,
+                  width,
+                  theme
+                )
+              end
+
+            error ->
+              ToolWidget.error_lines(error, width, theme)
+          end
 
         true ->
           []
@@ -167,6 +177,9 @@ defmodule Exy.TUI.Widgets.Tools.Eval do
       |> ToolWidget.output_line(width)
     end)
   end
+
+  defp error_output(%{error: error}), do: error
+  defp error_output(_output), do: nil
 
   defp expanded?(tool), do: Map.get(tool, :expanded?, false) or Map.get(tool, :truncate?) == false
 

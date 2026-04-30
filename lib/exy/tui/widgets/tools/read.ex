@@ -43,13 +43,7 @@ defmodule Exy.TUI.Widgets.Tools.Read do
         |> maybe_append_render_hint(truncation, theme, width)
       end
 
-    footer = truncation_footer(result, theme)
-
-    if footer == [] do
-      content_lines
-    else
-      content_lines |> Lines.join([""]) |> Lines.join(footer)
-    end
+    maybe_append_file_limit_footer(content_lines, truncation, result, theme)
   end
 
   defp output_lines(_tool, value, width, theme), do: ToolWidget.plain_lines(value, width, theme)
@@ -62,20 +56,23 @@ defmodule Exy.TUI.Widgets.Tools.Read do
     |> Lines.join([TextTruncation.hint(omitted, theme, width)])
   end
 
-  defp truncation_footer(result, theme) do
-    omitted_lines = Map.get(result, :omitted_lines, 0)
-    omitted_bytes = Map.get(result, :omitted_bytes, 0)
+  defp maybe_append_file_limit_footer(lines, %{truncated?: true}, _result, _theme), do: lines
 
-    cond do
-      omitted_lines > 0 ->
-        [[Widget.spaces(2), Theme.fg(theme, :muted, "… (#{omitted_lines} more lines)")]]
-
-      omitted_bytes > 0 ->
-        [[Widget.spaces(2), Theme.fg(theme, :muted, "… (#{omitted_bytes} more bytes)")]]
-
-      true ->
-        []
+  defp maybe_append_file_limit_footer(lines, _truncation, result, theme) do
+    if read_limit_truncated?(result) do
+      lines
+      |> Lines.join([""])
+      |> Lines.join([read_limit_footer(theme)])
+    else
+      lines
     end
+  end
+
+  defp read_limit_truncated?(result),
+    do: Map.get(result, :omitted_lines, 0) > 0 or Map.get(result, :omitted_bytes, 0) > 0
+
+  defp read_limit_footer(theme) do
+    [Widget.spaces(2), Theme.fg(theme, :muted, "… file truncated by read limit")]
   end
 
   defp markdown?(%{language: language}) when is_binary(language),

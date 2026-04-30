@@ -140,6 +140,39 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert line =~ "38;2;154;154;154"
   end
 
+  test "eval command output strips destructive terminal controls but preserves colors and padding" do
+    lines =
+      %{
+        id: "eval-ansi",
+        name: :eval,
+        status: :ok,
+        args: %{code: ~S|Cmd.run(["sh", "-c", "printf ..."] )|},
+        output_parts: [
+          %{
+            output:
+              "\e[31mred\e[0m normal\nstart\rfinal\n\e[2J\e[Hafter-clear\n\e]0;title\aafter-osc",
+            format: :text
+          }
+        ]
+      }
+      |> TUI.tool()
+      |> Widget.render(60, Theme.default())
+
+    plain = Enum.map(lines, &Width.visible_text/1)
+    rendered = IO.iodata_to_binary(lines)
+
+    assert rendered =~ "\e[31m"
+    refute rendered =~ "\e[2J"
+    refute rendered =~ "\e[H"
+    refute rendered =~ "\e]0;"
+    assert Enum.any?(plain, &String.contains?(&1, "red normal"))
+    assert Enum.any?(plain, &String.contains?(&1, "after-clear"))
+    assert Enum.any?(plain, &String.contains?(&1, "after-osc"))
+    assert Enum.all?(plain, &(Width.visible_length(&1) <= 60))
+    assert Enum.all?(plain, &String.starts_with?(&1, " "))
+    assert Enum.all?(plain, &String.ends_with?(&1, " "))
+  end
+
   test "text output is not syntax highlighted" do
     lines =
       %{
@@ -247,6 +280,31 @@ defmodule Exy.TUI.ToolWidgetTest do
     header = List.first(plain)
     assert String.contains?(header, "File.ls!")
     assert String.length(header) <= 120
+  end
+
+  test "expanded eval errors render without map wrapper" do
+    lines =
+      %{
+        id: "eval-error",
+        name: :eval,
+        status: :error,
+        args: %{
+          code: ~S|{:ok, job} = Cmd.start(["sh", "-c", "sleep 30"]); Cmd.status(job)|,
+          timeout: 5_000
+        },
+        output: %{error: "** (RuntimeError) boom\n    nofile:1: (file)"},
+        expanded?: true,
+        truncate?: false
+      }
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+    rendered = IO.iodata_to_binary(lines)
+
+    assert plain =~ "RuntimeError"
+    refute plain =~ "%{error:"
+    assert rendered =~ "38;2;204;102;102"
   end
 
   test "eval renders mixed IO and returned value with spacing and inspect highlighting" do
@@ -577,7 +635,47 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     assert us < @read_render_budget_us
     assert Enum.any?(plain, &String.contains?(&1, "ctrl+o"))
+    refute Enum.any?(plain, &String.contains?(&1, "file truncated by read limit"))
     refute Enum.any?(plain, &String.contains?(&1, "line 9999"))
+  end
+
+  test "read shows file read limit only when expanded" do
+    content = Enum.map_join(1..12, "\n", &"line #{&1}")
+
+    tool = %{
+      id: "read-limited",
+      name: :read,
+      status: :ok,
+      args: %{path: "limited.ex"},
+      output: %{
+        path: "limited.ex",
+        content: content,
+        language: "elixir",
+        omitted_lines: 398,
+        omitted_bytes: 1200
+      }
+    }
+
+    collapsed =
+      tool
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    expanded =
+      tool
+      |> Map.put(:truncate?, false)
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(collapsed, &String.contains?(&1, "ctrl+o"))
+    refute Enum.any?(collapsed, &String.contains?(&1, "file truncated by read limit"))
+
+    refute Enum.any?(expanded, &String.contains?(&1, "ctrl+o"))
+    assert Enum.any?(expanded, &String.contains?(&1, "… file truncated by read limit"))
+    refute Enum.any?(expanded, &String.contains?(&1, "398 more lines"))
+    refute Enum.any?(expanded, &String.contains?(&1, "1200 more bytes"))
   end
 
   test "renders read output as highlighted code" do

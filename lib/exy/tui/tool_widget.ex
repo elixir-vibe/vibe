@@ -3,8 +3,9 @@ defmodule Exy.TUI.ToolWidget do
   Behaviour and dispatcher for built-in tool widgets.
   """
 
+  alias Exy.Tool.Display
   alias Exy.TUI
-  alias Exy.TUI.{Lines, Syntax, TextTruncation, Theme, Widget, Width}
+  alias Exy.TUI.{Lines, Markdown, Syntax, TextTruncation, Theme, Widget, Width}
 
   @type tool :: map()
   @type renderer :: module()
@@ -21,11 +22,28 @@ defmodule Exy.TUI.ToolWidget do
   }
 
   @spec render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
+  def render(%Display{} = display, width, theme), do: render_display(display, width, theme)
+
   def render(tool, width, theme) when is_map(tool) do
-    tool
-    |> tool_name()
-    |> renderer()
-    |> do_render(tool, width, theme)
+    case Display.from_tool(tool) do
+      %Display{} = display -> render_display(display, width, theme)
+      {:legacy, tool} -> tool |> tool_name() |> renderer() |> do_render(tool, width, theme)
+    end
+  end
+
+  def render_display(%Display{} = display, width, theme) do
+    block(
+      %{name: display.name, status: display.status, truncate?: display.truncate?},
+      width,
+      theme,
+      name: display.name,
+      summary: display.summary,
+      meta: display.meta,
+      summary_style: display.summary_style,
+      output_lines: display_body_lines(display, max(width - 2, 1), theme),
+      params?: false,
+      truncation: :tail
+    )
   end
 
   @spec renderer(atom() | String.t() | nil) :: renderer()
@@ -249,6 +267,133 @@ defmodule Exy.TUI.ToolWidget do
   end
 
   def output_line(line, width), do: wrap_output_line(line, width)
+
+  defp display_body_lines(%Display{body: body, truncate?: truncate?}, width, theme) do
+    body
+    |> Enum.flat_map(&display_block_lines(&1, width, theme, truncate?))
+    |> trim_trailing_blank()
+    |> case do
+      [] -> nil
+      lines -> lines
+    end
+  end
+
+  defp display_block_lines({:text, text, opts}, width, theme, truncate?),
+    do: text_block_lines(text, width, theme, :text, truncate?, opts)
+
+  defp display_block_lines({:inspect, text, opts}, width, theme, truncate?),
+    do: text_block_lines(text, width, theme, :inspect, truncate?, opts)
+
+  defp display_block_lines({:error, text, opts}, width, theme, truncate?),
+    do: text_block_lines(text, width, theme, :error, truncate?, opts)
+
+  defp display_block_lines({:source, source, opts}, width, theme, truncate?),
+    do: source_block_lines(source, width, theme, truncate?, opts)
+
+  defp display_block_lines({:markdown, markdown, opts}, width, theme, truncate?) do
+    truncation = line_window(markdown, truncate?, opts)
+
+    lines =
+      truncation.lines
+      |> Enum.join("\n")
+      |> Markdown.render(max(width - 2, 1), theme)
+      |> Enum.map(&[Widget.spaces(2), &1])
+      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
+      |> maybe_append_read_limit_footer(truncation, opts, theme)
+
+    Lines.join(lines, [""])
+  end
+
+  defp display_block_lines({:lines, lines, _opts}, _width, _theme, _truncate?),
+    do: Lines.join(lines, [""])
+
+  defp text_block_lines(text, width, theme, kind, truncate?, opts) do
+    truncation = line_window(text, truncate?, opts)
+
+    lines =
+      truncation.lines
+      |> Enum.flat_map(&render_text_line(&1, kind, width, theme))
+      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
+
+    Lines.join(lines, [""])
+  end
+
+  defp source_block_lines(source, width, theme, truncate?, opts) do
+    truncation = line_window(source, truncate?, opts)
+    language = Keyword.get(opts, :language)
+
+    lines =
+      truncation.lines
+      |> Enum.flat_map(fn line ->
+        line
+        |> highlight_source_line(language, theme)
+        |> output_line(width)
+      end)
+      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
+      |> maybe_append_read_limit_footer(truncation, opts, theme)
+
+    Lines.join(lines, [""])
+  end
+
+  defp line_window(text, truncate?, opts) do
+    text
+    |> format_value()
+    |> String.split("\n")
+    |> TextTruncation.lines(
+      enabled?: truncate?,
+      limit: 8,
+      mode: Keyword.get(opts, :truncation, :head)
+    )
+  end
+
+  defp render_text_line(line, :inspect, width, theme), do: inspect_line(line, width, theme)
+
+  defp render_text_line(line, :error, width, theme),
+    do: plain_line(line, width, theme, fg: :error)
+
+  defp render_text_line(line, _kind, width, theme), do: plain_line(line, width, theme)
+
+  defp maybe_append_hint(lines, %{truncated?: false}, _theme, _width, _mode), do: lines
+
+  defp maybe_append_hint(lines, %{omitted: omitted}, theme, width, :tail) do
+    [TextTruncation.hint(omitted, theme, width), ""] |> Lines.join(lines)
+  end
+
+  defp maybe_append_hint(lines, %{omitted: omitted}, theme, width, _mode) do
+    lines |> Lines.join([""]) |> Lines.join([TextTruncation.hint(omitted, theme, width)])
+  end
+
+  defp maybe_append_read_limit_footer(lines, %{truncated?: true}, _opts, _theme), do: lines
+
+  defp maybe_append_read_limit_footer(lines, _truncation, opts, theme) do
+    if Keyword.get(opts, :read_limit_truncated?, false) do
+      lines
+      |> Lines.join([""])
+      |> Lines.join([
+        [Widget.spaces(2), Theme.fg(theme, :muted, "… file truncated by read limit")]
+      ])
+    else
+      lines
+    end
+  end
+
+  defp highlight_source_line(line, language, theme) when language in [nil, ""],
+    do: Theme.fg(theme, :tool_output, line)
+
+  defp highlight_source_line(line, language, _theme) when language in [:elixir, "elixir"],
+    do: Syntax.highlight_elixir(line)
+
+  defp highlight_source_line(line, language, theme) do
+    {:ok, highlighted} =
+      Lumis.highlight(line, formatter: {:terminal, language: to_string(language)})
+
+    highlighted
+  rescue
+    _error -> Theme.fg(theme, :tool_output, line)
+  end
+
+  defp trim_trailing_blank(lines),
+    do: Enum.reverse(lines) |> Enum.drop_while(&(&1 == "")) |> Enum.reverse()
 
   defp wrap_output_line(line, width) do
     line
