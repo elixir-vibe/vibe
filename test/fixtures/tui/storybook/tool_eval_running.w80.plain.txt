@@ -1,0 +1,12 @@
+ ◆ eval • task = Cmd.start(["sh", "-c", "for i in 1 2 3 4 5; do echo … · 60s  … 
+                                                                                
+   … (32 more lines, ctrl+o to expand)                                          
+                                                                                
+   tick:33                                                                      
+   tick:34                                                                      
+   tick:35                                                                      
+   tick:36                                                                      
+   tick:37                                                                      
+   tick:38                                                                      
+   tick:39                                                                      
+   tick:40                                                                      

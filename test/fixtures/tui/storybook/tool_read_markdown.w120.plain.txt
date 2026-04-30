@@ -1,0 +1,16 @@
+ ◆ read • /Users/dannote/Development/reach/README.md  ✓                                                                
+                                                                                                                        
+   Reach                                                                                                                
+   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+                                                                                                                        
+   Program dependence graph for Elixir, Erlang, Gleam, JavaScript, and TypeScript.                                      
+                                                                                                                        
+   elixir ───────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+     defmodule Demo do                                                                                                  
+       use Reach                                                                                                        
+     end                                                                                                                
+   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+                                                                                                                        
+   … (2 more lines, ctrl+o to expand)                                                                                   
+                                                                                                                        
+   … (391 more lines)                                                                                                   

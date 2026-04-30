@@ -17,6 +17,10 @@ defmodule Exy.TUI.Storybook do
     [
       :chat_basic,
       :tool_eval_ok,
+      :tool_eval_preparing,
+      :tool_eval_running,
+      :tool_eval_expanded,
+      :tool_read_markdown,
       :tool_ast_matches,
       :tool_ast_replace,
       :tool_lsp_diagnostics,
@@ -62,6 +66,79 @@ defmodule Exy.TUI.Storybook do
       args: %{code: "Exy.OTP.runtime_info()"},
       output: "%{elixir: \"1.19.5\", process_count: 187}",
       expanded?: true
+    })
+  end
+
+  def story(:tool_eval_preparing) do
+    TUI.tool(%{
+      id: "eval-preparing",
+      name: :eval,
+      status: :preparing,
+      args: %{
+        code:
+          ~S|{:ok, job} = Cmd.start(["sh", "-c", "sleep 30; echo long-running-task-complete"], timeout: 60_000); long_task_info = %{id: job.id, pid: inspect(job.pid), output: Cmd.output(job)}|,
+        timeout: 5_000
+      }
+    })
+  end
+
+  def story(:tool_eval_running) do
+    TUI.tool(%{
+      id: "eval-running",
+      name: :eval,
+      status: :running,
+      args: %{
+        code:
+          ~S|task = Cmd.start(["sh", "-c", "for i in 1 2 3 4 5; do echo tick:$i; sleep 10; done"], timeout: 60_000)|,
+        timeout: 60_000
+      },
+      output_parts: [%{output: Enum.map_join(1..40, "\n", &"tick:#{&1}"), format: :text}]
+    })
+  end
+
+  def story(:tool_eval_expanded) do
+    TUI.tool(%{
+      id: "eval-expanded",
+      name: :eval,
+      status: :ok,
+      args: %{
+        code:
+          ~S|projects = ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex)
+for dir <- projects do
+  path = "/Users/dannote/Development/#{dir}"
+  IO.puts("== #{dir} ==")
+end|,
+        timeout: 60_000
+      },
+      output_parts: [%{output: "== reach ==\n3 properties, 484 tests, 0 failures", format: :text}],
+      expanded?: true,
+      truncate?: false
+    })
+  end
+
+  def story(:tool_read_markdown) do
+    TUI.tool(%{
+      id: "read-markdown",
+      name: :read,
+      status: :ok,
+      args: %{path: "/Users/dannote/Development/reach/README.md"},
+      output: %{
+        path: "/Users/dannote/Development/reach/README.md",
+        language: "markdown",
+        omitted_lines: 391,
+        omitted_bytes: 602,
+        content: """
+        # Reach
+
+        Program dependence graph for Elixir, Erlang, Gleam, JavaScript, and TypeScript.
+
+        ```elixir
+        defmodule Demo do
+          use Reach
+        end
+        ```
+        """
+      }
     })
   end
 

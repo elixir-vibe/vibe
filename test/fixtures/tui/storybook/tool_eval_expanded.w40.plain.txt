@@ -1,0 +1,13 @@
+ ◆ eval • 60s  ✓                       
+                                        
+   projects = ~w(reach quickbeam volt   
+   phoenix_vapor phoenix_replay         
+   vue-pencil vize_ex oxc_ex)           
+   for dir <- projects do               
+   path =                               
+   "/Users/dannote/Development/#{dir}"  
+     IO.puts("== #{dir} ==")            
+   end                                  
+                                        
+   == reach ==                          
+   3 properties, 484 tests, 0 failures  
