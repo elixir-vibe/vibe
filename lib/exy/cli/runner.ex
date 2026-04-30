@@ -32,7 +32,9 @@ defmodule Exy.CLI.Runner do
           with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
             Exy.ask(pid, prompt,
               timeout: opts[:timeout] || @default_print_timeout_ms,
-              session_id: session_id
+              session_id: session_id,
+              on_result: trace_print_delta(:content),
+              on_thinking: trace_print_delta(:thinking)
             )
           end
         end
@@ -76,6 +78,16 @@ defmodule Exy.CLI.Runner do
     end
 
     :ok
+  end
+
+  if Exy.Debug.enabled?() do
+    defp trace_print_delta(type) do
+      fn text ->
+        Exy.Agent.Streaming.Trace.record(:print_delta, %{chunk_type: type, text: text})
+      end
+    end
+  else
+    defp trace_print_delta(_type), do: fn _text -> :ok end
   end
 
   @spec session_id(keyword()) :: String.t()
