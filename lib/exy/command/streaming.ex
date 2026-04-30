@@ -4,6 +4,7 @@ defmodule Exy.Command.Streaming do
   alias Exy.UI.{Event, ToolEvent}
 
   @process_key :exy_eval_command_stream_session_id
+  @table __MODULE__
   @flush_ms 100
 
   @spec with_eval_session(String.t() | nil, (-> term())) :: term()
@@ -18,9 +19,50 @@ defmodule Exy.Command.Streaming do
     end
   end
 
+  @spec current_session_id() :: String.t() | nil
+  def current_session_id do
+    case Process.get(@process_key) do
+      session_id when is_binary(session_id) -> session_id
+      _session_id -> nil
+    end
+  end
+
+  @spec track(String.t() | nil, pid()) :: :ok
+  def track(session_id, pid) when is_binary(session_id) and is_pid(pid) do
+    ensure_table()
+    :ets.insert(@table, {{session_id, pid}, true})
+    :ok
+  end
+
+  def track(_session_id, _pid), do: :ok
+
+  @spec untrack(String.t() | nil, pid()) :: :ok
+  def untrack(session_id, pid) when is_binary(session_id) and is_pid(pid) do
+    ensure_table()
+    :ets.delete(@table, {session_id, pid})
+    :ok
+  end
+
+  def untrack(_session_id, _pid), do: :ok
+
+  @spec cancel_session(String.t()) :: :ok
+  def cancel_session(session_id) when is_binary(session_id) do
+    ensure_table()
+
+    @table
+    |> :ets.match({{session_id, :"$1"}, :_})
+    |> List.flatten()
+    |> Enum.each(fn pid ->
+      if is_pid(pid) and Process.alive?(pid), do: Exy.Command.cancel(pid)
+      untrack(session_id, pid)
+    end)
+
+    :ok
+  end
+
   @spec callback_from_process() :: (binary() -> :ok) | nil
   def callback_from_process do
-    case Process.get(@process_key) do
+    case current_session_id() do
       session_id when is_binary(session_id) -> callback(session_id)
       _session_id -> nil
     end
@@ -47,6 +89,18 @@ defmodule Exy.Command.Streaming do
     else
       false
     end
+  end
+
+  defp ensure_table do
+    case :ets.whereis(@table) do
+      :undefined ->
+        :ets.new(@table, [:named_table, :public, read_concurrency: true])
+
+      _tid ->
+        @table
+    end
+  rescue
+    ArgumentError -> @table
   end
 
   defp emit(session_id, output) do

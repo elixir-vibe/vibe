@@ -175,6 +175,30 @@ defmodule Exy.TUI.AppTest do
     assert snapshot.autocomplete == nil
   end
 
+  test "escape cancels a running prompt" do
+    parent = self()
+
+    ask = fn _text, _opts ->
+      send(parent, :ask_started)
+      Process.sleep(@long_prompt_sleep_ms)
+      {:ok, "too late"}
+    end
+
+    {:ok, app} = App.start_link(ask_fun: ask)
+
+    :ok = App.key(app, {:insert, "slow"})
+    :ok = App.key(app, :submit)
+    assert_receive :ask_started, 500
+    assert wait_until(app, &(&1.ui.status == :working))
+
+    :ok = App.key(app, :cancel)
+
+    snapshot = wait_until(app, &(&1.ui.status == :idle))
+    assert Enum.any?(snapshot.ui.events, &(&1.type == :assistant_aborted))
+    assert Enum.any?(snapshot.ui.messages, &(&1.role == :assistant and &1.text == "Cancelled."))
+    assert snapshot.ui.notifications == []
+  end
+
   test "escape closes autocomplete without cancelling the session" do
     {:ok, app} = App.start_link()
 

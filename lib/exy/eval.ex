@@ -53,6 +53,13 @@ defmodule Exy.Eval do
     end
   end
 
+  @spec cancel(String.t()) :: :ok
+  def cancel(session_id) when is_binary(session_id) do
+    Exy.Command.Streaming.cancel_session(session_id)
+    stop_evaluator(session_id)
+    :ok
+  end
+
   defp evaluate_with_timeout(code, session_id, persist?, opts) do
     timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     caller = self()

@@ -2,7 +2,17 @@ defmodule Exy.Command.Result do
   @moduledoc false
 
   @enforce_keys [:id, :argv, :cwd, :status, :output, :output_path, :duration_ms]
-  defstruct [:id, :argv, :cwd, :status, :exit_status, :output, :output_path, :duration_ms]
+  defstruct [
+    :id,
+    :argv,
+    :cwd,
+    :status,
+    :exit_status,
+    :exit_code,
+    :output,
+    :output_path,
+    :duration_ms
+  ]
 
   @type status :: :ok | :error | :timeout | :cancelled | :running
 
@@ -12,6 +22,7 @@ defmodule Exy.Command.Result do
           cwd: Path.t(),
           status: status(),
           exit_status: non_neg_integer() | nil,
+          exit_code: non_neg_integer() | nil,
           output: String.t(),
           output_path: Path.t(),
           duration_ms: non_neg_integer()

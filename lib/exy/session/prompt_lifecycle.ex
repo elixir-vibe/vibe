@@ -37,10 +37,11 @@ defmodule Exy.Session.PromptLifecycle do
 
   def cancel(state, emit) do
     PromptRunner.cancel(state.active_agent, state.prompt_task)
+    Exy.Eval.cancel(state.state.session_id)
 
     state
     |> Map.merge(%{prompt_task: nil, prompt_ref: nil, active_agent: nil})
-    |> emit.(Event.new(:assistant_aborted, state.state.session_id, %{reason: "cancelled"}))
+    |> emit.(Event.new(:assistant_aborted, state.state.session_id, %{reason: "Cancelled."}))
   end
 
   @spec record_result(map(), {:ok, term()} | {:error, term()}, emit_fun()) :: map()
@@ -82,6 +83,7 @@ defmodule Exy.Session.PromptLifecycle do
       |> base_ask_opts(parent, ref, session_id)
       |> Keyword.put(:on_result, &send(parent, {:assistant_delta, &1}))
       |> Keyword.put(:on_thinking, &send(parent, {:assistant_thinking_delta, &1}))
+      |> Keyword.put(:on_tool_preparing, &send(parent, {:tool_preparing, &1}))
 
     {ask_opts, state}
   end
@@ -95,6 +97,7 @@ defmodule Exy.Session.PromptLifecycle do
     |> Keyword.put(:session_id, session_id)
     |> Keyword.put(:tool_context, %{session_id: session_id})
     |> Keyword.put(:stream_owner, {parent, ref})
+    |> Keyword.put(:on_tool_preparing, &send(parent, {:tool_preparing, &1}))
     |> Keyword.put(:on_tool_started, &send(parent, {:tool_started, &1}))
     |> Keyword.put(:on_tool_finished, &send(parent, {:tool_finished, &1}))
   end

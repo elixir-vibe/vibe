@@ -13,7 +13,11 @@ defmodule Exy.Command do
   @spec run([String.Chars.t()], keyword()) :: Result.t() | {:error, term()}
   def run(argv, opts \\ []) when is_list(argv) do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
-    opts = Keyword.put_new_lazy(opts, :on_output, &Exy.Command.Streaming.callback_from_process/0)
+
+    opts =
+      opts
+      |> Keyword.put_new_lazy(:on_output, &Exy.Command.Streaming.callback_from_process/0)
+      |> Keyword.put_new_lazy(:eval_session_id, &Exy.Command.Streaming.current_session_id/0)
 
     with {:ok, %Job{} = job} <- start(argv, opts) do
       await(job, timeout)
@@ -22,6 +26,9 @@ defmodule Exy.Command do
 
   @spec start([String.Chars.t()], keyword()) :: {:ok, Job.t()} | {:error, term()}
   def start(argv, opts \\ []) when is_list(argv) do
+    opts =
+      Keyword.put_new_lazy(opts, :eval_session_id, &Exy.Command.Streaming.current_session_id/0)
+
     child_spec = %{
       id: {Worker, System.unique_integer([:positive])},
       start: {Worker, :start_link, [Keyword.merge(opts, argv: argv)]},
@@ -29,6 +36,7 @@ defmodule Exy.Command do
     }
 
     with {:ok, pid} <- DynamicSupervisor.start_child(Exy.Command.Supervisor, child_spec) do
+      Exy.Command.Streaming.track(Keyword.get(opts, :eval_session_id), pid)
       {:ok, Worker.job(pid)}
     end
   end

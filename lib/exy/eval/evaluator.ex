@@ -100,6 +100,10 @@ defmodule Exy.Eval.Evaluator do
       success? ->
         {{:ok, io_result(result, io)}, state}
 
+      io != "" ->
+        error = [ToolOutput.limit_text(io), "\n", ToolOutput.limit_text(result)]
+        {{:error, IO.iodata_to_binary(error)}, state}
+
       true ->
         {{:error, ToolOutput.limit_text(result)}, state}
     end

@@ -165,12 +165,15 @@ defmodule Exy.SessionProcessTest do
     :ok = Exy.Session.dispatch(server, :cancel_stream)
 
     assert_receive {Exy.Session, :event,
-                    %{type: :assistant_aborted, data: %{reason: "cancelled"}}},
+                    %{type: :assistant_aborted, data: %{reason: "Cancelled."}}},
                    500
 
     refute_receive {Exy.Session, :event, %{type: :assistant_message_added}}, 100
 
-    assert Exy.Session.state(server).status == :idle
+    state = Exy.Session.state(server)
+    assert state.status == :idle
+    assert [%{role: :user}, %{role: :assistant, text: "Cancelled."}] = state.messages
+    assert state.notifications == []
   end
 
   test "records ask function crashes as assistant errors" do

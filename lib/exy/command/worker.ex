@@ -19,6 +19,7 @@ defmodule Exy.Command.Worker do
     :exit_status,
     :status,
     :on_output,
+    :eval_session_id,
     awaiters: [],
     output: ""
   ]
@@ -49,6 +50,7 @@ defmodule Exy.Command.Worker do
     id = Keyword.get_lazy(opts, :id, &new_id/0)
     output_path = Keyword.get_lazy(opts, :output_path, fn -> default_output_path(id) end)
     on_output = Keyword.get(opts, :on_output)
+    eval_session_id = Keyword.get(opts, :eval_session_id)
     File.mkdir_p!(Path.dirname(output_path))
     File.write!(output_path, "")
 
@@ -71,6 +73,7 @@ defmodule Exy.Command.Worker do
        port: port,
        output_path: output_path,
        on_output: on_output,
+       eval_session_id: eval_session_id,
        started_mono: System.monotonic_time(:millisecond),
        started_at: DateTime.utc_now(),
        status: :running
@@ -116,6 +119,7 @@ defmodule Exy.Command.Worker do
   def handle_info(_message, state), do: {:noreply, state}
 
   defp finish(state) do
+    Exy.Command.Streaming.untrack(state.eval_session_id, self())
     result = result(state)
 
     state
@@ -143,6 +147,7 @@ defmodule Exy.Command.Worker do
       cwd: state.cwd,
       status: state.status,
       exit_status: state.exit_status,
+      exit_code: state.exit_status,
       output: state.output,
       output_path: state.output_path,
       duration_ms: max(System.monotonic_time(:millisecond) - state.started_mono, 0)

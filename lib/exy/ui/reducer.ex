@@ -60,16 +60,20 @@ defmodule Exy.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
-    notice = %{level: :warning, text: Map.get(data, :reason, "stream aborted")}
-
-    notifications =
-      if Map.get(data, :notify?, true),
-        do: Lists.append(state.notifications, notice),
-        else: state.notifications
+    messages =
+      if Map.get(data, :notify?, true) do
+        Lists.append(state.messages, %{
+          role: :assistant,
+          text: Map.get(data, :reason, "Cancelled."),
+          at: DateTime.utc_now()
+        })
+      else
+        state.messages
+      end
 
     %{
       state
-      | notifications: notifications,
+      | messages: messages,
         streaming_message: nil,
         status: :idle,
         usage_preview: empty_usage_preview()
@@ -100,13 +104,24 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_updated, data: %Exy.UI.ToolEvent{id: id} = data}) do
+  defp reduce(state, %Event{type: :tool_updated, at: at, data: %Exy.UI.ToolEvent{id: id} = data}) do
     data = tool_event_map(data)
-    pending_tools = Map.update(state.pending_tools, id, data, &Map.merge(&1, data))
+
+    {messages, pending_tools} =
+      case Map.fetch(state.pending_tools, id) do
+        {:ok, _tool} ->
+          pending_tools = Map.update!(state.pending_tools, id, &Map.merge(&1, data))
+          {update_tool_message(state.messages, id, data), pending_tools}
+
+        :error ->
+          tool = data |> Map.put_new(:expanded?, false)
+          tool_message = tool |> Map.put(:role, :tool) |> Map.put(:at, at)
+          {Lists.append(state.messages, tool_message), Map.put(state.pending_tools, id, tool)}
+      end
 
     %{
       state
-      | messages: update_tool_message(state.messages, id, data),
+      | messages: messages,
         pending_tools: pending_tools,
         status: :working
     }
