@@ -5,11 +5,43 @@ defmodule Exy.Agent.Streaming.Plugin do
     name: "exy_streaming",
     state_key: :exy_streaming,
     actions: [],
-    signal_patterns: ["ai.llm.delta", "ai.tool.params", "ai.tool.started", "ai.tool.result"]
+    signal_patterns: [
+      "ai.react.runtime_event",
+      "ai.llm.delta",
+      "ai.tool.params",
+      "ai.tool.started",
+      "ai.tool.result"
+    ]
 
   alias Exy.UI.ToolEvent
 
   @impl true
+  def handle_signal(
+        %{type: "ai.react.runtime_event", data: %{event: event}},
+        %{agent: %{id: agent_id}}
+      )
+      when is_map(event) do
+    case event_kind(event) do
+      :llm_delta ->
+        data = event_data(event)
+
+        Exy.Agent.Streaming.dispatch_runtime_delta(
+          agent_id,
+          event_field(event, :llm_call_id),
+          %{
+            call_id: event_field(event, :llm_call_id),
+            chunk_type: event_field(data, :chunk_type, :content),
+            delta: event_field(data, :delta, "")
+          }
+        )
+
+      _kind ->
+        :ok
+    end
+
+    {:ok, :continue}
+  end
+
   def handle_signal(%{type: "ai.llm.delta", data: data}, %{agent: %{id: agent_id}}) do
     Exy.Agent.Streaming.dispatch(agent_id, data || %{})
     {:ok, :continue}
@@ -60,4 +92,20 @@ defmodule Exy.Agent.Streaming.Plugin do
   end
 
   def handle_signal(_signal, _context), do: {:ok, :continue}
+
+  defp event_kind(event) do
+    case event_field(event, :kind) do
+      kind when is_atom(kind) -> kind
+      kind when is_binary(kind) -> String.to_existing_atom(kind)
+      _kind -> nil
+    end
+  rescue
+    ArgumentError -> nil
+  end
+
+  defp event_data(event), do: event_field(event, :data, %{}) || %{}
+
+  defp event_field(map, key, default \\ nil) when is_map(map) do
+    Map.get(map, key, Map.get(map, to_string(key), default))
+  end
 end

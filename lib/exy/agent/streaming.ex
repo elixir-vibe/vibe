@@ -6,6 +6,7 @@ defmodule Exy.Agent.Streaming do
   alias Exy.UI.ToolEvent
 
   @table :exy_agent_streaming_callbacks
+  @runtime_delta_table :exy_agent_streaming_runtime_delta_calls
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -32,6 +33,7 @@ defmodule Exy.Agent.Streaming do
          {:ok, status} <- safe_status(agent_pid),
          true <- table?() do
       :ets.delete(@table, status.agent_id)
+      delete_runtime_delta_calls(status.agent_id)
     end
 
     :ok
@@ -39,13 +41,17 @@ defmodule Exy.Agent.Streaming do
 
   @spec dispatch(String.t(), map()) :: :ok
   def dispatch(agent_id, data) when is_binary(agent_id) and is_map(data) do
-    with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
-      data
-      |> chunk()
-      |> maybe_dispatch_delta(callbacks)
+    unless runtime_delta_call?(agent_id, call_id(data)) do
+      dispatch_chunk(agent_id, data)
     end
 
     :ok
+  end
+
+  @spec dispatch_runtime_delta(String.t(), String.t() | nil, map()) :: :ok
+  def dispatch_runtime_delta(agent_id, call_id, data) when is_binary(agent_id) and is_map(data) do
+    mark_runtime_delta_call(agent_id, call_id)
+    dispatch_chunk(agent_id, data)
   end
 
   @impl true
@@ -83,10 +89,22 @@ defmodule Exy.Agent.Streaming do
 
   defp maybe_put_callback(callbacks, _key, _callback), do: callbacks
 
+  defp call_id(data), do: Map.get(data, :call_id) || Map.get(data, "call_id")
+
   defp chunk(data) do
     type = Map.get(data, :chunk_type, :content)
     text = Map.get(data, :delta, "")
     {normalize_type(type), text}
+  end
+
+  defp dispatch_chunk(agent_id, data) do
+    with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
+      data
+      |> chunk()
+      |> maybe_dispatch_delta(callbacks)
+    end
+
+    :ok
   end
 
   defp safe_status(agent_pid) do
@@ -111,12 +129,37 @@ defmodule Exy.Agent.Streaming do
     :ok
   end
 
+  defp delete_runtime_delta_calls(agent_id) do
+    if runtime_delta_table?(), do: :ets.match_delete(@runtime_delta_table, {{agent_id, :_}, :_})
+    :ok
+  end
+
+  defp mark_runtime_delta_call(_agent_id, call_id) when call_id in [nil, ""], do: :ok
+
+  defp mark_runtime_delta_call(agent_id, call_id) do
+    ensure_table!()
+    :ets.insert(@runtime_delta_table, {{agent_id, call_id}, true})
+    :ok
+  end
+
+  defp runtime_delta_call?(_agent_id, call_id) when call_id in [nil, ""], do: false
+
+  defp runtime_delta_call?(agent_id, call_id) do
+    runtime_delta_table?() and :ets.member(@runtime_delta_table, {agent_id, call_id})
+  end
+
   defp ensure_table! do
-    case :ets.whereis(@table) do
-      :undefined -> :ets.new(@table, [:named_table, :public, read_concurrency: true])
-      _table -> @table
+    ensure_named_table(@table)
+    ensure_named_table(@runtime_delta_table)
+  end
+
+  defp ensure_named_table(table) do
+    case :ets.whereis(table) do
+      :undefined -> :ets.new(table, [:named_table, :public, read_concurrency: true])
+      _table -> table
     end
   end
 
   defp table?, do: :ets.whereis(@table) != :undefined
+  defp runtime_delta_table?, do: :ets.whereis(@runtime_delta_table) != :undefined
 end

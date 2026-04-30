@@ -30,6 +30,41 @@ defmodule Exy.Agent.StreamingTest do
     refute_receive {:content, "ignored"}, 50
   end
 
+  test "plugin prefers ordered ReAct runtime deltas over derived LLM delta signals", %{
+    agent: agent,
+    agent_id: agent_id
+  } do
+    test_pid = self()
+    Exy.Agent.Streaming.register(agent, on_result: &send(test_pid, {:content, &1}))
+
+    runtime_signal = %{
+      type: "ai.react.runtime_event",
+      data: %{
+        event: %{
+          kind: :llm_delta,
+          llm_call_id: "call-1",
+          data: %{chunk_type: :content, delta: "program"}
+        }
+      }
+    }
+
+    duplicate_signal = %{
+      type: "ai.llm.delta",
+      data: %{call_id: "call-1", chunk_type: :content, delta: "program"}
+    }
+
+    assert {:ok, :continue} =
+             Exy.Agent.Streaming.Plugin.handle_signal(runtime_signal, %{agent: %{id: agent_id}})
+
+    assert {:ok, :continue} =
+             Exy.Agent.Streaming.Plugin.handle_signal(duplicate_signal, %{agent: %{id: agent_id}})
+
+    assert_receive {:content, "program"}
+    refute_receive {:content, "program"}, 50
+  after
+    Exy.Agent.Streaming.unregister(agent)
+  end
+
   test "plugin forwards Jido LLM delta signals", %{agent: agent, agent_id: agent_id} do
     test_pid = self()
     Exy.Agent.Streaming.register(agent, on_result: &send(test_pid, {:content, &1}))
