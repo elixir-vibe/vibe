@@ -34,20 +34,20 @@ defmodule Exy.Tool.Display.Eval do
   defp maybe_add_code(blocks, _code, _expanded?), do: blocks
 
   defp add_output_blocks(blocks, _tool, %{error: error}),
-    do: blocks ++ [{:error, to_string(error), []}]
+    do: blocks ++ [{:error, error |> to_string() |> trim_final_newline(), []}]
 
   defp add_output_blocks(blocks, %{output_parts: [_ | _] = parts}, _output) do
     blocks ++ (parts |> Enum.map(&normalize_part/1) |> Enum.reject(&is_nil/1))
   end
 
   defp add_output_blocks(blocks, %{output_format: :markdown}, output) when is_binary(output),
-    do: blocks ++ [{:markdown, output, truncation: :tail}]
+    do: blocks ++ [{:markdown, trim_final_newline(output), truncation: :tail}]
 
   defp add_output_blocks(blocks, %{output_format: :inspect}, output) when not is_nil(output),
     do: blocks ++ [{:inspect, format_value(output), truncation: :tail}]
 
   defp add_output_blocks(blocks, _tool, output) when is_binary(output),
-    do: blocks ++ [{:text, output, truncation: :tail}]
+    do: blocks ++ [{:text, trim_final_newline(output), truncation: :tail}]
 
   defp add_output_blocks(blocks, _tool, nil), do: blocks
 
@@ -55,11 +55,13 @@ defmodule Exy.Tool.Display.Eval do
     do: blocks ++ [{:inspect, format_value(output), truncation: :tail}]
 
   defp normalize_part(%{format: format, output: output}) when output not in [nil, ""] do
-    {normalize_format(format), format_value(output), truncation: :tail}
+    {normalize_format(format), output |> format_value() |> trim_final_newline(),
+     truncation: :tail}
   end
 
   defp normalize_part(%{"format" => format, "output" => output}) when output not in [nil, ""] do
-    {normalize_format(format), format_value(output), truncation: :tail}
+    {normalize_format(format), output |> format_value() |> trim_final_newline(),
+     truncation: :tail}
   end
 
   defp normalize_part(_part), do: nil
@@ -79,6 +81,14 @@ defmodule Exy.Tool.Display.Eval do
 
   defp format_value(value) when is_binary(value), do: value
   defp format_value(value), do: inspect(value, pretty: true, limit: 20)
+
+  defp trim_final_newline(text) when is_binary(text) do
+    cond do
+      String.ends_with?(text, "\r\n") -> String.slice(text, 0, byte_size(text) - 2)
+      String.ends_with?(text, "\n") -> String.slice(text, 0, byte_size(text) - 1)
+      true -> text
+    end
+  end
 
   defp code_from_tool(tool) do
     cond do

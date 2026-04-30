@@ -52,6 +52,25 @@ defmodule Exy.TUI.ToolWidgetTest do
     assert Enum.any?(plain, &String.contains?(&1, "/workspace"))
   end
 
+  test "eval rendering trims only one trailing newline" do
+    plain =
+      %{
+        id: "eval-final-newline",
+        name: :eval,
+        status: :ok,
+        args: %{code: "IO.puts(\"hello\")"},
+        output: "hello\n\n",
+        output_format: :text
+      }
+      |> TUI.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+      |> Enum.map(&String.trim_trailing/1)
+
+    assert "   hello" in plain
+    assert Enum.count(plain, &(&1 == "")) == 2
+  end
+
   test "eval shows timeout in header and unwraps output envelope" do
     plain =
       %{
