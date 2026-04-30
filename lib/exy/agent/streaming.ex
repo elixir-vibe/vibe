@@ -5,6 +5,8 @@ defmodule Exy.Agent.Streaming do
 
   alias Exy.UI.ToolEvent
 
+  require Exy.Debug
+
   @table :exy_agent_streaming_callbacks
   @runtime_delta_table :exy_agent_streaming_runtime_delta_calls
 
@@ -41,7 +43,20 @@ defmodule Exy.Agent.Streaming do
 
   @spec dispatch(String.t(), map()) :: :ok
   def dispatch(agent_id, data) when is_binary(agent_id) and is_map(data) do
-    unless runtime_delta_call?(agent_id, call_id(data)) do
+    call_id = call_id(data)
+    suppressed? = runtime_delta_call?(agent_id, call_id)
+
+    Exy.Debug.run do
+      Exy.Agent.Streaming.Trace.record(:derived_llm_delta, %{
+        agent_id: agent_id,
+        call_id: call_id,
+        chunk_type: Map.get(data, :chunk_type) || Map.get(data, "chunk_type"),
+        delta: Map.get(data, :delta) || Map.get(data, "delta") || "",
+        suppressed?: suppressed?
+      })
+    end
+
+    unless suppressed? do
       dispatch_chunk(agent_id, data)
     end
 

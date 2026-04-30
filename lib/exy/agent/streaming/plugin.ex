@@ -15,6 +15,8 @@ defmodule Exy.Agent.Streaming.Plugin do
 
   alias Exy.UI.ToolEvent
 
+  require Exy.Debug
+
   @impl true
   def handle_signal(
         %{type: "ai.react.runtime_event", data: %{event: event}},
@@ -24,10 +26,24 @@ defmodule Exy.Agent.Streaming.Plugin do
     case event_kind(event) do
       :llm_delta ->
         data = event_data(event)
+        call_id = event_field(event, :llm_call_id)
+
+        Exy.Debug.run do
+          Exy.Agent.Streaming.Trace.record(:react_runtime_delta, %{
+            agent_id: agent_id,
+            call_id: call_id,
+            runtime_seq: event_field(event, :seq),
+            run_id: event_field(event, :run_id),
+            request_id: event_field(event, :request_id),
+            iteration: event_field(event, :iteration),
+            chunk_type: event_field(data, :chunk_type, :content),
+            delta: event_field(data, :delta, "")
+          })
+        end
 
         Exy.Agent.Streaming.dispatch_runtime_delta(
           agent_id,
-          event_field(event, :llm_call_id),
+          call_id,
           %{
             call_id: event_field(event, :llm_call_id),
             chunk_type: event_field(data, :chunk_type, :content),

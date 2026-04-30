@@ -30,10 +30,11 @@ defmodule Exy.Agent.StreamingTest do
     refute_receive {:content, "ignored"}, 50
   end
 
-  test "plugin prefers ordered ReAct runtime deltas over derived LLM delta signals", %{
+  test "plugin traces and prefers ordered ReAct runtime deltas over derived LLM delta signals", %{
     agent: agent,
     agent_id: agent_id
   } do
+    trace_dir = trace_dir()
     test_pid = self()
     Exy.Agent.Streaming.register(agent, on_result: &send(test_pid, {:content, &1}))
 
@@ -61,8 +62,18 @@ defmodule Exy.Agent.StreamingTest do
 
     assert_receive {:content, "program"}
     refute_receive {:content, "program"}, 50
+
+    assert %{
+             runtime_text: "program",
+             derived_text: "",
+             ui_text: "",
+             final_text: ""
+           } = Exy.Agent.Streaming.Trace.compare!(trace_dir)
+
+    assert Enum.any?(Exy.Agent.Streaming.Trace.read!(trace_dir), &(&1["suppressed?"] == true))
   after
     Exy.Agent.Streaming.unregister(agent)
+    System.delete_env("EXY_STREAM_TRACE_DIR")
   end
 
   test "plugin forwards Jido LLM delta signals", %{agent: agent, agent_id: agent_id} do
@@ -177,5 +188,12 @@ defmodule Exy.Agent.StreamingTest do
                     }}
   after
     Exy.Agent.Streaming.unregister(agent)
+  end
+
+  defp trace_dir do
+    dir = Path.join(System.tmp_dir!(), "exy-stream-trace-#{System.unique_integer([:positive])}")
+    File.rm_rf!(dir)
+    System.put_env("EXY_STREAM_TRACE_DIR", dir)
+    dir
   end
 end

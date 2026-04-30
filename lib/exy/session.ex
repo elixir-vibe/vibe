@@ -11,6 +11,8 @@ defmodule Exy.Session do
   alias Exy.Session.PromptLifecycle
   alias Exy.UI.{Command, Event, PluginBridge, Reducer, SlashCommands, State}
 
+  require Exy.Debug
+
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})
 
   @spec start(keyword()) :: {:ok, pid()} | {:error, term()}
@@ -195,6 +197,13 @@ defmodule Exy.Session do
   def handle_info({:active_agent, _ref, _agent}, state), do: {:noreply, state}
 
   def handle_info({:assistant_delta, text}, state) do
+    Exy.Debug.run do
+      Exy.Agent.Streaming.Trace.record(:ui_assistant_delta, %{
+        session_id: state.state.session_id,
+        text: text
+      })
+    end
+
     {:noreply, emit(state, Event.new(:assistant_delta, state.state.session_id, %{text: text}))}
   end
 

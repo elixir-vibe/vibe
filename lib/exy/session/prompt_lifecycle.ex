@@ -4,6 +4,8 @@ defmodule Exy.Session.PromptLifecycle do
   alias Exy.Model.Usage
   alias Exy.UI.{Event, PromptRunner}
 
+  require Exy.Debug
+
   @type emit_fun :: (map(), Event.t() -> map())
 
   @spec llm_opts(keyword()) :: keyword()
@@ -130,12 +132,16 @@ defmodule Exy.Session.PromptLifecycle do
   end
 
   defp record_successful_response(%{state: %{streaming_message: %{}}} = state, response, emit) do
-    emit.(
-      state,
-      Event.new(:assistant_stream_finished, state.state.session_id, %{
-        text: response_text(response)
+    text = response_text(response)
+
+    Exy.Debug.run do
+      Exy.Agent.Streaming.Trace.record(:ui_stream_finished, %{
+        session_id: state.state.session_id,
+        text: text
       })
-    )
+    end
+
+    emit.(state, Event.new(:assistant_stream_finished, state.state.session_id, %{text: text}))
   end
 
   defp record_successful_response(state, response, emit) do
