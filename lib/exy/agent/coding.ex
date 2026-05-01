@@ -35,6 +35,7 @@ defmodule Exy.Agent.Coding do
     # but high enough that eval/Exy.Command own normal command timeouts.
     tool_timeout_ms: 86_400_000,
     stream_timeout_ms: 86_460_000,
+    observability: %{emit_llm_deltas?: true},
     plugins: [Exy.Agent.Streaming.Plugin],
     system_prompt: false
 end
