@@ -2,8 +2,15 @@ defmodule Exy.Eval do
   @moduledoc """
   Runtime Elixir evaluation with captured IO, timeouts, and session state.
 
-  This is Exy's primary power tool. Prefer adding helper modules callable from
-  here over growing the external tool list.
+  Eval is Exy's main control plane for agents. The model-facing `eval` tool can
+  call ordinary Elixir APIs inside the running Exy VM, which keeps the external
+  tool surface small while still exposing commands, telemetry, storage, plugins,
+  sessions, subagents, AST, and LSP helpers.
+
+  Use `run/2` when evaluation should persist variables, aliases, imports, and
+  requires for a session. Use `once/2` for one-off in-process evaluation that
+  should not keep state. Eval sessions preload aliases such as `Cmd` for
+  `Exy.Command` and `MD` for `Exy.MD`.
   """
 
   alias Exy.Eval.{Evaluator, Result}

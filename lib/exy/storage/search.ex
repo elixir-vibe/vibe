@@ -1,5 +1,11 @@
 defmodule Exy.Storage.Search do
-  @moduledoc "Internal implementation module."
+  @moduledoc """
+  Local FTS search over Exy sessions and curated memory.
+
+  Search uses SQLite FTS indexes managed by `Exy.Storage.FTS`. Results are
+  returned as structured `Exy.Storage.Search.Result` values so eval, CLI, TUI,
+  and future web clients can render the same semantic data.
+  """
   import Ecto.Query
 
   alias Exy.Storage.Schema.{MemoryFTS, Session, UIEventFTS}

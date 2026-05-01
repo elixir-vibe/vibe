@@ -7,6 +7,7 @@ defmodule Exy.CLI.Command do
   alias Exy.CLI.Output
 
   @commands [
+    Commands.Help,
     Commands.Server,
     Commands.New,
     Commands.Sessions,

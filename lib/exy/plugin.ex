@@ -3,8 +3,11 @@ defmodule Exy.Plugin do
   Behaviour for Exy plugins.
 
   Plugins are BEAM modules, not model-facing tools by default. They can observe
-  lifecycle events, veto/alter selected events, and expose actions/commands that
-  the host may choose to wire into CLI, TUI, or Jido.
+  lifecycle events, expose supervised children, register slash commands, provide
+  eval APIs, add model-facing actions, and update renderer-neutral UI state.
+
+  Use plugin APIs when a capability should be composable from `Exy.Eval`; expose
+  model-facing actions only when the model needs direct tool access.
   """
 
   @type event :: %{required(:type) => atom(), optional(atom()) => term()}

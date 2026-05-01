@@ -2,8 +2,13 @@ defmodule Exy.Command do
   @moduledoc """
   Supervised OS command execution for eval sessions and agents.
 
-  Use `run/2` for the common synchronous case and `start/2` when a command should
-  keep running in the background while its output remains inspectable.
+  Commands run under Exy's command supervisor instead of as untracked shell
+  calls. Use `run/2` for bounded synchronous commands and `start/2` for long
+  running jobs whose status, output, and cancellation should remain inspectable.
+
+  Eval sessions alias this module as `Cmd`. Prefer `Cmd.run/2` and `Cmd.start/2`
+  over raw `System.cmd/3` so command output can stream into the UI and cleanup is
+  tied to Exy's supervised runtime.
   """
 
   alias Exy.Command.{Job, Result, Worker}

@@ -8,7 +8,8 @@ defmodule Exy.UI.SlashCommands.Registry do
     Exy.UI.SlashCommands.Skill,
     Exy.UI.SlashCommands.Clear,
     Exy.UI.SlashCommands.Compact,
-    Exy.UI.SlashCommands.Commands
+    Exy.UI.SlashCommands.Commands,
+    Exy.UI.SlashCommands.Help
   ]
 
   @spec commands() :: [module()]

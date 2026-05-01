@@ -1,6 +1,11 @@
 defmodule Exy.Subagents do
   @moduledoc """
   Supervised subagent orchestration.
+
+  Subagents are Exy jobs, not detached prompts. LLM subagents create child Exy
+  sessions so their work can be listed, inspected, cancelled, awaited, and
+  attached from the CLI or TUI. Job and schedule metadata is persisted through
+  Exy's storage layer.
   """
 
   alias Exy.Subagents.{Manager, Scheduler}

@@ -1,6 +1,11 @@
 defmodule Exy.UI.State do
   @moduledoc """
   UI-neutral session state shared by terminal and LiveView renderers.
+
+  This struct is the semantic UI source of truth. Reducers update it from Exy UI
+  events and renderers adapt it to terminal widgets, LiveView assigns, or tests.
+  Keep terminal control sequences and renderer-specific details outside this
+  state so alternate clients can consume the same session model.
   """
 
   defstruct session_id: nil,

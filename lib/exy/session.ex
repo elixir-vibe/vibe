@@ -1,9 +1,14 @@
 defmodule Exy.Session do
   @moduledoc """
-  UI-facing session process shared by future TUI and LiveView adapters.
+  Server-owned Exy session process.
 
-  It owns UI-neutral state, accepts UI-neutral commands, emits events to
-  subscribers, and delegates model work through an injectable ask function.
+  A session owns semantic UI state, accepts UI-neutral commands, emits events to
+  subscribers, and delegates model work through an injectable ask function. TUI
+  and LiveView clients attach to the same session model instead of owning the
+  conversation themselves.
+
+  Sessions are supervised and can be looked up, attached, detached, searched,
+  and restored from durable SQLite-backed event history.
   """
 
   use GenServer
