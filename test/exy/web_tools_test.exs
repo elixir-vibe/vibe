@@ -45,6 +45,43 @@ defmodule Exy.WebToolsTest do
     assert result.text =~ ~s("ok": true)
   end
 
+  test "pipe helpers select, parse, and convert fetched HTML" do
+    result = %Exy.WebTools.FetchResult{
+      url: "https://example.test/page",
+      provider: :req,
+      status: 200,
+      content_type: "text/html",
+      format: :html,
+      text:
+        ~s(<html><body><main><h1>Title</h1><p>Hello <strong>web</strong>.</p></main></body></html>),
+      total_chars: 91
+    }
+
+    selected = Exy.WebTools.select!(result, "main")
+
+    assert selected.format == :html
+    assert selected.selector == "main"
+    assert selected.text =~ "<main>"
+    assert Exy.WebTools.parse_html!(selected) |> Floki.find("strong") |> Floki.text() == "web"
+    assert Exy.Markdown.to_markdown(selected) =~ "Hello **web**."
+
+    text = Exy.WebTools.as_text!(selected)
+
+    assert text.format == :text
+    assert text.text =~ "Title Hello web"
+  end
+
+  test "pipe helper truncates fetched content" do
+    result = %Exy.WebTools.FetchResult{text: "abcdef", total_chars: 6}
+
+    truncated = Exy.WebTools.truncate(result, chars: 3)
+
+    assert truncated.truncated?
+    assert truncated.total_chars == 6
+    assert truncated.text =~ "abc"
+    assert truncated.text =~ "3 chars omitted"
+  end
+
   test "fetch validates URLs" do
     assert {:error, :invalid_url} = Exy.WebTools.fetch("file:///etc/passwd")
   end

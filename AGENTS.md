@@ -15,6 +15,10 @@ This repository is part of the Elixir Vibe organization.
 - Keep non-immediate follow-up work in `todo/*.md`; use focused files such as `todo/streaming.md` instead of scattering TODOs through code or general notes.
 - Avoid static catalogs/registries when modules can be discovered idiomatically from compiled application modules or dependency availability, like Reach/Volt plugin detection.
 - Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
+- Web access should use the eval alias `Web` (`Exy.WebTools`) instead of vendor-specific clients. Keep providers behind `Exy.WebTools.SearchProvider` / `Exy.WebTools.FetchProvider`.
+- Put network/provider web concerns in request opts (`provider`, `timeout`, `headers`, search filters). Put local content/result transformations in pipeable helpers (`Web.select!/2`, `Web.as_text!/1`, `Web.truncate/2`, `Web.filter_domain/2`, `Web.take/2`).
+- Markdown rendering belongs to `Exy.Markdown` implementations and should be invoked with `MD.doc/1` or `MD.to_markdown/1`; do not add renderer-specific helpers such as `Web.markdown/1`.
+- Use `Web.parse_html!/1` as the Floki shortcut for advanced HTML traversal. Common extraction should use `Web.select!/2` so fetch metadata is preserved. Never parse HTML with regular expressions or ad-hoc string stripping.
 - Auth, plugins, runtimes, slash commands, and providers should be behaviour-based so future implementations can be added without changing callers.
 - `mix exy` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
 - Keep `exy sessions` human-friendly by default: recent useful sessions only. Put raw exhaustive listings behind `--all` and destructive cleanup behind explicit subcommands.

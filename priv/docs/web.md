@@ -14,15 +14,24 @@ Web.search!("OpenAI Responses WebSocket agent loop",
 |> MD.doc()
 ```
 
-Fetch defaults to a local `Req` provider:
+Fetch defaults to a local `Req` provider. Put network/provider concerns in request options:
 
 ```elixir
 Web.fetch!("https://hexdocs.pm/ecto/Ecto.html",
-  selector: "main",
-  format: :markdown
+  format: :html,
+  timeout: 30_000
 )
+```
+
+Put local content transformations in pipes:
+
+```elixir
+Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", format: :html)
+|> Web.select!("main")
 |> MD.doc()
 ```
+
+Markdown rendering belongs to the `Exy.Markdown` protocol. Use `MD.doc/1` or `MD.to_markdown/1`; do not add renderer-specific `Web.markdown/1` helpers.
 
 Supported fetch formats:
 
@@ -48,5 +57,16 @@ Web.fetch!("https://example.com", provider: :req)
 ```
 
 Provider-specific details are normalized into `Exy.WebTools.SearchResult`, `Exy.WebTools.SearchItem`, and `Exy.WebTools.FetchResult` structs with Markdown protocol rendering.
+
+Use `Web.parse_html!/1` when you need direct Floki traversal:
+
+```elixir
+Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", format: :html)
+|> Web.parse_html!()
+|> Floki.find("main h2")
+|> Enum.map(&Floki.text/1)
+```
+
+Common extraction should use `Web.select!/2` so selector metadata stays with the fetch result. Advanced traversal can use Floki directly after `Web.parse_html!/1`.
 
 Do not put secrets or authorization headers into telemetry metadata. Pass custom fetch headers only when required.

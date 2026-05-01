@@ -5,7 +5,7 @@ defmodule Exy.WebTools.Providers.ReqFetch do
 
   @behaviour Exy.WebTools.FetchProvider
 
-  alias Exy.WebTools.FetchResult
+  alias Exy.WebTools.{FetchResult, HTML}
 
   @max_response_size 5 * 1024 * 1024
   @max_output_chars 20_000
@@ -101,14 +101,8 @@ defmodule Exy.WebTools.Providers.ReqFetch do
 
   defp maybe_select(body, content_type, selector) do
     if html?(content_type) do
-      with {:ok, document} <- Floki.parse_document(body) do
-        selected = Floki.find(document, selector)
-
-        if selected == [] do
-          {:error, {:selector_not_found, selector}}
-        else
-          {:ok, Enum.map_join(selected, "\n\n", &Floki.raw_html/1), selector}
-        end
+      with {:ok, selected} <- HTML.select_html(body, selector) do
+        {:ok, selected, selector}
       end
     else
       {:ok, body, nil}
@@ -124,107 +118,26 @@ defmodule Exy.WebTools.Providers.ReqFetch do
 
   defp convert(body, content_type, :markdown) do
     cond do
-      json?(content_type) -> convert(body, content_type, :json)
-      html?(content_type) -> {:ok, html_to_markdown(body), :markdown}
-      true -> {:ok, body, :markdown}
+      json?(content_type) ->
+        convert(body, content_type, :json)
+
+      html?(content_type) ->
+        with {:ok, markdown} <- HTML.to_markdown(body), do: {:ok, markdown, :markdown}
+
+      true ->
+        {:ok, body, :markdown}
     end
   end
 
   defp convert(body, content_type, :text) do
     if html?(content_type) do
-      {:ok, html_to_text(body), :text}
+      with {:ok, text} <- HTML.to_text(body), do: {:ok, text, :text}
     else
       {:ok, body, :text}
     end
   end
 
   defp convert(body, _content_type, :html), do: {:ok, body, :html}
-
-  defp html_to_text(html) do
-    case Floki.parse_document(html) do
-      {:ok, document} -> document |> Floki.text(sep: " ") |> normalize_whitespace()
-      {:error, _reason} -> strip_tags(html)
-    end
-  end
-
-  defp html_to_markdown(html) do
-    case Floki.parse_document(html) do
-      {:ok, document} ->
-        document |> Enum.map(&node_to_markdown/1) |> IO.iodata_to_binary() |> cleanup_markdown()
-
-      {:error, _reason} ->
-        html_to_text(html)
-    end
-  end
-
-  defp node_to_markdown({"script", _attrs, _children}), do: []
-  defp node_to_markdown({"style", _attrs, _children}), do: []
-  defp node_to_markdown({"noscript", _attrs, _children}), do: []
-  defp node_to_markdown({"br", _attrs, _children}), do: "\n"
-  defp node_to_markdown({"hr", _attrs, _children}), do: "\n\n---\n\n"
-
-  defp node_to_markdown({tag, _attrs, children})
-       when tag in ["h1", "h2", "h3", "h4", "h5", "h6"] do
-    level = tag |> String.trim_leading("h") |> String.to_integer()
-    ["\n\n", String.duplicate("#", level), " ", children_to_markdown(children), "\n\n"]
-  end
-
-  defp node_to_markdown({tag, _attrs, children})
-       when tag in ["p", "div", "section", "article", "main", "header", "footer"] do
-    ["\n\n", children_to_markdown(children), "\n\n"]
-  end
-
-  defp node_to_markdown({tag, _attrs, children}) when tag in ["strong", "b"] do
-    ["**", children_to_markdown(children), "**"]
-  end
-
-  defp node_to_markdown({tag, _attrs, children}) when tag in ["em", "i"] do
-    ["*", children_to_markdown(children), "*"]
-  end
-
-  defp node_to_markdown({"code", _attrs, children}),
-    do: ["`", children_to_markdown(children), "`"]
-
-  defp node_to_markdown({"pre", _attrs, children}) do
-    ["\n\n```\n", children_to_markdown(children), "\n```\n\n"]
-  end
-
-  defp node_to_markdown({"a", attrs, children}) do
-    text = children_to_markdown(children) |> IO.iodata_to_binary() |> String.trim()
-    href = attr(attrs, "href")
-
-    if href in [nil, ""] do
-      text
-    else
-      ["[", text, "](", href, ")"]
-    end
-  end
-
-  defp node_to_markdown({"li", _attrs, children}),
-    do: ["- ", children_to_markdown(children), "\n"]
-
-  defp node_to_markdown({_tag, _attrs, children}), do: children_to_markdown(children)
-  defp node_to_markdown(text) when is_binary(text), do: text
-  defp node_to_markdown(_node), do: []
-
-  defp children_to_markdown(children), do: Enum.map(children, &node_to_markdown/1)
-
-  defp cleanup_markdown(markdown) do
-    markdown
-    |> String.replace(~r/[ \t]+\n/, "\n")
-    |> String.replace(~r/\n{3,}/, "\n\n")
-    |> String.trim()
-  end
-
-  defp strip_tags(html) do
-    html
-    |> String.replace(~r/<script[^>]*>[\s\S]*?<\/script>/i, " ")
-    |> String.replace(~r/<style[^>]*>[\s\S]*?<\/style>/i, " ")
-    |> String.replace(~r/<[^>]+>/, " ")
-    |> normalize_whitespace()
-  end
-
-  defp normalize_whitespace(text), do: text |> String.replace(~r/\s+/, " ") |> String.trim()
 
   defp truncate(text) do
     total_chars = String.length(text)
@@ -314,12 +227,4 @@ defmodule Exy.WebTools.Providers.ReqFetch do
     do:
       String.contains?(content_type, "application/pdf") or
         String.ends_with?(String.downcase(url), ".pdf")
-
-  defp attr(attrs, name) do
-    attrs
-    |> Enum.find_value(fn
-      {^name, value} -> value
-      _ -> nil
-    end)
-  end
 end

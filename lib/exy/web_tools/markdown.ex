@@ -104,7 +104,14 @@ defimpl Exy.Markdown, for: Exy.WebTools.FetchResult do
   end
 
   defp body(%{format: :markdown, text: text}), do: text || ""
-  defp body(%{format: :html, text: text}), do: ["```html\n", String.trim(text || ""), "\n```"]
+
+  defp body(%{format: :html, text: text}) do
+    case Exy.WebTools.HTML.to_markdown(text || "") do
+      {:ok, markdown} -> markdown
+      {:error, _reason} -> ["```html\n", String.trim(text || ""), "\n```"]
+    end
+  end
+
   defp body(%{format: :json, text: text}), do: ["```json\n", String.trim(text || ""), "\n```"]
   defp body(%{text: text}), do: ["```text\n", String.trim(text || ""), "\n```"]
 end

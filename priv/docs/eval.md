@@ -26,7 +26,7 @@ Exy.Session.list()
 Exy.Storage.status()
 Exy.Subagents.ask("Review this module", role: :reviewer)
 Web.search!("ecto sqlite fts", num_results: 5, highlights: true) |> MD.doc()
-Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", selector: "main", format: :markdown) |> MD.doc()
+Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", format: :html) |> Web.select!("main") |> MD.doc()
 ```
 
 `Web` is provider-neutral. Exa is the default search provider and a local `Req` implementation is the default fetch provider; future providers can implement the same behaviours without changing eval code.
