@@ -160,6 +160,8 @@ defmodule Exy.Web.Components do
   end
 
   defp message_text(%{text: text}) when is_binary(text), do: text
+  defp message_text(%{result: %{output: output}}) when is_binary(output), do: output
+  defp message_text(%{result: %{"output" => output}}) when is_binary(output), do: output
   defp message_text(%{result: result}), do: inspect(result, pretty: true, limit: 40)
   defp message_text(%{error: error}), do: error
   defp message_text(message), do: inspect(message, pretty: true, limit: 40)

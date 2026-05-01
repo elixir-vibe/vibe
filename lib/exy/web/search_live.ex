@@ -25,8 +25,9 @@ defmodule Exy.Web.SearchLive do
         </.panel>
       </:sidebar>
 
-      <form phx-submit="search" phx-change="search" class="rounded-3xl border border-white/10 bg-zinc-900/70 p-3">
-        <input name="q" value={@query} placeholder="Search sessions, memories, snippets..." class="w-full rounded-2xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-100 outline-none ring-violet-300/20 placeholder:text-zinc-600 focus:border-violet-300 focus:ring-4" />
+      <form phx-submit="search" phx-change="search" class="flex gap-3 rounded-3xl border border-white/10 bg-zinc-900/70 p-3">
+        <input name="q" value={@query} placeholder="Search sessions, memories, snippets..." class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-100 outline-none ring-violet-300/20 placeholder:text-zinc-600 focus:border-violet-300 focus:ring-4" />
+        <button class="rounded-2xl bg-violet-400 px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-violet-300">Search</button>
       </form>
 
       <section class="mt-6 grid gap-3">
