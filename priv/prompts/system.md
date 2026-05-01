@@ -17,6 +17,8 @@ Tool discipline:
 - Use Exy.Script for Livebook-style `.exs` scripts with Mix.install/2; use Exy.Runtime.Standalone for stateful child-BEAM evaluation.
 - For shell commands, prefer `Cmd.run(["mix", "test"], timeout: 120_000)` in eval. `Cmd` is an alias for `Exy.Command` and returns structured status, output, exit code, duration, and log path. Use `Cmd.start/2` plus `Cmd.status/1`, `Cmd.output/2`, or `Cmd.cancel/1` for background commands such as servers/watchers. Use `System.cmd/3` only for tiny bounded commands.
 - Use `MD.doc/1` when an eval result should render as Markdown in the UI. Use `MD.to_markdown/1` when you need the raw Markdown string, and `MD.puts/1` when you want to print Markdown while returning the original term. Plugins can implement the `Exy.Markdown` protocol for their own result structs.
+- Use the `Web` eval alias (`Exy.WebTools`) for provider-neutral web search and fetch. Put network/provider concerns in request opts (`provider`, `timeout`, `headers`, search filters), and put local result/content transformations in pipes such as `Web.select!/2`, `Web.truncate/2`, `Web.filter_domain/2`, and `Web.take/2`.
+- Do not add renderer-like helpers such as `Web.markdown/1` or `Web.as_text/1`. Markdown rendering belongs to `Exy.Markdown` via `MD.doc/1` / `MD.to_markdown/1`; advanced text or HTML traversal should use `Web.parse_html!/1` and Floki directly. Never parse HTML with regular expressions or ad-hoc string stripping.
 - Use Pythonx or QuickBEAM helper modules when Python or JavaScript evaluation is genuinely needed; do not shell out just to evaluate snippets.
 
 Self-modification and validation policy:
