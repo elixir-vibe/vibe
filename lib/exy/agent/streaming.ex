@@ -1,5 +1,12 @@
 defmodule Exy.Agent.Streaming do
-  @moduledoc false
+  @moduledoc """
+  Dispatches Jido streaming lifecycle signals to per-agent callbacks.
+
+  The server keeps transient callback registrations outside the agent process so
+  CLI, TUI, and session callers can attach stream handlers for one request. ReAct
+  runtime deltas are ordered by runtime sequence before dispatch because signal
+  arrival order is not a reliable transcript order.
+  """
 
   use GenServer
 
@@ -11,9 +18,17 @@ defmodule Exy.Agent.Streaming do
   @runtime_delta_table :exy_agent_streaming_runtime_delta_calls
   @runtime_order_key :runtime_order
 
+  @doc false
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
+  @doc """
+  Registers stream callbacks for a running Jido agent process.
+
+  Supported callbacks are `:on_result`, `:on_thinking`, `:on_tool_preparing`,
+  `:on_tool_started`, and `:on_tool_finished`. Empty callback registrations are
+  ignored so callers can pass optional streaming options directly.
+  """
   @spec register(pid(), keyword()) :: :ok
   def register(agent_pid, opts) when is_pid(agent_pid) do
     callbacks = callbacks(opts)
@@ -30,6 +45,9 @@ defmodule Exy.Agent.Streaming do
     end
   end
 
+  @doc """
+  Removes callbacks and runtime ordering state for an agent process.
+  """
   @spec unregister(pid()) :: :ok
   def unregister(agent_pid) when is_pid(agent_pid) do
     with true <- Process.alive?(agent_pid),
@@ -42,6 +60,12 @@ defmodule Exy.Agent.Streaming do
     :ok
   end
 
+  @doc """
+  Dispatches a derived `ai.llm.delta` signal unless runtime deltas own the call.
+
+  Derived deltas do not always carry ordering metadata, so they are suppressed
+  after a ReAct runtime delta is observed for the same `{agent_id, call_id}`.
+  """
   @spec dispatch(String.t(), map()) :: :ok
   def dispatch(agent_id, data) when is_binary(agent_id) and is_map(data) do
     call_id = call_id(data)
@@ -64,11 +88,20 @@ defmodule Exy.Agent.Streaming do
     :ok
   end
 
+  @doc """
+  Dispatches a ReAct runtime delta using its runtime sequence when present.
+
+  Out-of-order runtime arrivals are buffered per `{agent_id, call_id}` until the
+  missing sequence arrives or the call finishes.
+  """
   @spec dispatch_runtime_delta(String.t(), String.t() | nil, map()) :: :ok
   def dispatch_runtime_delta(agent_id, call_id, data) when is_binary(agent_id) and is_map(data) do
     GenServer.call(__MODULE__, {:runtime_delta, agent_id, call_id, runtime_seq(data), data})
   end
 
+  @doc """
+  Flushes and clears buffered runtime deltas for a completed LLM call.
+  """
   @spec finish_runtime_call(String.t(), String.t() | nil) :: :ok
   def finish_runtime_call(agent_id, call_id) when is_binary(agent_id) do
     GenServer.call(__MODULE__, {:finish_runtime_call, agent_id, call_id})
@@ -117,16 +150,25 @@ defmodule Exy.Agent.Streaming do
     end
   end
 
+  @doc """
+  Sends a streamed tool-parameter update to registered callbacks.
+  """
   @spec dispatch_tool_preparing(String.t(), ToolEvent.t()) :: :ok
   def dispatch_tool_preparing(agent_id, %ToolEvent{} = event) when is_binary(agent_id) do
     dispatch_tool(agent_id, :tool_preparing, event)
   end
 
+  @doc """
+  Sends a tool-start lifecycle event to registered callbacks.
+  """
   @spec dispatch_tool_started(String.t(), ToolEvent.t()) :: :ok
   def dispatch_tool_started(agent_id, %ToolEvent{} = event) when is_binary(agent_id) do
     dispatch_tool(agent_id, :tool_started, event)
   end
 
+  @doc """
+  Sends a terminal tool-result lifecycle event to registered callbacks.
+  """
   @spec dispatch_tool_finished(String.t(), ToolEvent.t()) :: :ok
   def dispatch_tool_finished(agent_id, %ToolEvent{} = event) when is_binary(agent_id) do
     dispatch_tool(agent_id, :tool_finished, event)

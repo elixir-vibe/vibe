@@ -1,4 +1,8 @@
 defimpl Exy.Markdown, for: Exy.Code.AST.Result do
+  @moduledoc """
+  Markdown rendering for structured AST search and replace results.
+  """
+
   def to_markdown(%{action: :replace} = result) do
     params = [
       "- Action: `replace`",

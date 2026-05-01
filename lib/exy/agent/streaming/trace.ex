@@ -1,8 +1,17 @@
 defmodule Exy.Agent.Streaming.Trace do
-  @moduledoc false
+  @moduledoc """
+  Opt-in NDJSON trace for assistant streaming order diagnostics.
+
+  Tracing is enabled only when `EXY_STREAM_TRACE_DIR` or
+  `config :exy, :stream_trace_dir` is set. The trace stores raw stream text for
+  debugging order bugs, so callers should enable it only for local diagnostics.
+  """
 
   @file_name "stream.ndjson"
 
+  @doc """
+  Appends one stream diagnostic event when tracing is enabled.
+  """
   def record(kind, attrs \\ %{}) when is_atom(kind) and is_map(attrs) do
     with dir when is_binary(dir) and dir != "" <- trace_dir(),
          :ok <- File.mkdir_p(dir),
@@ -13,6 +22,9 @@ defmodule Exy.Agent.Streaming.Trace do
     end
   end
 
+  @doc """
+  Reads trace events from `stream.ndjson` in arrival order.
+  """
   def read!(dir) when is_binary(dir) do
     dir
     |> Path.join(@file_name)
@@ -21,6 +33,12 @@ defmodule Exy.Agent.Streaming.Trace do
     |> Enum.map(&Jason.decode!/1)
   end
 
+  @doc """
+  Reconstructs comparable stream texts from a trace directory.
+
+  `:runtime_text` is ordered by runtime sequence, while
+  `:runtime_arrival_text` preserves file/arrival order for detecting inversions.
+  """
   def compare!(dir) when is_binary(dir) do
     events = read!(dir)
 

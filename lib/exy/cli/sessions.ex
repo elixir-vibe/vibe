@@ -101,7 +101,12 @@ defmodule Exy.CLI.Sessions do
     end
   end
 
-  @doc false
+  @doc """
+  Returns the newest live remote session id for explicit attach commands.
+
+  Plain `mix exy` intentionally starts a fresh session; this helper is limited to
+  attach-oriented CLI flows and tests that need to inspect server listings.
+  """
   def latest_live_remote_session_id do
     case server_call(&Exy.Remote.Session.list/0) do
       {:ok, sessions} -> latest_live_session_id(sessions)
@@ -111,7 +116,9 @@ defmodule Exy.CLI.Sessions do
     end
   end
 
-  @doc false
+  @doc """
+  Picks the first live session id from a remote session listing.
+  """
   def latest_live_session_id(sessions) when is_list(sessions) do
     sessions
     |> Enum.find(fn session -> Map.get(session, :live?, false) end)

@@ -1,4 +1,8 @@
 defimpl Exy.Markdown, for: Exy.Plugins.WebSearch.Result do
+  @moduledoc """
+  Markdown rendering for WebSearch plugin results.
+  """
+
   def to_markdown(result) do
     [
       "### ",

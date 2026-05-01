@@ -1,4 +1,8 @@
 defimpl Exy.Markdown, for: Exy.UI.ToolEvent do
+  @moduledoc """
+  Markdown rendering for semantic tool lifecycle events.
+  """
+
   def to_markdown(tool) do
     [
       "## Tool ",

@@ -1,4 +1,8 @@
 defimpl Exy.Markdown, for: Exy.Subagents.JobInfo do
+  @moduledoc """
+  Markdown rendering for subagent job summaries.
+  """
+
   def to_markdown(job) do
     [
       "## Subagent job ",
@@ -33,6 +37,10 @@ defimpl Exy.Markdown, for: Exy.Subagents.JobInfo do
 end
 
 defimpl Exy.Markdown, for: Exy.Subagents.Schedule do
+  @moduledoc """
+  Markdown rendering for scheduled subagent jobs.
+  """
+
   def to_markdown(schedule) do
     [
       "## Subagent schedule ",

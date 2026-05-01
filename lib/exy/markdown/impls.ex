@@ -1,4 +1,8 @@
 defimpl Exy.Markdown, for: Any do
+  @moduledoc """
+  Fallback Markdown rendering for terms without a dedicated protocol impl.
+  """
+
   def to_markdown(%{__struct__: module} = term) do
     if function_exported?(module, :to_markdown, 1) do
       module.to_markdown(term)
@@ -11,18 +15,34 @@ defimpl Exy.Markdown, for: Any do
 end
 
 defimpl Exy.Markdown, for: BitString do
+  @moduledoc """
+  Markdown rendering for strings and binaries.
+  """
+
   def to_markdown(text), do: text
 end
 
 defimpl Exy.Markdown, for: Atom do
+  @moduledoc """
+  Markdown rendering for atoms.
+  """
+
   def to_markdown(atom), do: "`#{inspect(atom)}`"
 end
 
 defimpl Exy.Markdown, for: Integer do
+  @moduledoc """
+  Markdown rendering for integers.
+  """
+
   def to_markdown(integer), do: to_string(integer)
 end
 
 defimpl Exy.Markdown, for: Float do
+  @moduledoc """
+  Markdown rendering for floats.
+  """
+
   def to_markdown(float), do: to_string(float)
 end
 
@@ -31,6 +51,10 @@ defimpl Exy.Markdown, for: Tuple do
 end
 
 defimpl Exy.Markdown, for: List do
+  @moduledoc """
+  Markdown rendering for lists as bullet lists.
+  """
+
   def to_markdown([]), do: ""
 
   def to_markdown(list) do
@@ -64,6 +88,10 @@ defimpl Exy.Markdown, for: List do
 end
 
 defimpl Exy.Markdown, for: Map do
+  @moduledoc """
+  Markdown rendering for maps.
+  """
+
   def to_markdown(map) do
     map
     |> Enum.sort_by(fn {key, _value} -> to_string(key) end)

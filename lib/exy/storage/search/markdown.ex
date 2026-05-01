@@ -1,4 +1,8 @@
 defimpl Exy.Markdown, for: Exy.Storage.Search.Result do
+  @moduledoc """
+  Markdown rendering for durable storage search hits.
+  """
+
   def to_markdown(result) do
     [
       "### ",

@@ -1,5 +1,11 @@
 defmodule Exy.Agent.Streaming.Plugin do
-  @moduledoc false
+  @moduledoc """
+  Jido plugin that translates runtime and tool signals into Exy stream callbacks.
+
+  ReAct runtime delta events are preferred over derived `ai.llm.delta` signals
+  because runtime events include sequence metadata. Tool lifecycle signals are
+  converted into `Exy.UI.ToolEvent` values for the TUI/session reducer.
+  """
 
   use Jido.Plugin,
     name: "exy_streaming",

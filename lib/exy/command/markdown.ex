@@ -1,4 +1,8 @@
 defimpl Exy.Markdown, for: Exy.Command.Result do
+  @moduledoc """
+  Markdown rendering for supervised command results.
+  """
+
   def to_markdown(result) do
     [
       "## Command ",
