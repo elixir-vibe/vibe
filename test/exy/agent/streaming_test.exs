@@ -65,15 +65,53 @@ defmodule Exy.Agent.StreamingTest do
 
     assert %{
              runtime_text: "program",
+             runtime_arrival_text: "program",
              derived_text: "",
              ui_text: "",
-             final_text: ""
+             final_text: "",
+             print_text: ""
            } = Exy.Agent.Streaming.Trace.compare!(trace_dir)
 
     assert Enum.any?(Exy.Agent.Streaming.Trace.read!(trace_dir), &(&1["suppressed?"] == true))
   after
     Exy.Agent.Streaming.unregister(agent)
     System.delete_env("EXY_STREAM_TRACE_DIR")
+  end
+
+  test "plugin orders ReAct runtime deltas by runtime sequence", %{
+    agent: agent,
+    agent_id: agent_id
+  } do
+    test_pid = self()
+    Exy.Agent.Streaming.register(agent, on_result: &send(test_pid, {:content, &1}))
+
+    context = %{agent: %{id: agent_id}}
+
+    signal = fn seq, delta ->
+      %{
+        type: "ai.react.worker.event",
+        data: %{
+          event: %{
+            seq: seq,
+            kind: :llm_delta,
+            llm_call_id: "call-ordered",
+            data: %{chunk_type: :content, delta: delta}
+          }
+        }
+      }
+    end
+
+    assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(signal.(1, "a"), context)
+    assert_receive {:content, "a"}
+
+    assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(signal.(3, "c"), context)
+    refute_receive {:content, "c"}, 50
+
+    assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(signal.(2, "b"), context)
+    assert_receive {:content, "b"}
+    assert_receive {:content, "c"}
+  after
+    Exy.Agent.Streaming.unregister(agent)
   end
 
   test "plugin forwards Jido LLM delta signals", %{agent: agent, agent_id: agent_id} do

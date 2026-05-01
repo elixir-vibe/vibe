@@ -25,7 +25,9 @@ defmodule Exy.Agent.Streaming.Trace do
     events = read!(dir)
 
     %{
-      runtime_text: joined(events, "react_runtime_delta"),
+      runtime_text:
+        events |> Enum.filter(&(&1["kind"] == "react_runtime_delta")) |> joined_by_runtime_seq(),
+      runtime_arrival_text: joined(events, "react_runtime_delta"),
       derived_text: events |> Enum.reject(& &1["suppressed?"]) |> joined("derived_llm_delta"),
       ui_text: joined(events, "ui_assistant_delta"),
       print_text: joined(events, "print_delta"),
@@ -41,6 +43,13 @@ defmodule Exy.Agent.Streaming.Trace do
     events
     |> Enum.filter(&(&1["kind"] == kind))
     |> Enum.map(&(&1["delta"] || &1["text"] || ""))
+    |> Enum.join("")
+  end
+
+  defp joined_by_runtime_seq(events) do
+    events
+    |> Enum.sort_by(fn event -> event["runtime_seq"] || 0 end)
+    |> Enum.map(&(&1["delta"] || ""))
     |> Enum.join("")
   end
 

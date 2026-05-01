@@ -9,6 +9,7 @@ defmodule Exy.Agent.Streaming do
 
   @table :exy_agent_streaming_callbacks
   @runtime_delta_table :exy_agent_streaming_runtime_delta_calls
+  @runtime_order_key :runtime_order
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -65,14 +66,55 @@ defmodule Exy.Agent.Streaming do
 
   @spec dispatch_runtime_delta(String.t(), String.t() | nil, map()) :: :ok
   def dispatch_runtime_delta(agent_id, call_id, data) when is_binary(agent_id) and is_map(data) do
-    mark_runtime_delta_call(agent_id, call_id)
-    dispatch_chunk(agent_id, data)
+    GenServer.call(__MODULE__, {:runtime_delta, agent_id, call_id, runtime_seq(data), data})
+  end
+
+  @spec finish_runtime_call(String.t(), String.t() | nil) :: :ok
+  def finish_runtime_call(agent_id, call_id) when is_binary(agent_id) do
+    GenServer.call(__MODULE__, {:finish_runtime_call, agent_id, call_id})
   end
 
   @impl true
   def init(_opts) do
     ensure_table!()
-    {:ok, %{}}
+    {:ok, %{@runtime_order_key => %{}}}
+  end
+
+  @impl true
+  def handle_call({:runtime_delta, agent_id, call_id, nil, data}, _from, state) do
+    mark_runtime_delta_call(agent_id, call_id)
+    dispatch_chunk(agent_id, data)
+    {:reply, :ok, state}
+  end
+
+  def handle_call({:runtime_delta, agent_id, call_id, seq, data}, _from, state)
+      when is_integer(seq) do
+    mark_runtime_delta_call(agent_id, call_id)
+    key = {agent_id, call_id}
+    order_state = Map.fetch!(state, @runtime_order_key)
+    entry = Map.get(order_state, key, %{next: seq, buffer: %{}})
+    entry = put_in(entry.buffer[seq], data)
+    {entry, dispatches} = flush_runtime_deltas(entry, [])
+    Enum.each(dispatches, &dispatch_chunk(agent_id, &1))
+    order_state = Map.put(order_state, key, entry)
+    {:reply, :ok, Map.put(state, @runtime_order_key, order_state)}
+  end
+
+  def handle_call({:finish_runtime_call, agent_id, call_id}, _from, state) do
+    key = {agent_id, call_id}
+    order_state = Map.fetch!(state, @runtime_order_key)
+
+    case Map.pop(order_state, key) do
+      {nil, order_state} ->
+        {:reply, :ok, Map.put(state, @runtime_order_key, order_state)}
+
+      {%{buffer: buffer}, order_state} ->
+        buffer
+        |> Enum.sort_by(fn {seq, _data} -> seq end)
+        |> Enum.each(fn {_seq, data} -> dispatch_chunk(agent_id, data) end)
+
+        {:reply, :ok, Map.put(state, @runtime_order_key, order_state)}
+    end
   end
 
   @spec dispatch_tool_preparing(String.t(), ToolEvent.t()) :: :ok
@@ -105,6 +147,18 @@ defmodule Exy.Agent.Streaming do
   defp maybe_put_callback(callbacks, _key, _callback), do: callbacks
 
   defp call_id(data), do: Map.get(data, :call_id) || Map.get(data, "call_id")
+  defp runtime_seq(data), do: Map.get(data, :runtime_seq) || Map.get(data, "runtime_seq")
+
+  defp flush_runtime_deltas(%{next: next, buffer: buffer} = entry, dispatches) do
+    case Map.pop(buffer, next) do
+      {nil, _buffer} ->
+        {entry, Enum.reverse(dispatches)}
+
+      {data, buffer} ->
+        %{entry | next: next + 1, buffer: buffer}
+        |> flush_runtime_deltas([data | dispatches])
+    end
+  end
 
   defp chunk(data) do
     type = Map.get(data, :chunk_type, :content)

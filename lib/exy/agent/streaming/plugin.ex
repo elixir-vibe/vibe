@@ -6,6 +6,7 @@ defmodule Exy.Agent.Streaming.Plugin do
     state_key: :exy_streaming,
     actions: [],
     signal_patterns: [
+      "ai.react.worker.event",
       "ai.react.runtime_event",
       "ai.llm.delta",
       "ai.tool.params",
@@ -19,10 +20,10 @@ defmodule Exy.Agent.Streaming.Plugin do
 
   @impl true
   def handle_signal(
-        %{type: "ai.react.runtime_event", data: %{event: event}},
+        %{type: type, data: %{event: event}},
         %{agent: %{id: agent_id}}
       )
-      when is_map(event) do
+      when type in ["ai.react.worker.event", "ai.react.runtime_event"] and is_map(event) do
     case event_kind(event) do
       :llm_delta ->
         data = event_data(event)
@@ -45,11 +46,15 @@ defmodule Exy.Agent.Streaming.Plugin do
           agent_id,
           call_id,
           %{
-            call_id: event_field(event, :llm_call_id),
+            call_id: call_id,
+            runtime_seq: event_field(event, :seq),
             chunk_type: event_field(data, :chunk_type, :content),
             delta: event_field(data, :delta, "")
           }
         )
+
+      :llm_completed ->
+        Exy.Agent.Streaming.finish_runtime_call(agent_id, event_field(event, :llm_call_id))
 
       _kind ->
         :ok
