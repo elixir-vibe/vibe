@@ -32,19 +32,50 @@ defmodule Exy.WebTools.Providers.ReqFetch do
       format = opts |> Keyword.get(:format, :markdown) |> normalize_format()
       headers = request_headers(format, Keyword.get(opts, :headers, %{}))
 
-      Req.get(
-        url,
-        Keyword.merge(Keyword.get(opts, :req_options, []),
-          headers: headers,
-          redirect: true,
-          receive_timeout: timeout
-        )
-      )
-      |> handle_response(url, format, opts)
+      context = %{
+        original_url: url,
+        format: format,
+        opts: opts,
+        headers: headers,
+        timeout: timeout,
+        max_redirects: opts |> Keyword.get(:max_redirects, 10) |> normalize_redirect_limit(),
+        redirect_count: 0
+      }
+
+      request(url, context)
     end
   end
 
-  defp handle_response({:ok, %{status: status} = response}, url, format, opts)
+  defp request(url, context) do
+    Req.get(
+      url,
+      Keyword.merge(Keyword.get(context.opts, :req_options, []),
+        headers: context.headers,
+        redirect: false,
+        receive_timeout: context.timeout
+      )
+    )
+    |> handle_response(url, context)
+  end
+
+  defp handle_response({:ok, %{status: status} = response}, current_url, context)
+       when status in [301, 302, 303, 307, 308] do
+    with {:ok, location} <- redirect_location(response),
+         true <- context.redirect_count < context.max_redirects do
+      next_url = current_url |> URI.parse() |> URI.merge(URI.parse(location)) |> URI.to_string()
+
+      request(next_url, %{
+        context
+        | headers: redirect_headers(context.headers, current_url, next_url),
+          redirect_count: context.redirect_count + 1
+      })
+    else
+      false -> {:error, {:too_many_redirects, context.max_redirects}}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp handle_response({:ok, %{status: status} = response}, current_url, context)
        when status in 200..299 do
     content_type = content_type(response)
     body = normalize_body(response.body, content_type)
@@ -54,22 +85,29 @@ defmodule Exy.WebTools.Providers.ReqFetch do
       size > @max_response_size ->
         {:error, {:response_too_large, size}}
 
-      pdf?(content_type, url) ->
+      pdf?(content_type, current_url) ->
         {:error, :pdf_fetch_not_supported}
 
       true ->
-        build_result(response, url, body, content_type, format, opts)
+        build_result(
+          response,
+          context.original_url,
+          current_url,
+          body,
+          content_type,
+          context.format,
+          context.opts
+        )
     end
   end
 
-  defp handle_response({:ok, %{status: status, body: body}}, _url, _format, _opts) do
+  defp handle_response({:ok, %{status: status, body: body}}, _current_url, _context) do
     {:error, %{status: status, body: body}}
   end
 
-  defp handle_response({:error, reason}, _url, _format, _opts), do: {:error, reason}
+  defp handle_response({:error, reason}, _current_url, _context), do: {:error, reason}
 
-  defp build_result(response, url, body, content_type, format, opts) do
-    final_url = response_url(response) || url
+  defp build_result(response, url, final_url, body, content_type, format, opts) do
     redirected? = final_url != url
 
     with {:ok, selected, selector} <-
@@ -164,6 +202,9 @@ defmodule Exy.WebTools.Providers.ReqFetch do
 
   defp normalize_timeout(_timeout), do: @default_timeout_ms
 
+  defp normalize_redirect_limit(limit) when is_integer(limit) and limit >= 0, do: limit
+  defp normalize_redirect_limit(_limit), do: 10
+
   defp normalize_format(format) when format in [:markdown, :text, :html, :json], do: format
 
   defp normalize_format(format) when format in ["markdown", "text", "html", "json"],
@@ -207,13 +248,30 @@ defmodule Exy.WebTools.Providers.ReqFetch do
     |> to_string()
   end
 
-  defp response_url(response) do
-    response
-    |> Map.get(:request)
+  defp redirect_location(response) do
+    response.headers
+    |> Map.get("location", [])
+    |> List.wrap()
+    |> List.first()
     |> case do
-      %{url: url} -> URI.to_string(url)
-      _ -> nil
+      nil -> {:error, :missing_redirect_location}
+      "" -> {:error, :missing_redirect_location}
+      location -> {:ok, location}
     end
+  end
+
+  defp redirect_headers(headers, from_url, to_url) do
+    if same_origin?(from_url, to_url) do
+      headers
+    else
+      Map.drop(headers, ["authorization", "cookie"])
+    end
+  end
+
+  defp same_origin?(left, right) do
+    left = URI.parse(left)
+    right = URI.parse(right)
+    {left.scheme, left.host, left.port} == {right.scheme, right.host, right.port}
   end
 
   defp html?(content_type), do: String.contains?(content_type, "text/html")

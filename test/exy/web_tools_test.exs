@@ -26,6 +26,32 @@ defmodule Exy.WebToolsTest do
     assert result.text =~ "Hello **web**."
   end
 
+  test "fetch follows redirects and records final URL" do
+    stub = {__MODULE__, :redirect_fetch}
+
+    Req.Test.stub(stub, fn conn ->
+      case conn.request_path do
+        "/redirect" ->
+          Req.Test.redirect(conn, to: "/final")
+
+        "/final" ->
+          conn
+          |> Plug.Conn.put_resp_header("content-type", "text/html")
+          |> Req.Test.html(~s(<html><body><h1>Final</h1></body></html>))
+      end
+    end)
+
+    assert {:ok, result} =
+             Exy.WebTools.fetch("https://example.test/redirect",
+               format: :html,
+               req_options: [plug: {Req.Test, stub}]
+             )
+
+    assert result.redirected?
+    assert result.final_url == "https://example.test/final"
+    assert result.text =~ "Final"
+  end
+
   test "fetch formats json" do
     stub = {__MODULE__, :json_fetch}
 
