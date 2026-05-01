@@ -14,50 +14,68 @@ defmodule Exy.Web.Components do
   attr(:subtitle, :string, default: nil)
   slot(:sidebar)
   slot(:actions)
+  slot(:mobile_meta)
   slot(:inner_block, required: true)
   slot(:inspector)
 
   def app_shell(assigns) do
     ~H"""
-    <div class="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_34rem),radial-gradient(circle_at_top_right,rgba(124,58,237,0.16),transparent_30rem)] bg-zinc-950 text-zinc-100">
-      <header class="sticky top-0 z-30 border-b border-white/10 bg-zinc-950/86 backdrop-blur">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
-          <div class="flex items-center gap-5">
-            <.link navigate={~p"/"} class="group flex items-center gap-3">
-              <span class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-orange-400 to-violet-500 font-black text-zinc-950 shadow-lg shadow-orange-950/30">E</span>
-              <span>
+    <div class="min-h-screen overflow-x-hidden bg-[#0d0c11] bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.10),transparent_30rem),radial-gradient(circle_at_top_right,rgba(124,58,237,0.10),transparent_28rem)] text-zinc-100">
+      <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-orange-300 focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-zinc-950">
+        Skip to content
+      </a>
+
+      <header class="sticky top-0 z-30 border-b border-white/10 bg-[#0d0c11]/92 backdrop-blur supports-[backdrop-filter]:bg-[#0d0c11]/78">
+        <div class="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div class="flex min-w-0 items-center gap-4">
+            <.link navigate={~p"/"} class="group flex min-w-0 items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">
+              <span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-orange-300 to-violet-500 font-black text-zinc-950 shadow-lg shadow-orange-950/20">E</span>
+              <span class="min-w-0">
                 <span class="block text-sm font-semibold tracking-wide text-white">Exy</span>
-                <span class="block text-[0.68rem] uppercase tracking-[0.24em] text-orange-200/75">BEAM agent console</span>
+                <span class="block truncate text-[0.66rem] uppercase tracking-[0.24em] text-orange-200/75">BEAM agent console</span>
               </span>
             </.link>
-            <nav class="hidden items-center gap-1 md:flex">
+
+            <nav class="hidden items-center gap-1 md:flex" aria-label="Primary">
               <.nav_item href={~p"/"} active={@current == :sessions}>Sessions</.nav_item>
               <.nav_item href={~p"/search"} active={@current == :search}>Search</.nav_item>
               <.nav_item href={~p"/runtime"} active={@current == :runtime}>Runtime</.nav_item>
             </nav>
           </div>
-          <div class="flex items-center gap-3">
+
+          <div class="flex shrink-0 items-center gap-2">
             {render_slot(@actions)}
           </div>
         </div>
+
+        <nav class="mx-auto flex max-w-[1500px] gap-1 overflow-x-auto px-4 pb-3 sm:px-6 md:hidden" aria-label="Primary mobile">
+          <.nav_item href={~p"/"} active={@current == :sessions}>Sessions</.nav_item>
+          <.nav_item href={~p"/search"} active={@current == :search}>Search</.nav_item>
+          <.nav_item href={~p"/runtime"} active={@current == :runtime}>Runtime</.nav_item>
+        </nav>
       </header>
 
-      <main class="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-[18rem_minmax(0,1fr)_20rem]">
+      <main id="main-content" class="exy-shell-grid mx-auto grid max-w-[1500px] grid-cols-1 gap-4 px-4 py-5 sm:px-6 lg:gap-6 lg:px-8">
         <aside :if={@sidebar != []} class="hidden min-w-0 lg:block">
-          {render_slot(@sidebar)}
+          <div class="sticky top-24 space-y-4">{render_slot(@sidebar)}</div>
         </aside>
 
         <section class="min-w-0">
-          <div class="mb-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300/80">Exy Web</p>
-            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">{@title}</h1>
-            <p :if={@subtitle} class="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">{@subtitle}</p>
+          <div class="mb-4 sm:mb-5">
+            <p class="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-300/80">Exy Web</p>
+            <h1 class="mt-2 text-balance text-3xl font-semibold tracking-tight text-white sm:text-4xl">{@title}</h1>
+            <p :if={@subtitle} class="mt-2 max-w-3xl break-words text-sm leading-6 text-zinc-400 [overflow-wrap:anywhere]">{@subtitle}</p>
           </div>
+
+          <div :if={@mobile_meta != []} class="mb-4 lg:hidden">
+            {render_slot(@mobile_meta)}
+          </div>
+
           {render_slot(@inner_block)}
         </section>
 
         <aside :if={@inspector != []} class="hidden min-w-0 xl:block">
-          {render_slot(@inspector)}
+          <div class="sticky top-24 space-y-4">{render_slot(@inspector)}</div>
         </aside>
       </main>
     </div>
@@ -71,7 +89,7 @@ defmodule Exy.Web.Components do
   def nav_item(assigns) do
     ~H"""
     <.link navigate={@href} class={[
-      "rounded-lg px-3 py-2 text-sm transition",
+      "shrink-0 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70",
       if(@active, do: "bg-white/10 text-white", else: "text-zinc-400 hover:bg-white/5 hover:text-zinc-100")
     ]}>
       {render_slot(@inner_block)}
@@ -85,9 +103,9 @@ defmodule Exy.Web.Components do
 
   def stat_card(assigns) do
     ~H"""
-    <div class="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-sm">
-      <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">{@label}</p>
-      <p class={["mt-2 text-2xl font-semibold", @accent]}>{@value}</p>
+    <div class="rounded-xl border border-white/10 bg-[#17151d]/80 p-4 shadow-sm">
+      <p class="text-[0.68rem] uppercase tracking-[0.18em] text-zinc-500">{@label}</p>
+      <p class={["mt-2 text-2xl font-semibold tabular-nums", @accent]}>{@value}</p>
     </div>
     """
   end
@@ -97,7 +115,7 @@ defmodule Exy.Web.Components do
   def status_badge(assigns) do
     ~H"""
     <span class={[
-      "rounded-full px-2.5 py-1 text-xs font-medium ring-1",
+      "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1",
       case to_string(@status) do
         "working" -> "bg-orange-400/10 text-orange-200 ring-orange-400/30"
         "error" -> "bg-red-400/10 text-red-200 ring-red-400/30"
@@ -111,18 +129,18 @@ defmodule Exy.Web.Components do
 
   def session_card(assigns) do
     ~H"""
-    <.link navigate={~p"/sessions/#{@session.id}"} class="group block rounded-2xl border border-white/10 bg-zinc-900/70 p-4 transition hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-zinc-900 hover:shadow-xl hover:shadow-orange-950/20">
-      <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-          <p class="truncate text-sm font-semibold text-zinc-100 group-hover:text-orange-100">{@session.first_message || @session.last_message_preview || "Untitled session"}</p>
+    <.link navigate={~p"/sessions/#{@session.id}"} class="group block rounded-xl border border-white/10 bg-[#17151d]/82 px-4 py-3 transition-colors hover:border-orange-300/50 hover:bg-[#1d1a24] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">
+      <div class="flex min-w-0 items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-semibold text-zinc-100 group-hover:text-orange-100">{session_title(@session)}</p>
           <p class="mt-1 truncate text-xs text-zinc-500">{@session.cwd || "unknown workspace"}</p>
         </div>
         <.status_badge status={@session.status} />
       </div>
-      <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-        <span class="font-mono text-zinc-400">{@session.id}</span>
+      <div class="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+        <span class="max-w-full truncate font-mono text-zinc-400">{@session.id}</span>
         <span>{@session.message_count || 0} messages</span>
-        <span :if={@session.model}>{@session.model}</span>
+        <span :if={@session.model} class="truncate">{@session.model}</span>
       </div>
     </.link>
     """
@@ -133,16 +151,16 @@ defmodule Exy.Web.Components do
   def message_card(assigns) do
     ~H"""
     <article class={[
-      "rounded-2xl border p-4 shadow-sm",
+      "max-w-full rounded-xl border px-4 py-3 shadow-sm sm:px-5 sm:py-4",
       if(@message.role == :user,
-        do: "ml-auto max-w-[82%] border-orange-300/25 bg-orange-300/12",
-        else: "border-white/10 bg-white/[0.035]"
+        do: "border-orange-300/25 bg-orange-300/10 sm:ml-auto sm:max-w-[88%]",
+        else: "border-white/10 bg-[#17151d]/82"
       )
     ]}>
-      <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+      <div class="mb-2 flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
         <span>{@message.role}</span>
       </div>
-      <pre class="whitespace-pre-wrap font-sans text-sm leading-6 text-zinc-100">{message_text(@message)}</pre>
+      <div class="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{message_text(@message)}</div>
     </article>
     """
   end
@@ -152,11 +170,15 @@ defmodule Exy.Web.Components do
 
   def panel(assigns) do
     ~H"""
-    <section class="rounded-2xl border border-white/10 bg-zinc-900/65 p-4">
+    <section class="rounded-xl border border-white/10 bg-[#17151d]/78 p-4 shadow-sm">
       <h2 class="mb-3 text-sm font-semibold text-zinc-100">{@title}</h2>
       {render_slot(@inner_block)}
     </section>
     """
+  end
+
+  defp session_title(session) do
+    session.first_message || session.last_message_preview || "Untitled session"
   end
 
   defp message_text(%{text: text}) when is_binary(text), do: text

@@ -53,7 +53,7 @@ defmodule Exy.Web.SessionLive do
   def render(%{error: _error} = assigns) do
     ~H"""
     <.app_shell current={:sessions} title="Session unavailable">
-      <div class="rounded-2xl border border-red-400/30 bg-red-400/10 p-6 text-red-100">{@error}</div>
+      <div class="rounded-xl border border-red-400/30 bg-red-400/10 p-6 text-red-100">{@error}</div>
     </.app_shell>
     """
   end
@@ -62,55 +62,73 @@ defmodule Exy.Web.SessionLive do
     ~H"""
     <.app_shell current={:sessions} title="Session workbench" subtitle={@session_id}>
       <:actions>
-        <.link navigate={~p"/"} class="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:border-orange-300/50 hover:text-orange-100">All sessions</.link>
+        <.link navigate={~p"/"} class="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-300 transition-colors hover:border-orange-300/50 hover:text-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70 sm:px-4">All sessions</.link>
       </:actions>
 
       <:sidebar>
         <.panel title="Session">
           <div class="space-y-3 text-sm text-zinc-300">
-            <div><p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Workspace</p><p class="mt-1 break-all font-mono text-xs">{@ui_state.cwd}</p></div>
-            <div class="flex justify-between gap-4"><span class="text-zinc-500">Model</span><span class="truncate">{@ui_state.model}</span></div>
+            <div><p class="text-[0.68rem] uppercase tracking-[0.2em] text-zinc-500">Workspace</p><p class="mt-1 break-words font-mono text-xs [overflow-wrap:anywhere]">{@ui_state.cwd}</p></div>
+            <div class="flex min-w-0 justify-between gap-4"><span class="text-zinc-500">Model</span><span class="truncate">{@ui_state.model}</span></div>
             <div class="flex justify-between gap-4"><span class="text-zinc-500">Status</span><.status_badge status={@ui_state.status} /></div>
-            <div class="flex justify-between gap-4"><span class="text-zinc-500">Messages</span><span>{length(@ui_state.messages)}</span></div>
+            <div class="flex justify-between gap-4"><span class="text-zinc-500">Messages</span><span class="tabular-nums">{length(@ui_state.messages)}</span></div>
           </div>
         </.panel>
       </:sidebar>
 
+      <:mobile_meta>
+        <div class="rounded-xl border border-white/10 bg-[#17151d]/78 p-3 text-xs text-zinc-400">
+          <div class="flex items-center justify-between gap-3">
+            <.status_badge status={@ui_state.status} />
+            <span class="tabular-nums">{length(@ui_state.messages)} messages</span>
+          </div>
+          <p class="mt-2 truncate">{@ui_state.model}</p>
+          <p class="mt-1 truncate font-mono">{@ui_state.cwd}</p>
+        </div>
+      </:mobile_meta>
+
       <:inspector>
         <.panel title="Runtime">
           <div class="space-y-3 text-sm text-zinc-300">
-            <div class="flex justify-between"><span class="text-zinc-500">Cursor</span><span>{@cursor}</span></div>
-            <div class="flex justify-between"><span class="text-zinc-500">Pending tools</span><span>{map_size(@ui_state.pending_tools || %{})}</span></div>
-            <div class="flex justify-between"><span class="text-zinc-500">Notifications</span><span>{length(@ui_state.notifications || [])}</span></div>
+            <div class="flex justify-between"><span class="text-zinc-500">Cursor</span><span class="tabular-nums">{@cursor}</span></div>
+            <div class="flex justify-between"><span class="text-zinc-500">Pending tools</span><span class="tabular-nums">{map_size(@ui_state.pending_tools || %{})}</span></div>
+            <div class="flex justify-between"><span class="text-zinc-500">Notifications</span><span class="tabular-nums">{length(@ui_state.notifications || [])}</span></div>
           </div>
         </.panel>
       </:inspector>
 
-      <section id="messages" phx-hook="ScrollBottom" class="min-h-[55vh] overflow-y-auto rounded-3xl border border-white/10 bg-zinc-950/55 p-4 shadow-2xl shadow-black/30">
-        <div class="flex flex-col gap-4">
-          <%= for message <- @ui_state.messages do %>
-            <.message_card message={message} />
-          <% end %>
+      <section class="overflow-hidden rounded-2xl border border-white/10 bg-[#121016]/92 shadow-2xl shadow-black/25">
+        <div id="messages" phx-hook="ScrollBottom" class="max-h-none min-h-[48vh] overflow-y-auto px-4 py-4 sm:px-5 lg:max-h-[calc(100vh-18rem)]">
+          <div class="flex flex-col gap-4">
+            <%= if @ui_state.messages == [] and is_nil(@ui_state.streaming_message) do %>
+              <div class="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-zinc-500">No messages yet. Start with the composer below.</div>
+            <% end %>
 
-          <%= if @ui_state.streaming_message do %>
-            <article class="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 p-4">
-              <div class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">assistant streaming</div>
-              <pre class="whitespace-pre-wrap font-sans text-sm leading-6 text-zinc-100">{@ui_state.streaming_message.text}</pre>
-            </article>
-          <% end %>
-        </div>
-      </section>
+            <%= for message <- @ui_state.messages do %>
+              <.message_card message={message} />
+            <% end %>
 
-      <form phx-submit="submit" class="mt-4 rounded-3xl border border-white/10 bg-zinc-900/70 p-3 shadow-xl shadow-black/20">
-        <textarea name="prompt" value={@prompt} rows="4" placeholder="Ask Exy. Use /help, /model, /sessions, or plain language." class="min-h-28 w-full resize-y rounded-2xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm leading-6 text-zinc-100 outline-none ring-orange-300/20 placeholder:text-zinc-600 focus:border-orange-300 focus:ring-4"></textarea>
-        <div class="mt-3 flex items-center justify-between gap-3">
-          <p class="text-xs text-zinc-500">Cmd/Ctrl+Enter support can be added as a LiveView hook; state stays server-owned.</p>
-          <div class="flex gap-2">
-            <button type="button" phx-click="cancel" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:border-red-300/50 hover:text-red-100">Cancel</button>
-            <button class="rounded-xl bg-orange-400 px-5 py-2 text-sm font-semibold text-zinc-950 shadow-lg shadow-orange-950/30 hover:bg-orange-300">Send</button>
+            <%= if @ui_state.streaming_message do %>
+              <article class="max-w-full rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 sm:px-5 sm:py-4">
+                <div class="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-cyan-200">assistant streaming</div>
+                <div class="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{@ui_state.streaming_message.text}</div>
+              </article>
+            <% end %>
           </div>
         </div>
-      </form>
+
+        <form phx-submit="submit" class="sticky bottom-0 border-t border-white/10 bg-[#17151d]/96 p-3 backdrop-blur sm:p-4">
+          <label class="sr-only" for="session-prompt">Message Exy</label>
+          <textarea id="session-prompt" name="prompt" value={@prompt} rows="4" autocomplete="off" placeholder="Ask Exy. Use /help, /model, /sessions, or plain language…" class="min-h-24 w-full resize-y rounded-xl border border-white/10 bg-[#0d0c11]/85 px-4 py-3 text-sm leading-6 text-zinc-100 ring-orange-300/20 placeholder:text-zinc-600 focus:border-orange-300 focus:outline-none focus:ring-4 sm:min-h-28"></textarea>
+          <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs leading-5 text-zinc-500">State stays server-owned. Cmd/Ctrl+Enter support can be added as a LiveView hook.</p>
+            <div class="flex justify-end gap-2">
+              <button type="button" phx-click="cancel" class="rounded-lg border border-white/10 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-red-300/50 hover:text-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60">Cancel</button>
+              <button class="rounded-lg bg-orange-400 px-5 py-2 text-sm font-semibold text-zinc-950 shadow-lg shadow-orange-950/20 transition-colors hover:bg-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">Send</button>
+            </div>
+          </div>
+        </form>
+      </section>
     </.app_shell>
     """
   end

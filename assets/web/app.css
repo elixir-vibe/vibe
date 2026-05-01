@@ -11,18 +11,39 @@
 
 html {
   min-height: 100%;
+  background: #0d0c11;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   min-height: 100%;
-  background: #09090b;
+  overflow-x: hidden;
+  background: #0d0c11;
+  -webkit-tap-highlight-color: rgba(251, 146, 60, 0.18);
+  touch-action: manipulation;
 }
 
 mark {
   border-radius: 0.25rem;
   background: rgba(251, 146, 60, 0.25);
   color: #fed7aa;
+}
+
+.exy-shell-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .exy-shell-grid {
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .exy-shell-grid {
+    grid-template-columns: 16rem minmax(44rem, 1fr) 20rem;
+  }
 }
 
 ::selection {

@@ -25,29 +25,30 @@ defmodule Exy.Web.SearchLive do
         </.panel>
       </:sidebar>
 
-      <form phx-submit="search" phx-change="search" class="flex gap-3 rounded-3xl border border-white/10 bg-zinc-900/70 p-3">
-        <input name="q" value={@query} placeholder="Search sessions, memories, snippets..." class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-100 outline-none ring-violet-300/20 placeholder:text-zinc-600 focus:border-violet-300 focus:ring-4" />
-        <button class="rounded-2xl bg-violet-400 px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-violet-300">Search</button>
+      <form phx-submit="search" phx-change="search" class="flex gap-3 rounded-xl border border-white/10 bg-[#17151d]/78 p-3">
+        <label class="sr-only" for="storage-search">Search sessions and memory</label>
+        <input id="storage-search" name="q" value={@query} autocomplete="off" placeholder="Search sessions, memories, snippets…" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#0d0c11]/85 px-4 py-3 text-sm text-zinc-100 ring-violet-300/20 placeholder:text-zinc-600 focus:border-violet-300 focus:outline-none focus:ring-4" />
+        <button class="rounded-xl bg-violet-400 px-5 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-violet-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70">Search</button>
       </form>
 
       <section class="mt-6 grid gap-3">
         <%= cond do %>
           <% @query == "" -> %>
-            <div class="rounded-2xl border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">Enter a query to search Exy history.</div>
+            <div class="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">Enter a query to search Exy history.</div>
           <% @error -> %>
-            <div class="rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100">{inspect(@error)}</div>
+            <div class="rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100">{inspect(@error)}</div>
           <% @results == [] -> %>
-            <div class="rounded-2xl border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">No matches.</div>
+            <div class="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">No matches.</div>
           <% true -> %>
             <%= for result <- @results do %>
-              <article class="rounded-2xl border border-white/10 bg-zinc-900/70 p-4">
+              <article class="rounded-xl border border-white/10 bg-[#17151d]/78 p-4">
                 <div class="flex items-center justify-between gap-4">
                   <p class="text-xs uppercase tracking-[0.2em] text-violet-300">{result.source}</p>
                   <span class="text-xs text-zinc-500">rank {Float.round(result.rank || 0.0, 3)}</span>
                 </div>
-                <p class="mt-3 text-sm leading-6 text-zinc-200">{Phoenix.HTML.raw(result.snippet || result.text || "")}</p>
+                <p class="mt-3 break-words text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere]">{Phoenix.HTML.raw(result.snippet || result.text || "")}</p>
                 <div class="mt-3 flex flex-wrap gap-3 text-xs text-zinc-500">
-                  <.link :if={result.source == :session} navigate={~p"/sessions/#{result.owner_id}"} class="font-mono text-orange-200 hover:text-orange-100">{result.owner_id}</.link>
+                  <.link :if={result.source == :session} navigate={~p"/sessions/#{result.owner_id}"} class="break-words font-mono text-orange-200 hover:text-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70 [overflow-wrap:anywhere]">{result.owner_id}</.link>
                   <span :if={result.source == :memory}>{result.owner_id}</span>
                   <span :if={result.at}>{result.at}</span>
                 </div>
