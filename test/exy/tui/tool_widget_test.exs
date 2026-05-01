@@ -34,6 +34,29 @@ defmodule Exy.TUI.ToolWidgetTest do
     refute Enum.any?(plain, &String.contains?(&1, "ok"))
   end
 
+  test "eval renders web markdown output in the tool widget" do
+    plain =
+      %{
+        id: "eval-web",
+        name: :eval,
+        status: :ok,
+        args: %{
+          code:
+            "Web.fetch!(\"https://example.com\", format: :html) |> Web.select!(\"h1\") |> MD.doc()"
+        },
+        output: "## Fetched URL\n\n**URL:** https://example.com\n\n# Example Domain",
+        output_format: :markdown,
+        expanded?: true
+      }
+      |> TUI.tool()
+      |> Widget.render(80, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "Fetched URL"))
+    assert Enum.any?(plain, &String.contains?(&1, "Example Domain"))
+    refute Enum.any?(plain, &String.contains?(&1, "```"))
+  end
+
   test "eval renders output when output_parts is empty" do
     plain =
       %{
