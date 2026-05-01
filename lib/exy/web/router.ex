@@ -15,6 +15,9 @@ defmodule Exy.Web.Router do
     pipe_through(:browser)
 
     live("/", SessionsLive, :index)
+    live("/sessions", SessionsLive, :index)
     live("/sessions/:id", SessionLive, :show)
+    live("/search", SearchLive, :index)
+    live("/runtime", RuntimeLive, :index)
   end
 end

@@ -2,10 +2,29 @@
 @source "../../lib";
 @source ".";
 
-html {
+:root {
   color-scheme: dark;
+  --exy-orange: #fb923c;
+  --exy-purple: #8b5cf6;
+  --exy-cyan: #22d3ee;
+}
+
+html {
+  min-height: 100%;
 }
 
 body {
   margin: 0;
+  min-height: 100%;
+  background: #09090b;
+}
+
+mark {
+  border-radius: 0.25rem;
+  background: rgba(251, 146, 60, 0.25);
+  color: #fed7aa;
+}
+
+::selection {
+  background: rgba(251, 146, 60, 0.35);
 }

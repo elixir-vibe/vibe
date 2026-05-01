@@ -6,7 +6,7 @@
     <meta name="csrf-token" content={get_csrf_token()} />
     <.live_title default="Exy">Exy</.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="module" src={~p"/assets/web/app.ts"}></script>
+    <script defer phx-track-static src={~p"/assets/app.js"}></script>
   </head>
   <body class="min-h-full bg-zinc-950 text-zinc-100 antialiased">
     {@inner_content}

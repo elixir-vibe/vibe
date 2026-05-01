@@ -1,5 +1,7 @@
 defmodule Exy.Web.SessionLive do
-  @moduledoc "Internal implementation module."
+  @moduledoc """
+  LiveView workbench for one Exy agent session.
+  """
   use Exy.Web, :live_view
 
   alias Exy.UI.{Reducer, ViewModel}
@@ -48,47 +50,68 @@ defmodule Exy.Web.SessionLive do
   end
 
   @impl true
+  def render(%{error: _error} = assigns) do
+    ~H"""
+    <.app_shell current={:sessions} title="Session unavailable">
+      <div class="rounded-2xl border border-red-400/30 bg-red-400/10 p-6 text-red-100">{@error}</div>
+    </.app_shell>
+    """
+  end
+
   def render(assigns) do
     ~H"""
-    <main class="mx-auto flex h-screen w-full max-w-6xl flex-col px-6 py-6">
-      <header class="mb-4 flex items-center justify-between border-b border-zinc-800 pb-4">
-        <div class="min-w-0">
-          <.link navigate={~p"/"} class="text-xs uppercase tracking-[0.25em] text-cyan-300/80">Exy</.link>
-          <h1 class="mt-1 truncate font-mono text-sm text-zinc-300">{@session_id}</h1>
-          <p class="mt-1 truncate text-xs text-zinc-500">{@ui_state.cwd}</p>
-        </div>
-        <div class="flex items-center gap-3 text-xs text-zinc-400">
-          <span class="rounded-full bg-zinc-900 px-3 py-1">{@ui_state.status}</span>
-          <span>{@ui_state.model}</span>
-        </div>
-      </header>
+    <.app_shell current={:sessions} title="Session workbench" subtitle={@session_id}>
+      <:actions>
+        <.link navigate={~p"/"} class="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:border-orange-300/50 hover:text-orange-100">All sessions</.link>
+      </:actions>
 
-      <section id="messages" phx-hook="ScrollBottom" class="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4">
+      <:sidebar>
+        <.panel title="Session">
+          <div class="space-y-3 text-sm text-zinc-300">
+            <div><p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Workspace</p><p class="mt-1 break-all font-mono text-xs">{@ui_state.cwd}</p></div>
+            <div class="flex justify-between gap-4"><span class="text-zinc-500">Model</span><span class="truncate">{@ui_state.model}</span></div>
+            <div class="flex justify-between gap-4"><span class="text-zinc-500">Status</span><.status_badge status={@ui_state.status} /></div>
+            <div class="flex justify-between gap-4"><span class="text-zinc-500">Messages</span><span>{length(@ui_state.messages)}</span></div>
+          </div>
+        </.panel>
+      </:sidebar>
+
+      <:inspector>
+        <.panel title="Runtime">
+          <div class="space-y-3 text-sm text-zinc-300">
+            <div class="flex justify-between"><span class="text-zinc-500">Cursor</span><span>{@cursor}</span></div>
+            <div class="flex justify-between"><span class="text-zinc-500">Pending tools</span><span>{map_size(@ui_state.pending_tools || %{})}</span></div>
+            <div class="flex justify-between"><span class="text-zinc-500">Notifications</span><span>{length(@ui_state.notifications || [])}</span></div>
+          </div>
+        </.panel>
+      </:inspector>
+
+      <section id="messages" phx-hook="ScrollBottom" class="min-h-[55vh] overflow-y-auto rounded-3xl border border-white/10 bg-zinc-950/55 p-4 shadow-2xl shadow-black/30">
         <div class="flex flex-col gap-4">
           <%= for message <- @ui_state.messages do %>
-            <article class={message_class(message.role)}>
-              <div class="mb-2 text-xs font-semibold uppercase tracking-wider opacity-70">{message.role}</div>
-              <pre class="whitespace-pre-wrap font-sans text-sm leading-6">{message_text(message)}</pre>
-            </article>
+            <.message_card message={message} />
           <% end %>
 
           <%= if @ui_state.streaming_message do %>
-            <article class="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4">
-              <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-cyan-300">assistant streaming</div>
-              <pre class="whitespace-pre-wrap font-sans text-sm leading-6">{@ui_state.streaming_message.text}</pre>
+            <article class="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 p-4">
+              <div class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">assistant streaming</div>
+              <pre class="whitespace-pre-wrap font-sans text-sm leading-6 text-zinc-100">{@ui_state.streaming_message.text}</pre>
             </article>
           <% end %>
         </div>
       </section>
 
-      <form phx-submit="submit" class="mt-4 flex gap-3">
-        <textarea name="prompt" value={@prompt} rows="3" placeholder="Ask Exy..." class="min-h-24 flex-1 resize-none rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none ring-cyan-400/30 placeholder:text-zinc-600 focus:border-cyan-400 focus:ring-4"></textarea>
-        <div class="flex w-28 flex-col gap-2">
-          <button class="rounded-xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-cyan-300">Send</button>
-          <button type="button" phx-click="cancel" class="rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-900">Cancel</button>
+      <form phx-submit="submit" class="mt-4 rounded-3xl border border-white/10 bg-zinc-900/70 p-3 shadow-xl shadow-black/20">
+        <textarea name="prompt" value={@prompt} rows="4" placeholder="Ask Exy. Use /help, /model, /sessions, or plain language." class="min-h-28 w-full resize-y rounded-2xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm leading-6 text-zinc-100 outline-none ring-orange-300/20 placeholder:text-zinc-600 focus:border-orange-300 focus:ring-4"></textarea>
+        <div class="mt-3 flex items-center justify-between gap-3">
+          <p class="text-xs text-zinc-500">Cmd/Ctrl+Enter support can be added as a LiveView hook; state stays server-owned.</p>
+          <div class="flex gap-2">
+            <button type="button" phx-click="cancel" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:border-red-300/50 hover:text-red-100">Cancel</button>
+            <button class="rounded-xl bg-orange-400 px-5 py-2 text-sm font-semibold text-zinc-950 shadow-lg shadow-orange-950/30 hover:bg-orange-300">Send</button>
+          </div>
         </div>
       </form>
-    </main>
+    </.app_shell>
     """
   end
 
@@ -108,17 +131,4 @@ defmodule Exy.Web.SessionLive do
   defp assign_state(socket, state, cursor) do
     assign(socket, ui_state: state, view_model: ViewModel.from_state(state), cursor: cursor)
   end
-
-  defp message_class(:user), do: "self-end rounded-2xl bg-cyan-400 px-4 py-3 text-zinc-950"
-
-  defp message_class(:assistant),
-    do: "rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-zinc-100"
-
-  defp message_class(_role),
-    do: "rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-300"
-
-  defp message_text(%{text: text}) when is_binary(text), do: text
-  defp message_text(%{result: result}), do: inspect(result, pretty: true, limit: 40)
-  defp message_text(%{error: error}), do: error
-  defp message_text(message), do: inspect(message, pretty: true, limit: 40)
 end

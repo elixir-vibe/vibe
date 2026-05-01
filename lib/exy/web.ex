@@ -44,6 +44,7 @@ defmodule Exy.Web do
     quote do
       import Phoenix.HTML
       alias Exy.Web.Layouts
+      import Exy.Web.Components
       unquote(verified_routes())
     end
   end

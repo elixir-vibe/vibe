@@ -38,4 +38,18 @@ defmodule Exy.Web.SessionLiveTest do
     assert html_response(conn, 200) =~ "web-live-session"
     assert html_response(conn, 200) =~ "Ask Exy"
   end
+
+  test "search page renders" do
+    conn = build_conn() |> get("/search")
+
+    assert html_response(conn, 200) =~ "Search"
+    assert html_response(conn, 200) =~ "Search sessions"
+  end
+
+  test "runtime page renders" do
+    conn = build_conn() |> get("/runtime")
+
+    assert html_response(conn, 200) =~ "Runtime"
+    assert html_response(conn, 200) =~ "Top processes"
+  end
 end

@@ -3,7 +3,28 @@ defmodule Exy.Web.Assets do
   @spec ensure_built!() :: :ok
   def ensure_built! do
     build_tailwind!()
+    build_javascript!()
     :ok
+  end
+
+  defp build_javascript! do
+    if Code.ensure_loaded?(Volt.Builder) do
+      outdir = Application.app_dir(:exy, "priv/static/assets")
+      File.mkdir_p!(outdir)
+
+      case Volt.Builder.build(
+             entry: "assets/web/app.ts",
+             outdir: outdir,
+             name: "app",
+             hash: false,
+             sourcemap: false,
+             format: :iife,
+             resolve_dirs: ["deps"]
+           ) do
+        {:ok, _result} -> :ok
+        {:error, reason} -> raise "failed to build web JavaScript with Volt: #{inspect(reason)}"
+      end
+    end
   end
 
   defp build_tailwind! do
