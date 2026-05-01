@@ -86,4 +86,29 @@ defmodule Exy.Web.SessionLiveTest do
     assert html =~ "Inspect"
     assert html =~ "2"
   end
+
+  test "session page tolerates tool renderers with no output lines" do
+    session_id = "web-empty-render-tool-session"
+
+    Exy.Session.Store.append_ui_events([
+      {1,
+       Event.new(
+         :tool_started,
+         session_id,
+         ToolEvent.started(id: "tool-empty", name: :lsp, args: %{action: :hover})
+       )},
+      {2,
+       Event.new(
+         :tool_finished,
+         session_id,
+         ToolEvent.finished(id: "tool-empty", name: :lsp, args: %{action: :hover}, output: nil)
+       )}
+    ])
+
+    conn = build_conn() |> get("/sessions/#{session_id}")
+    html = html_response(conn, 200)
+
+    assert html =~ "Lsp"
+    assert html =~ "No tool output."
+  end
 end

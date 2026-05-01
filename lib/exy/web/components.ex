@@ -301,7 +301,11 @@ defmodule Exy.Web.Components do
     %{
       kind: :text,
       label: "Output",
-      text: lines |> Enum.map_join("\n", &display_text/1) |> truncate_text(truncate?),
+      text:
+        lines
+        |> rendered_lines()
+        |> Enum.map_join("\n", &display_text/1)
+        |> truncate_text(truncate?),
       mono?: true
     }
   end
@@ -309,6 +313,7 @@ defmodule Exy.Web.Components do
   defp block_body({:render, render, _opts}, truncate?) when is_function(render, 2) do
     text =
       render.(96, Exy.TUI.Theme.dark())
+      |> rendered_lines()
       |> Enum.map_join("\n", &display_text/1)
       |> truncate_text(truncate?)
 
@@ -323,6 +328,10 @@ defmodule Exy.Web.Components do
       mono?: true
     }
   end
+
+  defp rendered_lines(nil), do: []
+  defp rendered_lines(lines) when is_list(lines), do: lines
+  defp rendered_lines(line), do: [line]
 
   defp display_text(nil), do: nil
 
