@@ -40,7 +40,7 @@ defmodule Exy.Web.RuntimeLive do
       <section class="mt-6 grid gap-6 xl:grid-cols-2">
         <.panel title="Top processes by memory">
           <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-xs text-zinc-400">
+            <table class="min-w-[34rem] text-left text-xs text-zinc-400">
               <thead class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"><tr><th class="py-2">#</th><th>PID</th><th>Name</th><th>Memory</th><th>Queue</th></tr></thead>
               <tbody class="divide-y divide-white/5">
                 <tr :for={process <- @top}>
@@ -57,7 +57,7 @@ defmodule Exy.Web.RuntimeLive do
 
         <.panel title="Largest ETS tables">
           <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-xs text-zinc-400">
+            <table class="min-w-[28rem] text-left text-xs text-zinc-400">
               <thead class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"><tr><th class="py-2">Name</th><th>Size</th><th>Memory</th></tr></thead>
               <tbody class="divide-y divide-white/5">
                 <tr :for={table <- @ets}>

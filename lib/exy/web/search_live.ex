@@ -25,10 +25,10 @@ defmodule Exy.Web.SearchLive do
         </.panel>
       </:sidebar>
 
-      <form phx-submit="search" phx-change="search" class="flex gap-3 rounded-xl border border-white/10 bg-[#17151d]/78 p-3">
+      <form phx-submit="search" phx-change="search" class="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#17151d]/78 p-3 sm:flex-row">
         <label class="sr-only" for="storage-search">Search sessions and memory</label>
         <input id="storage-search" name="q" value={@query} autocomplete="off" placeholder="Search sessions, memories, snippets…" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#0d0c11]/85 px-4 py-3 text-sm text-zinc-100 ring-violet-300/20 placeholder:text-zinc-600 focus:border-violet-300 focus:outline-none focus:ring-4" />
-        <button class="rounded-xl bg-violet-400 px-5 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-violet-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70">Search</button>
+        <button class="rounded-xl bg-violet-400 px-5 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-violet-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70 sm:w-auto">Search</button>
       </form>
 
       <section class="mt-6 grid gap-3">
