@@ -154,6 +154,21 @@ defmodule Exy.Web.Components do
     """
   end
 
+  def message_card(%{message: %{role: :legacy_tool}} = assigns) do
+    ~H"""
+    <article class="overflow-hidden rounded-xl border border-violet-300/20 bg-[#15131b]/92 shadow-sm">
+      <header class="border-b border-white/10 bg-white/[0.025] px-4 py-3 sm:px-5">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
+          <span class="grid h-6 w-6 place-items-center rounded-md bg-violet-400/15 text-xs text-violet-200 ring-1 ring-violet-300/25">◆</span>
+          <h3 class="break-words text-sm font-semibold text-zinc-100 [overflow-wrap:anywhere]">{legacy_tool_title(@message.text)}</h3>
+          <.status_badge status={legacy_tool_status(@message.text)} />
+        </div>
+      </header>
+      <pre :if={@message.output_lines != []} class="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-xs leading-5 text-zinc-200 [overflow-wrap:anywhere] sm:px-5">{@message.output_lines |> Enum.reverse() |> Enum.join("\n")}</pre>
+    </article>
+    """
+  end
+
   def message_card(assigns) do
     ~H"""
     <article class={[
@@ -247,6 +262,24 @@ defmodule Exy.Web.Components do
   defp tool_name(name) when is_atom(name), do: name |> Atom.to_string() |> String.capitalize()
   defp tool_name(name) when is_binary(name), do: String.capitalize(name)
   defp tool_name(_name), do: "Tool"
+
+  defp legacy_tool_title(text) do
+    text
+    |> String.trim_leading("◆ ")
+    |> String.trim()
+    |> String.trim_trailing("✓")
+    |> String.trim_trailing("×")
+    |> String.trim_trailing("…")
+    |> String.trim()
+  end
+
+  defp legacy_tool_status(text) do
+    cond do
+      String.ends_with?(String.trim(text), "✓") -> :ok
+      String.ends_with?(String.trim(text), "×") -> :error
+      true -> :running
+    end
+  end
 
   defp block_body({:markdown, text, _opts}, truncate?) do
     text = text |> display_text() |> truncate_text(truncate?)

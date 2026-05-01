@@ -87,6 +87,23 @@ defmodule Exy.Web.SessionLiveTest do
     assert html =~ "2"
   end
 
+  test "session page groups legacy TUI tool transcripts" do
+    session_id = "web-legacy-tool-session"
+
+    Exy.Session.Store.append_ui_events([
+      {1, Event.new(:user_message_added, session_id, %{text: "◆ eval • File.cwd!()  ✓"})},
+      {2, Event.new(:user_message_added, session_id, %{text: "\"/tmp\""})},
+      {3, Event.new(:assistant_message_added, session_id, %{text: "Done."})}
+    ])
+
+    conn = build_conn() |> get("/sessions/#{session_id}")
+    html = html_response(conn, 200)
+
+    assert html =~ "eval • File.cwd!()"
+    assert html =~ "ok"
+    assert html =~ ~s(&quot;/tmp&quot;)
+  end
+
   test "session page tolerates tool renderers with no output lines" do
     session_id = "web-empty-render-tool-session"
 

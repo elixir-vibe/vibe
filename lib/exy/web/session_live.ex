@@ -104,7 +104,7 @@ defmodule Exy.Web.SessionLive do
               <div class="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-zinc-500">No messages yet. Start with the composer below.</div>
             <% end %>
 
-            <%= for message <- @ui_state.messages do %>
+            <%= for message <- display_messages(@ui_state.messages) do %>
               <.message_card message={message} />
             <% end %>
 
@@ -131,6 +131,41 @@ defmodule Exy.Web.SessionLive do
       </section>
     </.app_shell>
     """
+  end
+
+  defp display_messages(messages) do
+    messages
+    |> Enum.reduce([], fn message, acc ->
+      cond do
+        legacy_tool_start?(message) ->
+          [legacy_tool_message(message) | acc]
+
+        legacy_tool_output?(message, acc) ->
+          [append_legacy_tool_output(hd(acc), message) | tl(acc)]
+
+        true ->
+          [message | acc]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp legacy_tool_start?(%{role: :user, text: "◆ " <> _rest}), do: true
+  defp legacy_tool_start?(_message), do: false
+
+  defp legacy_tool_output?(%{role: :user, text: _text}, [%{role: :legacy_tool} | _rest]), do: true
+  defp legacy_tool_output?(_message, _acc), do: false
+
+  defp append_legacy_tool_output(tool, message) do
+    Map.update!(tool, :output_lines, &[Map.get(message, :text, "") | &1])
+  end
+
+  defp legacy_tool_message(%{text: text, at: at}) do
+    %{role: :legacy_tool, text: text, output_lines: [], at: at}
+  end
+
+  defp legacy_tool_message(%{text: text}) do
+    %{role: :legacy_tool, text: text, output_lines: []}
   end
 
   defp get_or_start_session(session_id) do
