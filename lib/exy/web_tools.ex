@@ -69,27 +69,6 @@ defmodule Exy.WebTools do
     end
   end
 
-  @doc "Converts fetched HTML content to plain text while preserving fetch metadata."
-  @spec as_text(FetchResult.t()) :: {:ok, FetchResult.t()} | {:error, term()}
-  def as_text(%FetchResult{format: :html} = result) do
-    with {:ok, text} <- HTML.to_text(result) do
-      {:ok, update_fetch_text(result, text, format: :text)}
-    end
-  end
-
-  def as_text(%FetchResult{} = result) do
-    {:ok, update_fetch_text(result, result.text || "", format: :text)}
-  end
-
-  @doc "Converts fetched content to plain text while preserving fetch metadata, raising on failure."
-  @spec as_text!(FetchResult.t()) :: FetchResult.t()
-  def as_text!(%FetchResult{} = result) do
-    case as_text(result) do
-      {:ok, text_result} -> text_result
-      {:error, reason} -> raise "web text conversion failed: #{inspect(reason)}"
-    end
-  end
-
   @doc "Truncates fetched content to a character limit while preserving metadata."
   @spec truncate(FetchResult.t(), keyword()) :: FetchResult.t()
   def truncate(%FetchResult{} = result, opts \\ []) do

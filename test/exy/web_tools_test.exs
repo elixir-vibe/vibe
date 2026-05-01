@@ -65,10 +65,11 @@ defmodule Exy.WebToolsTest do
     assert Exy.WebTools.parse_html!(selected) |> Floki.find("strong") |> Floki.text() == "web"
     assert Exy.Markdown.to_markdown(selected) =~ "Hello **web**."
 
-    text = Exy.WebTools.as_text!(selected)
+    text = selected |> Exy.WebTools.parse_html!() |> Floki.text(sep: " ")
 
-    assert text.format == :text
-    assert text.text =~ "Title Hello web"
+    assert text =~ "Title"
+    assert text =~ "Hello"
+    assert text =~ "web"
   end
 
   test "pipe helper truncates fetched content" do
