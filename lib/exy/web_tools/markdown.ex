@@ -71,10 +71,8 @@ defimpl Exy.Markdown, for: Exy.WebTools.FetchResult do
 
   def to_markdown(result) do
     [
-      "## Fetched URL\n\n",
-      "**URL:** ",
-      result.url,
-      final_url(result),
+      "## ",
+      title(result),
       "\n\n",
       metadata(result),
       "\n\n",
@@ -84,23 +82,80 @@ defimpl Exy.Markdown, for: Exy.WebTools.FetchResult do
     |> String.trim()
   end
 
-  defp final_url(%{redirected?: true, final_url: final_url}) when is_binary(final_url),
-    do: ["\n**Final URL:** ", final_url]
+  defp title(%{selector: selector}) when is_binary(selector) and selector != "",
+    do: "Fetched selection"
 
-  defp final_url(_result), do: []
+  defp title(_result), do: "Fetched page"
 
   defp metadata(result) do
     [
-      "**Status:** #{result.status || "unknown"}",
-      "**Content-Type:** #{result.content_type || "unknown"}",
-      "**Format:** #{result.format}",
-      "**Size:** #{result.size_bytes} bytes",
-      "**Characters:** #{result.total_chars}",
-      if(result.truncated?, do: "**Truncated:** true", else: nil),
-      if(result.selector, do: "**Selector:** `#{result.selector}`", else: nil)
+      url_line(result),
+      compact_status(result),
+      compact_size(result),
+      selector(result),
+      if(result.truncated?, do: "truncated", else: nil)
     ]
-    |> Enum.reject(&is_nil/1)
+    |> Enum.reject(&(&1 in [nil, ""]))
     |> Enum.join(" · ")
+  end
+
+  defp url_line(%{redirected?: true, url: url, final_url: final_url}) when is_binary(final_url),
+    do: "`#{final_url}` ← `#{url}`"
+
+  defp url_line(%{url: url}), do: "`#{url}`"
+
+  defp compact_status(result) do
+    [
+      result.status,
+      result.format,
+      meaningful_content_type(result.format, result.content_type)
+    ]
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.join(" · ")
+  end
+
+  defp compact_size(result) do
+    cond do
+      result.total_chars && result.size_bytes ->
+        "#{result.total_chars} chars"
+
+      result.total_chars ->
+        "#{result.total_chars} chars"
+
+      result.size_bytes ->
+        "#{result.size_bytes} bytes"
+
+      true ->
+        nil
+    end
+  end
+
+  defp selector(%{selector: selector}) when is_binary(selector) and selector != "",
+    do: "selector `#{selector}`"
+
+  defp selector(_result), do: nil
+
+  defp meaningful_content_type(:html, content_type) when is_binary(content_type) do
+    if content_type_summary(content_type) == "text/html",
+      do: nil,
+      else: content_type_summary(content_type)
+  end
+
+  defp meaningful_content_type(:json, content_type) when is_binary(content_type) do
+    if String.contains?(content_type, "json"), do: nil, else: content_type_summary(content_type)
+  end
+
+  defp meaningful_content_type(:markdown, _content_type), do: nil
+  defp meaningful_content_type(:text, _content_type), do: nil
+  defp meaningful_content_type(_format, content_type), do: content_type_summary(content_type)
+
+  defp content_type_summary(nil), do: nil
+  defp content_type_summary(""), do: nil
+
+  defp content_type_summary(content_type) do
+    content_type
+    |> String.split(";", parts: 2)
+    |> List.first()
   end
 
   defp body(%{format: :markdown, text: text}), do: text || ""

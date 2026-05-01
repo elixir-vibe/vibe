@@ -44,7 +44,8 @@ defmodule Exy.TUI.ToolWidgetTest do
           code:
             "Web.fetch!(\"https://example.com\", format: :html) |> Web.select!(\"h1\") |> MD.doc()"
         },
-        output: "## Fetched URL\n\n**URL:** https://example.com\n\n# Example Domain",
+        output:
+          "## Fetched selection\n\nhttps://example.com · 200 html · selector `h1`\n\n# Example Domain",
         output_format: :markdown,
         expanded?: true
       }
@@ -52,7 +53,7 @@ defmodule Exy.TUI.ToolWidgetTest do
       |> Widget.render(80, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert Enum.any?(plain, &String.contains?(&1, "Fetched URL"))
+    assert Enum.any?(plain, &String.contains?(&1, "Fetched selection"))
     assert Enum.any?(plain, &String.contains?(&1, "Example Domain"))
     refute Enum.any?(plain, &String.contains?(&1, "```"))
   end
