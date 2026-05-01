@@ -23,6 +23,7 @@
   - `storage`
   - `memory`
   - `troubleshooting`
+- Added built-in `web` docs after introducing provider-neutral `Web.search/2` and `Web.fetch/2`.
 - Added or strengthened module docs for:
   - `Exy.Eval`
   - `Exy.Command`
@@ -44,5 +45,6 @@
 
 - Wire `/help` into a richer TUI document/modal view if notification rendering is too cramped for longer topics.
 - Add built-in docs for `auth`, `models`, `lsp`, `ast`, and `terminal-panes` once those workflows stabilize.
+- Expand `web` docs when additional search/fetch providers are added beyond Exa and Req.
 - Keep README concise; move detailed operational docs to `priv/docs/*.md` and exact API contracts to module docs.
 - When adding new slash commands or CLI workflows, update both the relevant built-in doc topic and the focused module docs.

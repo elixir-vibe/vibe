@@ -16,7 +16,8 @@ defmodule Exy.Docs do
     "plugins" => "Plugins",
     "storage" => "Storage",
     "memory" => "Memory",
-    "troubleshooting" => "Troubleshooting"
+    "troubleshooting" => "Troubleshooting",
+    "web" => "Web"
   }
 
   @aliases %{
@@ -25,7 +26,9 @@ defmodule Exy.Docs do
     "help" => "quickstart",
     "session" => "sessions",
     "subagent" => "subagents",
-    "plugin" => "plugins"
+    "plugin" => "plugins",
+    "search" => "web",
+    "fetch" => "web"
   }
 
   @doc "Returns the built-in help topic names and titles."
@@ -52,9 +55,7 @@ defmodule Exy.Docs do
   @spec index() :: String.t()
   def index do
     topic_lines =
-      topics()
-      |> Enum.map(fn %{name: name, title: title} -> "- `#{name}` — #{title}" end)
-      |> Enum.join("\n")
+      Enum.map_join(topics(), "\n", fn %{name: name, title: title} -> "- `#{name}` — #{title}" end)
 
     """
     # Exy help
@@ -106,10 +107,5 @@ defmodule Exy.Docs do
 
   defp topic_path(topic), do: Path.join(docs_dir(), topic <> ".md")
 
-  defp docs_dir do
-    case :code.priv_dir(:exy) do
-      path when is_list(path) -> Path.join(List.to_string(path), "docs")
-      {:error, _} -> Path.expand("../../priv/docs", __DIR__)
-    end
-  end
+  defp docs_dir, do: Application.app_dir(:exy, "priv/docs")
 end

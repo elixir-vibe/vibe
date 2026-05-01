@@ -105,9 +105,11 @@ Exy.Telemetry.summary()
 Exy.Session.list()
 Exy.Storage.status()
 Exy.Subagents.ask("Review this module", role: :reviewer)
+Web.search!("ecto sqlite fts", num_results: 5, highlights: true) |> MD.doc()
+Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", selector: "main", format: :markdown) |> MD.doc()
 ```
 
-`Cmd` is `Exy.Command` and `MD` is `Exy.MD`. Prefer them over raw `System.cmd/3` and ad-hoc string formatting.
+`Cmd` is `Exy.Command`, `MD` is `Exy.MD`, and `Web` is Exy's provider-neutral web search/fetch API. Prefer them over raw `System.cmd/3`, ad-hoc string formatting, and provider-specific web clients.
 
 ### Local storage and search
 
@@ -164,6 +166,7 @@ exy help subagents
 exy help plugins
 exy help storage
 exy help memory
+exy help web
 exy help troubleshooting
 ```
 

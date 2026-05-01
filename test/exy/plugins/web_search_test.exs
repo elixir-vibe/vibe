@@ -2,7 +2,7 @@ defmodule Exy.Plugins.WebSearchTest do
   use ExUnit.Case, async: true
 
   test "exposes pipeable eval API" do
-    assert [%Exy.Plugin.API{alias: Web, module: Exy.Plugins.WebSearch.API}] =
+    assert [%Exy.Plugin.API{alias: Web, module: Exy.WebTools}] =
              Exy.Plugins.WebSearch.apis([])
   end
 

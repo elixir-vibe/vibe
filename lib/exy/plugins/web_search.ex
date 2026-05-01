@@ -4,9 +4,12 @@ defmodule Exy.Plugins.WebSearch do
 
   api(
     name: :web_search,
-    module: Exy.Plugins.WebSearch.API,
+    module: Exy.WebTools,
     alias: Web,
-    description: "Composable Exa web search API for eval sessions",
-    examples: ["Web.search(\"ecto sqlite fts\") |> Web.format()"]
+    description: "Provider-neutral web search and fetch API for eval sessions",
+    examples: [
+      "Web.search(\"ecto sqlite fts\") |> MD.doc()",
+      "Web.fetch(\"https://hexdocs.pm/ecto\") |> MD.doc()"
+    ]
   )
 end

@@ -75,6 +75,7 @@ defmodule Exy.MixProject do
       {:boxart, "~> 0.3.2"},
       {:dg, "~> 0.4.1"},
       {:ex_ast, "~> 0.8.0"},
+      {:floki, "~> 0.38"},
       {:jason, "~> 1.4"},
       {:json_spec, "~> 1.1"},
       {:mdex, "~> 0.12"},

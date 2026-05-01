@@ -6,8 +6,11 @@ A plugin can expose APIs to eval:
 
 ```elixir
 Exy.Plugin.Manager.apis()
-Web.search("ecto sqlite fts", num_results: 5, highlights: true)
+Web.search!("ecto sqlite fts", num_results: 5, highlights: true)
 |> Web.filter_domain("hexdocs.pm")
+|> MD.doc()
+
+Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", selector: "main", format: :markdown)
 |> MD.doc()
 ```
 
