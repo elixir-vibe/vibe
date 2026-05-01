@@ -148,6 +148,12 @@ defmodule Exy.Web.Components do
 
   attr(:message, :map, required: true)
 
+  def message_card(%{message: %{role: role}} = assigns) when role in [:tool, "tool"] do
+    ~H"""
+    <.tool_card tool={@message} />
+    """
+  end
+
   def message_card(assigns) do
     ~H"""
     <article class={[
@@ -165,6 +171,63 @@ defmodule Exy.Web.Components do
     """
   end
 
+  attr(:tool, :map, required: true)
+
+  def tool_card(assigns) do
+    assigns = assign(assigns, :display, Exy.Tool.Display.from_tool(assigns.tool))
+
+    ~H"""
+    <article class="overflow-hidden rounded-xl border border-violet-300/20 bg-[#15131b]/92 shadow-sm">
+      <header class="flex min-w-0 flex-col gap-3 border-b border-white/10 bg-white/[0.025] px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+          <div class="flex min-w-0 flex-wrap items-center gap-2">
+            <span class="grid h-6 w-6 place-items-center rounded-md bg-violet-400/15 text-xs text-violet-200 ring-1 ring-violet-300/25">◆</span>
+            <h3 class="text-sm font-semibold text-zinc-100">{tool_name(@display.name)}</h3>
+            <.status_badge status={@display.status || @tool.status || :running} />
+          </div>
+          <p :if={display_text(@display.summary) not in [nil, ""]} class="mt-2 break-words font-mono text-xs leading-5 text-zinc-400 [overflow-wrap:anywhere]">{display_text(@display.summary)}</p>
+        </div>
+        <div :if={@display.meta != []} class="flex shrink-0 flex-wrap gap-2 text-xs text-zinc-500">
+          <span :for={meta <- @display.meta} class="rounded-md bg-white/[0.04] px-2 py-1">{display_text(meta)}</span>
+        </div>
+      </header>
+
+      <div class="space-y-3 px-4 py-3 sm:px-5">
+        <%= if @display.body == [] do %>
+          <p class="text-sm text-zinc-500">No tool output.</p>
+        <% else %>
+          <%= for block <- @display.body do %>
+            <.tool_body_block block={block} truncate?={@display.truncate? and not @display.expanded?} />
+          <% end %>
+        <% end %>
+      </div>
+    </article>
+    """
+  end
+
+  attr(:block, :any, required: true)
+  attr(:truncate?, :boolean, default: true)
+
+  def tool_body_block(assigns) do
+    assigns = assign(assigns, :body, block_body(assigns.block, assigns.truncate?))
+
+    ~H"""
+    <section class="rounded-lg border border-white/10 bg-[#0d0c11]/75">
+      <div class="border-b border-white/10 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-zinc-500">{@body.label}</div>
+
+      <div :if={@body.kind == :markdown} class="max-h-[32rem] overflow-auto px-3 py-3 text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-black/30 [&_pre]:p-3 [&_ul]:list-disc">
+        {Phoenix.HTML.raw(@body.html)}
+      </div>
+
+      <pre :if={@body.kind != :markdown} class={[
+        "max-h-[32rem] overflow-auto whitespace-pre-wrap break-words px-3 py-3 text-xs leading-5 [overflow-wrap:anywhere]",
+        if(@body.kind == :error, do: "text-red-200", else: "text-zinc-200"),
+        if(@body.mono?, do: "font-mono", else: "font-sans")
+      ]}>{@body.text}</pre>
+    </section>
+    """
+  end
+
   attr(:title, :string, required: true)
   slot(:inner_block, required: true)
 
@@ -179,6 +242,116 @@ defmodule Exy.Web.Components do
 
   defp session_title(session) do
     session.first_message || session.last_message_preview || "Untitled session"
+  end
+
+  defp tool_name(name) when is_atom(name), do: name |> Atom.to_string() |> String.capitalize()
+  defp tool_name(name) when is_binary(name), do: String.capitalize(name)
+  defp tool_name(_name), do: "Tool"
+
+  defp block_body({:markdown, text, _opts}, truncate?) do
+    text = text |> display_text() |> truncate_text(truncate?)
+
+    %{
+      kind: :markdown,
+      label: "Markdown",
+      html: MDEx.to_html!(text, render: [unsafe: false]),
+      mono?: false
+    }
+  end
+
+  defp block_body({:source, text, opts}, truncate?) do
+    language = opts |> Keyword.get(:language, :text) |> to_string()
+
+    %{
+      kind: :source,
+      label: String.upcase(language),
+      text: text |> display_text() |> truncate_text(truncate?),
+      mono?: true
+    }
+  end
+
+  defp block_body({:inspect, text, _opts}, truncate?) do
+    %{
+      kind: :inspect,
+      label: "Inspect",
+      text: text |> display_text() |> truncate_text(truncate?),
+      mono?: true
+    }
+  end
+
+  defp block_body({:error, text, _opts}, truncate?) do
+    %{
+      kind: :error,
+      label: "Error",
+      text: text |> display_text() |> truncate_text(truncate?),
+      mono?: true
+    }
+  end
+
+  defp block_body({:text, text, _opts}, truncate?) do
+    %{
+      kind: :text,
+      label: "Output",
+      text: text |> display_text() |> truncate_text(truncate?),
+      mono?: false
+    }
+  end
+
+  defp block_body({:lines, lines, _opts}, truncate?) do
+    %{
+      kind: :text,
+      label: "Output",
+      text: lines |> Enum.map_join("\n", &display_text/1) |> truncate_text(truncate?),
+      mono?: true
+    }
+  end
+
+  defp block_body({:render, render, _opts}, truncate?) when is_function(render, 2) do
+    text =
+      render.(96, Exy.TUI.Theme.dark())
+      |> Enum.map_join("\n", &display_text/1)
+      |> truncate_text(truncate?)
+
+    %{kind: :text, label: "Output", text: text, mono?: true}
+  end
+
+  defp block_body(block, truncate?) do
+    %{
+      kind: :inspect,
+      label: "Output",
+      text: block |> inspect(pretty: true) |> truncate_text(truncate?),
+      mono?: true
+    }
+  end
+
+  defp display_text(nil), do: nil
+
+  defp display_text(value) do
+    value
+    |> IO.iodata_to_binary()
+    |> strip_ansi()
+  rescue
+    Protocol.UndefinedError -> inspect(value, pretty: true, limit: 20)
+    ArgumentError -> inspect(value, pretty: true, limit: 20)
+  end
+
+  defp truncate_text(text, false), do: text
+  defp truncate_text(nil, _truncate?), do: ""
+
+  defp truncate_text(text, true) do
+    lines = String.split(text, "\n")
+
+    if length(lines) > 16 do
+      omitted = length(lines) - 16
+      tail = Enum.take(lines, -16)
+      Enum.join(["… #{omitted} lines omitted …", "" | tail], "\n")
+    else
+      text
+    end
+  end
+
+  defp strip_ansi(text) do
+    Regex.replace(~r/\e\[[0-9;?]*[ -\/]*[@-~]/, text, "")
   end
 
   defp message_text(%{text: text}) when is_binary(text), do: text

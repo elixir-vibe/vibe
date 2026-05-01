@@ -3,6 +3,8 @@ defmodule Exy.Web.SessionLiveTest do
 
   import Phoenix.ConnTest
 
+  alias Exy.UI.{Event, ToolEvent}
+
   @endpoint Exy.Web.Endpoint
 
   setup_all do
@@ -51,5 +53,37 @@ defmodule Exy.Web.SessionLiveTest do
 
     assert html_response(conn, 200) =~ "Runtime"
     assert html_response(conn, 200) =~ "Top processes"
+  end
+
+  test "session page renders tool calls as structured widgets" do
+    session_id = "web-tool-session"
+
+    Exy.Session.Store.append_ui_events([
+      {1,
+       Event.new(
+         :tool_started,
+         session_id,
+         ToolEvent.started(id: "tool-start", name: :eval, args: %{code: "1 + 1"})
+       )},
+      {2,
+       Event.new(
+         :tool_finished,
+         session_id,
+         ToolEvent.finished(
+           id: "tool-start",
+           name: :eval,
+           args: %{code: "1 + 1"},
+           output: %{output: "2", output_format: :inspect}
+         )
+       )}
+    ])
+
+    conn = build_conn() |> get("/sessions/#{session_id}")
+    html = html_response(conn, 200)
+
+    assert html =~ "Eval"
+    assert html =~ "1 + 1"
+    assert html =~ "Inspect"
+    assert html =~ "2"
   end
 end
