@@ -30,15 +30,21 @@ defmodule Exy.Actions.Eval do
     params = JSONSpec.atomize(@schema, params)
 
     ToolResult.run(fn ->
-      case Exy.Eval.run(params.code,
-             timeout: Map.get(params, :timeout, @default_timeout_ms),
-             session_id: session_id(context)
-           ) do
+      opts = [timeout: Map.get(params, :timeout, @default_timeout_ms)]
+
+      params.code
+      |> evaluate(session_id(context), opts)
+      |> case do
         {:ok, result} -> ToolResult.ok(Exy.Eval.Result.to_tool_output(result))
         {:error, error} -> ToolResult.error(error)
       end
     end)
   end
+
+  defp evaluate(code, session_id, opts) when is_binary(session_id),
+    do: Exy.Eval.run(code, Keyword.put(opts, :session_id, session_id))
+
+  defp evaluate(code, _session_id, opts), do: Exy.Eval.once(code, opts)
 
   defp session_id(context) when is_map(context), do: Map.get(context, :session_id)
   defp session_id(_context), do: nil

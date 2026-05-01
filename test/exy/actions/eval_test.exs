@@ -22,6 +22,10 @@ defmodule Exy.Actions.EvalTest do
              Exy.Actions.Eval.run(%{"code" => ~s(query <> " docs")}, %{session_id: session_id})
   end
 
+  test "falls back to one-off eval when tool context has no session id" do
+    assert {:ok, %{output: "2"}} = Exy.Actions.Eval.run(%{"code" => "1 + 1"}, %{})
+  end
+
   test "evaluation failures are serializable tool results, not action crashes" do
     session_id = "action-eval-error-#{System.unique_integer([:positive])}"
     File.rm(Exy.Session.Store.path(session_id))
