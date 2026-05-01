@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.FileMutation do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.TUI.{Syntax, TextTruncation, Theme, ToolWidget, Widget}
 
   @spec output_lines(term(), pos_integer(), Theme.t()) :: [IO.chardata()]

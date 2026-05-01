@@ -1,6 +1,5 @@
 defmodule Exy.Subagents.Manager do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   alias Exy.Subagents.{JobBuilder, JobInfo, JobStore}

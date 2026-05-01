@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Frame do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.TUI.{Theme, Widget, Width}
 
   @spec border(Theme.t(), pos_integer(), atom(), atom(), IO.chardata() | nil) :: IO.chardata()

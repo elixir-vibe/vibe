@@ -1,6 +1,5 @@
 defmodule Exy.TUI.TextTruncation do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.TUI.Widget
 
   @type result :: %{lines: [IO.chardata()], omitted: non_neg_integer(), truncated?: boolean()}

@@ -1,6 +1,5 @@
 defmodule Exy.Actions.LSP do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import JSONSpec
 
   @schema schema(

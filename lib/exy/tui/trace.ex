@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Trace do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.TUI.Width
 
   defstruct [:dir, :started_at, seq: 0]

@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Commands.Subagents do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Subagents

@@ -1,6 +1,5 @@
 defmodule Exy.Memory.Manager do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   alias Exy.Support.Lists

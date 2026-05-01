@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Migrations do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @create_storage_tables_version 20_260_426_104_000
   @create_fts_indexes_version 20_260_426_121_000
 

@@ -1,6 +1,5 @@
 defmodule Exy.Eval.Evaluator do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   alias Exy.Eval.Result

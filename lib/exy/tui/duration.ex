@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Duration do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec milliseconds(term()) :: String.t() | nil
   def milliseconds(ms) when is_integer(ms) and ms > 0 and rem(ms, 1000) == 0,
     do: "#{div(ms, 1000)}s"

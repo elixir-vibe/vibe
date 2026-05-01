@@ -1,6 +1,5 @@
 defmodule Exy.Web.SessionLive do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Exy.Web, :live_view
 
   alias Exy.UI.{Reducer, ViewModel}

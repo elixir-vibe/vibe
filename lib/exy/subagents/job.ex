@@ -1,6 +1,5 @@
 defmodule Exy.Subagents.Job do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   alias Exy.Session

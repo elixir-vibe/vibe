@@ -1,6 +1,5 @@
 defmodule Exy.Subagents.JobInfo do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type t :: %__MODULE__{}
 
   @enforce_keys [:id, :task, :child_session_id]

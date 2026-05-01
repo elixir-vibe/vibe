@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Syntax do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @dim_elixir_theme %Lumis.Theme{
     name: "exy_dim_elixir",
     appearance: :dark,

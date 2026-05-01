@@ -1,6 +1,5 @@
 defmodule Exy.Skill.Frontmatter do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec parse(String.t()) :: {:ok, map(), String.t()} | {:error, String.t()}
   def parse(content) when is_binary(content) do
     with {:ok, yaml, body} <- split(content),

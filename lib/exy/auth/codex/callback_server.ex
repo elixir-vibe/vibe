@@ -1,6 +1,5 @@
 defmodule Exy.Auth.Codex.CallbackServer do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @redirect_port 1455
   @startup_timeout_ms 2_000
   @accept_timeout_ms 180_000

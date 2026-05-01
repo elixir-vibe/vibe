@@ -1,6 +1,5 @@
 defmodule Exy.Command.Worker do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   alias Exy.Command.{Job, Result}

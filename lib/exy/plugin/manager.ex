@@ -1,6 +1,5 @@
 defmodule Exy.Plugin.Manager do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   defstruct plugins: %{}

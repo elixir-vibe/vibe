@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Search.Result do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type source :: :session | :memory
 
   @type t :: %__MODULE__{

@@ -1,6 +1,5 @@
 defmodule Exy.Session.Processes do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   @spec start_link(keyword()) :: GenServer.on_start()

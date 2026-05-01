@@ -1,6 +1,5 @@
 defmodule Exy.Repo do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Ecto.Repo,
     otp_app: :exy,
     adapter: Ecto.Adapters.SQLite3

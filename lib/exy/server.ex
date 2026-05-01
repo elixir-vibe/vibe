@@ -1,6 +1,5 @@
 defmodule Exy.Server do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Server.{Cookie, Metadata}
 
   @remote_stop_timeout_ms 5_000

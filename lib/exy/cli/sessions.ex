@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Sessions do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.CLI.{Output, Runner, Server}
   alias Exy.CLI.Sessions.Filter
 

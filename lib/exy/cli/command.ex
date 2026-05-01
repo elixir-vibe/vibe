@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Command do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @callback names() :: [String.t()]
   @callback run([String.t()], keyword()) :: :ok | {:error, term()}
 

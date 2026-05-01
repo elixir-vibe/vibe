@@ -1,6 +1,5 @@
 defmodule Exy.Actions.Result do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type t :: {:ok, term()} | {:error, term()}
 
   @spec run((-> t() | term())) :: t()

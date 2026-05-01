@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Migrations.CreateStorageTables do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Ecto.Migration
 
   def change do

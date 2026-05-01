@@ -1,6 +1,5 @@
 defmodule Exy.Skill.Executable do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type t :: %__MODULE__{
           name: String.t(),
           path: String.t(),

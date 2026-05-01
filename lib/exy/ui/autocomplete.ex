@@ -1,9 +1,7 @@
 defmodule Exy.UI.Autocomplete do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   defmodule Item do
-    @moduledoc false
-
+    @moduledoc "Internal implementation module."
     @type t :: %__MODULE__{
             value: String.t(),
             label: String.t(),

@@ -1,6 +1,5 @@
 defmodule Exy.UI.SlashCommands.Compact do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.UI.SlashCommands.Command
 
   @impl true

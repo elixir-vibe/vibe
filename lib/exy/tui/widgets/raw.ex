@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Raw do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Widget

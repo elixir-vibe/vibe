@@ -1,6 +1,5 @@
 defmodule Exy.Code.AST.TextDiff do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec unified(String.t(), String.t(), String.t()) :: String.t()
   def unified(old_source, new_source, path \\ "source") do
     old_lines = String.split(old_source, "\n")

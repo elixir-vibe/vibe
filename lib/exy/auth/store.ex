@@ -1,6 +1,5 @@
 defmodule Exy.Auth.Store do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec path() :: Path.t()
   def path, do: Exy.Paths.auth_file()
 

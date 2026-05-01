@@ -1,6 +1,5 @@
 defmodule Exy.Actions.ToolResult do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type raw_result :: {:ok, term()} | {:error, term()} | term()
   @type tool_result :: {:ok, term()}
 

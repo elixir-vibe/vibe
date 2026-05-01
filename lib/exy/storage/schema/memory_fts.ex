@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Schema.MemoryFTS do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Ecto.Schema
 
   @primary_key false

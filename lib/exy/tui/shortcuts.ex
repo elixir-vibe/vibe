@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Shortcuts do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.TUI.Theme
 
   @shortcuts %{

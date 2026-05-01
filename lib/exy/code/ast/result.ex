@@ -1,6 +1,5 @@
 defmodule Exy.Code.AST.Result do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @derive Jason.Encoder
   defstruct action: nil,
             path: nil,

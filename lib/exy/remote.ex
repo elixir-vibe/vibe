@@ -1,6 +1,5 @@
 defmodule Exy.Remote do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Server.{Cookie, Metadata}
 
   @spec connect() :: {:ok, node()} | {:error, term()}

@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.FileTool do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.TUI.ToolWidget
 
   @spec path_summary(map(), term()) :: String.t() | nil

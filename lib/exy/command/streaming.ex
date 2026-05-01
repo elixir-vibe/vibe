@@ -1,6 +1,5 @@
 defmodule Exy.Command.Streaming do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.UI.{Event, ToolEvent}
 
   @process_key :exy_eval_command_stream_session_id

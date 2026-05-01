@@ -1,6 +1,5 @@
 defmodule Exy.Subagents.Schedule do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type t :: %__MODULE__{}
 
   @enforce_keys [:id, :task]

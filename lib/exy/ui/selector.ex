@@ -1,6 +1,5 @@
 defmodule Exy.UI.Selector do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type t :: %__MODULE__{
           kind: atom() | nil,
           overlay_kind: atom() | nil,

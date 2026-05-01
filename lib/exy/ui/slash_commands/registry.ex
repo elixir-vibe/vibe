@@ -1,6 +1,5 @@
 defmodule Exy.UI.SlashCommands.Registry do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @builtin [
     Exy.UI.SlashCommands.Sessions,
     Exy.UI.SlashCommands.New,

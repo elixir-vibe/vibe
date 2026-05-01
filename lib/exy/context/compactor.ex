@@ -1,6 +1,5 @@
 defmodule Exy.Context.Compactor do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Context.Serializer
   alias Exy.Trajectory
 

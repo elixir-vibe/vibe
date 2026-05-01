@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Parser do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @switches [
     help: :boolean,
     version: :boolean,

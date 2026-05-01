@@ -1,6 +1,5 @@
 defmodule Exy.Context.Serializer do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Trajectory
 
   @tool_result_max_chars 2_000

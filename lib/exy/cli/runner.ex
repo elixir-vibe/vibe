@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Runner do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.CLI.{Logging, Output}
 
   require Exy.Debug

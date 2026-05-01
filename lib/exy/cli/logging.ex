@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Logging do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec with_session_log(String.t() | nil, (-> term())) :: term()
   def with_session_log(session_id, fun) do
     handlers = console_handlers()

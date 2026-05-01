@@ -158,7 +158,9 @@ defmodule Exy.TUI.Runtime do
     end
   end
 
-  @doc false
+  @doc """
+  Resizes the terminal loop and painter when the terminal dimensions change.
+  """
   def resize_painter(
         _loop,
         %TerminalPainter{width: columns, height: rows} = painter,

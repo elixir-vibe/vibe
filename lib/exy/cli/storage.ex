@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Storage do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.CLI.Output
 
   @spec command([String.t()], keyword()) :: :ok | {:error, term()}

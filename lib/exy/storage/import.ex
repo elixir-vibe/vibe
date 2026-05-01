@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Import do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Storage.Schema.Import
 
   @providers %{

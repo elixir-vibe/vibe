@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Schema.EvalState do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Ecto.Schema
 
   @primary_key {:session_id, :string, autogenerate: false}

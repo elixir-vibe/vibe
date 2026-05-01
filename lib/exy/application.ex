@@ -1,6 +1,5 @@
 defmodule Exy.Application do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Application
 
   @slow_jido_signal_threshold_ms 1_000
@@ -39,7 +38,9 @@ defmodule Exy.Application do
     Supervisor.start_link(children, strategy: :one_for_one, name: Exy.Supervisor)
   end
 
-  @doc false
+  @doc """
+  Applies Exy’s quiet default log levels for chatty dependencies.
+  """
   def configure_dependency_logging do
     Logger.put_application_level(:jido, :warning)
     Logger.put_application_level(:jido_action, :warning)

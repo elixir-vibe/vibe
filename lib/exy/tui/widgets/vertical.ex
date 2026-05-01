@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Vertical do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.Widget
 
   @impl true

@@ -1,6 +1,5 @@
 defmodule Exy.Actions.Edit do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import JSONSpec
 
   @schema schema(

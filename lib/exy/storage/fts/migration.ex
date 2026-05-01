@@ -1,6 +1,5 @@
 defmodule Exy.Storage.FTS.Migration do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import Ecto.Migration
 
   @spec create_fts5(atom(), keyword()) :: :ok

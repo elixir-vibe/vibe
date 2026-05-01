@@ -1,6 +1,5 @@
 defmodule Exy.Session.Store.Listing do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import Ecto.Query
 
   alias Exy.Storage.Schema.Session

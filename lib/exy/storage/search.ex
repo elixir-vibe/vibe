@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Search do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import Ecto.Query
 
   alias Exy.Storage.Schema.{MemoryFTS, Session, UIEventFTS}

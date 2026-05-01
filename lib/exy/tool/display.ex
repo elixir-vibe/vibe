@@ -1,6 +1,5 @@
 defmodule Exy.Tool.Display do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   defstruct name: nil,
             status: nil,
             summary: nil,

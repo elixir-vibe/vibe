@@ -1,6 +1,5 @@
 defmodule Exy.Plugin.Discovery do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec builtin() :: [module()]
   def builtin do
     :exy

@@ -1,6 +1,5 @@
 defmodule Exy.Subagents.Worker do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   def start_link(spec, parent, budget) do

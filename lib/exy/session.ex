@@ -85,7 +85,9 @@ defmodule Exy.Session do
   @spec unlock(GenServer.server(), String.t()) :: :ok
   def unlock(server, job_id) when is_binary(job_id), do: GenServer.call(server, {:unlock, job_id})
 
-  @doc false
+  @doc """
+  Returns prompt options passed to the agent after session-only keys are removed.
+  """
   @spec agent_ask_opts(keyword()) :: keyword()
   def agent_ask_opts(opts), do: Keyword.drop(opts, [:model])
 

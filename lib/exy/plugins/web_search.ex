@@ -1,6 +1,5 @@
 defmodule Exy.Plugins.WebSearch do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Exy.Plugin
 
   api(

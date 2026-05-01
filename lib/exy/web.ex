@@ -1,6 +1,5 @@
 defmodule Exy.Web do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @static_paths ~w(assets fonts images favicon.ico robots.txt)
 
   @spec static_paths() :: [String.t()]

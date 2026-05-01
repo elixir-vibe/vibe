@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Lines do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Support.Lists
 
   @type line :: IO.chardata()

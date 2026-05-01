@@ -1,6 +1,5 @@
 defmodule Exy.Session.Store.Codec do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Trajectory
   alias Exy.UI.Event
 

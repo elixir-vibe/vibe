@@ -1,6 +1,5 @@
 defmodule Exy.UI.PluginBridge do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @ignored_events MapSet.new([
                     :plugin_status_updated,
                     :plugin_status_cleared,

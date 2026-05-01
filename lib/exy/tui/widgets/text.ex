@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Text do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

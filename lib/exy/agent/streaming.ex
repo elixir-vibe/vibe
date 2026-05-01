@@ -18,7 +18,9 @@ defmodule Exy.Agent.Streaming do
   @runtime_delta_table :exy_agent_streaming_runtime_delta_calls
   @runtime_order_key :runtime_order
 
-  @doc false
+  @doc """
+  Starts the streaming callback registry.
+  """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 

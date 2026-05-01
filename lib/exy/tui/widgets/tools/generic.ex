@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.Generic do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.ToolWidget
 
   @impl true

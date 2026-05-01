@@ -1,6 +1,5 @@
 defmodule Exy.UI.Notification do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @type level :: :info | :success | :warning | :error | atom()
   @type t :: %__MODULE__{id: term(), level: level(), text: String.t()}
 

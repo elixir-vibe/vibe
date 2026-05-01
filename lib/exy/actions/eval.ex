@@ -1,6 +1,5 @@
 defmodule Exy.Actions.Eval do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import JSONSpec
 
   alias Exy.Actions.ToolResult
@@ -21,7 +20,9 @@ defmodule Exy.Actions.Eval do
       "Evaluate Elixir code inside Exy's BEAM runtime. Prefer this for OTP introspection, profiling, docs, and helper modules.",
     schema: @schema
 
-  @doc false
+  @doc """
+  Returns the eval action timeout ceiling used when params omit `:timeout`.
+  """
   def default_timeout_ms, do: @default_timeout_ms
 
   @impl true

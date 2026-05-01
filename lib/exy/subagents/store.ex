@@ -1,6 +1,5 @@
 defmodule Exy.Subagents.Store do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import Ecto.Query
 
   alias Exy.Storage

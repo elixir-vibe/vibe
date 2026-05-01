@@ -1,6 +1,5 @@
 defmodule Exy.Tool.Display.Read do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Tool.Display
   alias Exy.TUI.Widgets.Tools.FileTool
 

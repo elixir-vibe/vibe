@@ -1,6 +1,5 @@
 defmodule Exy.Server.Metadata do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec path() :: Path.t()
   def path, do: Exy.Paths.server_metadata()
 

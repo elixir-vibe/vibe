@@ -1,6 +1,5 @@
 defmodule Exy.Context.Recall do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Storage.Search.Result
 
   @default_limit 3

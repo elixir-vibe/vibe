@@ -1,6 +1,5 @@
 defmodule Exy.Env do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec to_charlist_pairs(map() | keyword()) :: [{charlist(), charlist()}]
   def to_charlist_pairs(env) when is_map(env), do: env |> Map.to_list() |> to_charlist_pairs()
 

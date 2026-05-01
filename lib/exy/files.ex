@@ -1,6 +1,5 @@
 defmodule Exy.Files do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @read_limit_lines 2_000
   @read_limit_bytes 50_000
 

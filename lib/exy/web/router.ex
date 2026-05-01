@@ -1,6 +1,5 @@
 defmodule Exy.Web.Router do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Exy.Web, :router
 
   pipeline :browser do

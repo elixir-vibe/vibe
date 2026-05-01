@@ -1,6 +1,5 @@
 defmodule Exy.Command.Result do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @enforce_keys [:id, :argv, :cwd, :status, :output, :output_path, :duration_ms]
   defstruct [:id, :argv, :cwd, :status, :exit_status, :output, :output_path, :duration_ms]
 

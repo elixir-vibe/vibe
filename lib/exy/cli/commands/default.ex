@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Commands.Default do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.CLI.{Output, Runner, Sessions}
   alias Exy.Web
 

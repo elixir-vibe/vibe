@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Sessions.Filter do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec apply([map()], keyword()) :: [map()]
   def apply(sessions, opts) do
     sessions

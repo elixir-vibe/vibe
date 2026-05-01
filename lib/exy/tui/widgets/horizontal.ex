@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Horizontal do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Widget

@@ -1,6 +1,5 @@
 defmodule Exy.TUI.RuntimeSupervisor do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Supervisor
 
   alias Exy.Session

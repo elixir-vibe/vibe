@@ -1,6 +1,5 @@
 defmodule Exy.Remote.Session do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec list() :: {:ok, [map()]} | {:error, term()} | {:badrpc, term()}
   def list do
     case call(Exy.Session, :list, []) do

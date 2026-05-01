@@ -1,6 +1,5 @@
 defmodule Exy.Memory.BuiltinProvider do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Exy.Memory.Provider
 
   @subagent_result_preview_chars 2_000

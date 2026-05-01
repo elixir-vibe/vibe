@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Schema.TrajectoryEvent do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Ecto.Schema
 
   schema "trajectory_events" do

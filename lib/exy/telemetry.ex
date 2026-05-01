@@ -222,7 +222,9 @@ defmodule Exy.Telemetry do
     _exception -> false
   end
 
-  @doc false
+  @doc """
+  Receives telemetry callbacks and forwards sanitized event data to the recorder.
+  """
   def handle_event(event_name, measurements, metadata, recorder) when is_pid(recorder) do
     GenServer.cast(recorder, {:telemetry_event, event_name, measurements, metadata})
   end

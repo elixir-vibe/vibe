@@ -1,6 +1,5 @@
 defmodule Exy.Storage.FTS do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   import Ecto.Query
 
   alias Exy.Repo

@@ -1,6 +1,5 @@
 defmodule Exy.Skill.Loader do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Skill.Executable
 
   @spec load_file(String.t()) :: {:ok, [Executable.t()]} | {:error, term()}

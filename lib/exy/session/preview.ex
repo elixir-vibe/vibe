@@ -1,6 +1,5 @@
 defmodule Exy.Session.Preview do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec message(map() | nil) :: String.t()
   def message(nil), do: ""
 

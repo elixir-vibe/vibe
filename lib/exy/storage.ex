@@ -1,6 +1,5 @@
 defmodule Exy.Storage do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @sqlite_busy_timeout_ms 5_000
 
   @schemas [

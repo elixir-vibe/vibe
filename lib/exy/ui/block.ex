@@ -4,17 +4,17 @@ defmodule Exy.UI.Block do
   """
 
   defmodule UserMessage do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct [:id, :text, :at]
   end
 
   defmodule AssistantMessage do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct [:id, :text, :error, :result, :at, :loader_label]
   end
 
   defmodule ToolCall do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct [
       :id,
       :name,
@@ -29,7 +29,7 @@ defmodule Exy.UI.Block do
   end
 
   defmodule SubagentLifecycle do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct [
       :id,
       :job_id,
@@ -44,28 +44,28 @@ defmodule Exy.UI.Block do
   end
 
   defmodule Footer do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct [:cwd, :model, :session_id, :status, :usage, :active_sessions, plugin_statuses: %{}]
 
     @type t :: %__MODULE__{}
   end
 
   defmodule Overlay do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct [:kind, :data]
 
     @type t :: %__MODULE__{}
   end
 
   defmodule NotificationList do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct items: []
 
     @type t :: %__MODULE__{}
   end
 
   defmodule PluginWidget do
-    @moduledoc false
+    @moduledoc "Internal implementation module."
     defstruct [:id, :type, :props, placement: :above_editor, version: 0]
 
     @type t :: %__MODULE__{}

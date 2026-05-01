@@ -1,6 +1,5 @@
 defmodule Exy.Jido do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Jido, otp_app: :exy
 
   def config(overrides) do

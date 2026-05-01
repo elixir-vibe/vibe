@@ -1,6 +1,5 @@
 defmodule Exy.CLI do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec main([String.t()]) :: :ok | {:error, term()}
   def main(argv) do
     argv
@@ -8,6 +7,8 @@ defmodule Exy.CLI do
     |> Exy.CLI.Command.dispatch()
   end
 
-  @doc false
+  @doc """
+  Parses CLI arguments without dispatching a command.
+  """
   def parse(argv), do: Exy.CLI.Parser.parse(argv)
 end

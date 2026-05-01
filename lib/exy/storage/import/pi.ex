@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Import.Pi do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.Storage.Importer
 
   alias Exy.UI.Event

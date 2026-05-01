@@ -1,6 +1,5 @@
 defmodule Exy.Web.SessionsLive do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Exy.Web, :live_view
 
   @impl true

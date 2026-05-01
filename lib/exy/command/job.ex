@@ -1,6 +1,5 @@
 defmodule Exy.Command.Job do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @enforce_keys [:id, :argv, :cwd, :pid, :output_path, :started_at]
   defstruct [:id, :argv, :cwd, :pid, :output_path, :started_at]
 

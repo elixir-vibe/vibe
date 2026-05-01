@@ -1,6 +1,5 @@
 defmodule Exy.TUI.TerminalText do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @escape 0x1B
   @bell 0x07
 

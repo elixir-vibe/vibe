@@ -1,6 +1,5 @@
 defmodule Exy.Model.Direct do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(prompt, opts \\ []) when is_binary(prompt) do
     {model, messages, session_id, request_opts} = request(prompt, opts)

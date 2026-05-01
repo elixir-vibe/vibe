@@ -1,6 +1,5 @@
 defmodule Exy.Code.LSP.Client do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use GenServer
 
   @default_request_timeout_ms 30_000

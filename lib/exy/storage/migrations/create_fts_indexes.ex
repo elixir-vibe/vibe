@@ -1,6 +1,5 @@
 defmodule Exy.Storage.Migrations.CreateFTSIndexes do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   use Ecto.Migration
 
   import Exy.Storage.FTS.Migration

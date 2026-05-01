@@ -1,6 +1,5 @@
 defmodule Exy.Subagents.JobBuilder do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Subagents.JobInfo
 
   @spec new(String.t(), keyword()) :: {:ok, JobInfo.t()} | {:error, term()}

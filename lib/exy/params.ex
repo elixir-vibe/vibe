@@ -1,6 +1,5 @@
 defmodule Exy.Params do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec fetch_required(map(), atom()) :: {:ok, term()} | {:error, String.t()}
   def fetch_required(params, key) do
     case Map.fetch(params, key) do

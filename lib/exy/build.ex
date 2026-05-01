@@ -1,6 +1,5 @@
 defmodule Exy.Build do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @spec id() :: String.t()
   def id do
     modules = [Exy, Exy.Session, Exy.TUI, Exy.CLI]

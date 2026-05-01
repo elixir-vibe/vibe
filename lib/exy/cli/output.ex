@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Output do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias IO.ANSI
 
   @spec print(term(), keyword()) :: :ok | {:error, term()}

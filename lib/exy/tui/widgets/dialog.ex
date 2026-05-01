@@ -1,6 +1,5 @@
 defmodule Exy.TUI.Widgets.Dialog do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Lines, Theme}

@@ -1,6 +1,5 @@
 defmodule Exy.Prompts do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   @prompt_files %{
     system: "system.md",
     summarization_system: "summarization_system.md",

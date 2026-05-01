@@ -1,6 +1,5 @@
 defmodule Exy.Session.Store.Summary do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.Session.Store.Listing
   alias Exy.Storage.Schema.Session
 

@@ -1,6 +1,5 @@
 defmodule Exy.CLI.Commands.TUITrace do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.CLI.Output
   alias Exy.TUI.Trace
 

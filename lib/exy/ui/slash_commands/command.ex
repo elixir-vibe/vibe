@@ -1,6 +1,5 @@
 defmodule Exy.UI.SlashCommands.Command do
-  @moduledoc false
-
+  @moduledoc "Internal implementation module."
   alias Exy.UI.Event
   alias Exy.UI.State
 
