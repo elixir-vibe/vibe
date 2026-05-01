@@ -52,6 +52,36 @@ defmodule Exy.WebToolsTest do
     assert result.text =~ "Final"
   end
 
+  test "basic HTML to Markdown converter handles common structure" do
+    html = """
+    <h1>Title</h1><p>Hello <a href=\"/x\">link</a>.</p><blockquote>Quote</blockquote><ul><li>One</li><li>Two<ul><li>Nested</li></ul></li></ul><table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table><pre><code>mix test</code></pre>
+    """
+
+    assert {:ok, markdown} = Exy.WebTools.HTML.to_markdown(html)
+
+    assert markdown ==
+             """
+             # Title
+
+             Hello [link](/x).
+
+             > Quote
+
+             - One
+             - Two
+               - Nested
+
+             | A | B |
+             | --- | --- |
+             | 1 | 2 |
+
+             ```
+             mix test
+             ```
+             """
+             |> String.trim()
+  end
+
   test "fetch formats json" do
     stub = {__MODULE__, :json_fetch}
 
