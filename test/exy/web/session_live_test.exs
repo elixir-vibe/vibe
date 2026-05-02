@@ -83,7 +83,7 @@ defmodule Exy.Web.SessionLiveTest do
 
     assert html =~ "Eval"
     assert html =~ "1 + 1"
-    assert html =~ "Inspect"
+    refute html =~ "INSPECT"
     assert html =~ "2"
   end
 

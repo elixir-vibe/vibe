@@ -157,17 +157,14 @@ defmodule Exy.Web.Components do
   def message_card(assigns) do
     ~H"""
     <article class={[
-      "max-w-full rounded-xl border px-4 py-3 shadow-sm sm:px-5 sm:py-4",
+      "max-w-full px-3 py-2 text-sm leading-6 sm:px-4",
       if(@message.role == :user,
-        do: "border-orange-300/25 bg-orange-300/10 sm:ml-auto sm:max-w-[88%]",
-        else: "border-white/10 bg-[#17151d]/82"
+        do: "rounded-lg border border-orange-300/20 bg-orange-300/[0.07] text-zinc-100 sm:ml-auto sm:max-w-[82%]",
+        else: "border-l-2 border-violet-300/25 text-zinc-100"
       )
     ]}>
-      <div class="mb-2 flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
-        <span>{@message.role}</span>
-      </div>
-      <div :if={@message.role == :user} class="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{message_text(@message)}</div>
-      <div :if={@message.role != :user} class="text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-black/30 [&_pre]:p-3 [&_ul]:list-disc">
+      <div :if={@message.role == :user} class="whitespace-pre-wrap break-words font-sans [overflow-wrap:anywhere]">{message_text(@message)}</div>
+      <div :if={@message.role != :user} class="[overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-black/30 [&_pre]:p-3 [&_ul]:list-disc">
         {Phoenix.HTML.raw(markdown_html(message_text(@message)))}
       </div>
     </article>
@@ -180,22 +177,21 @@ defmodule Exy.Web.Components do
     assigns = assign(assigns, :display, Exy.Tool.Display.from_tool(assigns.tool))
 
     ~H"""
-    <article class="overflow-hidden rounded-xl border border-violet-300/20 bg-[#15131b]/92 shadow-sm">
-      <header class="flex min-w-0 flex-col gap-3 border-b border-white/10 bg-white/[0.025] px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+    <article class="overflow-hidden rounded-lg border border-violet-300/15 bg-[#15131b]/70">
+      <header class="flex min-w-0 flex-col gap-2 px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:px-4">
         <div class="min-w-0">
           <div class="flex min-w-0 flex-wrap items-center gap-2">
-            <span class="grid h-6 w-6 place-items-center rounded-md bg-violet-400/15 text-xs text-violet-200 ring-1 ring-violet-300/25">◆</span>
             <h3 class="text-sm font-semibold text-zinc-100">{tool_name(@display.name)}</h3>
-            <.status_badge status={@display.status || @tool.status || :running} />
+            <.status_badge :if={(@display.status || @tool.status) not in [:ok, "ok"]} status={@display.status || @tool.status || :running} />
           </div>
-          <p :if={display_text(@display.summary) not in [nil, ""]} class="mt-2 break-words font-mono text-xs leading-5 text-zinc-400 [overflow-wrap:anywhere]">{display_text(@display.summary)}</p>
+          <p :if={display_text(@display.summary) not in [nil, ""]} class="mt-1 break-words font-mono text-xs leading-5 text-zinc-500 [overflow-wrap:anywhere]">{display_text(@display.summary)}</p>
         </div>
-        <div :if={@display.meta != []} class="flex shrink-0 flex-wrap gap-2 text-xs text-zinc-500">
-          <span :for={meta <- @display.meta} class="rounded-md bg-white/[0.04] px-2 py-1">{display_text(meta)}</span>
+        <div :if={@display.meta != []} class="flex shrink-0 flex-wrap gap-1 text-xs text-zinc-500">
+          <span :for={meta <- @display.meta} class="rounded bg-white/[0.035] px-1.5 py-0.5">{display_text(meta)}</span>
         </div>
       </header>
 
-      <div class="space-y-3 px-4 py-3 sm:px-5">
+      <div class="space-y-2 px-3 pb-3 sm:px-4">
         <%= if @display.body == [] do %>
           <p class="text-sm text-zinc-500">No tool output.</p>
         <% else %>
@@ -215,15 +211,15 @@ defmodule Exy.Web.Components do
     assigns = assign(assigns, :body, block_body(assigns.block, assigns.truncate?))
 
     ~H"""
-    <section class="rounded-lg border border-white/10 bg-[#0d0c11]/75">
-      <div class="border-b border-white/10 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-zinc-500">{@body.label}</div>
+    <section class="overflow-hidden rounded-md bg-[#0d0c11]/72 ring-1 ring-white/8">
+      <div :if={@body.label not in [nil, "", "Output", "Inspect"]} class="border-b border-white/8 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-zinc-600">{@body.label}</div>
 
-      <div :if={@body.kind in [:markdown, :source_html]} class="max-h-[32rem] overflow-auto px-3 py-3 text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-black/30 [&_pre]:p-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-white/10 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-white/10 [&_th]:px-2 [&_th]:py-1 [&_ul]:list-disc">
+      <div :if={@body.kind in [:markdown, :source_html]} class="max-h-[28rem] overflow-auto px-3 py-2 text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-md [&_pre]:bg-transparent [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-white/10 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-white/10 [&_th]:px-2 [&_th]:py-1 [&_ul]:list-disc">
         {Phoenix.HTML.raw(@body.html)}
       </div>
 
       <pre :if={@body.kind not in [:markdown, :source_html]} class={[
-        "max-h-[32rem] overflow-auto whitespace-pre-wrap break-words px-3 py-3 text-xs leading-5 [overflow-wrap:anywhere]",
+        "max-h-[28rem] overflow-auto whitespace-pre-wrap break-words px-3 py-2 text-xs leading-5 [overflow-wrap:anywhere]",
         if(@body.kind == :error, do: "text-red-200", else: "text-zinc-200"),
         if(@body.mono?, do: "font-mono", else: "font-sans")
       ]}>{@body.text}</pre>
@@ -341,7 +337,9 @@ defmodule Exy.Web.Components do
   end
 
   defp source_html(text, language) do
-    case Lumis.highlight(text, formatter: {:html_inline, language: language, pre_class: "m-0"}) do
+    case Lumis.highlight(text,
+           formatter: {:html_inline, language: language, pre_class: "m-0 !bg-transparent !p-0"}
+         ) do
       {:ok, html} -> html
       {:error, _reason} -> ["<pre><code>", Phoenix.HTML.html_escape(text), "</code></pre>"]
     end

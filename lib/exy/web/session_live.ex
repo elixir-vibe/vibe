@@ -97,9 +97,9 @@ defmodule Exy.Web.SessionLive do
         </.panel>
       </:inspector>
 
-      <section class="overflow-hidden rounded-2xl border border-white/10 bg-[#121016]/92 shadow-2xl shadow-black/25">
-        <div id="messages" phx-hook="ScrollBottom" class="max-h-none min-h-[48vh] overflow-y-auto px-4 py-4 sm:px-5 lg:max-h-[calc(100vh-18rem)]">
-          <div class="flex flex-col gap-4">
+      <section class="rounded-xl border border-white/10 bg-[#121016]/80">
+        <div id="messages" phx-hook="ScrollBottom" class="min-h-[48vh] px-3 py-3 sm:px-4 sm:py-4">
+          <div class="flex flex-col gap-3">
             <%= if @ui_state.messages == [] and is_nil(@ui_state.streaming_message) do %>
               <div class="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-zinc-500">No messages yet. Start with the composer below.</div>
             <% end %>
@@ -117,11 +117,11 @@ defmodule Exy.Web.SessionLive do
           </div>
         </div>
 
-        <form phx-submit="submit" class="sticky bottom-0 border-t border-white/10 bg-[#17151d]/96 p-3 backdrop-blur sm:p-4">
+        <form phx-submit="submit" class="border-t border-white/10 bg-[#17151d]/90 p-3 sm:p-4">
           <label class="sr-only" for="session-prompt">Message Exy</label>
-          <textarea id="session-prompt" name="prompt" value={@prompt} rows="4" autocomplete="off" placeholder="Ask Exy. Use /help, /model, /sessions, or plain language…" class="min-h-24 w-full resize-y rounded-xl border border-white/10 bg-[#0d0c11]/85 px-4 py-3 text-sm leading-6 text-zinc-100 ring-orange-300/20 placeholder:text-zinc-600 focus:border-orange-300 focus:outline-none focus:ring-4 sm:min-h-28"></textarea>
+          <textarea id="session-prompt" name="prompt" value={@prompt} rows="2" autocomplete="off" placeholder="Ask Exy. Use /help, /model, /sessions, or plain language…" class="min-h-16 w-full resize-y rounded-lg border border-white/10 bg-[#0d0c11]/85 px-3 py-2 text-sm leading-6 text-zinc-100 ring-orange-300/20 placeholder:text-zinc-600 focus:border-orange-300 focus:outline-none focus:ring-4 sm:min-h-20"></textarea>
           <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs leading-5 text-zinc-500">State stays server-owned. Cmd/Ctrl+Enter support can be added as a LiveView hook.</p>
+            <p class="text-xs leading-5 text-zinc-500">Server-owned session state.</p>
             <div class="flex justify-end gap-2">
               <button type="button" phx-click="cancel" class="rounded-lg border border-white/10 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-red-300/50 hover:text-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60">Cancel</button>
               <button class="rounded-lg bg-orange-400 px-5 py-2 text-sm font-semibold text-zinc-950 shadow-lg shadow-orange-950/20 transition-colors hover:bg-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">Send</button>
