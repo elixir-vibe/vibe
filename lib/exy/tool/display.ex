@@ -15,6 +15,7 @@ defmodule Exy.Tool.Display do
           | {:markdown, String.t(), keyword()}
           | {:source, String.t(), keyword()}
           | {:error, String.t(), keyword()}
+          | {:diff, String.t(), keyword()}
           | {:lines, [IO.chardata()], keyword()}
           | {:render, (pos_integer(), Exy.TUI.Theme.t() -> [IO.chardata()]), keyword()}
 
@@ -30,6 +31,8 @@ defmodule Exy.Tool.Display do
         }
 
   alias Exy.Tool.Display.{Eval, Read}
+  alias Exy.TUI.ToolWidget
+  alias Exy.TUI.Widgets.Tools.{AST, FileMutation, FileTool, LSP}
 
   @spec from_tool(map()) :: t() | {:legacy, map()}
   def from_tool(%__MODULE__{} = display), do: display
@@ -46,22 +49,49 @@ defmodule Exy.Tool.Display do
   def from_tool(tool) when is_map(tool), do: generic(tool)
 
   defp file_mutation(tool, name) do
-    result = Exy.TUI.ToolWidget.output(tool)
+    result = ToolWidget.output(tool)
 
     %__MODULE__{
       name: name,
       status: Map.get(tool, :status),
-      summary: Exy.TUI.Widgets.Tools.FileTool.path_summary(tool, result),
-      body: [
-        {:render,
-         fn width, theme ->
-           Exy.TUI.Widgets.Tools.FileMutation.output_lines(result, width, theme)
-         end, []}
-      ],
+      summary: FileTool.path_summary(tool, result),
+      body: file_mutation_body(result, name),
       expanded?: expanded?(tool),
       truncate?: Map.get(tool, :truncate?, true)
     }
   end
+
+  defp file_mutation_body(%{change: %{diff: diff}} = result, :edit) when is_binary(diff) do
+    [{:diff, diff, language: language_from_path(Map.get(result, :path))}]
+  end
+
+  defp file_mutation_body(%{change: %{new: source}} = result, :write) when is_binary(source) do
+    [{:source, source, language: language_from_path(Map.get(result, :path))}]
+  end
+
+  defp file_mutation_body(result, _name) do
+    [
+      {:render,
+       fn width, theme ->
+         FileMutation.output_lines(result, width, theme)
+       end, []}
+    ]
+  end
+
+  defp language_from_path(path) when is_binary(path) do
+    case Path.extname(path) do
+      ".ex" -> "elixir"
+      ".exs" -> "elixir"
+      ".heex" -> "heex"
+      ".css" -> "css"
+      ".js" -> "javascript"
+      ".ts" -> "typescript"
+      ".md" -> "markdown"
+      extension -> String.trim_leading(extension, ".")
+    end
+  end
+
+  defp language_from_path(_path), do: "text"
 
   defp ast(tool) do
     result = Map.get(tool, :output) || Map.get(tool, :result) || Map.get(tool, :matches)
@@ -69,13 +99,12 @@ defmodule Exy.Tool.Display do
     %__MODULE__{
       name: :ast,
       status: Map.get(tool, :status),
-      summary: Exy.TUI.Widgets.Tools.AST.summary(tool, result),
+      summary: AST.summary(tool, result),
       meta:
-        [ast_action(tool) | Exy.TUI.Widgets.Tools.AST.meta(tool, result)]
+        [ast_action(tool) | AST.meta(tool, result)]
         |> Enum.reject(&(&1 in [nil, ""])),
       body: [
-        {:render,
-         fn width, theme -> Exy.TUI.Widgets.Tools.AST.output_lines(result, width, theme) end, []}
+        {:render, fn width, theme -> AST.output_lines(result, width, theme) end, []}
       ],
       expanded?: expanded?(tool),
       truncate?: Map.get(tool, :truncate?, true)
@@ -88,8 +117,8 @@ defmodule Exy.Tool.Display do
     %__MODULE__{
       name: :lsp,
       status: Map.get(tool, :status),
-      summary: Exy.TUI.Widgets.Tools.LSP.summary(tool, output),
-      meta: Exy.TUI.Widgets.Tools.LSP.meta(tool),
+      summary: LSP.summary(tool, output),
+      meta: LSP.meta(tool),
       body: lsp_body(output),
       expanded?: expanded?(tool),
       truncate?: Map.get(tool, :truncate?, true)
@@ -99,7 +128,7 @@ defmodule Exy.Tool.Display do
   defp ast_action(tool) do
     args = Map.get(tool, :args) || %{}
 
-    case Map.get(args, :action) || Map.get(args, "action") do
+    case Map.get(args, :action) do
       nil -> nil
       action -> to_string(action)
     end
@@ -112,10 +141,9 @@ defmodule Exy.Tool.Display do
     %__MODULE__{
       name: Map.get(tool, :name),
       status: Map.get(tool, :status),
-      summary: Exy.TUI.ToolWidget.compact_summary(tool),
+      summary: ToolWidget.compact_summary(tool),
       body: [
-        {:inspect, Exy.TUI.ToolWidget.format_value(Exy.TUI.ToolWidget.output(tool)),
-         truncation: :tail}
+        {:inspect, ToolWidget.format_value(ToolWidget.output(tool)), truncation: :tail}
       ],
       expanded?: expanded?(tool),
       truncate?: Map.get(tool, :truncate?, true)

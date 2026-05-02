@@ -184,7 +184,13 @@ defmodule Exy.Web.Components do
             <h3 class="text-sm font-semibold text-zinc-100">{tool_name(@display.name)}</h3>
             <.status_badge :if={(@display.status || @tool.status) not in [:ok, "ok"]} status={@display.status || @tool.status || :running} />
           </div>
-          <p :if={display_text(@display.summary) not in [nil, ""]} class="mt-1 break-words font-mono text-xs leading-5 text-zinc-500 [overflow-wrap:anywhere]">{display_text(@display.summary)}</p>
+          <div :if={display_text(@display.summary) not in [nil, ""]} class="mt-1 break-words font-mono text-xs leading-5 text-zinc-500 [overflow-wrap:anywhere]">
+            <%= if @display.summary_style == :elixir_dim do %>
+              {Phoenix.HTML.raw(summary_html(display_text(@display.summary)))}
+            <% else %>
+              {display_text(@display.summary)}
+            <% end %>
+          </div>
         </div>
         <div :if={@display.meta != []} class="flex shrink-0 flex-wrap gap-1 text-xs text-zinc-500">
           <span :for={meta <- @display.meta} class="rounded bg-white/[0.035] px-1.5 py-0.5">{display_text(meta)}</span>
@@ -196,7 +202,7 @@ defmodule Exy.Web.Components do
           <p class="text-sm text-zinc-500">No tool output.</p>
         <% else %>
           <%= for block <- @display.body do %>
-            <.tool_body_block block={block} truncate?={@display.truncate? and not @display.expanded?} />
+            <.tool_body_block block={block} truncate?={false} />
           <% end %>
         <% end %>
       </div>
@@ -214,11 +220,11 @@ defmodule Exy.Web.Components do
     <section class="overflow-hidden rounded-md bg-[#0d0c11]/72 ring-1 ring-white/8">
       <div :if={@body.label not in [nil, "", "Output", "Inspect"]} class="border-b border-white/8 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-zinc-600">{@body.label}</div>
 
-      <div :if={@body.kind in [:markdown, :source_html]} class="max-h-[28rem] overflow-auto px-3 py-2 text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-md [&_pre]:bg-transparent [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-white/10 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-white/10 [&_th]:px-2 [&_th]:py-1 [&_ul]:list-disc">
+      <div :if={@body.kind in [:markdown, :source_html, :diff_html]} class="max-h-[28rem] overflow-auto px-3 py-2 text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-md [&_pre]:bg-transparent [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-white/10 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-white/10 [&_th]:px-2 [&_th]:py-1 [&_ul]:list-disc">
         {Phoenix.HTML.raw(@body.html)}
       </div>
 
-      <pre :if={@body.kind not in [:markdown, :source_html]} class={[
+      <pre :if={@body.kind not in [:markdown, :source_html, :diff_html]} class={[
         "max-h-[28rem] overflow-auto whitespace-pre-wrap break-words px-3 py-2 text-xs leading-5 [overflow-wrap:anywhere]",
         if(@body.kind == :error, do: "text-red-200", else: "text-zinc-200"),
         if(@body.mono?, do: "font-mono", else: "font-sans")
@@ -270,6 +276,15 @@ defmodule Exy.Web.Components do
     }
   end
 
+  defp block_body({:diff, text, _opts}, truncate?) do
+    %{
+      kind: :diff_html,
+      label: "Diff",
+      html: diff_html(text |> display_text() |> truncate_text(truncate?)),
+      mono?: true
+    }
+  end
+
   defp block_body({:inspect, text, _opts}, truncate?) do
     %{
       kind: :inspect,
@@ -293,7 +308,7 @@ defmodule Exy.Web.Components do
       kind: :text,
       label: "Output",
       text: text |> display_text() |> truncate_text(truncate?),
-      mono?: false
+      mono?: true
     }
   end
 
@@ -341,10 +356,52 @@ defmodule Exy.Web.Components do
            formatter: {:html_inline, language: language, pre_class: "m-0 !bg-transparent !p-0"}
          ) do
       {:ok, html} -> html
-      {:error, _reason} -> ["<pre><code>", Phoenix.HTML.html_escape(text), "</code></pre>"]
+      {:error, _reason} -> ["<pre><code>", html_escape(text), "</code></pre>"]
     end
   rescue
-    _error -> ["<pre><code>", Phoenix.HTML.html_escape(text), "</code></pre>"]
+    _error -> ["<pre><code>", html_escape(text), "</code></pre>"]
+  end
+
+  defp summary_html(code) do
+    case Lumis.highlight(code,
+           formatter:
+             {:html_inline, language: "elixir", pre_class: "m-0 !bg-transparent !p-0 opacity-70"}
+         ) do
+      {:ok, html} -> html
+      {:error, _reason} -> html_escape(code)
+    end
+  rescue
+    _error -> html_escape(code)
+  end
+
+  defp diff_html(text) do
+    rows =
+      text
+      |> String.split("\n")
+      |> Enum.map(fn line ->
+        class =
+          cond do
+            String.starts_with?(line, "+") -> "text-emerald-200 bg-emerald-400/10"
+            String.starts_with?(line, "-") -> "text-red-200 bg-red-400/10"
+            true -> "text-zinc-300"
+          end
+
+        [
+          "<div class=\"font-mono text-xs leading-5 whitespace-pre ",
+          class,
+          "\">",
+          html_escape(line),
+          "</div>"
+        ]
+      end)
+
+    ["<pre class=\"m-0 overflow-auto bg-transparent p-0\"><code>", rows, "</code></pre>"]
+  end
+
+  defp html_escape(value) do
+    value
+    |> Phoenix.HTML.html_escape()
+    |> Phoenix.HTML.safe_to_string()
   end
 
   defp rendered_lines(nil), do: []
@@ -365,17 +422,7 @@ defmodule Exy.Web.Components do
   defp truncate_text(text, false), do: text
   defp truncate_text(nil, _truncate?), do: ""
 
-  defp truncate_text(text, true) do
-    lines = String.split(text, "\n")
-
-    if length(lines) > 16 do
-      omitted = length(lines) - 16
-      tail = Enum.take(lines, -16)
-      Enum.join(["… #{omitted} lines omitted …", "" | tail], "\n")
-    else
-      text
-    end
-  end
+  defp truncate_text(text, true), do: text
 
   defp strip_ansi(text) do
     Regex.replace(~r/\e\[[0-9;?]*[ -\/]*[@-~]/, text, "")
