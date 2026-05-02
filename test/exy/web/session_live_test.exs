@@ -87,21 +87,36 @@ defmodule Exy.Web.SessionLiveTest do
     assert html =~ "2"
   end
 
-  test "session page groups legacy TUI tool transcripts" do
-    session_id = "web-legacy-tool-session"
+  test "session page hides stored TUI transcript artifacts when semantic events exist" do
+    session_id = "web-stored-tool-transcript-session"
 
     Exy.Session.Store.append_ui_events([
-      {1, Event.new(:user_message_added, session_id, %{text: "◆ eval • File.cwd!()  ✓"})},
-      {2, Event.new(:user_message_added, session_id, %{text: "\"/tmp\""})},
-      {3, Event.new(:assistant_message_added, session_id, %{text: "Done."})}
+      {1, Event.new(:user_message_added, session_id, %{text: "Real user prompt"})},
+      {2, Event.new(:user_message_added, session_id, %{text: "◆ eval • File.cwd!()  ✓"})},
+      {3, Event.new(:user_message_added, session_id, %{text: "\"/tmp\""})},
+      {4,
+       Event.new(
+         :tool_started,
+         session_id,
+         ToolEvent.started(id: "tool-eval", name: :eval, args: %{code: "File.cwd!()"})
+       )},
+      {5,
+       Event.new(
+         :tool_finished,
+         session_id,
+         ToolEvent.finished(id: "tool-eval", name: :eval, output: "\"/tmp\"", status: :ok)
+       )},
+      {6, Event.new(:assistant_message_added, session_id, %{text: "Done."})}
     ])
 
     conn = build_conn() |> get("/sessions/#{session_id}")
     html = html_response(conn, 200)
 
-    assert html =~ "eval • File.cwd!()"
-    assert html =~ "ok"
+    assert html =~ "Real user prompt"
+    assert html =~ "Eval"
+    assert html =~ "File.cwd!()"
     assert html =~ ~s(&quot;/tmp&quot;)
+    refute html =~ "◆ eval"
   end
 
   test "session page tolerates tool renderers with no output lines" do

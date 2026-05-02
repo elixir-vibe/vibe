@@ -154,21 +154,6 @@ defmodule Exy.Web.Components do
     """
   end
 
-  def message_card(%{message: %{role: :legacy_tool}} = assigns) do
-    ~H"""
-    <article class="overflow-hidden rounded-xl border border-violet-300/20 bg-[#15131b]/92 shadow-sm">
-      <header class="border-b border-white/10 bg-white/[0.025] px-4 py-3 sm:px-5">
-        <div class="flex min-w-0 flex-wrap items-center gap-2">
-          <span class="grid h-6 w-6 place-items-center rounded-md bg-violet-400/15 text-xs text-violet-200 ring-1 ring-violet-300/25">◆</span>
-          <h3 class="break-words text-sm font-semibold text-zinc-100 [overflow-wrap:anywhere]">{legacy_tool_title(@message.text)}</h3>
-          <.status_badge status={legacy_tool_status(@message.text)} />
-        </div>
-      </header>
-      <pre :if={@message.output_lines != []} class="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-xs leading-5 text-zinc-200 [overflow-wrap:anywhere] sm:px-5">{@message.output_lines |> Enum.reverse() |> Enum.join("\n")}</pre>
-    </article>
-    """
-  end
-
   def message_card(assigns) do
     ~H"""
     <article class={[
@@ -181,7 +166,10 @@ defmodule Exy.Web.Components do
       <div class="mb-2 flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
         <span>{@message.role}</span>
       </div>
-      <div class="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{message_text(@message)}</div>
+      <div :if={@message.role == :user} class="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{message_text(@message)}</div>
+      <div :if={@message.role != :user} class="text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-black/30 [&_pre]:p-3 [&_ul]:list-disc">
+        {Phoenix.HTML.raw(markdown_html(message_text(@message)))}
+      </div>
     </article>
     """
   end
@@ -230,11 +218,11 @@ defmodule Exy.Web.Components do
     <section class="rounded-lg border border-white/10 bg-[#0d0c11]/75">
       <div class="border-b border-white/10 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-zinc-500">{@body.label}</div>
 
-      <div :if={@body.kind == :markdown} class="max-h-[32rem] overflow-auto px-3 py-3 text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-black/30 [&_pre]:p-3 [&_ul]:list-disc">
+      <div :if={@body.kind in [:markdown, :source_html]} class="max-h-[32rem] overflow-auto px-3 py-3 text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere] [&_a]:text-orange-200 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-orange-300/30 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-300 [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-black/30 [&_pre]:p-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-white/10 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-white/10 [&_th]:px-2 [&_th]:py-1 [&_ul]:list-disc">
         {Phoenix.HTML.raw(@body.html)}
       </div>
 
-      <pre :if={@body.kind != :markdown} class={[
+      <pre :if={@body.kind not in [:markdown, :source_html]} class={[
         "max-h-[32rem] overflow-auto whitespace-pre-wrap break-words px-3 py-3 text-xs leading-5 [overflow-wrap:anywhere]",
         if(@body.kind == :error, do: "text-red-200", else: "text-zinc-200"),
         if(@body.mono?, do: "font-mono", else: "font-sans")
@@ -263,42 +251,25 @@ defmodule Exy.Web.Components do
   defp tool_name(name) when is_binary(name), do: String.capitalize(name)
   defp tool_name(_name), do: "Tool"
 
-  defp legacy_tool_title(text) do
-    text
-    |> String.trim_leading("◆ ")
-    |> String.trim()
-    |> String.trim_trailing("✓")
-    |> String.trim_trailing("×")
-    |> String.trim_trailing("…")
-    |> String.trim()
-  end
-
-  defp legacy_tool_status(text) do
-    cond do
-      String.ends_with?(String.trim(text), "✓") -> :ok
-      String.ends_with?(String.trim(text), "×") -> :error
-      true -> :running
-    end
-  end
-
   defp block_body({:markdown, text, _opts}, truncate?) do
     text = text |> display_text() |> truncate_text(truncate?)
 
     %{
       kind: :markdown,
       label: "Markdown",
-      html: MDEx.to_html!(text, render: [unsafe: false]),
+      html: markdown_html(text),
       mono?: false
     }
   end
 
   defp block_body({:source, text, opts}, truncate?) do
     language = opts |> Keyword.get(:language, :text) |> to_string()
+    text = text |> display_text() |> truncate_text(truncate?)
 
     %{
-      kind: :source,
+      kind: :source_html,
       label: String.upcase(language),
-      text: text |> display_text() |> truncate_text(truncate?),
+      html: source_html(text, language),
       mono?: true
     }
   end
@@ -360,6 +331,22 @@ defmodule Exy.Web.Components do
       text: block |> inspect(pretty: true) |> truncate_text(truncate?),
       mono?: true
     }
+  end
+
+  defp markdown_html(text) do
+    MDEx.to_html!(text || "",
+      extension: [table: true, strikethrough: true, tasklist: true, autolink: true],
+      render: [unsafe: false]
+    )
+  end
+
+  defp source_html(text, language) do
+    case Lumis.highlight(text, formatter: {:html_inline, language: language, pre_class: "m-0"}) do
+      {:ok, html} -> html
+      {:error, _reason} -> ["<pre><code>", Phoenix.HTML.html_escape(text), "</code></pre>"]
+    end
+  rescue
+    _error -> ["<pre><code>", Phoenix.HTML.html_escape(text), "</code></pre>"]
   end
 
   defp rendered_lines(nil), do: []

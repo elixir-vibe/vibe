@@ -104,11 +104,11 @@ defmodule Exy.Web.SessionLive do
               <div class="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-zinc-500">No messages yet. Start with the composer below.</div>
             <% end %>
 
-            <%= for message <- display_messages(@ui_state.messages) do %>
+            <%= for message <- display_messages(@ui_state.messages, @assistant_texts) do %>
               <.message_card message={message} />
             <% end %>
 
-            <%= if @ui_state.streaming_message do %>
+            <%= if @ui_state.streaming_message && @assistant_texts == [] do %>
               <article class="max-w-full rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 sm:px-5 sm:py-4">
                 <div class="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-cyan-200">assistant streaming</div>
                 <div class="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{@ui_state.streaming_message.text}</div>
@@ -133,40 +133,49 @@ defmodule Exy.Web.SessionLive do
     """
   end
 
-  defp display_messages(messages) do
+  defp display_messages(messages, assistant_texts) do
     messages
-    |> Enum.reduce([], fn message, acc ->
+    |> Enum.reduce({[], false, assistant_texts}, fn message, {acc, dropping?, assistant_texts} ->
       cond do
-        legacy_tool_start?(message) ->
-          [legacy_tool_message(message) | acc]
+        tui_transcript_start?(message) ->
+          {acc, true, assistant_texts}
 
-        legacy_tool_output?(message, acc) ->
-          [append_legacy_tool_output(hd(acc), message) | tl(acc)]
+        dropping? and Map.get(message, :role) == :user ->
+          {acc, true, assistant_texts}
+
+        Map.get(message, :role) == :assistant ->
+          {message, assistant_texts} = replace_assistant_text(message, assistant_texts)
+          {[message | acc], false, assistant_texts}
 
         true ->
-          [message | acc]
+          {[message | acc], false, assistant_texts}
       end
     end)
+    |> elem(0)
     |> Enum.reverse()
   end
 
-  defp legacy_tool_start?(%{role: :user, text: "◆ " <> _rest}), do: true
-  defp legacy_tool_start?(_message), do: false
-
-  defp legacy_tool_output?(%{role: :user, text: _text}, [%{role: :legacy_tool} | _rest]), do: true
-  defp legacy_tool_output?(_message, _acc), do: false
-
-  defp append_legacy_tool_output(tool, message) do
-    Map.update!(tool, :output_lines, &[Map.get(message, :text, "") | &1])
+  defp replace_assistant_text(message, [text | rest]) when is_binary(text) and text != "" do
+    {Map.put(message, :text, text), rest}
   end
 
-  defp legacy_tool_message(%{text: text, at: at}) do
-    %{role: :legacy_tool, text: text, output_lines: [], at: at}
+  defp replace_assistant_text(message, assistant_texts), do: {message, assistant_texts}
+
+  defp tui_transcript_start?(%{role: :user, text: "◆ " <> _rest}), do: true
+  defp tui_transcript_start?(_message), do: false
+
+  defp assistant_texts(session_id) do
+    session_id
+    |> Exy.Session.Store.events()
+    |> Enum.filter(&(&1.type == :assistant_message))
+    |> Enum.map(&assistant_text/1)
+    |> Enum.reject(&(&1 in [nil, ""]))
   end
 
-  defp legacy_tool_message(%{text: text}) do
-    %{role: :legacy_tool, text: text, output_lines: []}
-  end
+  defp assistant_text(%{data: %{result: %{output: output}}}), do: output
+  defp assistant_text(%{data: %{result: %{"output" => output}}}), do: output
+  defp assistant_text(%{data: %{text: text}}), do: text
+  defp assistant_text(_event), do: nil
 
   defp get_or_start_session(session_id) do
     case Exy.Session.lookup(session_id) do
@@ -178,6 +187,7 @@ defmodule Exy.Web.SessionLive do
   defp assign_session(socket, session, state, cursor) do
     socket
     |> assign(session: session, session_id: state.session_id, prompt: "")
+    |> assign(:assistant_texts, assistant_texts(state.session_id))
     |> assign_state(state, cursor)
   end
 
