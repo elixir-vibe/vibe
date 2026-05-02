@@ -104,7 +104,7 @@ defmodule Exy.Web.SessionLive do
               <div class="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-zinc-500">No messages yet. Start with the composer below.</div>
             <% end %>
 
-            <%= for message <- display_messages(@ui_state.messages, @assistant_texts) do %>
+            <%= for message <- display_messages(@ui_state.messages, @session_id) do %>
               <.message_card message={message} />
             <% end %>
 
@@ -133,36 +133,105 @@ defmodule Exy.Web.SessionLive do
     """
   end
 
-  defp display_messages(messages, assistant_texts) do
+  defp display_messages(messages, session_id) do
+    canonical =
+      if polluted_tui_transcript?(messages), do: canonical_messages(session_id), else: []
+
+    case canonical do
+      [] -> semantic_messages(messages)
+      messages -> messages
+    end
+  end
+
+  defp semantic_messages(messages) do
     messages
-    |> Enum.reduce({[], false, assistant_texts}, fn message, {acc, dropping?, assistant_texts} ->
+    |> Enum.reduce({[], false}, fn message, {acc, dropping?} ->
       cond do
-        tui_transcript_start?(message) ->
-          {acc, true, assistant_texts}
-
-        dropping? and Map.get(message, :role) == :user ->
-          {acc, true, assistant_texts}
-
-        Map.get(message, :role) == :assistant ->
-          {message, assistant_texts} = replace_assistant_text(message, assistant_texts)
-          {[message | acc], false, assistant_texts}
-
-        true ->
-          {[message | acc], false, assistant_texts}
+        tui_transcript_start?(message) -> {acc, true}
+        dropping? and Map.get(message, :role) == :user -> {acc, true}
+        Map.get(message, :streaming?) -> {acc, false}
+        true -> {[message | acc], false}
       end
     end)
     |> elem(0)
     |> Enum.reverse()
   end
 
-  defp replace_assistant_text(message, [text | rest]) when is_binary(text) and text != "" do
-    {Map.put(message, :text, text), rest}
+  defp polluted_tui_transcript?(messages) do
+    Enum.any?(messages, &tui_transcript_start?/1) or tui_transcript_fragments?(messages)
   end
 
-  defp replace_assistant_text(message, assistant_texts), do: {message, assistant_texts}
+  defp tui_transcript_fragments?(messages) do
+    messages
+    |> Enum.reduce_while(0, fn message, count ->
+      count = if tui_transcript_fragment?(message), do: count + 1, else: count
+      if count > 5, do: {:halt, true}, else: {:cont, count}
+    end)
+    |> Kernel.==(true)
+  end
+
+  defp canonical_messages(session_id) do
+    session_id
+    |> Exy.Session.Store.events()
+    |> Enum.filter(&(&1.type in [:user_message, :assistant_message]))
+    |> Enum.reduce({[], false}, fn event, {acc, seen_user?} ->
+      case canonical_message(event, seen_user?) do
+        {nil, seen_user?} -> {acc, seen_user?}
+        {message, seen_user?} -> {[message | acc], seen_user?}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+  end
+
+  defp canonical_message(%{type: :user_message}, true), do: {nil, true}
+
+  defp canonical_message(event, seen_user?) do
+    case canonical_message(event) do
+      nil -> {nil, seen_user?}
+      %{role: :user} = message -> {message, true}
+      message -> {message, seen_user?}
+    end
+  end
+
+  defp canonical_message(%{type: :user_message, at: at, data: %{prompt: prompt}}) do
+    prompt = prompt |> strip_recalled_history() |> String.trim()
+
+    if tui_transcript_text?(prompt), do: nil, else: %{role: :user, text: prompt, at: at}
+  end
+
+  defp canonical_message(%{type: :assistant_message, at: at} = event) do
+    case assistant_text(event) do
+      text when is_binary(text) and text != "" -> %{role: :assistant, text: text, at: at}
+      _text -> nil
+    end
+  end
+
+  defp canonical_message(_event), do: nil
 
   defp tui_transcript_start?(%{role: :user, text: "◆ " <> _rest}), do: true
   defp tui_transcript_start?(_message), do: false
+
+  defp tui_transcript_fragment?(%{role: :user, text: text}) when is_binary(text) do
+    tui_transcript_text?(text)
+  end
+
+  defp tui_transcript_fragment?(_message), do: false
+
+  defp tui_transcript_text?("◆ " <> _rest), do: true
+
+  defp tui_transcript_text?(text) when is_binary(text) do
+    text == "" or
+      String.starts_with?(text, ["… (", "──", "│ "]) or
+      String.contains?(text, "ctrl+o to expand")
+  end
+
+  defp tui_transcript_text?(_text), do: false
+
+  defp strip_recalled_history(prompt) do
+    prompt
+    |> String.replace(~r/\n\n<recalled-history>.*?<\/recalled-history>/s, "")
+  end
 
   defp assistant_texts(session_id) do
     session_id
