@@ -18,8 +18,7 @@ config :exy, Exy.Web.Endpoint,
   url: [host: "localhost"],
   render_errors: [formats: [html: Exy.Web.ErrorHTML], layout: false],
   pubsub_server: Exy.PubSub,
-  secret_key_base:
-    "exy-web-secret-key-base-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  secret_key_base: String.duplicate("0", 64),
   live_view: [signing_salt: "exy-web-signing-salt-2026"]
 
 config :volt,
