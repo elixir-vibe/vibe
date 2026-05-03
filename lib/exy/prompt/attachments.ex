@@ -4,7 +4,7 @@ defmodule Exy.Prompt.Attachments do
   alias Exy.Image
   alias Exy.Model.Content
 
-  @attachment_pattern ~r/(^|\s)@([^\s]+)/
+  @attachment_pattern ~r/(^|\s)@(?:"([^"]+)"|'([^']+)'|([^\s]+))/
 
   @type processed :: %{text: String.t(), images: [Content.Image.t()]}
 
@@ -69,7 +69,12 @@ defmodule Exy.Prompt.Attachments do
 
       attachments ->
         text =
-          Regex.replace(@attachment_pattern, prompt, fn _match, prefix, raw_path ->
+          Regex.replace(@attachment_pattern, prompt, fn _full,
+                                                        prefix,
+                                                        double_quoted,
+                                                        single_quoted,
+                                                        unquoted ->
+            raw_path = attachment_path([double_quoted, single_quoted, unquoted])
             if image_attachment?(raw_path, root), do: prefix, else: "#{prefix}@#{raw_path}"
           end)
 
@@ -82,15 +87,19 @@ defmodule Exy.Prompt.Attachments do
   def attachments(prompt, root) when is_binary(prompt) and is_binary(root) do
     @attachment_pattern
     |> Regex.scan(prompt)
-    |> Enum.map(fn [_match, _prefix, raw_path] -> raw_path end)
+    |> Enum.map(fn [_match, _prefix | rest] -> attachment_path(rest) end)
     |> Enum.filter(&image_attachment?(&1, root))
     |> Enum.map(&resolve(&1, root))
   end
 
-  defp image_attachment?(raw_path, root) do
+  defp attachment_path(captures), do: Enum.find(captures, &(&1 not in [nil, ""]))
+
+  defp image_attachment?(raw_path, root) when is_binary(raw_path) do
     path = resolve(raw_path, root)
     File.regular?(path) and Image.supported?(path)
   end
+
+  defp image_attachment?(_raw_path, _root), do: false
 
   defp image_content(path) when is_binary(path) do
     {:ok, image} = Image.from_file(path, resize?: true)

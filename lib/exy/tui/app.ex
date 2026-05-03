@@ -13,7 +13,7 @@ defmodule Exy.TUI.App do
 
   @active_sessions_tick_ms 1_000
   @server_migration_tick_ms 1_000
-  alias Exy.UI.{Autocomplete, Command, EditorServer, Reducer, SlashCommands}
+  alias Exy.UI.{Autocomplete, Command, EditorServer, FileAutocomplete, Reducer, SlashCommands}
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -422,7 +422,11 @@ defmodule Exy.TUI.App do
 
   defp refresh_autocomplete(state) do
     editor = EditorServer.state(state.editor)
-    %{state | autocomplete: SlashCommands.autocomplete(editor.text)}
+
+    autocomplete =
+      SlashCommands.autocomplete(editor.text) || FileAutocomplete.autocomplete(editor.text)
+
+    %{state | autocomplete: autocomplete}
   end
 
   defp remember_event(state, event) do
