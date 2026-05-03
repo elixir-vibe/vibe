@@ -2,13 +2,25 @@ defmodule Exy.Image.ResizeBackendIntegrationTest do
   use ExUnit.Case, async: false
 
   alias Exy.Image
-  alias Exy.Image.Resize.Backends.{ImageMagick, Sips}
+  alias Exy.Image.Resize.Backends.{ImageMagick, Sips, Vips}
 
   @tag :integration
   test "ImageMagick backend resizes PNG images when magick is available" do
     if ImageMagick.available?() do
       assert {:ok, resized} =
                ImageMagick.resize(sample_image(), max_width: 1, max_height: 1, quality: 80)
+
+      assert %Image{mime_type: "image/png", width: 1, height: 1, was_resized?: true} = resized
+    else
+      :ok
+    end
+  end
+
+  @tag :integration
+  test "vips backend resizes PNG images when vips is available" do
+    if Vips.available?() do
+      assert {:ok, resized} =
+               Vips.resize(sample_image(), max_width: 1, max_height: 1, quality: 80)
 
       assert %Image{mime_type: "image/png", width: 1, height: 1, was_resized?: true} = resized
     else

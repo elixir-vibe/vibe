@@ -2,13 +2,13 @@ defmodule Exy.Image.Resize do
   @moduledoc "Resize images through pluggable supervised command backends."
 
   alias Exy.Image
-  alias Exy.Image.Resize.Backends.{ImageMagick, Sips}
+  alias Exy.Image.Resize.Backends.{ImageMagick, Sips, Vips}
 
   @default_max_width 2_000
   @default_max_height 2_000
   @default_max_bytes 4_500_000
   @default_quality 80
-  @default_backends [ImageMagick, Sips]
+  @default_backends [ImageMagick, Sips, Vips]
 
   @type backend :: module()
 
