@@ -10,7 +10,8 @@ defmodule Exy.UI.SlashCommands.Command do
           optional(:selectors) => [atom()]
         }
 
-  @type result :: {:events, [Event.t()]} | :compact | :ignore
+  @type result ::
+          {:events, [Event.t()]} | {:command, atom() | {atom(), map()}} | :compact | :ignore
 
   @callback spec() :: spec()
   @callback run(String.t(), State.t()) :: result()

@@ -8,6 +8,7 @@ defmodule Exy.Agent.Options do
         |> put_role_model()
         |> put_role_system()
         |> put_role_tools()
+        |> put_role_effort()
         |> put_provider_options()
 
       {:ok, opts}
@@ -103,10 +104,18 @@ defmodule Exy.Agent.Options do
     end
   end
 
+  defp put_role_effort(opts) do
+    Keyword.put_new_lazy(opts, :effort, fn -> Exy.Agent.Profile.effort_for(opts) end)
+  end
+
   defp put_provider_options(opts) do
     model = Keyword.get(opts, :model) || Exy.Model.Config.default()
     provider = model |> to_string() |> String.split(":", parts: 2) |> hd()
-    provider_options = Exy.Agent.Profile.provider_options(provider)
+
+    provider_options =
+      provider
+      |> Exy.Agent.Profile.provider_options()
+      |> maybe_put_effort(Keyword.get(opts, :effort))
 
     if provider_options == [] do
       opts
@@ -119,6 +128,13 @@ defmodule Exy.Agent.Options do
       )
     end
   end
+
+  defp maybe_put_effort(provider_options, effort)
+       when effort in [:minimal, :low, :medium, :high, :xhigh] do
+    Keyword.put_new(provider_options, :reasoning_effort, Atom.to_string(effort))
+  end
+
+  defp maybe_put_effort(provider_options, _effort), do: provider_options
 
   defp auth_provider_name("openai_codex"), do: "openai-codex"
   defp auth_provider_name(provider), do: provider

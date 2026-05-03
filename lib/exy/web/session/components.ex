@@ -6,6 +6,12 @@ defmodule Exy.Web.Session.Components do
 
   import Exy.Web.Components.Tool, only: [tool_card: 1]
 
+  defp effort_label(effort) when effort in [:off, :minimal, :low, :medium, :high, :xhigh],
+    do: Atom.to_string(effort)
+
+  defp effort_label(nil), do: "off"
+  defp effort_label(effort), do: to_string(effort)
+
   attr(:label, :string, required: true)
 
   def activity_row(assigns) do
@@ -33,8 +39,12 @@ defmodule Exy.Web.Session.Components do
           </div>
           <p :if={Status.activity_label(@state)} class="mt-1 truncate text-xs text-zinc-500">{Status.activity_label(@state)}</p>
         </div>
-        <div class="flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
+        <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-zinc-500">
+          <span :for={{key, text} <- Map.get(@state, :plugin_statuses, %{})} class="rounded-full border border-violet-300/15 bg-violet-300/10 px-2 py-0.5 text-violet-100">
+            <span class="font-mono text-violet-200/70">{key}</span> {text}
+          </span>
           <span class="truncate">{@state.model}</span>
+          <span>{effort_label(@state.effort)}</span>
           <span class="truncate font-mono">{@state.cwd}</span>
         </div>
       </div>
@@ -53,8 +63,17 @@ defmodule Exy.Web.Session.Components do
           <p class="mt-1 break-words font-mono text-xs [overflow-wrap:anywhere]">{@state.cwd}</p>
         </div>
         <div class="flex min-w-0 justify-between gap-4"><span class="text-zinc-500">Model</span><span class="truncate">{@state.model}</span></div>
+        <div class="flex justify-between gap-4"><span class="text-zinc-500">Effort</span><span>{effort_label(@state.effort)}</span></div>
         <div class="flex justify-between gap-4"><span class="text-zinc-500">Status</span><Exy.Web.Components.Core.status_badge status={@state.status} /></div>
         <div class="flex justify-between gap-4"><span class="text-zinc-500">Messages</span><span class="tabular-nums">{length(@state.messages)}</span></div>
+        <div :if={map_size(Map.get(@state, :plugin_statuses, %{})) > 0}>
+          <p class="text-[0.68rem] uppercase tracking-[0.2em] text-zinc-500">Plugin status</p>
+          <div class="mt-2 space-y-1">
+            <div :for={{key, text} <- Map.get(@state, :plugin_statuses, %{})} class="rounded-md bg-violet-300/10 px-2 py-1 text-xs text-violet-100">
+              <span class="font-mono text-violet-200/70">{key}</span> {text}
+            </div>
+          </div>
+        </div>
       </div>
     </Exy.Web.Components.Core.panel>
     """
@@ -69,7 +88,7 @@ defmodule Exy.Web.Session.Components do
         <Exy.Web.Components.Core.status_badge status={@state.status} />
         <span class="tabular-nums">{length(@state.messages)} messages</span>
       </div>
-      <p class="mt-2 truncate">{@state.model}</p>
+      <p class="mt-2 truncate">{@state.model} · {effort_label(@state.effort)}</p>
       <p class="mt-1 truncate font-mono">{@state.cwd}</p>
     </div>
     """

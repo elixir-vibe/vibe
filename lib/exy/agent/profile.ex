@@ -53,6 +53,17 @@ defmodule Exy.Agent.Profile do
     end
   end
 
+  @spec default_effort() :: Exy.Model.Effort.t()
+  def default_effort do
+    with {:ok, data} <- load(),
+         value when is_binary(value) <- Map.get(data, "default_effort"),
+         {:ok, effort} <- Exy.Model.Effort.from_string(value) do
+      effort
+    else
+      _ -> Exy.Model.Effort.default()
+    end
+  end
+
   @spec model_for(keyword()) :: String.t() | nil
   def model_for(opts) do
     cond do
@@ -67,6 +78,38 @@ defmodule Exy.Agent.Profile do
 
       true ->
         default_model()
+    end
+  end
+
+  @spec effort_for(keyword()) :: Exy.Model.Effort.t()
+  def effort_for(opts) do
+    cond do
+      effort = Keyword.get(opts, :effort) ->
+        if Exy.Model.Effort.valid?(effort), do: effort, else: default_effort()
+
+      role = Keyword.get(opts, :role) ->
+        role_effort(role) || default_effort()
+
+      true ->
+        default_effort()
+    end
+  end
+
+  @spec models() :: [String.t()]
+  def models do
+    case load() do
+      {:ok, data} ->
+        roles = Map.get(data, "roles", %{})
+
+        [
+          Map.get(data, "default_model")
+          | Enum.map(roles, fn {_role, profile} -> profile["model"] end)
+        ]
+        |> Enum.filter(&is_binary/1)
+        |> Enum.uniq()
+
+      {:error, _reason} ->
+        [Exy.Model.Config.default()]
     end
   end
 
@@ -102,6 +145,16 @@ defmodule Exy.Agent.Profile do
 
       true ->
         nil
+    end
+  end
+
+  defp role_effort(role) do
+    with {:ok, data} <- role(role),
+         value when is_binary(value) <- Map.get(data, "effort"),
+         {:ok, effort} <- Exy.Model.Effort.from_string(value) do
+      effort
+    else
+      _ -> nil
     end
   end
 

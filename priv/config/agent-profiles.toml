@@ -1,4 +1,5 @@
 default_model = "openai_codex:gpt-5.5"
+default_effort = "medium"
 
 [providers.openrouter]
 app_title = "Exy"

@@ -24,6 +24,10 @@ defmodule Exy.Web.SettingsLive do
               <dd class="min-w-0 truncate font-mono text-zinc-100">{@default_model}</dd>
             </div>
             <div class="flex justify-between gap-4">
+              <dt class="text-zinc-500">Default effort</dt>
+              <dd class="font-mono text-zinc-100">{Atom.to_string(@default_effort)}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
               <dt class="text-zinc-500">Profile file</dt>
               <dd class="min-w-0 truncate font-mono text-xs text-zinc-400">{@profile_path}</dd>
             </div>
@@ -90,6 +94,8 @@ defmodule Exy.Web.SettingsLive do
               <p class="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">Model</p>
               <p :if={role.model} class="mt-1 truncate rounded-md bg-white/[0.035] px-2 py-1 font-mono text-xs text-zinc-400">{role.model}</p>
               <p :if={!role.model} class="mt-1 text-xs text-zinc-600">Uses default model</p>
+              <p class="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">Effort</p>
+              <p class="mt-1 font-mono text-xs text-zinc-500">{Atom.to_string(role.effort || @default_effort)}</p>
             </div>
           </article>
         </div>
@@ -103,6 +109,7 @@ defmodule Exy.Web.SettingsLive do
 
     socket
     |> assign(:default_model, Profile.default_model())
+    |> assign(:default_effort, Profile.default_effort())
     |> assign(:profile_path, Profile.path())
     |> assign(:roles, roles(profile_data))
     |> assign(:auth_providers, auth_providers())
@@ -123,11 +130,21 @@ defmodule Exy.Web.SettingsLive do
       %{
         name: name,
         model: Map.get(data, "model"),
+        effort: role_effort(data),
         system: Map.get(data, "system"),
         tools: Map.get(data, "tools", [])
       }
     end)
     |> Enum.sort_by(& &1.name)
+  end
+
+  defp role_effort(data) do
+    with value when is_binary(value) <- Map.get(data, "effort"),
+         {:ok, effort} <- Exy.Model.Effort.from_string(value) do
+      effort
+    else
+      _ -> nil
+    end
   end
 
   defp prompts do

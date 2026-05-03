@@ -19,6 +19,8 @@ defmodule Exy.TUI.Widgets.Footer do
     right = [
       to_string(Map.get(props, :model)),
       separator,
+      effort_label(Map.get(props, :effort)),
+      separator,
       to_string(Map.get(props, :status)),
       separator,
       sessions_label(Map.get(props, :active_sessions)),
@@ -40,6 +42,12 @@ defmodule Exy.TUI.Widgets.Footer do
     |> to_string()
     |> Widget.fit_line(max(div(width, 4), 12))
   end
+
+  defp effort_label(effort) when effort in [:off, :minimal, :low, :medium, :high, :xhigh],
+    do: Atom.to_string(effort)
+
+  defp effort_label(nil), do: "off"
+  defp effort_label(effort), do: to_string(effort)
 
   defp sessions_label(nil), do: "local"
   defp sessions_label(1), do: "1 active"

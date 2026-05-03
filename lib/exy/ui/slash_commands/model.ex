@@ -2,27 +2,14 @@ defmodule Exy.UI.SlashCommands.Model do
   @moduledoc "Internal implementation module."
   @behaviour Exy.UI.SlashCommands.Command
 
-  alias Exy.UI.Event
+  @impl true
+  def spec, do: %{name: "model", description: "Choose model", selectors: []}
 
   @impl true
-  def spec, do: %{name: "model", description: "Choose model", selectors: [:model_selector]}
-
-  @impl true
-  def run(_args, ui_state) do
-    selector = %{
-      kind: :model_selector,
-      title: "Model",
-      items: [ui_state.model],
-      selected: 0,
-      limit: 8
-    }
-
-    {:events, [Event.new(:selector_opened, ui_state.session_id, selector)]}
+  def run(args, _ui_state) when is_binary(args) do
+    case String.trim(args) do
+      "" -> {:command, :open_model_selector}
+      model -> {:command, {:select_model, %{model: model}}}
+    end
   end
-
-  @impl true
-  def selector_action(model, ui_state) when is_binary(model),
-    do: {:events, [Event.new(:model_selected, ui_state.session_id, %{model: model})]}
-
-  def selector_action(_item, _ui_state), do: :ignore
 end

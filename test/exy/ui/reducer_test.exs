@@ -22,6 +22,22 @@ defmodule Exy.UI.ReducerTest do
     assert length(state.events) == 3
   end
 
+  test "updates selected model and effort" do
+    state = Exy.UI.State.new(session_id: "ui-test", model: "model-a", effort: :medium)
+
+    state =
+      state
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:model_selected, "ui-test", %{model: "model-b"})
+      )
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:effort_selected, "ui-test", %{effort: :high})
+      )
+
+    assert state.model == "model-b"
+    assert state.effort == :high
+  end
+
   test "previews token usage while assistant response streams" do
     state =
       Exy.UI.State.new(session_id: "ui-test")

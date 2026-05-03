@@ -11,7 +11,7 @@ defmodule Exy.TUI.Widgets.ModelInfo do
   def render(%{props: props}, width, theme) do
     model = Map.get(props, :model, "no-model")
     provider = Map.get(props, :provider)
-    reasoning = Map.get(props, :reasoning)
+    effort = Map.get(props, :effort) || Map.get(props, :reasoning)
     usage = Map.get(props, :usage, %{}) || %{}
     tokens = format_tokens(Map.get(usage, :total_tokens, 0))
     percent = Map.get(props, :context_percent)
@@ -29,7 +29,7 @@ defmodule Exy.TUI.Widgets.ModelInfo do
 
     right =
       [
-        reasoning,
+        effort,
         subscription,
         context_label(percent),
         if(tokens != "0", do: tokens),

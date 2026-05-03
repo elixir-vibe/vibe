@@ -13,7 +13,10 @@ Built-in commands:
 /attach    Open session selector
 /attach ID Attach by session id
 /a ID      Alias for /attach ID
-/model     Choose model
+/model     Open model selector (Ctrl+L)
+/model ID  Select model by id
+/effort    Open effort selector (Shift+Tab cycles effort)
+/effort ID Select effort: off, minimal, low, medium, high, xhigh
 /skill     Choose skill
 /clear     Clear visible messages
 /compact   Compact context

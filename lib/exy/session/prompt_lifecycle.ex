@@ -10,7 +10,7 @@ defmodule Exy.Session.PromptLifecycle do
   @spec llm_opts(keyword()) :: keyword()
   def llm_opts(opts) do
     opts
-    |> Keyword.take([:model, :role, :system, :allowed_tools])
+    |> Keyword.take([:model, :role, :system, :allowed_tools, :effort])
     |> maybe_put_llm_provider_options(Keyword.get(opts, :provider_options))
   end
 
@@ -80,7 +80,8 @@ defmodule Exy.Session.PromptLifecycle do
     state = emit.(state, Event.new(:assistant_stream_started, session_id, %{}))
 
     ask_opts =
-      state.llm_opts
+      state
+      |> current_llm_opts()
       |> base_ask_opts(parent, ref, session_id)
       |> Keyword.put(:on_result, &send(parent, {:assistant_delta, &1}))
       |> Keyword.put(:on_thinking, &send(parent, {:assistant_thinking_delta, &1}))
@@ -90,7 +91,22 @@ defmodule Exy.Session.PromptLifecycle do
   end
 
   defp ask_options(state, parent, ref, session_id, _emit) do
-    {base_ask_opts(state.llm_opts, parent, ref, session_id), state}
+    {base_ask_opts(current_llm_opts(state), parent, ref, session_id), state}
+  end
+
+  defp current_llm_opts(state) do
+    opts =
+      state.llm_opts
+      |> Keyword.put(:model, state.state.model)
+      |> Keyword.put(:effort, state.state.effort)
+
+    case Exy.Agent.Options.resolve(opts) do
+      {:ok, resolved} ->
+        maybe_put_llm_provider_options(resolved, Keyword.get(resolved, :provider_options))
+
+      {:error, _reason} ->
+        opts
+    end
   end
 
   defp base_ask_opts(opts, parent, ref, session_id) do

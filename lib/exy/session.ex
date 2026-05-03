@@ -13,6 +13,7 @@ defmodule Exy.Session do
 
   use GenServer
 
+  alias Exy.Model.{Effort, Switcher}
   alias Exy.Session.PromptLifecycle
   alias Exy.UI.{Command, Event, PluginBridge, Reducer, SlashCommands, State}
 
@@ -94,7 +95,7 @@ defmodule Exy.Session do
   Returns prompt options passed to the agent after session-only keys are removed.
   """
   @spec agent_ask_opts(keyword()) :: keyword()
-  def agent_ask_opts(opts), do: Keyword.drop(opts, [:model])
+  def agent_ask_opts(opts), do: Keyword.drop(opts, [:model, :effort])
 
   @impl true
   def init(opts) do
@@ -252,6 +253,50 @@ defmodule Exy.Session do
     emit(state, Event.new(:truncation_toggled, state.state.session_id, %{}))
   end
 
+  defp handle_command(%Command{type: :open_model_selector}, state) do
+    open_model_selector(state)
+  end
+
+  defp handle_command(%Command{type: :open_effort_selector}, state) do
+    open_effort_selector(state)
+  end
+
+  defp handle_command(%Command{type: :cycle_model, data: data}, state) do
+    direction = Map.get(data, :direction, :forward)
+
+    case Switcher.cycle_model(state.state.model, direction) do
+      {:ok, model} ->
+        state
+        |> emit(Event.new(:model_selected, state.state.session_id, %{model: model}))
+        |> notify("Model: #{model}")
+
+      {:error, :one_model} ->
+        notify(state, "Only one model available")
+    end
+  end
+
+  defp handle_command(%Command{type: :select_model, data: %{model: model}}, state)
+       when is_binary(model) do
+    state
+    |> emit(Event.new(:model_selected, state.state.session_id, %{model: model}))
+    |> notify("Model: #{model}")
+  end
+
+  defp handle_command(%Command{type: :cycle_effort}, state) do
+    effort = Switcher.cycle_effort(state.state.effort, state.state.model)
+
+    state
+    |> emit(Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
+    |> notify("Effort: #{Effort.label(effort)}")
+  end
+
+  defp handle_command(%Command{type: :select_effort, data: %{effort: effort}}, state)
+       when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
+    state
+    |> emit(Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
+    |> notify("Effort: #{Effort.label(effort)}")
+  end
+
   defp handle_command(
          %Command{type: :slash_command_submitted, data: %{command: command} = data},
          state
@@ -365,7 +410,22 @@ defmodule Exy.Session do
   defp run_slash_command(command, args, state) do
     case SlashCommands.handle(command, args, state.state) do
       {:events, events} -> Enum.reduce(events, state, &emit(&2, &1))
+      {:command, command} -> handle_command(normalize_command(command), state)
       :compact -> run_compaction(state)
+      :ignore -> state
+    end
+  end
+
+  defp run_selector_action(%{selector: :model_selector, item: model}, state)
+       when is_binary(model) do
+    handle_command(Command.new(:select_model, %{model: model}), state)
+  end
+
+  defp run_selector_action(%{selector: :effort_selector, item: effort}, state)
+       when is_binary(effort) do
+    case Effort.from_string(effort) do
+      {:ok, effort} -> handle_command(Command.new(:select_effort, %{effort: effort}), state)
+      {:error, {:unknown_effort, value}} -> notify(state, "unknown effort: #{value}")
     end
   end
 
@@ -375,6 +435,50 @@ defmodule Exy.Session do
       {:command, command} -> run_slash_command(command, "", state)
       :ignore -> state
     end
+  end
+
+  defp open_model_selector(state) do
+    items = Switcher.model_options(state.state.model)
+
+    selector = %{
+      kind: :model_selector,
+      title: "Model",
+      items: items,
+      selected: selected_index(items, state.state.model),
+      limit: 8
+    }
+
+    emit(state, Event.new(:selector_opened, state.state.session_id, selector))
+  end
+
+  defp open_effort_selector(state) do
+    items = Enum.map(Switcher.effort_options(state.state.model), &Effort.label/1)
+
+    current = Effort.label(state.state.effort || Effort.default())
+
+    selector = %{
+      kind: :effort_selector,
+      title: "Effort",
+      items: items,
+      selected: selected_index(items, current),
+      limit: 6
+    }
+
+    emit(state, Event.new(:selector_opened, state.state.session_id, selector))
+  end
+
+  defp selected_index(items, current) do
+    case Enum.find_index(items, &(&1 == current)) do
+      nil -> 0
+      index -> index
+    end
+  end
+
+  defp notify(state, text) do
+    emit(
+      state,
+      Event.new(:notification_added, state.state.session_id, %{level: :info, text: text})
+    )
   end
 
   defp run_compaction(state) do

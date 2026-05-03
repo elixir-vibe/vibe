@@ -26,6 +26,10 @@ defmodule Exy.UI.Editor do
           | :submit
           | :cancel
           | :toggle_truncation
+          | :cycle_model_forward
+          | :cycle_model_backward
+          | :open_model_selector
+          | :cycle_effort
           | :tab
           | {:insert, String.t()}
           | {:paste, String.t()}

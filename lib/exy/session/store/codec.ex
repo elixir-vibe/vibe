@@ -14,6 +14,7 @@ defmodule Exy.Session.Store.Codec do
     "context_compaction_finished" => :context_compaction_finished,
     "context_compaction_started" => :context_compaction_started,
     "confirmation_requested" => :confirmation_requested,
+    "effort_selected" => :effort_selected,
     "hidden_thinking_label_updated" => :hidden_thinking_label_updated,
     "messages_cleared" => :messages_cleared,
     "model_selected" => :model_selected,

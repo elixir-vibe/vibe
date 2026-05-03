@@ -37,7 +37,15 @@ defmodule Exy.UI.PromptRunner do
     Exy.Application.configure_dependency_logging()
 
     agent_opts =
-      Keyword.take(opts, [:model, :role, :system, :allowed_tools, :provider_options, :session_id])
+      Keyword.take(opts, [
+        :model,
+        :role,
+        :system,
+        :allowed_tools,
+        :provider_options,
+        :effort,
+        :session_id
+      ])
 
     ask_opts = opts |> Exy.Session.agent_ask_opts() |> Keyword.delete(:stream_owner)
 

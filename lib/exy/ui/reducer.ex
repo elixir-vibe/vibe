@@ -170,6 +170,11 @@ defmodule Exy.UI.Reducer do
     %{state | model: model}
   end
 
+  defp reduce(state, %Event{type: :effort_selected, data: %{effort: effort}})
+       when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
+    %{state | effort: effort}
+  end
+
   defp reduce(state, %Event{type: :session_selected, data: %{session_id: session_id}}) do
     %{state | session_id: session_id}
   end

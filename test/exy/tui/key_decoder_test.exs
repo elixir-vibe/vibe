@@ -17,6 +17,22 @@ defmodule Exy.TUI.KeyDecoderTest do
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :escape}) == [:cancel]
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :c, mods: [:ctrl]}) == [:cancel]
 
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :p, mods: [:ctrl]}) == [
+             :cycle_model_forward
+           ]
+
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :p, mods: [:ctrl, :shift]}) == [
+             :cycle_model_backward
+           ]
+
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :l, mods: [:ctrl]}) == [
+             :open_model_selector
+           ]
+
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :tab, mods: [:shift]}) == [
+             :cycle_effort
+           ]
+
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :o, mods: [:ctrl]}) == [
              :toggle_truncation
            ]

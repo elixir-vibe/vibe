@@ -12,7 +12,12 @@ defmodule Exy.UI.PluginBridge do
   @spec dispatch(Exy.UI.State.t(), Exy.UI.Event.t()) :: :ok
   def dispatch(ui_state, event) do
     if plugin_event?(event.type) and Process.whereis(Exy.Plugin.Manager) do
-      context = %{session_id: ui_state.session_id, cwd: ui_state.cwd, model: ui_state.model}
+      context = %{
+        session_id: ui_state.session_id,
+        cwd: ui_state.cwd,
+        model: ui_state.model,
+        effort: ui_state.effort
+      }
 
       Task.Supervisor.start_child(Exy.UI.PluginTaskSupervisor, fn ->
         Exy.Plugin.Manager.dispatch(event.type, event.data, context)

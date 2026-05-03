@@ -45,7 +45,16 @@ defmodule Exy.UI.Block do
 
   defmodule Footer do
     @moduledoc "Internal implementation module."
-    defstruct [:cwd, :model, :session_id, :status, :usage, :active_sessions, plugin_statuses: %{}]
+    defstruct [
+      :cwd,
+      :model,
+      :effort,
+      :session_id,
+      :status,
+      :usage,
+      :active_sessions,
+      plugin_statuses: %{}
+    ]
 
     @type t :: %__MODULE__{}
   end

@@ -11,6 +11,7 @@ defmodule Exy.UI.State do
   defstruct session_id: nil,
             cwd: nil,
             model: nil,
+            effort: nil,
             messages: [],
             pending_tools: %{},
             usage: %{input_tokens: 0, output_tokens: 0, total_tokens: 0, total_cost: 0.0},
@@ -40,6 +41,7 @@ defmodule Exy.UI.State do
           session_id: String.t() | nil,
           cwd: String.t() | nil,
           model: String.t() | nil,
+          effort: Exy.Model.Effort.t() | nil,
           messages: [message()],
           pending_tools: map(),
           usage: map(),
@@ -65,7 +67,8 @@ defmodule Exy.UI.State do
     %__MODULE__{
       session_id: Keyword.get_lazy(opts, :session_id, &Exy.Session.Store.new_id/0),
       cwd: Keyword.get_lazy(opts, :cwd, fn -> File.cwd!() end),
-      model: Keyword.get_lazy(opts, :model, &Exy.Model.Config.default/0)
+      model: Keyword.get_lazy(opts, :model, &Exy.Agent.Profile.default_model/0),
+      effort: Keyword.get_lazy(opts, :effort, &Exy.Agent.Profile.default_effort/0)
     }
   end
 end

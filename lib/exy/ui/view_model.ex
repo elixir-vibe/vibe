@@ -39,6 +39,7 @@ defmodule Exy.UI.ViewModel do
       footer: %Footer{
         cwd: state.cwd,
         model: state.model,
+        effort: state.effort,
         session_id: state.session_id,
         status: state.status,
         usage: visible_usage(state),

@@ -66,6 +66,9 @@ defmodule Exy.TUI.App do
   def handle_call({:key, key}, _from, state) do
     state =
       cond do
+        app_action_key?(key) ->
+          handle_app_action_key(key, state)
+
         selector_open?(state) ->
           handle_selector_key(key, state)
 
@@ -301,6 +304,29 @@ defmodule Exy.TUI.App do
       {:ok, server} -> {:ok, server}
       :error -> EditorServer.start_link(history: Keyword.get(opts, :history, []))
     end
+  end
+
+  defp app_action_key?(key),
+    do: key in [:cycle_model_forward, :cycle_model_backward, :open_model_selector, :cycle_effort]
+
+  defp handle_app_action_key(:cycle_model_forward, state) do
+    dispatch_async(state.ui, Command.new(:cycle_model, %{direction: :forward}))
+    state
+  end
+
+  defp handle_app_action_key(:cycle_model_backward, state) do
+    dispatch_async(state.ui, Command.new(:cycle_model, %{direction: :backward}))
+    state
+  end
+
+  defp handle_app_action_key(:open_model_selector, state) do
+    dispatch_async(state.ui, Command.new(:open_model_selector))
+    state
+  end
+
+  defp handle_app_action_key(:cycle_effort, state) do
+    dispatch_async(state.ui, Command.new(:cycle_effort))
+    state
   end
 
   defp selector_open?(state), do: not is_nil(state.ui_snapshot.selector)

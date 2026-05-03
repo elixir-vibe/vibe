@@ -5,6 +5,7 @@ defmodule Exy.UI.SlashCommands.Registry do
     Exy.UI.SlashCommands.New,
     Exy.UI.SlashCommands.Attach,
     Exy.UI.SlashCommands.Model,
+    Exy.UI.SlashCommands.Effort,
     Exy.UI.SlashCommands.Skill,
     Exy.UI.SlashCommands.Clear,
     Exy.UI.SlashCommands.Compact,

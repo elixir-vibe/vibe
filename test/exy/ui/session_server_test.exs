@@ -106,6 +106,71 @@ defmodule Exy.SessionProcessTest do
     assert opts[:timeout] == 123
   end
 
+  test "cycles model and effort through session commands" do
+    {:ok, server} =
+      Exy.Session.start_link(
+        persist?: false,
+        session_id: "ui-session",
+        model: "openai_codex:gpt-5.5",
+        effort: :medium,
+        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+      )
+
+    :ok = Exy.Session.dispatch(server, {:cycle_model, %{direction: :forward}})
+    :ok = Exy.Session.dispatch(server, :cycle_effort)
+
+    state = Exy.Session.state(server)
+    assert state.model != "openai_codex:gpt-5.5"
+    assert state.effort == :high
+  end
+
+  test "opens model and effort selectors through session commands" do
+    {:ok, server} =
+      Exy.Session.start_link(
+        persist?: false,
+        session_id: "ui-session",
+        model: "openai_codex:gpt-5.5",
+        effort: :medium,
+        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+      )
+
+    :ok = Exy.Session.dispatch(server, :open_model_selector)
+    assert Exy.Session.state(server).selector.kind == :model_selector
+
+    :ok = Exy.Session.dispatch(server, :open_effort_selector)
+    state = Exy.Session.state(server)
+    assert state.selector.kind == :effort_selector
+    assert state.selector.items == ["off", "minimal", "low", "medium", "high", "xhigh"]
+    assert state.selector.selected == 3
+  end
+
+  test "passes selected model and effort into prompt options" do
+    parent = self()
+
+    ask_fun = fn _text, opts ->
+      send(parent, {:ask_opts, opts})
+      {:ok, "ok"}
+    end
+
+    {:ok, server} =
+      Exy.Session.start_link(
+        persist?: false,
+        session_id: "ui-session",
+        model: "model-a",
+        effort: :medium,
+        ask_fun: ask_fun
+      )
+
+    :ok = Exy.Session.dispatch(server, {:model_selected, %{model: "model-b"}})
+    :ok = Exy.Session.dispatch(server, {:effort_selected, %{effort: :high}})
+    :ok = Exy.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
+
+    assert_receive {:ask_opts, opts}, 500
+    assert opts[:model] == "model-b"
+    assert opts[:effort] == :high
+    assert opts[:llm_opts][:provider_options][:reasoning_effort] == "high"
+  end
+
   test "updates token preview from streaming callbacks before final usage" do
     ask_fun = fn _text, opts ->
       opts[:on_result].("streaming text")

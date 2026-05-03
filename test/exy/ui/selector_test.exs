@@ -66,7 +66,7 @@ defmodule Exy.UI.SelectorTest do
     state = Exy.Session.state(server)
 
     assert state.selector.kind == :model_selector
-    assert state.selector.items == ["openai_codex:gpt-5.5"]
+    assert "openai_codex:gpt-5.5" in state.selector.items
   end
 
   test "selector confirmation updates model" do
