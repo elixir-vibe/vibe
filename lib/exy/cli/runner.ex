@@ -133,8 +133,12 @@ defmodule Exy.CLI.Runner do
       ReqLLM.put_key(:openai_api_key, key)
     end
 
-    if Exy.Model.Config.resolve(opts) |> String.starts_with?("openai_codex:") do
-      Exy.Auth.Codex.ensure_fresh()
+    model = Exy.Model.Config.resolve(opts)
+
+    cond do
+      String.starts_with?(model, "openai_codex:") -> Exy.Auth.Codex.ensure_fresh()
+      String.starts_with?(model, "opencode") -> Exy.Auth.OpenCode.ensure_fresh()
+      true -> :ok
     end
 
     :ok

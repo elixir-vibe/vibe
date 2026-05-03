@@ -44,6 +44,8 @@ defmodule Exy.Model.Direct do
 
     session_id = Keyword.get_lazy(opts, :session_id, &Exy.Session.Store.new_id/0)
 
+    {reqllm_model, extra_opts} = resolve_model(model)
+
     request_opts =
       opts
       |> Keyword.drop([
@@ -56,12 +58,26 @@ defmodule Exy.Model.Direct do
         :on_thinking,
         :on_tool_call
       ])
-      |> maybe_put_codex_credentials(model)
+      |> Keyword.merge(extra_opts)
+      |> maybe_put_provider_credentials(model)
 
-    {model, messages, session_id, request_opts}
+    {reqllm_model, messages, session_id, request_opts}
   end
 
-  defp maybe_put_codex_credentials(opts, "openai_codex:" <> _model) do
+  @opencode_base_urls %{
+    "opencode" => "https://opencode.ai/zen/v1",
+    "opencode_go" => "https://opencode.ai/zen/go/v1"
+  }
+
+  defp resolve_model("opencode:" <> model_id), do: opencode_model("opencode", model_id)
+  defp resolve_model("opencode_go:" <> model_id), do: opencode_model("opencode_go", model_id)
+  defp resolve_model(model), do: {model, []}
+
+  defp opencode_model(provider, model_id) do
+    {"openai:#{model_id}", [base_url: @opencode_base_urls[provider]]}
+  end
+
+  defp maybe_put_provider_credentials(opts, "openai_codex:" <> _model) do
     case Application.get_env(:exy, :openai_codex_credentials) do
       %{access: access} = credentials when is_binary(access) ->
         opts
@@ -73,7 +89,20 @@ defmodule Exy.Model.Direct do
     end
   end
 
-  defp maybe_put_codex_credentials(opts, _model), do: opts
+  defp maybe_put_provider_credentials(opts, "opencode:" <> _model),
+    do: maybe_put_opencode_credentials(opts)
+
+  defp maybe_put_provider_credentials(opts, "opencode_go:" <> _model),
+    do: maybe_put_opencode_credentials(opts)
+
+  defp maybe_put_provider_credentials(opts, _model), do: opts
+
+  defp maybe_put_opencode_credentials(opts) do
+    case Exy.Auth.OpenCode.api_key() do
+      key when is_binary(key) -> Keyword.put_new(opts, :api_key, key)
+      nil -> opts
+    end
+  end
 
   defp maybe_put_chatgpt_account_id(opts, %{accountId: account_id}) when is_binary(account_id),
     do: Keyword.put_new(opts, :chatgpt_account_id, account_id)

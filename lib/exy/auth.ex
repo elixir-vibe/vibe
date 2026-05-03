@@ -7,7 +7,9 @@ defmodule Exy.Auth do
     "openai-codex" => Exy.Auth.Codex,
     "codex" => Exy.Auth.Codex,
     "openrouter" => Exy.Auth.OpenRouter,
-    "open-router" => Exy.Auth.OpenRouter
+    "open-router" => Exy.Auth.OpenRouter,
+    "opencode" => Exy.Auth.OpenCode,
+    "opencode-go" => Exy.Auth.OpenCode
   }
 
   @spec provider(String.t() | atom()) :: module() | nil
