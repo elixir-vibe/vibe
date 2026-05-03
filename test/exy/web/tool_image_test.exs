@@ -1,6 +1,8 @@
 defmodule Exy.Web.ToolImageTest do
   use Exy.WebCase, async: false
 
+  import Phoenix.Component
+
   alias Exy.Files.{Artifacts, ImageRef}
   alias Exy.Tool.Display
 
@@ -45,5 +47,15 @@ defmodule Exy.Web.ToolImageTest do
 
     assert %Display{body: [{:image_ref, ref, []}]} = Display.from_tool(tool)
     assert Artifacts.public_path(ref) == "/sessions/session-1/artifacts/images/tiny.png"
+
+    assigns = %{block: {:image_ref, ref, []}}
+
+    html =
+      rendered_to_string(~H"""
+      <Exy.Web.Components.Tool.tool_body_block block={@block} />
+      """)
+
+    assert html =~ ~s(href="/sessions/session-1/artifacts/images/tiny.png")
+    assert html =~ "Open original"
   end
 end

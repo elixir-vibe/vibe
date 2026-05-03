@@ -66,7 +66,10 @@ defmodule Exy.Web.Components.Tool do
           <img class="max-h-[32rem] max-w-full rounded border border-white/10 object-contain" src={@body.src} alt={@body.alt} loading="lazy" />
         </details>
         <img :if={!@body.collapsible?} class="max-h-[32rem] max-w-full rounded border border-white/10 object-contain" src={@body.src} alt={@body.alt} loading="lazy" />
-        <figcaption class="font-mono text-[0.68rem] leading-4 text-zinc-500">{@body.caption}</figcaption>
+        <figcaption class="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.68rem] leading-4 text-zinc-500">
+          <span>{@body.caption}</span>
+          <a :if={@body.original_url} class="text-orange-200 underline decoration-orange-200/40 hover:text-orange-100" href={@body.original_url} target="_blank" rel="noopener">Open original</a>
+        </figcaption>
       </figure>
 
       <pre :if={@body.kind not in [:markdown, :source_html, :diff_html, :image]} class={[
@@ -146,6 +149,7 @@ defmodule Exy.Web.Components.Tool do
       src: image_src(image),
       alt: image.filename || "Image",
       caption: caption,
+      original_url: original_url(image),
       collapsible?: collapsible_image?(image),
       mono?: false
     }
@@ -156,6 +160,9 @@ defmodule Exy.Web.Components.Tool do
   defp image_src(%ImageRef{} = ref) do
     Artifacts.public_path(ref) || "data:#{ref.mime_type};base64,#{ref.data}"
   end
+
+  defp original_url(%ImageRef{} = ref), do: Artifacts.public_path(ref)
+  defp original_url(_image), do: nil
 
   defp image_size(%{width: width, height: height}) when is_integer(width) and is_integer(height),
     do: "#{width}×#{height}"
