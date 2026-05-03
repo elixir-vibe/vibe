@@ -6,6 +6,7 @@ defmodule Exy.TUI.Storybook do
   use Exy.TUI
 
   alias Exy.Code.AST.Result
+  alias Exy.Model.Content
   alias Exy.TUI
   alias Exy.TUI.{Node, Theme, Widget, Width}
   alias Exy.UI.{Event, Reducer, State, ToolEvent, ViewModel}
@@ -24,6 +25,7 @@ defmodule Exy.TUI.Storybook do
       :tool_eval_expanded,
       :tool_read_markdown,
       :tool_read_markdown_expanded,
+      :tool_read_image,
       :tool_write_created_file,
       :tool_edit_diff,
       :chat_tool_stress,
@@ -168,6 +170,34 @@ end|,
     :tool_read_markdown
     |> story()
     |> Map.update!(:props, &Map.put(&1, :truncate?, false))
+  end
+
+  def story(:tool_read_image) do
+    TUI.tool(%{
+      id: "read-image",
+      name: :read,
+      status: :ok,
+      args: %{path: "test/fixtures/images/two-by-two.png"},
+      output: %{
+        path: "test/fixtures/images/two-by-two.png",
+        content_type: :image,
+        mime_type: "image/png",
+        size_bytes: 79,
+        width: 2,
+        height: 2,
+        parts: [
+          Content.text("Read image file [image/png]\n2x2"),
+          Content.image(
+            data: Base.encode64(File.read!("test/fixtures/images/two-by-two.png")),
+            mime_type: "image/png",
+            filename: "two-by-two.png",
+            width: 2,
+            height: 2
+          )
+        ]
+      },
+      expanded?: true
+    })
   end
 
   def story(:tool_write_created_file) do

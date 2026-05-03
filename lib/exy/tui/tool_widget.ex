@@ -3,9 +3,11 @@ defmodule Exy.TUI.ToolWidget do
   Behaviour and dispatcher for built-in tool widgets.
   """
 
+  alias Exy.Model.Content
   alias Exy.Tool.Display
   alias Exy.TUI
   alias Exy.TUI.{Lines, Markdown, Syntax, TextTruncation, Theme, Widget, Width}
+  alias Exy.TUI.Widgets.Image
 
   @type tool :: map()
   @callback render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
@@ -270,6 +272,12 @@ defmodule Exy.TUI.ToolWidget do
 
   defp display_block_lines({:diff, diff, opts}, width, theme, truncate?),
     do: diff_block_lines(diff, width, theme, truncate?, opts)
+
+  defp display_block_lines({:image, %Content.Image{} = image, _opts}, width, theme, _truncate?) do
+    image
+    |> Image.new(max_width_cells: 80)
+    |> Image.render(width, theme)
+  end
 
   defp display_block_lines({:markdown, markdown, opts}, width, theme, truncate?) do
     truncation = line_window(markdown, truncate?, opts)
