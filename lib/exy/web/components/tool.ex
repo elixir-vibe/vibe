@@ -61,7 +61,11 @@ defmodule Exy.Web.Components.Tool do
       </div>
 
       <figure :if={@body.kind == :image} class="space-y-2 px-3 py-2">
-        <img class="max-h-[32rem] max-w-full rounded border border-white/10 object-contain" src={@body.src} alt={@body.alt} />
+        <details :if={@body.collapsible?} class="group" open>
+          <summary class="cursor-pointer select-none pb-2 text-xs text-zinc-500 marker:text-zinc-600">Image preview</summary>
+          <img class="max-h-[32rem] max-w-full rounded border border-white/10 object-contain" src={@body.src} alt={@body.alt} loading="lazy" />
+        </details>
+        <img :if={!@body.collapsible?} class="max-h-[32rem] max-w-full rounded border border-white/10 object-contain" src={@body.src} alt={@body.alt} loading="lazy" />
         <figcaption class="font-mono text-[0.68rem] leading-4 text-zinc-500">{@body.caption}</figcaption>
       </figure>
 
@@ -132,7 +136,7 @@ defmodule Exy.Web.Components.Tool do
 
   defp image_body(image) do
     caption =
-      [image.filename, image.mime_type, image_size(image)]
+      [image.filename, image.mime_type, image_size(image), byte_size_label(image)]
       |> Enum.reject(&(&1 in [nil, ""]))
       |> Enum.join(" · ")
 
@@ -142,6 +146,7 @@ defmodule Exy.Web.Components.Tool do
       src: image_src(image),
       alt: image.filename || "Image",
       caption: caption,
+      collapsible?: collapsible_image?(image),
       mono?: false
     }
   end
@@ -156,6 +161,24 @@ defmodule Exy.Web.Components.Tool do
     do: "#{width}×#{height}"
 
   defp image_size(_image), do: nil
+
+  defp byte_size_label(%{size_bytes: bytes}) when is_integer(bytes), do: format_bytes(bytes)
+
+  defp byte_size_label(%Content.Image{data: data}) when is_binary(data),
+    do: data |> byte_size() |> format_bytes()
+
+  defp byte_size_label(_image), do: nil
+
+  defp collapsible_image?(%{size_bytes: bytes}) when is_integer(bytes), do: bytes >= 500_000
+
+  defp collapsible_image?(%Content.Image{data: data}) when is_binary(data),
+    do: byte_size(data) >= 500_000
+
+  defp collapsible_image?(_image), do: false
+
+  defp format_bytes(bytes) when bytes >= 1_000_000, do: "#{Float.round(bytes / 1_000_000, 1)} MB"
+  defp format_bytes(bytes) when bytes >= 1_000, do: "#{Float.round(bytes / 1_000, 1)} KB"
+  defp format_bytes(bytes), do: "#{bytes} B"
 
   defp text_block(kind, label, text, truncate?) do
     %{

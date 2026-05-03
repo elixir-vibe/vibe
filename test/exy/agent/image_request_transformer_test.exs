@@ -32,6 +32,45 @@ defmodule Exy.Agent.ImageRequestTransformerTest do
     assert text.text =~ "previous tool result included image content"
   end
 
+  test "read image tool output reaches OpenAI Responses as input_image" do
+    fixture = Path.expand("../../fixtures/images/two-by-two.png", __DIR__)
+
+    assert {:ok, result} = Exy.Files.read_file(fixture, root: "/")
+
+    request = %{
+      messages: [
+        %{role: :user, content: "read #{fixture}"},
+        %{
+          role: :tool,
+          tool_call_id: "call-1",
+          name: "read",
+          content: result.__content_parts__
+        }
+      ],
+      llm_opts: [],
+      tools: []
+    }
+
+    assert {:ok, %{messages: messages}} =
+             ImageRequestTransformer.transform_request(request, nil, nil, %{})
+
+    body = openai_responses_body(messages)
+
+    assert Enum.any?(body["input"], fn
+             %{"role" => "user", "content" => content} ->
+               Enum.any?(content, fn
+                 %{"type" => "input_image", "image_url" => "data:image/png;base64," <> _data} ->
+                   true
+
+                 _part ->
+                   false
+               end)
+
+             _item ->
+               false
+           end)
+  end
+
   test "injected follow-up reaches OpenAI Responses as input_image" do
     image = ContentPart.image_url("data:image/png;base64,AQID")
 
@@ -52,15 +91,7 @@ defmodule Exy.Agent.ImageRequestTransformerTest do
     assert {:ok, %{messages: messages}} =
              ImageRequestTransformer.transform_request(request, nil, nil, %{})
 
-    context = ReqLLM.Context.normalize!(messages)
-
-    body =
-      ReqLLM.Providers.OpenAI.ResponsesAPI.build_request_body(
-        context,
-        "gpt-4.1",
-        [provider_options: [store: false]],
-        nil
-      )
+    body = openai_responses_body(messages)
 
     assert Enum.any?(body["input"], fn
              %{"role" => "user", "content" => content} ->
@@ -69,6 +100,17 @@ defmodule Exy.Agent.ImageRequestTransformerTest do
              _item ->
                false
            end)
+  end
+
+  defp openai_responses_body(messages) do
+    context = ReqLLM.Context.normalize!(messages)
+
+    ReqLLM.Providers.OpenAI.ResponsesAPI.build_request_body(
+      context,
+      "gpt-4.1",
+      [provider_options: [store: false]],
+      nil
+    )
   end
 
   test "leaves requests without image tool outputs unchanged" do
