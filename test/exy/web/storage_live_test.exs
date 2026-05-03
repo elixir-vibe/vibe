@@ -8,11 +8,22 @@ defmodule Exy.Web.StorageLiveTest do
     :ok
   end
 
-  test "renders storage search" do
-    conn = build_conn() |> get("/storage")
+  test "renders storage search and artifact summary" do
+    Exy.Session.Store.append_trajectory(:user_message, %{prompt: "hello"},
+      session_id: "with-artifacts"
+    )
 
-    assert html_response(conn, 200) =~ "Storage"
-    assert html_response(conn, 200) =~ "Search sessions and memory"
+    dir = Exy.Files.Artifacts.session_artifact_dir("with-artifacts")
+    File.mkdir_p!(dir)
+    File.write!(Path.join(dir, "image.png"), "12345")
+
+    conn = build_conn() |> get("/storage")
+    html = html_response(conn, 200)
+
+    assert html =~ "Storage"
+    assert html =~ "Search sessions and memory"
+    assert html =~ "Artifacts"
+    assert html =~ "1 / 5 B"
   end
 
   test "search route redirects to storage" do

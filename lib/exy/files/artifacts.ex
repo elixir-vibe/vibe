@@ -61,6 +61,7 @@ defmodule Exy.Files.Artifacts do
 
         File.mkdir_p!(dir)
         File.write!(path, binary)
+        emit_image_artifact_event(image, path)
 
         {:ok,
          %ImageRef{
@@ -134,6 +135,23 @@ defmodule Exy.Files.Artifacts do
   @spec default_inline_image_bytes() :: pos_integer()
   def default_inline_image_bytes do
     Application.get_env(:exy, :inline_image_bytes, @default_inline_image_bytes)
+  end
+
+  defp emit_image_artifact_event(image, path) do
+    Exy.Telemetry.execute(
+      [:exy, :image, :artifact, :stored],
+      %{bytes: image.size_bytes || 0, count: 1},
+      %{
+        mime_type: image.mime_type,
+        filename: image.filename,
+        width: image.width,
+        height: image.height,
+        resized?: image.was_resized?,
+        artifact_path: path
+      }
+    )
+  rescue
+    _exception -> :ok
   end
 
   defp image_dir(opts) do

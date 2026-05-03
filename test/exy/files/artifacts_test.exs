@@ -38,6 +38,18 @@ defmodule Exy.Files.ArtifactsTest do
     dir = Path.join(System.tmp_dir!(), "exy-artifact-test-#{System.unique_integer([:positive])}")
     image = image(data: Base.encode64("large-payload"))
 
+    handler = "artifact-test-#{System.unique_integer([:positive])}"
+    parent = self()
+
+    :telemetry.attach(
+      handler,
+      [:exy, :image, :artifact, :stored],
+      fn event, measurements, metadata, _config ->
+        send(parent, {:telemetry_event, event, measurements, metadata})
+      end,
+      nil
+    )
+
     try do
       assert {:ok, %ImageRef{} = ref} =
                Artifacts.maybe_store_image(image,
@@ -48,10 +60,14 @@ defmodule Exy.Files.ArtifactsTest do
       assert File.read!(ref.path) == "large-payload"
       assert ref.data == image.data
 
+      assert_receive {:telemetry_event, [:exy, :image, :artifact, :stored], %{bytes: 5, count: 1},
+                      %{mime_type: "image/png"}}
+
       encoded = Jason.encode!(ref)
       assert encoded =~ ref.path
       refute encoded =~ image.data
     after
+      :telemetry.detach(handler)
       File.rm_rf(dir)
     end
   end

@@ -22,7 +22,7 @@ defmodule Exy.Web.StorageLive do
           <.storage_metric label="Sessions" value={@session_count} />
           <.storage_metric label="Memory" value={@memory_count} />
           <.storage_metric label="UI events" value={table_count(@storage_status, "ui_events")} />
-          <.storage_metric label="Status" value={storage_status_label(@storage_status)} />
+          <.storage_metric label="Artifacts" value={artifact_summary_text(@artifact_summary)} />
         </div>
 
         <form phx-submit="search" phx-change="search" class="flex flex-col gap-3 p-3 sm:flex-row sm:p-4">
@@ -92,6 +92,7 @@ defmodule Exy.Web.StorageLive do
     |> assign(:storage_status, Exy.Storage.status())
     |> assign(:session_count, length(Exy.Session.Store.list()))
     |> assign(:memory_count, memory_count())
+    |> assign(:artifact_summary, artifact_summary())
   end
 
   defp run_search(""), do: {:ok, []}
@@ -101,12 +102,21 @@ defmodule Exy.Web.StorageLive do
     length(Exy.Memory.list(:global)) + length(Exy.Memory.list(:user))
   end
 
+  defp artifact_summary do
+    Exy.Session.Store.list()
+    |> Enum.map(&Exy.Files.Artifacts.session_artifact_summary(&1.id))
+    |> Enum.reduce(%{count: 0, bytes: 0}, fn summary, acc ->
+      %{count: acc.count + summary.count, bytes: acc.bytes + summary.bytes}
+    end)
+  end
+
+  defp artifact_summary_text(%{count: count, bytes: bytes}),
+    do: "#{count} / #{format_bytes(bytes)}"
+
+  defp format_bytes(bytes) when bytes >= 1_000_000, do: "#{Float.round(bytes / 1_000_000, 1)} MB"
+  defp format_bytes(bytes) when bytes >= 1_000, do: "#{Float.round(bytes / 1_000, 1)} KB"
+  defp format_bytes(bytes), do: "#{bytes} B"
+
   defp table_count(%{tables: tables}, table), do: Map.get(tables, table, 0)
   defp table_count(_status, _table), do: 0
-
-  defp storage_status_label(%{database: database, tables: tables})
-       when is_binary(database) and is_map(tables),
-       do: "Ready"
-
-  defp storage_status_label(_status), do: "Unavailable"
 end
