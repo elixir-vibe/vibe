@@ -22,6 +22,8 @@ defmodule Exy.CLI.Runner do
         if opts[:direct] do
           llm_opts = Keyword.put(model_opts(opts), :session_id, session_id)
 
+          prompt = Exy.Prompt.Attachments.expand(prompt, root: File.cwd!())
+
           if stream?(opts) do
             Exy.Model.Direct.stream(prompt, llm_opts)
           else
