@@ -77,7 +77,7 @@ defimpl Jason.Encoder, for: Exy.UI.ToolEvent do
   def encode(event, opts) do
     event
     |> Map.from_struct()
-    |> Exy.JSONSafe.encode()
+    |> Exy.JSON.Encode.value()
     |> Jason.Encode.map(opts)
   end
 end

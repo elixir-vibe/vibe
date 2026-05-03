@@ -43,7 +43,7 @@ defimpl Jason.Encoder, for: Exy.UI.Event do
       at: event.at,
       data: event.data
     }
-    |> Exy.JSONSafe.encode()
+    |> Exy.JSON.Encode.value()
     |> Jason.Encode.map(opts)
   end
 end
