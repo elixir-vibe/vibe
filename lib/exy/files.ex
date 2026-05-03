@@ -1,5 +1,7 @@
 defmodule Exy.Files do
   @moduledoc "Internal implementation module."
+
+  alias Exy.Model.Content
   @read_limit_lines 2_000
   @read_limit_bytes 50_000
 
@@ -78,6 +80,17 @@ defmodule Exy.Files do
     {width, height} = Exy.Image.dimensions(content, mime_type)
     data = Base.encode64(content)
 
+    parts = [
+      Content.text(image_note(mime_type, width, height)),
+      Content.image(
+        data: data,
+        mime_type: mime_type,
+        filename: Path.basename(path),
+        width: width,
+        height: height
+      )
+    ]
+
     {:ok,
      %Exy.Files.ReadResult{
        path: path,
@@ -86,16 +99,8 @@ defmodule Exy.Files do
        size_bytes: stat.size,
        width: width,
        height: height,
-       parts: [
-         Exy.Model.Content.text(image_note(mime_type, width, height)),
-         Exy.Model.Content.image(
-           data: data,
-           mime_type: mime_type,
-           filename: Path.basename(path),
-           width: width,
-           height: height
-         )
-       ]
+       parts: parts,
+       __content_parts__: Content.to_req_llm_tool_parts(parts)
      }}
   end
 

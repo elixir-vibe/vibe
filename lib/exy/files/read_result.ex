@@ -14,7 +14,8 @@ defmodule Exy.Files.ReadResult do
     :size_bytes,
     :width,
     :height,
-    parts: []
+    parts: [],
+    __content_parts__: []
   ]
 
   @type content_type :: :text | :image
@@ -31,7 +32,8 @@ defmodule Exy.Files.ReadResult do
           size_bytes: non_neg_integer() | nil,
           width: pos_integer() | nil,
           height: pos_integer() | nil,
-          parts: [Exy.Model.Content.t()]
+          parts: [Exy.Model.Content.t()],
+          __content_parts__: [ReqLLM.Message.ContentPart.t()]
         }
 end
 
@@ -39,6 +41,7 @@ defimpl Jason.Encoder, for: Exy.Files.ReadResult do
   def encode(result, opts) do
     result
     |> Map.from_struct()
+    |> Map.delete(:__content_parts__)
     |> Exy.JSON.Encode.value()
     |> Jason.Encode.map(opts)
   end

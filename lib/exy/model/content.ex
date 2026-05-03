@@ -28,6 +28,12 @@ defmodule Exy.Model.Content do
         ]
   def to_req_llm_parts(parts) when is_list(parts), do: Enum.map(parts, &to_req_llm_part/1)
 
+  @spec to_req_llm_tool_parts([t() | ReqLLM.Message.ContentPart.t()]) :: [
+          ReqLLM.Message.ContentPart.t()
+        ]
+  def to_req_llm_tool_parts(parts) when is_list(parts),
+    do: Enum.map(parts, &to_req_llm_tool_part/1)
+
   @spec to_req_llm_part(t() | ReqLLM.Message.ContentPart.t()) :: ReqLLM.Message.ContentPart.t()
   def to_req_llm_part(%ReqLLM.Message.ContentPart{} = part), do: part
   def to_req_llm_part(%Text{text: text}), do: ReqLLM.Message.ContentPart.text(text)
@@ -46,6 +52,22 @@ defmodule Exy.Model.Content do
     |> Base.decode64!()
     |> ReqLLM.Message.ContentPart.image(image.mime_type, metadata)
     |> Map.put(:filename, image.filename)
+  end
+
+  @spec to_req_llm_tool_part(t() | ReqLLM.Message.ContentPart.t()) ::
+          ReqLLM.Message.ContentPart.t()
+  def to_req_llm_tool_part(%ReqLLM.Message.ContentPart{} = part), do: part
+  def to_req_llm_tool_part(%Text{} = text), do: to_req_llm_part(text)
+
+  def to_req_llm_tool_part(%Image{} = image) do
+    metadata =
+      %{filename: image.filename, width: image.width, height: image.height}
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      |> Map.new()
+
+    image
+    |> data_uri()
+    |> ReqLLM.Message.ContentPart.image_url(metadata)
   end
 
   @spec summarize(t() | [t()] | String.t()) :: String.t()
@@ -73,6 +95,8 @@ defmodule Exy.Model.Content do
       height: Keyword.get(fields, :height)
     }
   end
+
+  defp data_uri(%Image{} = image), do: "data:#{image.mime_type};base64,#{image.data}"
 
   defp dimensions(%Image{width: width, height: height})
        when is_integer(width) and is_integer(height),
