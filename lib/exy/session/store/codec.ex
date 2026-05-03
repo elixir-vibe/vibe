@@ -203,8 +203,11 @@ defmodule Exy.Session.Store.Codec do
 
   defp decode_tool_content_parts(data), do: data
 
-  defp decode_tool_output_content_parts(%{parts: parts} = output) when is_list(parts),
-    do: %{output | parts: Enum.map(parts, &decode_content_part/1)}
+  defp decode_tool_output_content_parts(%{parts: parts} = output) when is_list(parts) do
+    output
+    |> Map.update(:image, nil, &decode_image_ref/1)
+    |> Map.update!(:parts, fn _parts -> Enum.map(parts, &decode_content_part/1) end)
+  end
 
   defp decode_tool_output_content_parts(output), do: output
 
@@ -237,6 +240,16 @@ defmodule Exy.Session.Store.Codec do
   end
 
   defp decode_content_part(part), do: part
+
+  defp decode_image_ref(%{path: path, mime_type: mime_type} = image)
+       when is_binary(path) and is_binary(mime_type) do
+    struct(
+      Exy.Files.ImageRef,
+      Map.take(image, [:path, :mime_type, :filename, :size_bytes, :width, :height])
+    )
+  end
+
+  defp decode_image_ref(image), do: image
 
   defp decode_event_type(type), do: decode_existing_atom(type)
   defp decode_trajectory_type(type), do: decode_existing_atom(type)

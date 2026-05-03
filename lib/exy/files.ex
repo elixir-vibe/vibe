@@ -1,7 +1,7 @@
 defmodule Exy.Files do
   @moduledoc "Internal implementation module."
 
-  alias Exy.Files.ReadResult
+  alias Exy.Files.{Artifacts, ImageRef, ReadResult}
   alias Exy.Image
   alias Exy.Model.Content
   @read_limit_lines 2_000
@@ -94,18 +94,20 @@ defmodule Exy.Files do
       was_resized?: false
     }
 
-    with {:ok, image} <- maybe_resize_image(image, opts) do
-      parts = Image.to_content_parts(image)
+    with {:ok, image} <- maybe_resize_image(image, opts),
+         {:ok, stored} <- Artifacts.maybe_store_image(image, opts) do
+      parts = image_parts(stored)
 
       {:ok,
        %ReadResult{
          path: path,
          content_type: :image,
-         mime_type: image.mime_type,
-         size_bytes: image.size_bytes,
-         width: image.width,
-         height: image.height,
+         mime_type: stored.mime_type,
+         size_bytes: stored.size_bytes,
+         width: stored.width,
+         height: stored.height,
          parts: parts,
+         image: stored,
          __content_parts__: Content.to_req_llm_tool_parts(parts)
        }}
     end
@@ -116,6 +118,36 @@ defmodule Exy.Files do
       do: Exy.Image.Resize.resize(image, opts),
       else: {:ok, image}
   end
+
+  defp image_parts(%Image{} = image), do: Image.to_content_parts(image)
+
+  defp image_parts(%ImageRef{} = ref) do
+    note =
+      [
+        "Read image file [#{ref.mime_type}]",
+        image_dimensions(ref),
+        "Stored artifact: #{ref.path}"
+      ]
+      |> Enum.reject(&(&1 in [nil, ""]))
+      |> Enum.join("\n")
+
+    [
+      Content.text(note),
+      Content.image(
+        data: ref.data,
+        mime_type: ref.mime_type,
+        filename: ref.filename,
+        width: ref.width,
+        height: ref.height
+      )
+    ]
+  end
+
+  defp image_dimensions(%{width: width, height: height})
+       when is_integer(width) and is_integer(height),
+       do: "#{width}x#{height}"
+
+  defp image_dimensions(_image), do: nil
 
   defp change(path, old, new), do: %{path: path, old: old, new: new, diff: diff(old, new)}
 

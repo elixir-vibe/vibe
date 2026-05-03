@@ -72,6 +72,26 @@ defmodule Exy.FilesTest do
     assert result.height == 1
   end
 
+  test "stores large image payloads as artifact refs", %{dir: dir} do
+    png =
+      <<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, "IHDR", 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0,
+        0, 0, 0, 0, 0, 0>>
+
+    artifact_dir = Path.join(dir, "artifacts")
+    File.write!(Path.join(dir, "large.png"), png)
+
+    assert {:ok, result} =
+             Exy.Files.read_file("large.png",
+               root: dir,
+               inline_image_bytes: 4,
+               artifact_dir: artifact_dir
+             )
+
+    assert %Exy.Files.ImageRef{} = result.image
+    assert File.exists?(result.image.path)
+    refute Jason.encode!(result.image) =~ result.image.data
+  end
+
   test "preserves image content structs across session storage" do
     session_id = "image-content-roundtrip-#{System.unique_integer([:positive])}"
 
