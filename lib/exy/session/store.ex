@@ -373,6 +373,7 @@ defmodule Exy.Session.Store do
 
     session_id |> path() |> File.rm() |> ignore_missing_file()
     session_id |> log_path() |> File.rm() |> ignore_missing_file()
+    session_id |> Exy.Files.Artifacts.session_artifact_dir() |> File.rm_rf()
   end
 
   defp ignore_missing_file(:ok), do: :ok

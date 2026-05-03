@@ -1,6 +1,7 @@
 defmodule Exy.SessionTest do
   use ExUnit.Case, async: false
 
+  alias Exy.Files.Artifacts
   alias Exy.UI.ToolEvent
 
   setup do
@@ -157,6 +158,19 @@ defmodule Exy.SessionTest do
 
     Process.sleep(20)
     assert [%{text: "weather.gov"} | _] = Exy.Session.state(server).messages
+  end
+
+  test "delete removes session artifact directory" do
+    session_id = "delete-artifacts"
+    artifact_dir = Artifacts.session_artifact_dir(session_id)
+    File.mkdir_p!(artifact_dir)
+    File.write!(Path.join(artifact_dir, "image.png"), "png")
+
+    Exy.Session.Store.append_trajectory(:user_message, %{prompt: "hello"}, session_id: session_id)
+
+    assert File.exists?(artifact_dir)
+    assert :ok = Exy.Session.Store.delete(session_id)
+    refute File.exists?(artifact_dir)
   end
 
   test "invalid persisted atoms and event types are skipped without creating atoms" do
