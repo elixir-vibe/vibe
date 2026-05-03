@@ -71,6 +71,14 @@ defmodule Exy.Model.Content do
   def summarize(text) when is_binary(text), do: text
   def summarize(parts) when is_list(parts), do: Enum.map_join(parts, "\n", &summarize/1)
   def summarize(%Text{text: text}), do: text
+  def summarize(%ContentPart{type: :text, text: text}) when is_binary(text), do: text
+
+  def summarize(%ContentPart{type: type} = part) when type in [:image, :image_url] do
+    ["[Image", Map.get(part, :filename), Map.get(part, :media_type) || Map.get(part, :mime_type)]
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.join(" ")
+    |> Kernel.<>("]")
+  end
 
   def summarize(%Image{} = image) do
     ["[Image", image.filename, image.mime_type, dimensions(image)]

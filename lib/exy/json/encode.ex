@@ -23,8 +23,11 @@ defmodule Exy.JSON.Encode do
 
   def value(%_{} = term), do: term |> Map.from_struct() |> value()
 
-  def value(term) when is_binary(term) or is_number(term) or is_boolean(term) or is_nil(term),
-    do: term
+  def value(term) when is_binary(term) do
+    if String.valid?(term), do: term, else: %{type: "binary", data: Base.encode64(term)}
+  end
+
+  def value(term) when is_number(term) or is_boolean(term) or is_nil(term), do: term
 
   def value(term) when is_tuple(term), do: term |> Tuple.to_list() |> value()
   def value(term) when is_list(term), do: Enum.map(term, &value/1)
