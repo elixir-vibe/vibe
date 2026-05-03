@@ -5,25 +5,30 @@ defmodule Exy.Files do
 
   @type edit :: %{old_text: String.t(), new_text: String.t()}
 
-  @spec read_file(String.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
+  @spec read_file(String.t(), keyword()) :: {:ok, Exy.Files.ReadResult.t()} | {:error, String.t()}
   def read_file(path, opts \\ []) when is_binary(path) do
     with {:ok, absolute} <- resolve(path, opts),
          {:ok, stat} <- File.stat(absolute),
          :ok <- ensure_regular(stat),
          {:ok, content} <- File.read(absolute) do
-      limit_lines = Keyword.get(opts, :limit_lines, @read_limit_lines)
-      limit_bytes = Keyword.get(opts, :limit_bytes, @read_limit_bytes)
-      {visible, omitted_lines, omitted_bytes} = limit_content(content, limit_lines, limit_bytes)
+      if Exy.Image.supported?(absolute) do
+        image_result(path, absolute, content, stat)
+      else
+        limit_lines = Keyword.get(opts, :limit_lines, @read_limit_lines)
+        limit_bytes = Keyword.get(opts, :limit_bytes, @read_limit_bytes)
+        {visible, omitted_lines, omitted_bytes} = limit_content(content, limit_lines, limit_bytes)
 
-      {:ok,
-       %{
-         path: path,
-         content: visible,
-         language: language(path),
-         lines: line_count(content),
-         omitted_lines: omitted_lines,
-         omitted_bytes: omitted_bytes
-       }}
+        {:ok,
+         %Exy.Files.ReadResult{
+           path: path,
+           content_type: :text,
+           content: visible,
+           language: language(path),
+           lines: line_count(content),
+           omitted_lines: omitted_lines,
+           omitted_bytes: omitted_bytes
+         }}
+      end
     end
   end
 
@@ -67,6 +72,37 @@ defmodule Exy.Files do
   rescue
     error -> {:error, Exception.message(error)}
   end
+
+  defp image_result(path, absolute, content, stat) do
+    mime_type = Exy.Image.mime_type(absolute)
+    {width, height} = Exy.Image.dimensions(content, mime_type)
+    data = Base.encode64(content)
+
+    {:ok,
+     %Exy.Files.ReadResult{
+       path: path,
+       content_type: :image,
+       mime_type: mime_type,
+       size_bytes: stat.size,
+       width: width,
+       height: height,
+       parts: [
+         Exy.Model.Content.text(image_note(mime_type, width, height)),
+         Exy.Model.Content.image(
+           data: data,
+           mime_type: mime_type,
+           filename: Path.basename(path),
+           width: width,
+           height: height
+         )
+       ]
+     }}
+  end
+
+  defp image_note(mime_type, width, height) when is_integer(width) and is_integer(height),
+    do: "Read image file [#{mime_type}]\n#{width}x#{height}"
+
+  defp image_note(mime_type, _width, _height), do: "Read image file [#{mime_type}]"
 
   defp change(path, old, new), do: %{path: path, old: old, new: new, diff: diff(old, new)}
 

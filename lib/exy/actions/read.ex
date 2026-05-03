@@ -20,7 +20,7 @@ defmodule Exy.Actions.Read do
   use Jido.Action,
     name: "read",
     description:
-      "Read a text file from the project. Returns content with line and truncation metadata.",
+      "Read a file from the project. Supports text files and images (png, jpg, gif, webp). Text returns content with line and truncation metadata; images return text and image parts.",
     schema: @schema
 
   @impl true

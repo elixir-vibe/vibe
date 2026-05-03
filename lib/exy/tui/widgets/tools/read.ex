@@ -20,6 +20,24 @@ defmodule Exy.TUI.Widgets.Tools.Read do
   defp output_lines(_tool, %{error: error}, width, theme),
     do: ToolWidget.error_lines(error, width, theme)
 
+  defp output_lines(_tool, %{content_type: :image, parts: parts}, width, theme)
+       when is_list(parts) do
+    Enum.flat_map(parts, fn
+      %Exy.Model.Content.Text{text: text} ->
+        text
+        |> String.split("\n")
+        |> Enum.map(fn line ->
+          ToolWidget.output_line(Theme.fg(theme, :tool_output, line), width)
+        end)
+
+      %Exy.Model.Content.Image{} = image ->
+        image_lines(image, width, theme)
+
+      part ->
+        ToolWidget.plain_lines(part, width, theme)
+    end)
+  end
+
   defp output_lines(tool, %{content: content} = result, width, theme) when is_binary(content) do
     truncation =
       content
@@ -46,6 +64,12 @@ defmodule Exy.TUI.Widgets.Tools.Read do
   end
 
   defp output_lines(_tool, value, width, theme), do: ToolWidget.plain_lines(value, width, theme)
+
+  defp image_lines(%Exy.Model.Content.Image{} = image, width, theme) do
+    image
+    |> Exy.TUI.Widgets.Image.new(max_width_cells: 80)
+    |> Exy.TUI.Widgets.Image.render(width, theme)
+  end
 
   defp maybe_append_render_hint(lines, %{truncated?: false}, _theme, _width), do: lines
 

@@ -14,6 +14,7 @@ defmodule Exy.TUI.Widget do
     raw: Exy.TUI.Widgets.Raw,
     text: Exy.TUI.Widgets.Text,
     markdown: Exy.TUI.Widgets.Markdown,
+    image: Exy.TUI.Widgets.Image,
     message: Exy.TUI.Widgets.Message,
     loader: Exy.TUI.Widgets.Loader,
     tool: Exy.TUI.Widgets.Tool,

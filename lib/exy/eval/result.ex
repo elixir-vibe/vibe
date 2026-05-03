@@ -8,7 +8,9 @@ defmodule Exy.Eval.Result do
   """
 
   @type format :: :inspect | :text | :markdown
-  @type part :: %{required(:output) => String.t(), required(:format) => format()}
+  @type part ::
+          %{required(:output) => String.t(), required(:format) => format()}
+          | Exy.Model.Content.t()
 
   @type t :: %__MODULE__{
           output: String.t(),

@@ -169,10 +169,12 @@ defmodule Exy.Session.Store.Codec do
 
   defp decode_ui_event_data(data, type)
        when type in [:tool_started, :tool_updated, :tool_finished] and is_map(data) do
-    struct(
-      Exy.UI.ToolEvent,
-      Map.take(data, [:id, :name, :args, :output, :output_format, :output_parts, :status, :phase])
-    )
+    tool_data =
+      data
+      |> Map.take([:id, :name, :args, :output, :output_format, :output_parts, :status, :phase])
+      |> decode_tool_content_parts()
+
+    struct(Exy.UI.ToolEvent, tool_data)
   end
 
   defp decode_ui_event_data(%{effort: effort} = data, :effort_selected) when is_binary(effort) do
@@ -189,6 +191,46 @@ defmodule Exy.Session.Store.Codec do
     do: %{data | level: existing_atom_or_string(level)}
 
   defp decode_ui_event_data(data, _type), do: data
+
+  defp decode_tool_content_parts(%{output: output} = data) when is_map(output),
+    do: %{data | output: decode_tool_output_content_parts(output)}
+
+  defp decode_tool_content_parts(data), do: data
+
+  defp decode_tool_output_content_parts(%{parts: parts} = output) when is_list(parts),
+    do: %{output | parts: Enum.map(parts, &decode_content_part/1)}
+
+  defp decode_tool_output_content_parts(output), do: output
+
+  defp decode_content_part(%{type: "text", text: text}) when is_binary(text),
+    do: Exy.Model.Content.text(text)
+
+  defp decode_content_part(%{type: :text, text: text}) when is_binary(text),
+    do: Exy.Model.Content.text(text)
+
+  defp decode_content_part(%{type: "image", data: data, mime_type: mime_type} = part)
+       when is_binary(data) and is_binary(mime_type) do
+    Exy.Model.Content.image(
+      data: data,
+      mime_type: mime_type,
+      filename: Map.get(part, :filename),
+      width: Map.get(part, :width),
+      height: Map.get(part, :height)
+    )
+  end
+
+  defp decode_content_part(%{type: :image, data: data, mime_type: mime_type} = part)
+       when is_binary(data) and is_binary(mime_type) do
+    Exy.Model.Content.image(
+      data: data,
+      mime_type: mime_type,
+      filename: Map.get(part, :filename),
+      width: Map.get(part, :width),
+      height: Map.get(part, :height)
+    )
+  end
+
+  defp decode_content_part(part), do: part
 
   defp decode_event_type(type), do: decode_existing_atom(type)
   defp decode_trajectory_type(type), do: decode_existing_atom(type)

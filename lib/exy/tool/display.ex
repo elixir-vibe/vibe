@@ -17,6 +17,7 @@ defmodule Exy.Tool.Display do
           | {:error, String.t(), keyword()}
           | {:diff, String.t(), keyword()}
           | {:lines, [IO.chardata()], keyword()}
+          | {:image, map(), keyword()}
 
   @type t :: %__MODULE__{
           name: atom() | String.t() | nil,

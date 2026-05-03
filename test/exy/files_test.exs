@@ -20,6 +20,61 @@ defmodule Exy.FilesTest do
     assert result.lines == 1
   end
 
+  test "reads image files as typed content parts", %{dir: dir} do
+    png =
+      <<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, "IHDR", 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0,
+        0, 0, 0, 0, 0, 0>>
+
+    File.write!(Path.join(dir, "tiny.png"), png)
+
+    assert {:ok, result} = Exy.Files.read_file("tiny.png", root: dir)
+    assert result.content_type == :image
+    assert result.mime_type == "image/png"
+    assert result.width == 1
+    assert result.height == 1
+    assert [%Exy.Model.Content.Text{}, %Exy.Model.Content.Image{} = image] = result.parts
+    assert image.data == Base.encode64(png)
+  end
+
+  test "preserves image content structs across session storage" do
+    session_id = "image-content-roundtrip-#{System.unique_integer([:positive])}"
+
+    output = %{
+      content_type: :image,
+      parts: [
+        Exy.Model.Content.text("Read image file [image/png]"),
+        Exy.Model.Content.image(
+          data: "abc",
+          mime_type: "image/png",
+          filename: "tiny.png",
+          width: 1,
+          height: 1
+        )
+      ]
+    }
+
+    Exy.Session.Store.append_ui_events([
+      {1,
+       Exy.UI.Event.new(
+         :tool_finished,
+         session_id,
+         Exy.UI.ToolEvent.finished(
+           id: "read-image",
+           name: :read,
+           args: %{path: "tiny.png"},
+           output: output
+         )
+       )}
+    ])
+
+    assert [{1, event}] = Exy.Session.Store.ui_events(session_id)
+
+    assert [%Exy.Model.Content.Text{}, %Exy.Model.Content.Image{} = image] =
+             event.data.output.parts
+
+    assert image.filename == "tiny.png"
+  end
+
   test "writes files and returns a diff", %{dir: dir} do
     path = Path.join(dir, "sample.txt")
 

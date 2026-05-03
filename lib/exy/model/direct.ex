@@ -1,7 +1,9 @@
 defmodule Exy.Model.Direct do
   @moduledoc "Internal implementation module."
-  @spec ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
-  def ask(prompt, opts \\ []) when is_binary(prompt) do
+  @type prompt :: String.t() | [Exy.Model.Content.t() | ReqLLM.Message.ContentPart.t()]
+
+  @spec ask(prompt(), keyword()) :: {:ok, term()} | {:error, term()}
+  def ask(prompt, opts \\ []) when is_binary(prompt) or is_list(prompt) do
     {model, messages, session_id, request_opts} = request(prompt, opts)
 
     record_request(prompt, model, session_id)
@@ -10,8 +12,8 @@ defmodule Exy.Model.Direct do
     result
   end
 
-  @spec stream(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
-  def stream(prompt, opts \\ []) when is_binary(prompt) do
+  @spec stream(prompt(), keyword()) :: {:ok, term()} | {:error, term()}
+  def stream(prompt, opts \\ []) when is_binary(prompt) or is_list(prompt) do
     {model, messages, session_id, request_opts} = request(prompt, opts)
 
     callback_opts =
@@ -33,7 +35,7 @@ defmodule Exy.Model.Direct do
 
     messages = [
       ReqLLM.Context.system(system),
-      ReqLLM.Context.user(prompt)
+      ReqLLM.Context.user(to_req_llm_content(prompt))
     ]
 
     session_id = Keyword.get_lazy(opts, :session_id, &Exy.Session.Store.new_id/0)
@@ -77,10 +79,15 @@ defmodule Exy.Model.Direct do
 
   defp maybe_put_chatgpt_account_id(opts, _credentials), do: opts
 
+  defp to_req_llm_content(prompt) when is_binary(prompt), do: prompt
+
+  defp to_req_llm_content(prompt) when is_list(prompt),
+    do: Exy.Model.Content.to_req_llm_parts(prompt)
+
   defp record_request(prompt, model, session_id) do
-    Exy.Session.Store.append_trajectory(:user_message, %{prompt: prompt, model: model},
-      session_id: session_id
-    )
+    Exy.Session.Store.append_trajectory(
+      :user_message,
+      %{prompt: Exy.Model.Content.summarize(prompt), model: model}, session_id: session_id)
   end
 
   defp record_response({:ok, response}, session_id) do

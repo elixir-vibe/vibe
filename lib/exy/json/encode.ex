@@ -5,6 +5,20 @@ defmodule Exy.JSON.Encode do
   def value(term) when is_atom(term), do: Atom.to_string(term)
 
   def value(%DateTime{} = term), do: DateTime.to_iso8601(term)
+
+  def value(%Exy.Model.Content.Text{} = term), do: %{type: "text", text: term.text}
+
+  def value(%Exy.Model.Content.Image{} = term) do
+    %{
+      type: "image",
+      data: term.data,
+      mime_type: term.mime_type,
+      filename: term.filename,
+      width: term.width,
+      height: term.height
+    }
+  end
+
   def value(%_{} = term), do: term |> Map.from_struct() |> value()
 
   def value(term) when is_binary(term) or is_number(term) or is_boolean(term) or is_nil(term),

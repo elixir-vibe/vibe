@@ -20,6 +20,14 @@ defmodule Exy.Tool.Display.Read do
 
   defp body(%{error: error}), do: [{:error, to_string(error), []}]
 
+  defp body(%{content_type: :image, parts: parts}) when is_list(parts) do
+    Enum.map(parts, fn
+      %Exy.Model.Content.Text{text: text} -> {:text, text, []}
+      %Exy.Model.Content.Image{} = image -> {:image, image, []}
+      part -> {:inspect, inspect(part, pretty: true), []}
+    end)
+  end
+
   defp body(%{content: content} = result) when is_binary(content) do
     kind = if markdown?(result), do: :markdown, else: :source
 

@@ -137,6 +137,15 @@ defmodule Exy.Eval.Evaluator do
     }
   end
 
+  defp display_result(%Exy.Image{} = image) do
+    %Result{
+      output: ToolOutput.limit_text(Exy.Markdown.to_markdown(image)),
+      format: :markdown,
+      parts: Exy.Image.to_content_parts(image),
+      value_type: Exy.Image
+    }
+  end
+
   defp display_result(%Exy.Command.Result{} = command) do
     %Result{
       output: ToolOutput.limit_text(command.output),
@@ -219,7 +228,7 @@ defmodule Exy.Eval.Evaluator do
 
   defp plugin_env(env) do
     aliases =
-      [{Cmd, Exy.Command}, {MD, Exy.MD}] ++
+      [{Cmd, Exy.Command}, {Image, Exy.Image}, {MD, Exy.MD}] ++
         Enum.map(
           Exy.Plugin.Manager.apis() ++ Exy.Skill.apis(),
           &{Module.concat([&1.alias]), &1.module}

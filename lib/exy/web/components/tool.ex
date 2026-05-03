@@ -57,7 +57,12 @@ defmodule Exy.Web.Components.Tool do
         {Phoenix.HTML.raw(@body.html)}
       </div>
 
-      <pre :if={@body.kind not in [:markdown, :source_html, :diff_html]} class={[
+      <figure :if={@body.kind == :image} class="space-y-2 px-3 py-2">
+        <img class="max-h-[32rem] max-w-full rounded border border-white/10 object-contain" src={@body.src} alt={@body.alt} />
+        <figcaption class="font-mono text-[0.68rem] leading-4 text-zinc-500">{@body.caption}</figcaption>
+      </figure>
+
+      <pre :if={@body.kind not in [:markdown, :source_html, :diff_html, :image]} class={[
         "max-h-[28rem] overflow-auto whitespace-pre-wrap break-words px-3 py-2 text-xs leading-5 [overflow-wrap:anywhere]",
         if(@body.kind == :error, do: "text-red-200", else: "text-zinc-200"),
         if(@body.mono?, do: "font-mono", else: "font-sans")
@@ -105,6 +110,22 @@ defmodule Exy.Web.Components.Tool do
   defp block_body({:text, text, _opts}, truncate?),
     do: text_block(:text, "Output", text, truncate?)
 
+  defp block_body({:image, %Exy.Model.Content.Image{} = image, _opts}, _truncate?) do
+    caption =
+      [image.filename, image.mime_type, image_size(image)]
+      |> Enum.reject(&(&1 in [nil, ""]))
+      |> Enum.join(" · ")
+
+    %{
+      kind: :image,
+      label: "Image",
+      src: "data:#{image.mime_type};base64,#{image.data}",
+      alt: image.filename || "Image",
+      caption: caption,
+      mono?: false
+    }
+  end
+
   defp block_body({:lines, lines, _opts}, truncate?) do
     text = lines |> rendered_lines() |> Enum.map_join("\n", &display_text/1)
     %{kind: :text, label: "Output", text: truncate_text(text, truncate?), mono?: true}
@@ -118,6 +139,11 @@ defmodule Exy.Web.Components.Tool do
       mono?: true
     }
   end
+
+  defp image_size(%{width: width, height: height}) when is_integer(width) and is_integer(height),
+    do: "#{width}×#{height}"
+
+  defp image_size(_image), do: nil
 
   defp text_block(kind, label, text, truncate?) do
     %{
