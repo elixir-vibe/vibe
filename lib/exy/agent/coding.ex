@@ -36,6 +36,7 @@ defmodule Exy.Agent.Coding do
     tool_timeout_ms: 86_400_000,
     stream_timeout_ms: 86_460_000,
     observability: %{emit_llm_deltas?: true},
+    request_transformer: Exy.Agent.ImageRequestTransformer,
     plugins: [Exy.Agent.Streaming.Plugin],
     system_prompt: false
 end
