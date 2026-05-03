@@ -1,6 +1,8 @@
 defmodule Exy.Agent.StreamingTest do
   use ExUnit.Case, async: false
 
+  alias Exy.UI.ToolEvent
+
   setup do
     {:ok, agent} = Exy.start_link(session_id: "streaming-test")
     {:ok, status} = Jido.AgentServer.status(agent)
@@ -152,7 +154,7 @@ defmodule Exy.Agent.StreamingTest do
              Exy.Agent.Streaming.Plugin.handle_signal(signal, %{agent: %{id: agent_id}})
 
     assert_receive {:tool_preparing,
-                    %Exy.UI.ToolEvent{
+                    %ToolEvent{
                       id: "call-1",
                       name: "eval",
                       args: %{code: "IO."},
@@ -190,11 +192,10 @@ defmodule Exy.Agent.StreamingTest do
     assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(started, context)
     assert {:ok, :continue} = Exy.Agent.Streaming.Plugin.handle_signal(finished, context)
 
-    assert_receive {:tool_started,
-                    %Exy.UI.ToolEvent{id: "call-1", name: "eval", args: %{code: "1 + 1"}}}
+    assert_receive {:tool_started, %ToolEvent{id: "call-1", name: "eval", args: %{code: "1 + 1"}}}
 
     assert_receive {:tool_finished,
-                    %Exy.UI.ToolEvent{
+                    %ToolEvent{
                       id: "call-1",
                       name: "eval",
                       output: "2",
@@ -218,7 +219,7 @@ defmodule Exy.Agent.StreamingTest do
              Exy.Agent.Streaming.Plugin.handle_signal(signal, %{agent: %{id: agent_id}})
 
     assert_receive {:tool_finished,
-                    %Exy.UI.ToolEvent{
+                    %ToolEvent{
                       id: "call-1",
                       name: "eval",
                       output: %{error: "boom"},

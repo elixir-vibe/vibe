@@ -1,5 +1,7 @@
 defmodule Exy.Session.Preview do
   @moduledoc "Internal implementation module."
+
+  alias ReqLLM.Error.API.Request
   @spec message(map() | nil) :: String.t()
   def message(nil), do: ""
 
@@ -25,7 +27,7 @@ defmodule Exy.Session.Preview do
   defp preview_text(%{"content" => content}), do: content_text(content)
   defp preview_text(value), do: inspect(value, limit: 6, printable_limit: 180)
 
-  defp preview_error(%ReqLLM.Error.API.Request{reason: reason}), do: "ERROR #{reason}"
+  defp preview_error(%Request{reason: reason}), do: "ERROR #{reason}"
   defp preview_error({:provider_build_failed, reason}), do: preview_error(reason)
   defp preview_error({:http_streaming_failed, reason}), do: preview_error(reason)
   defp preview_error(reason) when is_binary(reason), do: preview_binary(reason)

@@ -10,6 +10,9 @@ defmodule Exy.Plugin do
   model-facing actions only when the model needs direct tool access.
   """
 
+  alias Exy.Plugin.API
+  alias Exy.UI.Document
+
   @type event :: %{required(:type) => atom(), optional(atom()) => term()}
   @type context :: map()
   @type result :: :ok | {:ok, map()} | {:error, term()} | {:halt, term()}
@@ -18,10 +21,10 @@ defmodule Exy.Plugin do
   @callback handle_event(event(), context(), term()) :: {result(), term()}
   @callback actions(term()) :: [module()]
   @callback commands(term()) :: [module() | map()]
-  @callback apis(term()) :: [Exy.Plugin.API.t() | keyword() | map()]
+  @callback apis(term()) :: [API.t() | keyword() | map()]
   @callback children(term()) :: [Supervisor.child_spec() | {module(), term()} | module()]
   @callback children(term(), map()) :: [Supervisor.child_spec() | {module(), term()} | module()]
-  @callback ui_document(term()) :: Exy.UI.Document.t() | keyword() | map()
+  @callback ui_document(term()) :: Document.t() | keyword() | map()
   @callback shutdown(term()) :: :ok
 
   @optional_callbacks actions: 1,

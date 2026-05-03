@@ -1,19 +1,21 @@
 defmodule Exy.Files do
   @moduledoc "Internal implementation module."
 
+  alias Exy.Files.ReadResult
+  alias Exy.Image
   alias Exy.Model.Content
   @read_limit_lines 2_000
   @read_limit_bytes 50_000
 
   @type edit :: %{old_text: String.t(), new_text: String.t()}
 
-  @spec read_file(String.t(), keyword()) :: {:ok, Exy.Files.ReadResult.t()} | {:error, String.t()}
+  @spec read_file(String.t(), keyword()) :: {:ok, ReadResult.t()} | {:error, String.t()}
   def read_file(path, opts \\ []) when is_binary(path) do
     with {:ok, absolute} <- resolve(path, opts),
          {:ok, stat} <- File.stat(absolute),
          :ok <- ensure_regular(stat),
          {:ok, content} <- File.read(absolute) do
-      if Exy.Image.supported?(absolute) do
+      if Image.supported?(absolute) do
         image_result(path, absolute, content, stat)
       else
         limit_lines = Keyword.get(opts, :limit_lines, @read_limit_lines)
@@ -21,7 +23,7 @@ defmodule Exy.Files do
         {visible, omitted_lines, omitted_bytes} = limit_content(content, limit_lines, limit_bytes)
 
         {:ok,
-         %Exy.Files.ReadResult{
+         %ReadResult{
            path: path,
            content_type: :text,
            content: visible,
@@ -76,8 +78,8 @@ defmodule Exy.Files do
   end
 
   defp image_result(path, absolute, content, stat) do
-    mime_type = Exy.Image.mime_type(absolute)
-    {width, height} = Exy.Image.dimensions(content, mime_type)
+    mime_type = Image.mime_type(absolute)
+    {width, height} = Image.dimensions(content, mime_type)
     data = Base.encode64(content)
 
     parts = [
@@ -92,7 +94,7 @@ defmodule Exy.Files do
     ]
 
     {:ok,
-     %Exy.Files.ReadResult{
+     %ReadResult{
        path: path,
        content_type: :image,
        mime_type: mime_type,

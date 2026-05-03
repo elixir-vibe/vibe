@@ -1,6 +1,9 @@
 defmodule Exy.FilesTest do
   use ExUnit.Case, async: true
 
+  alias Exy.Model.Content
+  alias Exy.UI.{Event, ToolEvent}
+
   @tmp Path.join(System.tmp_dir!(), "exy-file-tools-test")
 
   setup do
@@ -32,7 +35,7 @@ defmodule Exy.FilesTest do
     assert result.mime_type == "image/png"
     assert result.width == 1
     assert result.height == 1
-    assert [%Exy.Model.Content.Text{}, %Exy.Model.Content.Image{} = image] = result.parts
+    assert [%Content.Text{}, %Content.Image{} = image] = result.parts
     assert image.data == Base.encode64(png)
   end
 
@@ -42,8 +45,8 @@ defmodule Exy.FilesTest do
     output = %{
       content_type: :image,
       parts: [
-        Exy.Model.Content.text("Read image file [image/png]"),
-        Exy.Model.Content.image(
+        Content.text("Read image file [image/png]"),
+        Content.image(
           data: "abc",
           mime_type: "image/png",
           filename: "tiny.png",
@@ -55,10 +58,10 @@ defmodule Exy.FilesTest do
 
     Exy.Session.Store.append_ui_events([
       {1,
-       Exy.UI.Event.new(
+       Event.new(
          :tool_finished,
          session_id,
-         Exy.UI.ToolEvent.finished(
+         ToolEvent.finished(
            id: "read-image",
            name: :read,
            args: %{path: "tiny.png"},
@@ -69,7 +72,7 @@ defmodule Exy.FilesTest do
 
     assert [{1, event}] = Exy.Session.Store.ui_events(session_id)
 
-    assert [%Exy.Model.Content.Text{}, %Exy.Model.Content.Image{} = image] =
+    assert [%Content.Text{}, %Content.Image{} = image] =
              event.data.output.parts
 
     assert image.filename == "tiny.png"

@@ -1,6 +1,8 @@
 defmodule Exy.TUI.Image do
   @moduledoc "Terminal image protocol helpers for TUI renderers."
 
+  alias Exy.Model.Content
+
   @type protocol :: :kitty | :iterm2 | nil
   @type capabilities :: %{images: protocol(), true_color?: boolean(), hyperlinks?: boolean()}
 
@@ -96,8 +98,8 @@ defmodule Exy.TUI.Image do
 
   def rows(_width_px, _height_px, _target_width_cells, _opts), do: 4
 
-  @spec fallback(Exy.Model.Content.Image.t()) :: String.t()
-  def fallback(%Exy.Model.Content.Image{} = image) do
+  @spec fallback(Content.Image.t()) :: String.t()
+  def fallback(%Content.Image{} = image) do
     parts =
       [image.filename, image.mime_type, dimensions_text(image)]
       |> Enum.reject(&(&1 in [nil, ""]))

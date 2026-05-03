@@ -5,6 +5,7 @@ defmodule Exy.TUI.Storybook do
 
   use Exy.TUI
 
+  alias Exy.Code.AST.Result
   alias Exy.TUI
   alias Exy.TUI.{Node, Theme, Widget, Width}
   alias Exy.UI.{Event, Reducer, State, ToolEvent, ViewModel}
@@ -348,7 +349,7 @@ end|,
         pattern: ~S|get "/", PageController, :home|,
         replacement: ~S|live "/", GameLive, :index|
       },
-      output: %Exy.Code.AST.Result{
+      output: %Result{
         action: :replace,
         path: "lib/tic_tac_toe_web/router.ex",
         pattern: ~S|get "/", PageController, :home|,

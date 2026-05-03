@@ -1,6 +1,8 @@
 defmodule Exy.SkillScriptTest do
   use ExUnit.Case, async: false
 
+  alias Exy.Plugin.API
+
   setup do
     dir = Path.join(System.tmp_dir!(), "exy-skill-script-#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
@@ -31,7 +33,7 @@ defmodule Exy.SkillScriptTest do
     assert skill.module == ExySkill.DemoSkill
     assert skill.metadata.description == "Executable demo skill"
     assert skill.markdown =~ "# Demo Skill"
-    assert [%Exy.Plugin.API{alias: :Demo, module: ExySkill.DemoSkill}] = skill.apis
+    assert [%API{alias: :Demo, module: ExySkill.DemoSkill}] = skill.apis
     assert function_exported?(ExySkill.DemoSkill, :slug, 1)
   end
 

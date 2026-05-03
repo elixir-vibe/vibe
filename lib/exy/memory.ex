@@ -6,7 +6,7 @@ defmodule Exy.Memory do
   import Ecto.Query
 
   alias Exy.Storage
-  alias Exy.Storage.Schema.Memory
+  alias Exy.Storage.{Schema.Memory, Search}
 
   @type scope ::
           :global
@@ -149,7 +149,7 @@ defmodule Exy.Memory do
     end
   end
 
-  defp memory_search_result(%Exy.Storage.Search.Result{} = result) do
+  defp memory_search_result(%Search.Result{} = result) do
     %{id: result.id, scope: result.metadata.scope, text: result.text, at: result.at}
   end
 

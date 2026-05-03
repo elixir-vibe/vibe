@@ -1,6 +1,8 @@
 defmodule Exy.Actions.ASTTest do
   use ExUnit.Case, async: true
 
+  alias Exy.Code.AST.Result
+
   @large_source_chars 80_000
 
   test "successful list results are wrapped in a map for action runtime validation" do
@@ -9,7 +11,7 @@ defmodule Exy.Actions.ASTTest do
     path = Path.join(dir, "sample.ex")
     File.write!(path, "defmodule Sample do\n  def add(left, right), do: left - right\nend\n")
 
-    assert {:ok, %Exy.Code.AST.Result{result: [{^path, 1}], diff: [%{diff: diff}]}} =
+    assert {:ok, %Result{result: [{^path, 1}], diff: [%{diff: diff}]}} =
              Exy.Actions.AST.run(
                %{
                  action: :replace,

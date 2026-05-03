@@ -1,6 +1,8 @@
 defmodule Exy.Session.PreviewTest do
   use ExUnit.Case, async: true
 
+  alias ReqLLM.Error.API.Request
+
   test "extracts readable output and content previews" do
     assert Exy.Session.Preview.message(%{result: %{output: "hello\nworld"}}) == "hello world"
 
@@ -10,7 +12,7 @@ defmodule Exy.Session.PreviewTest do
   end
 
   test "summarizes nested provider failures" do
-    error = %ReqLLM.Error.API.Request{reason: "missing token", class: :api}
+    error = %Request{reason: "missing token", class: :api}
 
     assert Exy.Session.Preview.message(%{
              error: {:failed, :error, {:http_streaming_failed, {:provider_build_failed, error}}}

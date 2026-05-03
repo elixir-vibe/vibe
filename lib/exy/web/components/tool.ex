@@ -2,12 +2,14 @@ defmodule Exy.Web.Components.Tool do
   @moduledoc "Tool result components for Exy Web."
   use Phoenix.Component
 
+  alias Exy.Model.Content
+  alias Exy.Tool.Display
   alias Exy.Web.Components.Code
 
   attr(:tool, :map, required: true)
 
   def tool_card(assigns) do
-    assigns = assign(assigns, :display, Exy.Tool.Display.from_tool(assigns.tool))
+    assigns = assign(assigns, :display, Display.from_tool(assigns.tool))
 
     ~H"""
     <article class="overflow-hidden rounded-lg border border-violet-300/15 bg-[#15131b]/70">
@@ -110,7 +112,7 @@ defmodule Exy.Web.Components.Tool do
   defp block_body({:text, text, _opts}, truncate?),
     do: text_block(:text, "Output", text, truncate?)
 
-  defp block_body({:image, %Exy.Model.Content.Image{} = image, _opts}, _truncate?) do
+  defp block_body({:image, %Content.Image{} = image, _opts}, _truncate?) do
     caption =
       [image.filename, image.mime_type, image_size(image)]
       |> Enum.reject(&(&1 in [nil, ""]))

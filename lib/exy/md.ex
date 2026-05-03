@@ -3,11 +3,13 @@ defmodule Exy.MD do
   Eval-friendly Markdown rendering helpers.
   """
 
+  alias Exy.MD.Doc
+
   @spec to_markdown(term()) :: String.t()
   def to_markdown(term), do: Exy.Markdown.to_markdown(term)
 
-  @spec doc(term()) :: Exy.MD.Doc.t()
-  def doc(term), do: %Exy.MD.Doc{markdown: to_markdown(term)}
+  @spec doc(term()) :: Doc.t()
+  def doc(term), do: %Doc{markdown: to_markdown(term)}
 
   @spec puts(term()) :: term()
   def puts(term) do

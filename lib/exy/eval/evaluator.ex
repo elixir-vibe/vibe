@@ -2,7 +2,10 @@ defmodule Exy.Eval.Evaluator do
   @moduledoc "Internal implementation module."
   use GenServer
 
+  alias Exy.Command
   alias Exy.Eval.Result
+  alias Exy.Image
+  alias Exy.MD
   alias Exy.Session.Store
   alias Exy.ToolOutput
 
@@ -129,28 +132,28 @@ defmodule Exy.Eval.Evaluator do
     end
   end
 
-  defp display_result(%Exy.MD.Doc{} = doc) do
+  defp display_result(%MD.Doc{} = doc) do
     %Result{
       output: ToolOutput.limit_text(doc.markdown),
       format: :markdown,
-      value_type: Exy.MD.Doc
+      value_type: MD.Doc
     }
   end
 
-  defp display_result(%Exy.Image{} = image) do
+  defp display_result(%Image{} = image) do
     %Result{
       output: ToolOutput.limit_text(Exy.Markdown.to_markdown(image)),
       format: :markdown,
-      parts: Exy.Image.to_content_parts(image),
-      value_type: Exy.Image
+      parts: Image.to_content_parts(image),
+      value_type: Image
     }
   end
 
-  defp display_result(%Exy.Command.Result{} = command) do
+  defp display_result(%Command.Result{} = command) do
     %Result{
       output: ToolOutput.limit_text(command.output),
       format: :text,
-      value_type: Exy.Command.Result
+      value_type: Command.Result
     }
   end
 
@@ -228,7 +231,7 @@ defmodule Exy.Eval.Evaluator do
 
   defp plugin_env(env) do
     aliases =
-      [{Cmd, Exy.Command}, {Image, Exy.Image}, {MD, Exy.MD}] ++
+      [{Cmd, Command}, {Elixir.Image, Image}, {MD, MD}] ++
         Enum.map(
           Exy.Plugin.Manager.apis() ++ Exy.Skill.apis(),
           &{Module.concat([&1.alias]), &1.module}

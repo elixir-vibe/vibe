@@ -7,6 +7,8 @@ defmodule Exy.Skill.Script do
   `Exy.Plugin.API` without becoming long-running plugins.
   """
 
+  alias Exy.Plugin.API
+
   @type metadata :: %{
           required(:name) => String.t(),
           optional(:version) => String.t(),
@@ -18,7 +20,7 @@ defmodule Exy.Skill.Script do
 
   @callback metadata() :: metadata()
   @callback markdown() :: String.t()
-  @callback apis() :: [Exy.Plugin.API.t() | keyword() | map()]
+  @callback apis() :: [API.t() | keyword() | map()]
   @callback prompt_context(map()) :: String.t()
   @callback validate(map()) :: :ok | {:error, term()}
 

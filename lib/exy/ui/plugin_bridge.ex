@@ -1,5 +1,8 @@
 defmodule Exy.UI.PluginBridge do
   @moduledoc "Internal implementation module."
+
+  alias Exy.UI.{Event, State}
+
   @ignored_events MapSet.new([
                     :plugin_status_updated,
                     :plugin_status_cleared,
@@ -9,7 +12,7 @@ defmodule Exy.UI.PluginBridge do
                     :notification_expired
                   ])
 
-  @spec dispatch(Exy.UI.State.t(), Exy.UI.Event.t()) :: :ok
+  @spec dispatch(State.t(), Event.t()) :: :ok
   def dispatch(ui_state, event) do
     if plugin_event?(event.type) and Process.whereis(Exy.Plugin.Manager) do
       context = %{
@@ -27,10 +30,10 @@ defmodule Exy.UI.PluginBridge do
     :ok
   end
 
-  @spec dispatch_lifecycle(atom(), map(), Exy.UI.State.t(), boolean()) :: :ok
+  @spec dispatch_lifecycle(atom(), map(), State.t(), boolean()) :: :ok
   def dispatch_lifecycle(type, data, ui_state, enabled? \\ true) do
     if enabled? do
-      dispatch(ui_state, Exy.UI.Event.new(type, ui_state.session_id, data))
+      dispatch(ui_state, Event.new(type, ui_state.session_id, data))
     else
       :ok
     end

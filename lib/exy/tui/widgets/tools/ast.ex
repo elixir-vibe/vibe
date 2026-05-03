@@ -2,6 +2,7 @@ defmodule Exy.TUI.Widgets.Tools.AST do
   @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.ToolWidget
 
+  alias Exy.Code.AST.Result
   alias Exy.TUI.{Lines, Markdown, Theme, ToolWidget, Widget}
 
   @impl true
@@ -37,7 +38,7 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     end
   end
 
-  def meta(tool, %Exy.Code.AST.Result{} = result) do
+  def meta(tool, %Result{} = result) do
     args = args(tool)
 
     case result.action do
@@ -60,16 +61,16 @@ defmodule Exy.TUI.Widgets.Tools.AST do
     compact([collapsed_summary(result), contextual_pattern_meta(args)])
   end
 
-  def output_lines(%Exy.Code.AST.Result{action: :search} = result, width, theme),
+  def output_lines(%Result{action: :search} = result, width, theme),
     do: search_lines(result, width, theme)
 
-  def output_lines(%Exy.Code.AST.Result{action: :replace, diff: diff}, width, theme),
+  def output_lines(%Result{action: :replace, diff: diff}, width, theme),
     do: diff_lines(diff, width, theme)
 
   def output_lines(result, width, theme) when is_list(result),
     do: search_lines(%{result: result}, width, theme)
 
-  def output_lines(%Exy.Code.AST.Result{} = result, width, theme) do
+  def output_lines(%Result{} = result, width, theme) do
     result
     |> Exy.Markdown.to_markdown()
     |> Markdown.render(width, theme)

@@ -404,8 +404,11 @@ defmodule Exy.TUI.ToolWidget do
 
   defp highlight_diff_rest(rest, language, theme) do
     case split_diff_number_prefix(rest) do
-      {prefix, source} -> [Theme.fg(theme, :dim, prefix), highlight_source_line(source, language, theme)]
-      :error -> Theme.fg(theme, :dim, rest)
+      {prefix, source} ->
+        [Theme.fg(theme, :dim, prefix), highlight_source_line(source, language, theme)]
+
+      :error ->
+        Theme.fg(theme, :dim, rest)
     end
   end
 

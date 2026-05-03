@@ -3,6 +3,8 @@ defmodule Exy.Agent.Profile do
   User-editable agent role/model profiles backed by TOML.
   """
 
+  alias Exy.Model.Effort
+
   @default_path Application.app_dir(:exy, "priv/config/agent-profiles.toml")
   @external_resource @default_path
 
@@ -53,14 +55,14 @@ defmodule Exy.Agent.Profile do
     end
   end
 
-  @spec default_effort() :: Exy.Model.Effort.t()
+  @spec default_effort() :: Effort.t()
   def default_effort do
     with {:ok, data} <- load(),
          value when is_binary(value) <- Map.get(data, "default_effort"),
-         {:ok, effort} <- Exy.Model.Effort.from_string(value) do
+         {:ok, effort} <- Effort.from_string(value) do
       effort
     else
-      _ -> Exy.Model.Effort.default()
+      _ -> Effort.default()
     end
   end
 
@@ -81,11 +83,11 @@ defmodule Exy.Agent.Profile do
     end
   end
 
-  @spec effort_for(keyword()) :: Exy.Model.Effort.t()
+  @spec effort_for(keyword()) :: Effort.t()
   def effort_for(opts) do
     cond do
       effort = Keyword.get(opts, :effort) ->
-        if Exy.Model.Effort.valid?(effort), do: effort, else: default_effort()
+        if Effort.valid?(effort), do: effort, else: default_effort()
 
       role = Keyword.get(opts, :role) ->
         role_effort(role) || default_effort()
@@ -151,7 +153,7 @@ defmodule Exy.Agent.Profile do
   defp role_effort(role) do
     with {:ok, data} <- role(role),
          value when is_binary(value) <- Map.get(data, "effort"),
-         {:ok, effort} <- Exy.Model.Effort.from_string(value) do
+         {:ok, effort} <- Effort.from_string(value) do
       effort
     else
       _ -> nil

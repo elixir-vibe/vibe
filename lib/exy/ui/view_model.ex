@@ -5,6 +5,7 @@ defmodule Exy.UI.ViewModel do
 
   alias Exy.Model.Usage
   alias Exy.Support.Lists
+  alias Exy.UI.State
 
   alias Exy.UI.Block.{
     AssistantMessage,
@@ -32,7 +33,7 @@ defmodule Exy.UI.ViewModel do
           hidden_thinking_label: String.t() | nil
         }
 
-  @spec from_state(Exy.UI.State.t()) :: t()
+  @spec from_state(State.t()) :: t()
   def from_state(state) do
     %{
       body: state |> message_blocks() |> Lists.join(loader_blocks(state)),

@@ -5,11 +5,15 @@ defmodule Exy.TUI.Views.Chat do
 
   use Exy.TUI
 
+  alias Exy.Support.Lists
+  alias Exy.TUI.Node
+  alias Exy.UI.Block.ToolCall
+
   defui do
     body =
       for block <- assign(:body) do
         case block do
-          %Exy.UI.Block.ToolCall{} -> tool(block)
+          %ToolCall{} -> tool(block)
           _ -> message(block)
         end
       end
@@ -19,13 +23,13 @@ defmodule Exy.TUI.Views.Chat do
     above_editor_widgets = Enum.map(Map.get(widget_slots, :above_editor, []), &plugin_widget/1)
     below_editor_widgets = Enum.map(Map.get(widget_slots, :below_editor, []), &plugin_widget/1)
     sidebar_widgets = Enum.map(Map.get(widget_slots, :sidebar, []), &plugin_widget/1)
-    plugin_widgets = Exy.Support.Lists.join(above_editor_widgets, sidebar_widgets)
+    plugin_widgets = Lists.join(above_editor_widgets, sidebar_widgets)
     notices = if assign(:notifications), do: [notifications(assign(:notifications))], else: []
 
     picker =
       case Map.get(assigns, :picker) do
         %{type: type, props: props} -> [Exy.TUI.node(type, props)]
-        %Exy.TUI.Node{} = node -> [node]
+        %Node{} = node -> [node]
         _picker -> []
       end
 

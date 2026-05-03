@@ -172,6 +172,7 @@ defmodule Exy.Session.Store.Codec do
     tool_data =
       data
       |> Map.take([:id, :name, :args, :output, :output_format, :output_parts, :status, :phase])
+      |> decode_tool_event_values()
       |> decode_tool_content_parts()
 
     struct(Exy.UI.ToolEvent, tool_data)
@@ -191,6 +192,11 @@ defmodule Exy.Session.Store.Codec do
     do: %{data | level: existing_atom_or_string(level)}
 
   defp decode_ui_event_data(data, _type), do: data
+
+  defp decode_tool_event_values(%{name: name} = data) when is_binary(name),
+    do: %{data | name: existing_atom_or_string(name)}
+
+  defp decode_tool_event_values(data), do: data
 
   defp decode_tool_content_parts(%{output: output} = data) when is_map(output),
     do: %{data | output: decode_tool_output_content_parts(output)}

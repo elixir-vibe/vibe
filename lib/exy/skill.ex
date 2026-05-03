@@ -6,6 +6,9 @@ defmodule Exy.Skill do
   workflows and can be patched as Exy learns.
   """
 
+  alias Exy.Plugin.API
+  alias Exy.Skill.{Executable, Loader}
+
   @allowed_name ~r/^[a-z0-9][a-z0-9._-]*$/
   @default_context_max_bytes 6_000
   @max_skill_file_chars 100_000
@@ -85,11 +88,11 @@ defmodule Exy.Skill do
     |> Enum.uniq()
   end
 
-  @spec executable() :: [Exy.Skill.Executable.t()]
-  def executable, do: Exy.Skill.Loader.discover()
+  @spec executable() :: [Executable.t()]
+  def executable, do: Loader.discover()
 
-  @spec apis() :: [Exy.Plugin.API.t()]
-  def apis, do: Exy.Skill.Loader.apis()
+  @spec apis() :: [API.t()]
+  def apis, do: Loader.apis()
 
   @spec get(String.t()) :: {:ok, map()} | {:error, String.t()}
   def get(name) do

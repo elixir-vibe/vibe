@@ -1,6 +1,8 @@
 defmodule Exy.WebToolsTest do
   use ExUnit.Case, async: true
 
+  alias Exy.WebTools.{FetchResult, SearchItem, SearchResult}
+
   test "fetch converts selected HTML to markdown" do
     stub = {__MODULE__, :html_fetch}
 
@@ -102,7 +104,7 @@ defmodule Exy.WebToolsTest do
   end
 
   test "pipe helpers select, parse, and convert fetched HTML" do
-    result = %Exy.WebTools.FetchResult{
+    result = %FetchResult{
       url: "https://example.test/page",
       provider: :req,
       status: 200,
@@ -129,7 +131,7 @@ defmodule Exy.WebToolsTest do
   end
 
   test "pipe helper truncates fetched content" do
-    result = %Exy.WebTools.FetchResult{text: "abcdef", total_chars: 6}
+    result = %FetchResult{text: "abcdef", total_chars: 6}
 
     truncated = Exy.WebTools.truncate(result, chars: 3)
 
@@ -150,11 +152,11 @@ defmodule Exy.WebToolsTest do
       @impl true
       def search(query, _opts) do
         {:ok,
-         %Exy.WebTools.SearchResult{
+         %SearchResult{
            query: query,
            provider: :test,
            results: [
-             %Exy.WebTools.SearchItem{title: "Result", url: "https://example.test", text: "Body"}
+             %SearchItem{title: "Result", url: "https://example.test", text: "Body"}
            ]
          }}
       end
@@ -166,15 +168,15 @@ defmodule Exy.WebToolsTest do
   end
 
   test "search and fetch results render through markdown protocol" do
-    search = %Exy.WebTools.SearchResult{
+    search = %SearchResult{
       query: "ecto",
       provider: :test,
       results: [
-        %Exy.WebTools.SearchItem{title: "Ecto", url: "https://hexdocs.pm/ecto", summary: "Docs"}
+        %SearchItem{title: "Ecto", url: "https://hexdocs.pm/ecto", summary: "Docs"}
       ]
     }
 
-    fetch = %Exy.WebTools.FetchResult{
+    fetch = %FetchResult{
       url: "https://hexdocs.pm/ecto",
       provider: :req,
       status: 200,

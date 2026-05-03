@@ -1,6 +1,8 @@
 defmodule Exy.SessionTest do
   use ExUnit.Case, async: false
 
+  alias Exy.UI.ToolEvent
+
   setup do
     session_dir =
       Path.join(System.tmp_dir!(), "exy-session-test-#{System.unique_integer([:positive])}")
@@ -62,7 +64,7 @@ defmodule Exy.SessionTest do
                1
              )
 
-    assert [{1, %{type: :tool_started, data: %Exy.UI.ToolEvent{} = event}}] =
+    assert [{1, %{type: :tool_started, data: %ToolEvent{} = event}}] =
              Exy.Session.Store.ui_events(session_id)
 
     assert event.id == "tool-1"

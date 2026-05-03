@@ -1,14 +1,16 @@
 defmodule Exy.JSON.Encode do
   @moduledoc "JSON value normalization for Exy domain encoders."
 
+  alias Exy.Model.Content
+
   @spec value(term()) :: term()
   def value(term) when is_atom(term), do: Atom.to_string(term)
 
   def value(%DateTime{} = term), do: DateTime.to_iso8601(term)
 
-  def value(%Exy.Model.Content.Text{} = term), do: %{type: "text", text: term.text}
+  def value(%Content.Text{} = term), do: %{type: "text", text: term.text}
 
-  def value(%Exy.Model.Content.Image{} = term) do
+  def value(%Content.Image{} = term) do
     %{
       type: "image",
       data: term.data,

@@ -1,6 +1,10 @@
 defmodule Exy.Model.Direct do
   @moduledoc "Internal implementation module."
-  @type prompt :: String.t() | [Exy.Model.Content.t() | ReqLLM.Message.ContentPart.t()]
+
+  alias Exy.Model.Content
+  alias ReqLLM.Message.ContentPart
+
+  @type prompt :: String.t() | [Content.t() | ContentPart.t()]
 
   @spec ask(prompt(), keyword()) :: {:ok, term()} | {:error, term()}
   def ask(prompt, opts \\ []) when is_binary(prompt) or is_list(prompt) do
@@ -81,13 +85,14 @@ defmodule Exy.Model.Direct do
 
   defp to_req_llm_content(prompt) when is_binary(prompt), do: prompt
 
-  defp to_req_llm_content(prompt) when is_list(prompt),
-    do: Exy.Model.Content.to_req_llm_parts(prompt)
+  defp to_req_llm_content(prompt) when is_list(prompt), do: Content.to_req_llm_parts(prompt)
 
   defp record_request(prompt, model, session_id) do
     Exy.Session.Store.append_trajectory(
       :user_message,
-      %{prompt: Exy.Model.Content.summarize(prompt), model: model}, session_id: session_id)
+      %{prompt: Content.summarize(prompt), model: model},
+      session_id: session_id
+    )
   end
 
   defp record_response({:ok, response}, session_id) do

@@ -7,10 +7,12 @@ defmodule Exy.Eval.Result do
   while keeping the eval/tool boundary typed.
   """
 
+  alias Exy.Model.Content
+
   @type format :: :inspect | :text | :markdown
   @type part ::
           %{required(:output) => String.t(), required(:format) => format()}
-          | Exy.Model.Content.t()
+          | Content.t()
 
   @type t :: %__MODULE__{
           output: String.t(),

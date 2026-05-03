@@ -1,6 +1,10 @@
 defmodule Exy.CLI.Output do
   @moduledoc "Internal implementation module."
+  alias Exy.Eval.Result, as: EvalResult
+  alias Exy.Storage.Search
+  alias Exy.Subagents.{JobInfo, Schedule}
   alias IO.ANSI
+  alias ReqLLM.Response
 
   @spec print(term(), keyword()) :: :ok | {:error, term()}
   def print(:ok, opts), do: print({:ok, %{ok: true}}, opts)
@@ -63,21 +67,20 @@ defmodule Exy.CLI.Output do
 
   defp render([]), do: "No results."
 
-  defp render([%Exy.Storage.Search.Result{} | _rest] = results),
+  defp render([%Search.Result{} | _rest] = results),
     do: render_search_results(results)
 
-  defp render([%Exy.Subagents.JobInfo{} | _rest] = jobs), do: render_jobs(jobs)
-  defp render([%Exy.Subagents.Schedule{} | _rest] = schedules), do: render_schedules(schedules)
+  defp render([%JobInfo{} | _rest] = jobs), do: render_jobs(jobs)
+  defp render([%Schedule{} | _rest] = schedules), do: render_schedules(schedules)
   defp render([%{id: _id} | _rest] = sessions), do: render_sessions(sessions)
 
   defp render(results) when is_list(results),
     do: Enum.map_join(results, "\n", &inspect(&1, pretty: true, limit: 20))
 
-  defp render(%ReqLLM.Response{} = response),
-    do: response |> ReqLLM.Response.text() |> render_markdown()
+  defp render(%Response{} = response), do: response |> Response.text() |> render_markdown()
 
-  defp render(%Exy.Eval.Result{format: :markdown, output: output}), do: render_markdown(output)
-  defp render(%Exy.Eval.Result{output: output}), do: output
+  defp render(%EvalResult{format: :markdown, output: output}), do: render_markdown(output)
+  defp render(%EvalResult{output: output}), do: output
   defp render(%{summary: summary}), do: render_markdown(summary)
   defp render(%{output: output}), do: output
   defp render(result) when is_binary(result), do: render_markdown(result)

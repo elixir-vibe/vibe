@@ -1,13 +1,16 @@
 defmodule Exy.Plugins.WebSearchTest do
   use ExUnit.Case, async: true
 
+  alias Exy.Plugin.API
+  alias Exy.Plugins.WebSearch.Result
+
   test "exposes pipeable eval API" do
-    assert [%Exy.Plugin.API{alias: Web, module: Exy.WebTools}] =
+    assert [%API{alias: Web, module: Exy.WebTools}] =
              Exy.Plugins.WebSearch.apis([])
   end
 
   test "search results render through markdown protocol" do
-    result = %Exy.Plugins.WebSearch.Result{
+    result = %Result{
       title: "Ecto",
       url: "https://hexdocs.pm/ecto",
       summary: "Database wrapper",

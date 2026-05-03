@@ -1,5 +1,7 @@
 defmodule Exy.Remote.Session do
   @moduledoc "Internal implementation module."
+
+  alias Exy.UI.Command
   @spec list() :: {:ok, [map()]} | {:error, term()} | {:badrpc, term()}
   def list do
     case call(Exy.Session, :list, []) do
@@ -25,7 +27,7 @@ defmodule Exy.Remote.Session do
   def send_prompt(session_id, text) do
     with {:ok, pid} <- lookup(session_id),
          :ok <-
-           Exy.Session.dispatch(pid, %Exy.UI.Command{type: :submit_prompt, data: %{text: text}}) do
+           Exy.Session.dispatch(pid, %Command{type: :submit_prompt, data: %{text: text}}) do
       {:ok, %{sent: true, session_id: session_id}}
     end
   end

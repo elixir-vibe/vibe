@@ -7,7 +7,9 @@ defmodule Exy.WebTools.FetchProvider do
   extraction services without changing agent-facing eval code.
   """
 
-  @callback fetch(String.t(), keyword()) :: {:ok, Exy.WebTools.FetchResult.t()} | {:error, term()}
+  alias Exy.WebTools.FetchResult
+
+  @callback fetch(String.t(), keyword()) :: {:ok, FetchResult.t()} | {:error, term()}
   @callback capabilities() :: map()
 
   @optional_callbacks capabilities: 0

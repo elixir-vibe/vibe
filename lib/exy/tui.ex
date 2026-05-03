@@ -3,14 +3,16 @@ defmodule Exy.TUI do
   Declarative terminal UI helpers and constructors for Exy's TUI node tree.
   """
 
-  alias Exy.TUI.Node
+  alias Exy.TUI.{Node, Theme, Widget}
+  alias Exy.UI.Autocomplete
+  alias Exy.UI.Block.{NotificationList, PluginWidget}
 
   @type child :: Node.t() | IO.chardata()
 
   defmacro __using__(_opts) do
     quote do
       import Exy.TUI
-      alias Exy.TUI.Node
+      alias Exy.TUI.{Node, Theme, Widget}
     end
   end
 
@@ -35,9 +37,9 @@ defmodule Exy.TUI do
         unquote(block)
       end
 
-      @spec render_lines(map(), pos_integer(), Exy.TUI.Theme.t()) :: [IO.chardata()]
-      def render_lines(assigns \\ %{}, width, theme \\ Exy.TUI.Theme.default()) do
-        assigns |> render() |> Exy.TUI.Widget.render(width, theme)
+      @spec render_lines(map(), pos_integer(), Theme.t()) :: [IO.chardata()]
+      def render_lines(assigns \\ %{}, width, theme \\ Theme.default()) do
+        assigns |> render() |> Widget.render(width, theme)
       end
     end
   end
@@ -110,18 +112,18 @@ defmodule Exy.TUI do
   @spec select_list(keyword() | map()) :: Node.t()
   def select_list(props), do: node(:select_list, Map.new(props))
 
-  @spec autocomplete(keyword() | map() | Exy.UI.Autocomplete.t()) :: Node.t()
-  def autocomplete(%Exy.UI.Autocomplete{} = autocomplete),
+  @spec autocomplete(keyword() | map() | Autocomplete.t()) :: Node.t()
+  def autocomplete(%Autocomplete{} = autocomplete),
     do: autocomplete(Map.from_struct(autocomplete))
 
   def autocomplete(props), do: node(:autocomplete, Map.new(props))
 
-  @spec notifications(keyword() | map() | Exy.UI.Block.NotificationList.t()) :: Node.t()
-  def notifications(%Exy.UI.Block.NotificationList{items: items}), do: notifications(items: items)
+  @spec notifications(keyword() | map() | NotificationList.t()) :: Node.t()
+  def notifications(%NotificationList{items: items}), do: notifications(items: items)
   def notifications(props), do: node(:notifications, Map.new(props))
 
-  @spec plugin_widget(keyword() | map() | Exy.UI.Block.PluginWidget.t()) :: Node.t()
-  def plugin_widget(%Exy.UI.Block.PluginWidget{} = widget),
+  @spec plugin_widget(keyword() | map() | PluginWidget.t()) :: Node.t()
+  def plugin_widget(%PluginWidget{} = widget),
     do: plugin_widget(Map.from_struct(widget))
 
   def plugin_widget(props), do: node(:plugin_widget, Map.new(props))

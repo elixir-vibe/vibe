@@ -1,5 +1,6 @@
 defmodule Exy.Skill.Loader do
   @moduledoc "Internal implementation module."
+  alias Exy.Plugin.API
   alias Exy.Skill.Executable
 
   @spec load_file(String.t()) :: {:ok, [Executable.t()]} | {:error, term()}
@@ -56,7 +57,7 @@ defmodule Exy.Skill.Loader do
     |> Enum.uniq_by(&{&1.name, &1.module})
   end
 
-  @spec apis(keyword()) :: [Exy.Plugin.API.t()]
+  @spec apis(keyword()) :: [API.t()]
   def apis(opts \\ []) do
     opts
     |> discover()

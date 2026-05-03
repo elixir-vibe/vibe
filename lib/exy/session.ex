@@ -15,7 +15,8 @@ defmodule Exy.Session do
 
   alias Exy.Model.{Effort, Switcher}
   alias Exy.Session.PromptLifecycle
-  alias Exy.UI.{Command, Event, PluginBridge, Reducer, SlashCommands, State}
+  alias Exy.Storage.Search
+  alias Exy.UI.{Command, Event, PluginBridge, Reducer, SlashCommands, State, ToolEvent}
 
   require Exy.Debug
 
@@ -50,8 +51,8 @@ defmodule Exy.Session do
   @spec list() :: [map()]
   def list, do: Exy.Session.Listing.list()
 
-  @spec search(String.t(), keyword()) :: [Exy.Storage.Search.Result.t()]
-  def search(query, opts \\ []), do: Exy.Storage.Search.sessions(query, opts)
+  @spec search(String.t(), keyword()) :: [Search.Result.t()]
+  def search(query, opts \\ []), do: Search.sessions(query, opts)
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -220,15 +221,15 @@ defmodule Exy.Session do
      emit(state, Event.new(:assistant_thinking_delta, state.state.session_id, %{text: text}))}
   end
 
-  def handle_info({:tool_preparing, %Exy.UI.ToolEvent{} = data}, state) do
+  def handle_info({:tool_preparing, %ToolEvent{} = data}, state) do
     {:noreply, emit(state, Event.new(:tool_updated, state.state.session_id, data))}
   end
 
-  def handle_info({:tool_started, %Exy.UI.ToolEvent{} = data}, state) do
+  def handle_info({:tool_started, %ToolEvent{} = data}, state) do
     {:noreply, emit(state, Event.new(:tool_started, state.state.session_id, data))}
   end
 
-  def handle_info({:tool_finished, %Exy.UI.ToolEvent{} = data}, state) do
+  def handle_info({:tool_finished, %ToolEvent{} = data}, state) do
     {:noreply, emit(state, Event.new(:tool_finished, state.state.session_id, data))}
   end
 

@@ -8,6 +8,9 @@ defmodule Exy.UI.State do
   state so alternate clients can consume the same session model.
   """
 
+  alias Exy.Model.Effort
+  alias Exy.UI.{Event, Notification, Selector}
+
   defstruct session_id: nil,
             cwd: nil,
             model: nil,
@@ -41,7 +44,7 @@ defmodule Exy.UI.State do
           session_id: String.t() | nil,
           cwd: String.t() | nil,
           model: String.t() | nil,
-          effort: Exy.Model.Effort.t() | nil,
+          effort: Effort.t() | nil,
           messages: [message()],
           pending_tools: map(),
           usage: map(),
@@ -49,17 +52,17 @@ defmodule Exy.UI.State do
           truncate?: boolean(),
           status: atom(),
           overlays: [map()],
-          notifications: [Exy.UI.Notification.t()],
+          notifications: [Notification.t()],
           plugin_statuses: map(),
           active_sessions: non_neg_integer() | nil,
           plugin_widgets: map(),
           working_message: String.t() | nil,
           hidden_thinking_label: String.t() | nil,
           title: String.t() | nil,
-          selector: Exy.UI.Selector.t() | nil,
+          selector: Selector.t() | nil,
           streaming_message: map() | nil,
           editor: map(),
-          events: [Exy.UI.Event.t()]
+          events: [Event.t()]
         }
 
   @spec new(keyword()) :: t()

@@ -1,6 +1,6 @@
 defmodule Exy.TUI.TextTruncation do
   @moduledoc "Internal implementation module."
-  alias Exy.TUI.Widget
+  alias Exy.TUI.{Shortcuts, Theme, Widget}
 
   @type result :: %{lines: [IO.chardata()], omitted: non_neg_integer(), truncated?: boolean()}
 
@@ -18,15 +18,15 @@ defmodule Exy.TUI.TextTruncation do
     end
   end
 
-  @spec hint(non_neg_integer(), Exy.TUI.Theme.t(), pos_integer(), keyword()) :: IO.chardata()
+  @spec hint(non_neg_integer(), Theme.t(), pos_integer(), keyword()) :: IO.chardata()
   def hint(omitted, theme, width, opts \\ []) do
     label = Keyword.get(opts, :label, "expand")
 
     [
       Widget.spaces(2),
-      Exy.TUI.Theme.fg(theme, :muted, "… (#{omitted} more #{plural(omitted, "line")}, "),
-      Exy.TUI.Shortcuts.hint(:toggle_truncation, theme, label: label),
-      Exy.TUI.Theme.fg(theme, :muted, ")")
+      Theme.fg(theme, :muted, "… (#{omitted} more #{plural(omitted, "line")}, "),
+      Shortcuts.hint(:toggle_truncation, theme, label: label),
+      Theme.fg(theme, :muted, ")")
     ]
     |> Widget.fit_line(width)
   end

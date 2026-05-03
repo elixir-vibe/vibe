@@ -2,6 +2,7 @@ defmodule Exy.Plugin.Manager do
   @moduledoc "Internal implementation module."
   use GenServer
 
+  alias Exy.Plugin.API
   alias Exy.UI.Document
 
   defstruct plugins: %{}
@@ -28,7 +29,7 @@ defmodule Exy.Plugin.Manager do
   @spec commands() :: [module()]
   def commands, do: GenServer.call(__MODULE__, :commands)
 
-  @spec apis() :: [Exy.Plugin.API.t()]
+  @spec apis() :: [API.t()]
   def apis, do: GenServer.call(__MODULE__, :apis)
 
   @spec ui_document(module()) :: Document.t()

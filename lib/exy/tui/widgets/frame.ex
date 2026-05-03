@@ -1,6 +1,6 @@
 defmodule Exy.TUI.Widgets.Frame do
   @moduledoc "Internal implementation module."
-  alias Exy.TUI.{Theme, Widget, Width}
+  alias Exy.TUI.{Node, Theme, Widget, Width}
 
   @spec border(Theme.t(), pos_integer(), atom(), atom(), IO.chardata() | nil) :: IO.chardata()
   def border(theme, width, left_key, right_key, title \\ nil) do
@@ -17,7 +17,7 @@ defmodule Exy.TUI.Widgets.Frame do
   @spec line(IO.chardata(), pos_integer(), Theme.t()) :: IO.chardata()
   def line(content, width, theme), do: Widget.frame_line(content, width, theme)
 
-  @spec body([Exy.TUI.Node.t() | IO.chardata()], pos_integer(), Theme.t()) :: [IO.chardata()]
+  @spec body([Node.t() | IO.chardata()], pos_integer(), Theme.t()) :: [IO.chardata()]
   def body(children, width, theme) do
     inner_width = max(width - 4, 1)
 

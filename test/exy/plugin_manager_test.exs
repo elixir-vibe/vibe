@@ -1,6 +1,8 @@
 defmodule Exy.PluginManagerTest do
   use ExUnit.Case, async: false
 
+  alias Exy.UI.Widget
+
   alias Exy.Test.PluginManagerFixtures.{
     APIPlugin,
     BackgroundPlugin,
@@ -51,7 +53,7 @@ defmodule Exy.PluginManagerTest do
 
     state = Exy.Session.state(server)
 
-    assert state.plugin_widgets["indexer"] == %Exy.UI.Widget{
+    assert state.plugin_widgets["indexer"] == %Widget{
              id: "indexer",
              type: :progress,
              placement: :below_editor,

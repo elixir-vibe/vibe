@@ -1,7 +1,7 @@
 defmodule Exy.UI.SlashCommands.HelpTest do
   use ExUnit.Case, async: true
 
-  alias Exy.UI.SlashCommands
+  alias Exy.UI.{SlashCommands, State}
 
   test "help command is registered" do
     assert SlashCommands.Registry.find("help") == SlashCommands.Help
@@ -9,7 +9,7 @@ defmodule Exy.UI.SlashCommands.HelpTest do
   end
 
   test "returns notification event with docs markdown" do
-    ui_state = %Exy.UI.State{session_id: "help-test"}
+    ui_state = %State{session_id: "help-test"}
 
     assert {:events, [event]} = SlashCommands.Help.run(["eval"], ui_state)
     assert event.type == :notification_added

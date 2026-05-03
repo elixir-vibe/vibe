@@ -5,7 +5,7 @@ defmodule Exy.UI.Reducer do
 
   alias Exy.Model.Usage
   alias Exy.Support.Lists
-  alias Exy.UI.{Event, Notification, Selector, State}
+  alias Exy.UI.{Event, Notification, Selector, State, ToolEvent}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
   def apply_event(%State{} = state, %Event{} = event) do
@@ -82,7 +82,7 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_started, at: at, data: %Exy.UI.ToolEvent{id: id} = data}) do
+  defp reduce(state, %Event{type: :tool_started, at: at, data: %ToolEvent{id: id} = data}) do
     data = tool_event_map(data)
 
     {messages, pending_tools} =
@@ -105,7 +105,7 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_finished, data: %Exy.UI.ToolEvent{id: id} = data}) do
+  defp reduce(state, %Event{type: :tool_finished, data: %ToolEvent{id: id} = data}) do
     data = tool_event_map(data)
     pending_tools = Map.update(state.pending_tools, id, data, &Map.merge(&1, data))
 
@@ -117,7 +117,7 @@ defmodule Exy.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_updated, at: at, data: %Exy.UI.ToolEvent{id: id} = data}) do
+  defp reduce(state, %Event{type: :tool_updated, at: at, data: %ToolEvent{id: id} = data}) do
     data = tool_event_map(data)
 
     {messages, pending_tools} =
@@ -428,7 +428,7 @@ defmodule Exy.UI.Reducer do
     end
   end
 
-  defp tool_event_map(%Exy.UI.ToolEvent{} = event) do
+  defp tool_event_map(%ToolEvent{} = event) do
     event
     |> Map.from_struct()
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)

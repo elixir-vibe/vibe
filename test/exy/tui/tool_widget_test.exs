@@ -1,8 +1,8 @@
 defmodule Exy.TUI.ToolWidgetTest do
   use ExUnit.Case, async: true
 
+  alias Exy.Code.AST.Result
   alias Exy.TUI
-
   alias Exy.TUI.{Theme, Widget, Width}
 
   @long_command_timeout_ms 120_000
@@ -860,7 +860,7 @@ defmodule Exy.TUI.ToolWidgetTest do
   end
 
   test "ast replace shows params and rendered diff" do
-    result = %Exy.Code.AST.Result{
+    result = %Result{
       action: :replace,
       path: "lib/demo.ex",
       pattern: "left - right",

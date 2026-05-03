@@ -8,8 +8,9 @@ defmodule Exy.WebTools.SearchProvider do
   configured search backend changes.
   """
 
-  @callback search(String.t(), keyword()) ::
-              {:ok, Exy.WebTools.SearchResult.t()} | {:error, term()}
+  alias Exy.WebTools.SearchResult
+
+  @callback search(String.t(), keyword()) :: {:ok, SearchResult.t()} | {:error, term()}
   @callback capabilities() :: map()
 
   @optional_callbacks capabilities: 0

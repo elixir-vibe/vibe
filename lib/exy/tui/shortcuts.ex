@@ -14,7 +14,7 @@ defmodule Exy.TUI.Shortcuts do
   @spec key(atom()) :: String.t()
   def key(action), do: get!(action).key
 
-  @spec hint(atom(), Exy.TUI.Theme.t(), keyword()) :: IO.chardata()
+  @spec hint(atom(), Theme.t(), keyword()) :: IO.chardata()
   def hint(action, theme, opts \\ []) do
     shortcut = get!(action)
     label = Keyword.get(opts, :label, shortcut.label)
