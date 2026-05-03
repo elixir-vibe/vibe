@@ -1,5 +1,6 @@
 defmodule Exy.Tool.Display.Read do
   @moduledoc "Internal implementation module."
+  alias Exy.Files.ImageRef
   alias Exy.Model.Content
   alias Exy.Tool.Display
   alias Exy.Tool.Display.Util
@@ -20,6 +21,10 @@ defmodule Exy.Tool.Display.Read do
   end
 
   defp body(%{error: error}), do: [{:error, to_string(error), []}]
+
+  defp body(%{content_type: :image, image: %ImageRef{} = ref}) do
+    [{:image_ref, ref, []}]
+  end
 
   defp body(%{content_type: :image, parts: parts}) when is_list(parts) do
     Enum.map(parts, fn

@@ -17,6 +17,7 @@ defmodule Exy.Web.Router do
     live("/", SessionsLive, :index)
     live("/sessions", SessionsLive, :index)
     live("/sessions/:id", SessionLive, :show)
+    get("/sessions/:session_id/artifacts/*path", ArtifactController, :show)
     live("/jobs", JobsLive, :index)
     live("/memory", MemoryLive, :index)
     live("/docs", DocsLive, :show)

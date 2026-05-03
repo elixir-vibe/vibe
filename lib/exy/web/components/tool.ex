@@ -2,6 +2,7 @@ defmodule Exy.Web.Components.Tool do
   @moduledoc "Tool result components for Exy Web."
   use Phoenix.Component
 
+  alias Exy.Files.{Artifacts, ImageRef}
   alias Exy.Model.Content
   alias Exy.Tool.Display
   alias Exy.Web.Components.Code
@@ -112,21 +113,8 @@ defmodule Exy.Web.Components.Tool do
   defp block_body({:text, text, _opts}, truncate?),
     do: text_block(:text, "Output", text, truncate?)
 
-  defp block_body({:image, %Content.Image{} = image, _opts}, _truncate?) do
-    caption =
-      [image.filename, image.mime_type, image_size(image)]
-      |> Enum.reject(&(&1 in [nil, ""]))
-      |> Enum.join(" · ")
-
-    %{
-      kind: :image,
-      label: "Image",
-      src: "data:#{image.mime_type};base64,#{image.data}",
-      alt: image.filename || "Image",
-      caption: caption,
-      mono?: false
-    }
-  end
+  defp block_body({:image, %Content.Image{} = image, _opts}, _truncate?), do: image_body(image)
+  defp block_body({:image_ref, %ImageRef{} = ref, _opts}, _truncate?), do: image_body(ref)
 
   defp block_body({:lines, lines, _opts}, truncate?) do
     text = lines |> rendered_lines() |> Enum.map_join("\n", &display_text/1)
@@ -140,6 +128,28 @@ defmodule Exy.Web.Components.Tool do
       text: block |> inspect(pretty: true) |> truncate_text(truncate?),
       mono?: true
     }
+  end
+
+  defp image_body(image) do
+    caption =
+      [image.filename, image.mime_type, image_size(image)]
+      |> Enum.reject(&(&1 in [nil, ""]))
+      |> Enum.join(" · ")
+
+    %{
+      kind: :image,
+      label: "Image",
+      src: image_src(image),
+      alt: image.filename || "Image",
+      caption: caption,
+      mono?: false
+    }
+  end
+
+  defp image_src(%Content.Image{} = image), do: "data:#{image.mime_type};base64,#{image.data}"
+
+  defp image_src(%ImageRef{} = ref) do
+    Artifacts.public_path(ref) || "data:#{ref.mime_type};base64,#{ref.data}"
   end
 
   defp image_size(%{width: width, height: height}) when is_integer(width) and is_integer(height),
