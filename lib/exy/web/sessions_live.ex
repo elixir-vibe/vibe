@@ -84,7 +84,7 @@ defmodule Exy.Web.SessionsLive do
 
       <.pagination page_start={@page_start} page_end={@page_end} filtered_count={@filtered_count} page={@page} total_pages={@total_pages} />
 
-      <form phx-change="select" class="mt-4 space-y-6">
+      <form phx-change="select" class="mt-6 space-y-6">
         <%= if @sessions == [] do %>
           <div class="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">No sessions matched.</div>
         <% else %>

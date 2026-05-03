@@ -9,5 +9,7 @@ defmodule Exy.Web.SettingsLiveTest do
     assert html =~ "Default model"
     assert html =~ "Auth"
     assert html =~ "Roles"
+    assert html =~ "Prompts"
+    assert html =~ "System prompt"
   end
 end

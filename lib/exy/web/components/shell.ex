@@ -38,6 +38,8 @@ defmodule Exy.Web.Components.Shell do
               <.nav_item href={~p"/storage"} active={@current == :storage}>Storage</.nav_item>
               <.nav_item href={~p"/docs"} active={@current == :docs}>Docs</.nav_item>
               <.nav_item href={~p"/runtime"} active={@current == :runtime}>Runtime</.nav_item>
+              <.nav_item href={~p"/plugins"} active={@current == :plugins}>Plugins</.nav_item>
+              <.nav_item href={~p"/skills"} active={@current == :skills}>Skills</.nav_item>
               <.nav_item href={~p"/settings"} active={@current == :settings}>Settings</.nav_item>
             </nav>
           </div>
@@ -54,6 +56,8 @@ defmodule Exy.Web.Components.Shell do
           <.nav_item href={~p"/storage"} active={@current == :storage}>Storage</.nav_item>
           <.nav_item href={~p"/docs"} active={@current == :docs}>Docs</.nav_item>
           <.nav_item href={~p"/runtime"} active={@current == :runtime}>Runtime</.nav_item>
+          <.nav_item href={~p"/plugins"} active={@current == :plugins}>Plugins</.nav_item>
+          <.nav_item href={~p"/skills"} active={@current == :skills}>Skills</.nav_item>
           <.nav_item href={~p"/settings"} active={@current == :settings}>Settings</.nav_item>
         </nav>
       </header>

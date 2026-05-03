@@ -5,6 +5,7 @@ defmodule Exy.Web.SettingsLive do
   alias Exy.Agent.Profile
   alias Exy.Auth
   alias Exy.Auth.Store
+  alias Exy.Prompts
 
   @impl true
   def mount(_params, _session, socket) do
@@ -41,6 +42,27 @@ defmodule Exy.Web.SettingsLive do
           </div>
         </.panel>
       </div>
+
+      <section class="mt-4 overflow-hidden rounded-xl border border-white/10 bg-[#141219]/80">
+        <header class="border-b border-white/10 px-4 py-3">
+          <h2 class="text-base font-semibold text-zinc-100">Prompts</h2>
+          <p class="mt-1 text-sm text-zinc-500">Built-in prompt templates compiled into Exy.</p>
+        </header>
+        <div class="divide-y divide-white/8">
+          <details :for={prompt <- @prompts} class="group">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 marker:hidden hover:bg-white/[0.025]">
+              <div class="min-w-0">
+                <h3 class="truncate text-sm font-semibold text-zinc-100">{prompt.title}</h3>
+                <p class="mt-1 text-xs text-zinc-600">{prompt.lines} lines · {prompt.bytes} bytes</p>
+              </div>
+              <span class="text-xs text-zinc-600 transition-transform group-open:rotate-90">›</span>
+            </summary>
+            <div class="border-t border-white/8 bg-[#0d0c11]/55 p-4">
+              <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[#09080c] p-3 font-mono text-xs leading-5 text-zinc-300 [overflow-wrap:anywhere]">{prompt.text}</pre>
+            </div>
+          </details>
+        </div>
+      </section>
 
       <section class="mt-4 rounded-xl border border-white/10 bg-[#141219]/80 p-4">
         <header class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -84,6 +106,7 @@ defmodule Exy.Web.SettingsLive do
     |> assign(:profile_path, Profile.path())
     |> assign(:roles, roles(profile_data))
     |> assign(:auth_providers, auth_providers())
+    |> assign(:prompts, prompts())
   end
 
   defp load_profile do
@@ -105,6 +128,25 @@ defmodule Exy.Web.SettingsLive do
       }
     end)
     |> Enum.sort_by(& &1.name)
+  end
+
+  defp prompts do
+    [
+      {:system, "System prompt", Prompts.system()},
+      {:summarization_system, "Summarization system", Prompts.summarization_system()},
+      {:context_summary, "Context summary", Prompts.context_summary()},
+      {:context_update, "Context update", Prompts.context_update()},
+      {:turn_prefix_summary, "Turn prefix summary", Prompts.turn_prefix_summary()}
+    ]
+    |> Enum.map(fn {name, title, text} ->
+      %{
+        name: name,
+        title: title,
+        text: text,
+        lines: text |> String.split("\n") |> length(),
+        bytes: byte_size(text)
+      }
+    end)
   end
 
   defp auth_providers do

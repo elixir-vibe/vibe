@@ -23,6 +23,10 @@ defmodule Exy.Web.Router do
     live("/docs/:topic", DocsLive, :show)
     live("/storage", StorageLive, :index)
     live("/settings", SettingsLive, :index)
+    live("/plugins", PluginsLive, :index)
+    live("/plugins/:module", PluginsLive, :show)
+    live("/skills", SkillsLive, :index)
+    live("/skills/:name", SkillsLive, :show)
     live("/search", SearchLive, :index)
     live("/runtime", RuntimeLive, :index)
   end

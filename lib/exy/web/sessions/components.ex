@@ -18,7 +18,7 @@ defmodule Exy.Web.Sessions.Components do
 
   def sessions_toolbar(assigns) do
     ~H"""
-    <section class="rounded-xl border border-white/10 bg-[#141219]/80">
+    <section class="overflow-hidden rounded-t-xl border border-white/10 bg-[#141219]/80">
       <div class="grid gap-px border-b border-white/10 bg-white/10 sm:grid-cols-4">
         <.metric label="Sessions" value={@filtered_count} />
         <.metric label="Live" value={@active_count} />
