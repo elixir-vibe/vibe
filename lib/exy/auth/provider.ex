@@ -13,7 +13,7 @@ defmodule Exy.Auth.Provider do
   @callback id() :: String.t()
   @callback model_prefixes() :: [String.t()]
   @callback resolve_model(prefix :: String.t(), model_id :: String.t()) ::
-              {reqllm_model :: String.t(), [request_option()]}
+              {reqllm_model :: term(), [request_option()]}
   @callback request_options() :: [request_option()]
   @callback login(keyword()) :: {:ok, credentials()} | {:error, term()}
   @callback refresh(credentials()) :: {:ok, credentials()} | {:error, term()}

@@ -24,7 +24,21 @@ defmodule Exy.Auth.OpenCode do
   def model_prefixes, do: ["opencode", "opencode_go"]
 
   @impl true
-  def resolve_model(prefix, model_id), do: {"openai:#{model_id}", [base_url: @base_urls[prefix]]}
+  def resolve_model(prefix, model_id) do
+    base_url = @base_urls[prefix]
+
+    model =
+      case LLMDB.model(:opencode, model_id) do
+        {:ok, llmdb_model} ->
+          %{llmdb_model | provider: :openai, base_url: base_url}
+
+        {:error, _} ->
+          {:ok, inline} = ReqLLM.model(%{provider: :openai, id: model_id, base_url: base_url})
+          inline
+      end
+
+    {model, []}
+  end
 
   @impl true
   def request_options do
