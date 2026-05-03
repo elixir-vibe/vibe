@@ -9,7 +9,7 @@ mime_type = Exy.Image.mime_type(path) || "image/png"
 
 prompt = [
   Exy.Model.Content.text(
-    "Look at the attached image. Answer exactly: WIDTHxHEIGHT TOP_LEFT_COLOR BOTTOM_RIGHT_COLOR."
+    "Look at the attached labeled quadrant image. Answer exactly: WIDTHxHEIGHT UPPER_LEFT_LABEL LOWER_RIGHT_LABEL."
   ),
   Exy.Model.Content.image(
     data: Base.encode64(content),

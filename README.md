@@ -87,6 +87,15 @@ Run a non-interactive prompt:
 exy -p "Inspect this project and suggest next steps"
 ```
 
+Attach images in direct model mode with `@path` references:
+
+```bash
+exy --direct "describe @test/fixtures/images/vision-smoke.png"
+mix run scripts/image_model_smoke.exs
+```
+
+Image files read by the agent are model-facing through `read`, resized through pluggable command backends (`magick`, `sips`, `vips`) when needed, and large payloads are stored as session artifacts instead of being duplicated in JSON logs.
+
 Open the prototype Phoenix LiveView client:
 
 ```bash

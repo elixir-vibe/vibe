@@ -40,6 +40,18 @@ Exy.Eval.bindings(session_id)
 Exy.Eval.reset(session_id)
 ```
 
+Image files are available through the normal `Image` eval alias and model content APIs:
+
+```elixir
+image = Image.from_file!("screenshot.png", resize?: true)
+Exy.Model.Direct.ask([
+  Exy.Model.Content.text("Describe this image"),
+  Exy.Model.Content.image(data: image.data, mime_type: image.mime_type, filename: image.filename)
+])
+```
+
+Use `mix run scripts/image_model_smoke.exs` to verify the configured multimodal provider against a labeled fixture.
+
 Prefer `Cmd.run/2` and `Cmd.start/2` over raw `System.cmd/3`; command jobs are supervised and expose status/output/cancellation APIs.
 
 Prefer `MD.doc/1` when a value should render as Markdown in Exy. Use `MD.to_markdown/1` only when you need the raw Markdown string.

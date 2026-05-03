@@ -69,4 +69,16 @@ Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", format: :html)
 
 Common extraction should use `Web.select!/2` so selector metadata stays with the fetch result. Advanced traversal can use Floki directly after `Web.parse_html!/1`.
 
+The LiveView console renders image tool results semantically. Inline images use `data:` URLs, while large image reads are copied to session artifacts and displayed through local artifact URLs such as:
+
+```text
+/sessions/<session-id>/artifacts/images/<file>.png
+```
+
+Artifact-backed previews include an “Open original” link. Orphan artifact directories can be cleaned with:
+
+```bash
+exy sessions prune --artifacts
+```
+
 Do not put secrets or authorization headers into telemetry metadata. Pass custom fetch headers only when required.
