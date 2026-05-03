@@ -16,7 +16,7 @@ defmodule Exy.Files do
          :ok <- ensure_regular(stat),
          {:ok, content} <- File.read(absolute) do
       if Image.supported?(absolute) do
-        image_result(path, absolute, content, stat)
+        image_result(path, absolute, content, stat, opts)
       else
         limit_lines = Keyword.get(opts, :limit_lines, @read_limit_lines)
         limit_bytes = Keyword.get(opts, :limit_bytes, @read_limit_bytes)
@@ -77,39 +77,45 @@ defmodule Exy.Files do
     error -> {:error, Exception.message(error)}
   end
 
-  defp image_result(path, absolute, content, stat) do
+  defp image_result(path, absolute, content, stat, opts) do
     mime_type = Image.mime_type(absolute)
     {width, height} = Image.dimensions(content, mime_type)
-    data = Base.encode64(content)
 
-    parts = [
-      Content.text(image_note(mime_type, width, height)),
-      Content.image(
-        data: data,
-        mime_type: mime_type,
-        filename: Path.basename(path),
-        width: width,
-        height: height
-      )
-    ]
+    image = %Image{
+      data: Base.encode64(content),
+      mime_type: mime_type,
+      path: path,
+      filename: Path.basename(path),
+      size_bytes: stat.size,
+      width: width,
+      height: height,
+      original_width: width,
+      original_height: height,
+      was_resized?: false
+    }
 
-    {:ok,
-     %ReadResult{
-       path: path,
-       content_type: :image,
-       mime_type: mime_type,
-       size_bytes: stat.size,
-       width: width,
-       height: height,
-       parts: parts,
-       __content_parts__: Content.to_req_llm_tool_parts(parts)
-     }}
+    with {:ok, image} <- maybe_resize_image(image, opts) do
+      parts = Image.to_content_parts(image)
+
+      {:ok,
+       %ReadResult{
+         path: path,
+         content_type: :image,
+         mime_type: image.mime_type,
+         size_bytes: image.size_bytes,
+         width: image.width,
+         height: image.height,
+         parts: parts,
+         __content_parts__: Content.to_req_llm_tool_parts(parts)
+       }}
+    end
   end
 
-  defp image_note(mime_type, width, height) when is_integer(width) and is_integer(height),
-    do: "Read image file [#{mime_type}]\n#{width}x#{height}"
-
-  defp image_note(mime_type, _width, _height), do: "Read image file [#{mime_type}]"
+  defp maybe_resize_image(image, opts) do
+    if Keyword.get(opts, :resize?, false),
+      do: Exy.Image.Resize.resize(image, opts),
+      else: {:ok, image}
+  end
 
   defp change(path, old, new), do: %{path: path, old: old, new: new, diff: diff(old, new)}
 

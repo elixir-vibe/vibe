@@ -1,8 +1,23 @@
 defmodule Exy.FilesTest do
   use ExUnit.Case, async: true
 
+  alias Exy.Image
   alias Exy.Model.Content
   alias Exy.UI.{Event, ToolEvent}
+
+  defmodule FakeResizeBackend do
+    @behaviour Exy.Image.Resize.Backend
+
+    @impl true
+    def available?, do: true
+
+    @impl true
+    def supports?(%Image{}), do: true
+
+    @impl true
+    def resize(%Image{} = image, _opts),
+      do: {:ok, %Image{image | width: 1, height: 1, was_resized?: true}}
+  end
 
   @tmp Path.join(System.tmp_dir!(), "exy-file-tools-test")
 
@@ -37,6 +52,24 @@ defmodule Exy.FilesTest do
     assert result.height == 1
     assert [%Content.Text{}, %Content.Image{} = image] = result.parts
     assert image.data == Base.encode64(png)
+  end
+
+  test "can resize image files through configured backends", %{dir: dir} do
+    png =
+      <<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, "IHDR", 0, 0, 15, 160, 0, 0, 0, 1, 8, 6,
+        0, 0, 0, 0, 0, 0, 0>>
+
+    File.write!(Path.join(dir, "wide.png"), png)
+
+    assert {:ok, result} =
+             Exy.Files.read_file("wide.png",
+               root: dir,
+               resize?: true,
+               backends: [FakeResizeBackend]
+             )
+
+    assert result.width == 1
+    assert result.height == 1
   end
 
   test "preserves image content structs across session storage" do

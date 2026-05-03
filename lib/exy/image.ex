@@ -1,7 +1,7 @@
 defmodule Exy.Image do
   @moduledoc "Image data helpers for model, eval, and renderer boundaries."
 
-  alias Exy.Image.Dimensions
+  alias Exy.Image.{Dimensions, Resize}
   alias Exy.Model.Content
   alias Exy.Workspace
 
@@ -58,19 +58,20 @@ defmodule Exy.Image do
          {:ok, binary} <- File.read(absolute) do
       {width, height} = dimensions(binary, mime_type)
 
-      {:ok,
-       %__MODULE__{
-         data: Base.encode64(binary),
-         mime_type: mime_type,
-         path: path,
-         filename: Path.basename(path),
-         size_bytes: stat.size,
-         width: width,
-         height: height,
-         original_width: width,
-         original_height: height,
-         was_resized?: false
-       }}
+      image = %__MODULE__{
+        data: Base.encode64(binary),
+        mime_type: mime_type,
+        path: path,
+        filename: Path.basename(path),
+        size_bytes: stat.size,
+        width: width,
+        height: height,
+        original_width: width,
+        original_height: height,
+        was_resized?: false
+      }
+
+      maybe_resize(image, opts)
     else
       nil -> {:error, "unsupported image type: #{path}"}
       {:error, %File.Error{} = error} -> {:error, Exception.message(error)}
@@ -126,7 +127,7 @@ defmodule Exy.Image do
   @spec to_content_parts(t()) :: [map()]
   def to_content_parts(%__MODULE__{} = image) do
     note =
-      ["Read image file [#{image.mime_type}]", dimension_text(image)]
+      ["Read image file [#{image.mime_type}]", dimension_text(image), resize_text(image)]
       |> Enum.reject(&(&1 in [nil, ""]))
       |> Enum.join("\n")
 
@@ -142,11 +143,25 @@ defmodule Exy.Image do
     ]
   end
 
+  defp maybe_resize(image, opts) do
+    if Keyword.get(opts, :resize?, false), do: Resize.resize(image, opts), else: {:ok, image}
+  end
+
   defp dimension_text(%{width: width, height: height})
        when is_integer(width) and is_integer(height),
        do: "#{width}x#{height}"
 
   defp dimension_text(_image), do: nil
+
+  defp resize_text(%{
+         was_resized?: true,
+         original_width: original_width,
+         original_height: original_height
+       })
+       when is_integer(original_width) and is_integer(original_height),
+       do: "Original image: #{original_width}x#{original_height}"
+
+  defp resize_text(_image), do: nil
 
   defp resolve(path, opts) do
     case Keyword.fetch(opts, :absolute) do
