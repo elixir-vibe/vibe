@@ -72,3 +72,12 @@ defmodule Exy.UI.ToolEvent do
   defp output_parts(%{output_parts: parts}) when is_list(parts), do: parts
   defp output_parts(_result), do: nil
 end
+
+defimpl Jason.Encoder, for: Exy.UI.ToolEvent do
+  def encode(event, opts) do
+    event
+    |> Map.from_struct()
+    |> Exy.JSONSafe.encode()
+    |> Jason.Encode.map(opts)
+  end
+end

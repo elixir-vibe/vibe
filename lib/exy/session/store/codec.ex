@@ -3,84 +3,19 @@ defmodule Exy.Session.Store.Codec do
   alias Exy.Trajectory
   alias Exy.UI.Event
 
-  @event_types %{
-    "assistant_aborted" => :assistant_aborted,
-    "assistant_delta" => :assistant_delta,
-    "assistant_message_added" => :assistant_message_added,
-    "assistant_stream_finished" => :assistant_stream_finished,
-    "assistant_stream_started" => :assistant_stream_started,
-    "assistant_thinking_delta" => :assistant_thinking_delta,
-    "context_compaction_failed" => :context_compaction_failed,
-    "context_compaction_finished" => :context_compaction_finished,
-    "context_compaction_started" => :context_compaction_started,
-    "confirmation_requested" => :confirmation_requested,
-    "effort_selected" => :effort_selected,
-    "hidden_thinking_label_updated" => :hidden_thinking_label_updated,
-    "messages_cleared" => :messages_cleared,
-    "model_selected" => :model_selected,
-    "notification_added" => :notification_added,
-    "notification_expired" => :notification_expired,
-    "overlay_closed" => :overlay_closed,
-    "overlay_opened" => :overlay_opened,
-    "patch_confirmation_requested" => :patch_confirmation_requested,
-    "plugin_status_cleared" => :plugin_status_cleared,
-    "plugin_status_updated" => :plugin_status_updated,
-    "plugin_widget_cleared" => :plugin_widget_cleared,
-    "plugin_widget_updated" => :plugin_widget_updated,
-    "prompt_submitted" => :prompt_submitted,
-    "selector_closed" => :selector_closed,
-    "selector_confirmed" => :selector_confirmed,
-    "selector_moved" => :selector_moved,
-    "selector_opened" => :selector_opened,
-    "session_new_requested" => :session_new_requested,
-    "session_selected" => :session_selected,
-    "slash_command_submitted" => :slash_command_submitted,
-    "status_changed" => :status_changed,
-    "subagent_finished" => :subagent_finished,
-    "subagent_started" => :subagent_started,
-    "title_updated" => :title_updated,
-    "tool_finished" => :tool_finished,
-    "tool_started" => :tool_started,
-    "tool_updated" => :tool_updated,
-    "tool_toggled" => :tool_toggled,
-    "truncation_toggled" => :truncation_toggled,
-    "usage_updated" => :usage_updated,
-    "user_message_added" => :user_message_added,
-    "working_message_updated" => :working_message_updated
-  }
-
-  @trajectory_types %{
-    "assistant_message" => :assistant_message,
-    "compaction" => :compaction,
-    "llm_usage" => :llm_usage,
-    "self_patch_reloaded" => :self_patch_reloaded,
-    "subagent_finished" => :subagent_finished,
-    "subagent_started" => :subagent_started,
-    "tool_call" => :tool_call,
-    "user_message" => :user_message
-  }
-
   @spec encode_trajectory(Trajectory.t()) :: map()
   def encode_trajectory(%Trajectory{} = event) do
-    %{
-      "id" => event.id,
-      "session_id" => event.session_id,
-      "type" => Atom.to_string(event.type),
-      "at" => DateTime.to_iso8601(event.at),
-      "data" => json_safe(event.data)
-    }
+    event
+    |> Jason.encode!()
+    |> Jason.decode!()
   end
 
   @spec encode_ui_event(Event.t(), non_neg_integer()) :: map()
   def encode_ui_event(%Event{} = event, seq) do
-    %{
-      "seq" => seq,
-      "id" => event.id,
-      "session_id" => event.session_id,
-      "type" => Atom.to_string(event.type),
-      "at" => DateTime.to_iso8601(event.at),
-      "data" => json_safe(event.data)
-    }
+    event
+    |> Jason.encode!()
+    |> Jason.decode!()
+    |> Map.put("seq", seq)
   end
 
   @spec eval_state_entry(String.t(), Code.binding(), Macro.Env.t()) ::
@@ -170,7 +105,7 @@ defmodule Exy.Session.Store.Codec do
   defp decode_ui_event(map) do
     with {:ok, at, _offset} <- DateTime.from_iso8601(map["at"]),
          {:ok, type} <- decode_event_type(map["type"]) do
-      data = map |> Map.get("data", %{}) |> atomize() |> decode_ui_event_data(type)
+      data = map |> Map.get("data", %{}) |> atomize_keys() |> decode_ui_event_data(type)
 
       {:ok,
        {map["seq"],
@@ -187,7 +122,7 @@ defmodule Exy.Session.Store.Codec do
     with {:ok, at, _offset} <- DateTime.from_iso8601(map["at"]),
          {:ok, type} <- decode_trajectory_type(map["type"]) do
       {:ok,
-       Trajectory.new(type, atomize(map["data"] || %{}),
+       Trajectory.new(type, atomize_keys(map["data"] || %{}),
          id: map["id"],
          session_id: map["session_id"],
          at: at
@@ -240,57 +175,66 @@ defmodule Exy.Session.Store.Codec do
     )
   end
 
+  defp decode_ui_event_data(%{effort: effort} = data, :effort_selected) when is_binary(effort) do
+    case Exy.Model.Effort.from_string(effort) do
+      {:ok, effort} -> %{data | effort: effort}
+      {:error, _reason} -> data
+    end
+  end
+
+  defp decode_ui_event_data(%{status: status} = data, :status_changed) when is_binary(status),
+    do: %{data | status: existing_atom_or_string(status)}
+
+  defp decode_ui_event_data(%{level: level} = data, :notification_added) when is_binary(level),
+    do: %{data | level: existing_atom_or_string(level)}
+
   defp decode_ui_event_data(data, _type), do: data
 
-  defp decode_event_type(type) when is_binary(type), do: Map.fetch(@event_types, type)
-  defp decode_event_type(_type), do: :error
+  defp decode_event_type(type), do: decode_existing_atom(type)
+  defp decode_trajectory_type(type), do: decode_existing_atom(type)
 
-  defp decode_trajectory_type(type) when is_binary(type), do: Map.fetch(@trajectory_types, type)
-  defp decode_trajectory_type(_type), do: :error
-
-  defp json_safe(value) when is_atom(value), do: %{"$atom" => Atom.to_string(value)}
-
-  defp json_safe(value)
-       when is_binary(value) or is_number(value) or is_boolean(value) or is_nil(value),
-       do: value
-
-  defp json_safe(value) when is_list(value), do: Enum.map(value, &json_safe/1)
-  defp json_safe(%_{} = value), do: value |> Map.from_struct() |> json_safe()
-
-  defp json_safe(value) when is_map(value) do
-    Map.new(value, fn {key, value} -> {to_string(key), json_safe(value)} end)
-  rescue
-    _exception -> inspect(value, limit: 50)
-  end
-
-  defp json_safe(value), do: inspect(value, limit: 50)
-
-  defp atomize(%{"$atom" => value}) when is_binary(value) do
-    case safe_existing_atom(value) do
-      {:ok, atom} -> atom
-      :error -> value
-    end
-  end
-
-  defp atomize(map) when is_map(map) do
-    Map.new(map, fn {key, value} -> {atomize_key(key), atomize(value)} end)
-  end
-
-  defp atomize(list) when is_list(list), do: Enum.map(list, &atomize/1)
-  defp atomize(value), do: value
-
-  defp atomize_key(key) when is_binary(key) do
-    case safe_existing_atom(key) do
-      {:ok, atom} -> atom
-      :error -> key
-    end
-  end
-
-  defp atomize_key(key), do: key
-
-  defp safe_existing_atom(value) do
-    {:ok, String.to_existing_atom(value)}
+  defp decode_existing_atom(type) when is_binary(type) do
+    {:ok, String.to_existing_atom(type)}
   rescue
     ArgumentError -> :error
+  end
+
+  defp decode_existing_atom(_type), do: :error
+
+  defp atomize_keys(map) when is_map(map) do
+    Map.new(map, fn {key, value} ->
+      atom_key = atomize_key(key)
+      {atom_key, decode_json_value(atom_key, value)}
+    end)
+  end
+
+  defp atomize_keys(list) when is_list(list), do: Enum.map(list, &atomize_keys/1)
+  defp atomize_keys(value), do: value
+
+  defp decode_json_value(key, value)
+       when key in [
+              :kind,
+              :overlay_kind,
+              :selector_kind,
+              :direction,
+              :status,
+              :level,
+              :placement,
+              :type,
+              :phase,
+              :role,
+              :lifecycle
+            ] and is_binary(value),
+       do: existing_atom_or_string(value)
+
+  defp decode_json_value(_key, value), do: atomize_keys(value)
+
+  defp atomize_key(key) when is_binary(key), do: existing_atom_or_string(key)
+  defp atomize_key(key), do: key
+
+  defp existing_atom_or_string(value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError -> value
   end
 end
