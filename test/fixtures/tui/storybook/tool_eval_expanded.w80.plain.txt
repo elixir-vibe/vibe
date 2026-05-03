@@ -1,4 +1,4 @@
- ◆ eval • 60s  ✓                                                               
+ ◆ eval • 60.0s  ✓                                                             
                                                                                 
    projects = ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil   
    vize_ex oxc_ex)                                                              

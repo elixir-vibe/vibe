@@ -1,10 +1,13 @@
  ◆ edit • lib/my_app_web/router.ex  ✓  
                                         
-   --- lib/my_app_web/router.ex         
-   +++ lib/my_app_web/router.ex         
-   @@                                   
-   -    get "/", PageController, :home  
-   +    live "/", DashboardLive, :index 
- +    live "/metrics", MetricsLive,     
- :index                                 
-                                        
+   %{                                   
+     path: "lib/my_app_web/router.ex",  
+   diff: "---                           
+   lib/my_app_web/router.ex\n+++        
+   lib/my_app_web/router.ex\n@@\n-      
+   get \"/\", PageController, :home\n+  
+   live \"/\", DashboardLive, :index\n+ 
+   live \"/metrics\", MetricsLive,      
+   :index\n",                           
+     language: "elixir"                 
+   }                                    

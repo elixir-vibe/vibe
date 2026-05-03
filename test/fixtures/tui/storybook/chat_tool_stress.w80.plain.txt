@@ -2,7 +2,7 @@
   Run the test matrix, inspect the README, and stop if it takes too long.       
                                                                                 
 
- ◆ eval • for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_… · 900s  ✓ 
+ ◆ eval • for dir <- ~w(reach quickbeam volt phoenix_vapor phoeni… · 900.0s  ✓ 
                                                                                 
    … (16 more lines, ctrl+o to expand)                                          
                                                                                 
@@ -32,4 +32,4 @@
   Cancelled.                                                                    
                                                                                 
 
-~/Development/exy • story-stress  openai_codex:gpt-5.5 • idle • local • 15500 to
+~/Development/exy • story-stress  openai_codex:gpt-5.5 • medium • idle • local •
