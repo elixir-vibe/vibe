@@ -39,6 +39,19 @@ defmodule Exy.Web.PluginsLive do
             </div>
           </.panel>
 
+          <.panel title="Plugin UI">
+            <div :if={@plugin.ui_document.sections == []} class="text-sm text-zinc-500">No plugin-owned UI document exposed.</div>
+            <div :if={@plugin.ui_document.sections != []} class="space-y-3">
+              <article :for={section <- @plugin.ui_document.sections} class="rounded-lg border border-white/8 bg-[#0d0c11]/55 p-4">
+                <h2 class="text-base font-semibold text-zinc-100">{section.title}</h2>
+                <p :if={section.description} class="mt-1 text-sm leading-6 text-zinc-400">{section.description}</p>
+                <div class="mt-3 space-y-2">
+                  <.plugin_ui_widget :for={widget <- section.widgets} widget={widget} />
+                </div>
+              </article>
+            </div>
+          </.panel>
+
           <.panel title="Eval APIs">
             <.api_sections apis={@plugin.apis} />
           </.panel>
@@ -114,6 +127,47 @@ defmodule Exy.Web.PluginsLive do
     """
   end
 
+  attr(:widget, Exy.UI.Widget, required: true)
+
+  def plugin_ui_widget(%{widget: %{type: :markdown}} = assigns) do
+    assigns = assign(assigns, :content, get_in(assigns.widget.props, [:content]) || "")
+
+    ~H"""
+    <PhoenixStreamdown.markdown id={"plugin-ui-#{@widget.id}"} content={@content} streaming={false} class="exy-markdown" mdex_opts={[render: [unsafe: false]]} />
+    """
+  end
+
+  def plugin_ui_widget(%{widget: %{type: :lines}} = assigns) do
+    assigns =
+      assign(assigns, :content, assigns.widget.props |> Map.get(:content, []) |> Enum.join("\n"))
+
+    ~H"""
+    <p class="whitespace-pre-wrap text-sm leading-6 text-zinc-300">{@content}</p>
+    """
+  end
+
+  def plugin_ui_widget(%{widget: %{type: :progress}} = assigns) do
+    assigns = assign(assigns, :props, assigns.widget.props)
+
+    ~H"""
+    <div class="rounded-md bg-white/[0.035] p-3 text-sm text-zinc-300">
+      <div class="flex justify-between gap-3">
+        <span>{Map.get(@props, :title) || "Progress"}</span>
+        <span class="font-mono text-zinc-500">{Map.get(@props, :current, 0)} / {Map.get(@props, :total, "?")}</span>
+      </div>
+      <p :if={Map.get(@props, :message)} class="mt-1 text-xs text-zinc-500">{Map.get(@props, :message)}</p>
+    </div>
+    """
+  end
+
+  def plugin_ui_widget(assigns) do
+    assigns = assign(assigns, :text, inspect(assigns.widget.props, pretty: true, limit: 40))
+
+    ~H"""
+    <pre class="overflow-auto whitespace-pre-wrap rounded-md bg-[#09080c] p-3 font-mono text-xs leading-5 text-zinc-400">{@text}</pre>
+    """
+  end
+
   attr(:label, :string, required: true)
   attr(:value, :any, required: true)
 
@@ -164,7 +218,9 @@ defmodule Exy.Web.PluginsLive do
         loaded?: MapSet.member?(loaded_set, module),
         apis: plugin_apis(module),
         commands: plugin_capability(module, :commands),
-        actions: plugin_capability(module, :actions)
+        actions: plugin_capability(module, :actions),
+        ui_document:
+          safe_manager_call(fn -> Manager.ui_document(module) end, Exy.UI.Document.empty())
       }
     end)
   end
@@ -195,7 +251,8 @@ defmodule Exy.Web.PluginsLive do
       loaded?: false,
       apis: [],
       commands: [],
-      actions: []
+      actions: [],
+      ui_document: Exy.UI.Document.empty()
     }
   end
 

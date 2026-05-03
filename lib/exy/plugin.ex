@@ -21,9 +21,16 @@ defmodule Exy.Plugin do
   @callback apis(term()) :: [Exy.Plugin.API.t() | keyword() | map()]
   @callback children(term()) :: [Supervisor.child_spec() | {module(), term()} | module()]
   @callback children(term(), map()) :: [Supervisor.child_spec() | {module(), term()} | module()]
+  @callback ui_document(term()) :: Exy.UI.Document.t() | keyword() | map()
   @callback shutdown(term()) :: :ok
 
-  @optional_callbacks actions: 1, commands: 1, apis: 1, children: 1, children: 2, shutdown: 1
+  @optional_callbacks actions: 1,
+                      commands: 1,
+                      apis: 1,
+                      children: 1,
+                      children: 2,
+                      ui_document: 1,
+                      shutdown: 1
 
   defmacro __using__(_opts) do
     quote do
@@ -56,6 +63,9 @@ defmodule Exy.Plugin do
       def children(state, _context), do: children(state)
 
       @impl Exy.Plugin
+      def ui_document(_state), do: Exy.UI.Document.empty()
+
+      @impl Exy.Plugin
       def shutdown(_state), do: :ok
 
       defoverridable init: 1,
@@ -65,6 +75,7 @@ defmodule Exy.Plugin do
                      apis: 1,
                      children: 1,
                      children: 2,
+                     ui_document: 1,
                      shutdown: 1
     end
   end

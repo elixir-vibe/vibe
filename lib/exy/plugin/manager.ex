@@ -2,6 +2,8 @@ defmodule Exy.Plugin.Manager do
   @moduledoc "Internal implementation module."
   use GenServer
 
+  alias Exy.UI.Document
+
   defstruct plugins: %{}
 
   @type plugin_entry :: %{state: term(), children: [pid()]}
@@ -28,6 +30,9 @@ defmodule Exy.Plugin.Manager do
 
   @spec apis() :: [Exy.Plugin.API.t()]
   def apis, do: GenServer.call(__MODULE__, :apis)
+
+  @spec ui_document(module()) :: Document.t()
+  def ui_document(module), do: GenServer.call(__MODULE__, {:ui_document, module})
 
   @impl true
   def init(opts) do
@@ -84,6 +89,16 @@ defmodule Exy.Plugin.Manager do
       |> Enum.uniq_by(&{&1.alias, &1.module})
 
     {:reply, apis, state}
+  end
+
+  def handle_call({:ui_document, module}, _from, state) do
+    document =
+      case Map.fetch(state.plugins, module) do
+        {:ok, entry} -> plugin_ui_document(module, entry.state)
+        :error -> Document.empty()
+      end
+
+    {:reply, document, state}
   end
 
   def handle_call({:dispatch, event, context}, _from, state) do
@@ -181,6 +196,16 @@ defmodule Exy.Plugin.Manager do
     end
   rescue
     _ -> []
+  end
+
+  defp plugin_ui_document(module, plugin_state) do
+    if function_exported?(module, :ui_document, 1) do
+      Document.new(module.ui_document(plugin_state))
+    else
+      Document.empty()
+    end
+  rescue
+    _ -> Document.empty()
   end
 
   defp put_plugin(%__MODULE__{} = state, module, entry) do
