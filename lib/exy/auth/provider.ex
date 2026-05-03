@@ -8,8 +8,13 @@ defmodule Exy.Auth.Provider do
   """
 
   @type credentials :: map()
+  @type request_option :: {atom(), term()}
 
   @callback id() :: String.t()
+  @callback model_prefixes() :: [String.t()]
+  @callback resolve_model(prefix :: String.t(), model_id :: String.t()) ::
+              {reqllm_model :: String.t(), [request_option()]}
+  @callback request_options() :: [request_option()]
   @callback login(keyword()) :: {:ok, credentials()} | {:error, term()}
   @callback refresh(credentials()) :: {:ok, credentials()} | {:error, term()}
   @callback load() :: {:ok, credentials()} | {:error, term()}
@@ -18,4 +23,17 @@ defmodule Exy.Auth.Provider do
   @callback usage(keyword()) :: {:ok, map()} | {:error, term()}
 
   @optional_callbacks usage: 1
+
+  @spec for_model(String.t(), %{String.t() => module()}) ::
+          {module(), String.t(), String.t()} | nil
+  def for_model(model, providers \\ Exy.Auth.providers()) do
+    Enum.find_value(providers, fn {_name, module} ->
+      Enum.find_value(module.model_prefixes(), fn prefix ->
+        if String.starts_with?(model, prefix <> ":") do
+          model_id = String.trim_leading(model, prefix <> ":")
+          {module, prefix, model_id}
+        end
+      end)
+    end)
+  end
 end

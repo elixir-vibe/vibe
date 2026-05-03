@@ -21,6 +21,28 @@ defmodule Exy.Auth.Codex do
   def id, do: "openai-codex"
 
   @impl Exy.Auth.Provider
+  def model_prefixes, do: ["openai_codex"]
+
+  @impl Exy.Auth.Provider
+  def resolve_model(_prefix, model_id), do: {"openai_codex:#{model_id}", []}
+
+  @impl Exy.Auth.Provider
+  def request_options do
+    case Application.get_env(:exy, :openai_codex_credentials) do
+      %{access: access} = creds when is_binary(access) ->
+        opts = [access_token: access]
+
+        case creds[:accountId] || creds[:account_id] do
+          id when is_binary(id) -> [{:chatgpt_account_id, id} | opts]
+          _ -> opts
+        end
+
+      _ ->
+        []
+    end
+  end
+
+  @impl Exy.Auth.Provider
   @spec login(keyword()) :: {:ok, map()} | {:error, term()}
   def login(opts \\ []) do
     verifier = random_urlsafe(64)

@@ -11,6 +11,20 @@ defmodule Exy.Auth.OpenRouter do
   def id, do: "openrouter"
 
   @impl true
+  def model_prefixes, do: ["openrouter"]
+
+  @impl true
+  def resolve_model(_prefix, model_id), do: {"openrouter:#{model_id}", []}
+
+  @impl true
+  def request_options do
+    case Application.get_env(:exy, :openrouter_credentials) do
+      %{api_key: key} when is_binary(key) -> [api_key: key]
+      _ -> []
+    end
+  end
+
+  @impl true
   def login(opts \\ []) do
     key = Keyword.get(opts, :api_key) || System.get_env("OPENROUTER_API_KEY") || prompt_key()
     credentials = %{"api_key" => String.trim(to_string(key || ""))}

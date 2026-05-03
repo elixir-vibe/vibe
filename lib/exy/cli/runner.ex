@@ -135,10 +135,9 @@ defmodule Exy.CLI.Runner do
 
     model = Exy.Model.Config.resolve(opts)
 
-    cond do
-      String.starts_with?(model, "openai_codex:") -> Exy.Auth.Codex.ensure_fresh()
-      String.starts_with?(model, "opencode") -> Exy.Auth.OpenCode.ensure_fresh()
-      true -> :ok
+    case Exy.Auth.Provider.for_model(model) do
+      {module, _prefix, _model_id} -> module.ensure_fresh()
+      nil -> :ok
     end
 
     :ok

@@ -12,8 +12,27 @@ defmodule Exy.Auth.OpenCode do
 
   @env_var "OPENCODE_API_KEY"
 
+  @base_urls %{
+    "opencode" => "https://opencode.ai/zen/v1",
+    "opencode_go" => "https://opencode.ai/zen/go/v1"
+  }
+
   @impl true
   def id, do: "opencode"
+
+  @impl true
+  def model_prefixes, do: ["opencode", "opencode_go"]
+
+  @impl true
+  def resolve_model(prefix, model_id), do: {"openai:#{model_id}", [base_url: @base_urls[prefix]]}
+
+  @impl true
+  def request_options do
+    case api_key() do
+      key when is_binary(key) -> [api_key: key]
+      nil -> []
+    end
+  end
 
   @impl true
   def login(opts \\ []) do
