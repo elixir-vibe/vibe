@@ -1,0 +1,6 @@
+ [38;2;220;224;230m[38;2;178;148;187m◆[0m[0m [1mread[0m • test/fixtures/images/two-by-two.png  [38;2;126;170;115m✓[0m[0m[0m[0m                                                                       
+                                                                                                                        
+   [38;2;150;154;164mRead image file [image/png][0m[0m                                                                                          
+   [38;2;150;154;164m2x2[0m[0m                                                                                                                  
+                                                                                                                        
+                                                                                                                        

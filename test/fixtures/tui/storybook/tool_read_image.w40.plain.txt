@@ -1,0 +1,6 @@
+ ◆ read • test/fixtures/images/two…  ✓ 
+                                        
+   Read image file [image/png]          
+   2x2                                  
+                                        
+                                        
