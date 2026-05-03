@@ -52,115 +52,101 @@ mark {
   background: rgba(251, 146, 60, 0.35);
 }
 
-.exy-assistant-markdown {
+.exy-markdown {
   overflow-wrap: anywhere;
   color: #f4f4f5;
+  font-size: 0.95rem;
   line-height: 1.65;
 }
 
-.exy-assistant-markdown h1,
-.exy-assistant-markdown h2,
-.exy-assistant-markdown h3 {
+.exy-markdown h1,
+.exy-markdown h2,
+.exy-markdown h3 {
   margin: 0.2rem 0 0.7rem;
   font-weight: 650;
   line-height: 1.2;
   text-wrap: balance;
 }
 
-.exy-assistant-markdown h1 { font-size: 1.35rem; }
-.exy-assistant-markdown h2 { font-size: 1.25rem; }
-.exy-assistant-markdown h3 { font-size: 1.05rem; }
+.exy-markdown h1 { font-size: 1.35rem; }
+.exy-markdown h2 { font-size: 1.25rem; }
+.exy-markdown h3 { font-size: 1.05rem; }
 
-.exy-assistant-markdown p {
+.exy-markdown p {
   margin: 0.35rem 0;
 }
 
-.exy-assistant-markdown p + p {
+.exy-markdown p + p {
   margin-top: 0.75rem;
 }
 
-.exy-assistant-markdown ol,
-.exy-assistant-markdown ul {
+.exy-markdown ol,
+.exy-markdown ul {
   margin: 0.45rem 0 0.65rem 1.35rem;
   padding: 0;
 }
 
-.exy-assistant-markdown ol { list-style: decimal; }
-.exy-assistant-markdown ul { list-style: disc; }
+.exy-markdown ol { list-style: decimal; }
+.exy-markdown ul { list-style: disc; }
 
-.exy-assistant-markdown li {
+.exy-markdown li {
   margin: 0.35rem 0;
   padding-left: 0.15rem;
 }
 
-.exy-assistant-markdown li > p {
+.exy-markdown li > p {
   margin: 0.2rem 0;
 }
 
-.exy-assistant-markdown a {
+.exy-markdown a {
   color: #fed7aa;
   text-decoration: underline;
 }
 
-.exy-assistant-markdown blockquote {
+.exy-markdown blockquote {
   margin: 0.8rem 0;
   border-left: 2px solid rgba(253, 186, 116, 0.3);
   padding-left: 0.75rem;
   color: #d4d4d8;
 }
 
-.exy-assistant-markdown :not(pre) > code {
+.exy-markdown :not(pre) > code {
   border-radius: 0.25rem;
   background: rgba(255, 255, 255, 0.06);
   padding: 0.05rem 0.28rem;
   font-size: 0.92em;
 }
 
-.exy-assistant-markdown pre {
-  margin: 0.85rem 0;
+.exy-markdown pre {
+  margin: 0.75rem 0 1rem;
   overflow: auto;
-  border-radius: 0.6rem;
-  background: #1f242c !important;
-  padding: 0.9rem 1rem !important;
+  border-radius: 0.45rem;
+  background: #1a1f27 !important;
+  padding: 0.75rem 0.85rem !important;
 }
 
-.exy-assistant-markdown pre code {
+.exy-markdown pre code {
   display: block;
-  min-width: max-content;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   background: transparent !important;
   padding: 0 !important;
   border-radius: 0;
   line-height: 1.55;
 }
 
-.exy-assistant-markdown pre code > .line {
+.exy-markdown pre code > .line {
   min-height: 1.45em;
 }
 
-.exy-assistant-markdown table {
+.exy-markdown table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.exy-assistant-markdown th,
-.exy-assistant-markdown td {
+.exy-markdown th,
+.exy-markdown td {
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0.25rem 0.5rem;
-}
-
-.exy-docs-markdown {
-  font-size: 0.95rem;
-}
-
-.exy-docs-markdown pre {
-  margin: 0.75rem 0 1rem;
-  border-radius: 0.45rem;
-  background: #1a1f27 !important;
-  padding: 0.75rem 0.85rem !important;
-}
-
-.exy-docs-markdown pre code {
-  min-width: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }

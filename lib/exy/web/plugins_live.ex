@@ -40,17 +40,7 @@ defmodule Exy.Web.PluginsLive do
           </.panel>
 
           <.panel title="Eval APIs">
-            <div :if={@plugin.apis == []} class="text-sm text-zinc-500">No eval APIs exposed.</div>
-            <div :if={@plugin.apis != []} class="space-y-3">
-              <article :for={api <- @plugin.apis} class="rounded-lg border border-white/8 bg-[#0d0c11]/55 p-3">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="rounded bg-violet-300/10 px-2 py-1 font-mono text-sm text-violet-100">{api.alias}</span>
-                  <span class="font-mono text-xs text-zinc-500">{inspect(api.module)}</span>
-                </div>
-                <p :if={api.description} class="mt-2 text-sm leading-6 text-zinc-300">{api.description}</p>
-                <pre :if={api.examples != []} class="mt-2 whitespace-pre-wrap rounded-md bg-[#09080c] p-3 font-mono text-xs leading-5 text-zinc-400">{Enum.join(api.examples, "\n")}</pre>
-              </article>
-            </div>
+            <.api_sections apis={@plugin.apis} />
           </.panel>
         </div>
 

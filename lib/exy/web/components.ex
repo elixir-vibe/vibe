@@ -3,6 +3,7 @@ defmodule Exy.Web.Components do
 
   defmacro __using__(_opts) do
     quote do
+      import Exy.Web.Components.API
       import Exy.Web.Components.Core
       import Exy.Web.Components.Message
       import Exy.Web.Components.Shell

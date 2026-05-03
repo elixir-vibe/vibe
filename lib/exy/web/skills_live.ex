@@ -25,7 +25,7 @@ defmodule Exy.Web.SkillsLive do
             <span class="rounded bg-orange-300/10 px-2 py-1 font-semibold uppercase tracking-[0.16em] text-orange-200">{skill_type(@skill.type)}</span>
             <span :if={@skill.apis != []} class="rounded bg-violet-300/10 px-2 py-1 font-mono text-violet-100">{length(@skill.apis)} APIs</span>
           </div>
-          <PhoenixStreamdown.markdown id={"skill-#{@skill.name}"} content={@skill.markdown || ""} streaming={false} class="exy-docs-markdown exy-assistant-markdown" mdex_opts={[render: [unsafe: false]]} />
+          <PhoenixStreamdown.markdown id={"skill-#{@skill.name}"} content={@skill.markdown || ""} streaming={false} class="exy-markdown" mdex_opts={[render: [unsafe: false]]} />
         </article>
 
         <aside class="space-y-4">
@@ -43,12 +43,7 @@ defmodule Exy.Web.SkillsLive do
           </.panel>
 
           <.panel :if={@skill.apis != []} title="Eval APIs">
-            <div class="space-y-2">
-              <div :for={api <- @skill.apis} class="rounded-lg border border-white/8 bg-[#0d0c11]/55 p-3">
-                <p class="font-mono text-sm text-violet-100">{api.alias}</p>
-                <p class="mt-1 break-words font-mono text-xs text-zinc-500 [overflow-wrap:anywhere]">{inspect(api.module)}</p>
-              </div>
-            </div>
+            <.api_sections apis={@skill.apis} />
           </.panel>
         </aside>
       </section>

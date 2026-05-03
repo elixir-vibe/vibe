@@ -26,11 +26,6 @@ defmodule Exy.Web.Components.Shell do
       <header class="sticky top-0 z-30 border-b border-white/10 bg-[#0d0c11]/92 backdrop-blur supports-[backdrop-filter]:bg-[#0d0c11]/78">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div class="flex min-w-0 items-center gap-4">
-            <.link navigate={~p"/"} class="group flex min-w-0 items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">
-              <span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-orange-300 to-violet-500 font-black text-zinc-950 shadow-lg shadow-orange-950/20">E</span>
-              <span class="min-w-0 text-sm font-semibold tracking-wide text-white">Exy</span>
-            </.link>
-
             <nav class="hidden items-center gap-1 md:flex" aria-label="Primary">
               <.nav_item href={~p"/"} active={@current == :sessions}>Sessions</.nav_item>
               <.nav_item href={~p"/jobs"} active={@current == :jobs}>Jobs</.nav_item>

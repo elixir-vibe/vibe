@@ -34,7 +34,7 @@ defmodule Exy.Web.Components.Message do
         content={message_text(@message)}
         streaming={Map.get(@message, :streaming?, false)}
         animate="fadeIn"
-        class="exy-assistant-markdown"
+        class="exy-markdown"
         mdex_opts={[render: [unsafe: false]]}
       />
     </article>

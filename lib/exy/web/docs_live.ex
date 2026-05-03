@@ -36,7 +36,7 @@ defmodule Exy.Web.DocsLive do
           id={"docs-#{@topic}"}
           content={@markdown}
           streaming={false}
-          class="exy-docs-markdown exy-assistant-markdown"
+          class="exy-markdown"
           mdex_opts={[render: [unsafe: false]]}
         />
       </section>
