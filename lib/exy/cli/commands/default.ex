@@ -43,13 +43,24 @@ defmodule Exy.CLI.Commands.Default do
         Output.print({:ok, Exy.Session.Store.list()}, opts)
 
       opts[:print] == true or args != [] ->
-        args
+        {file_args, message_args} = split_file_args(args)
+
+        opts = Keyword.put(opts, :file_args, file_args)
+
+        message_args
         |> Enum.join(" ")
         |> Runner.ask(opts)
 
       true ->
         Sessions.attach_default(opts)
     end
+  end
+
+  defp split_file_args(args) do
+    Enum.split_with(args, &String.starts_with?(&1, "@"))
+    |> then(fn {files, messages} ->
+      {Enum.map(files, &String.trim_leading(&1, "@")), messages}
+    end)
   end
 
   defp web(opts) do

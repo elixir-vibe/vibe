@@ -87,9 +87,10 @@ Run a non-interactive prompt:
 exy -p "Inspect this project and suggest next steps"
 ```
 
-Attach images in direct model mode with `@path` references:
+Attach files at startup with Pi-style `@file` argv arguments. Text files are inserted as `<file name="...">...</file>` blocks; image files become multimodal content in direct mode and file markers in agent mode.
 
 ```bash
+exy --direct @test/fixtures/images/vision-smoke.png "describe this"
 exy --direct "describe @test/fixtures/images/vision-smoke.png"
 mix run scripts/image_model_smoke.exs
 ```

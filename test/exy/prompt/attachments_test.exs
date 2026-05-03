@@ -13,8 +13,8 @@ defmodule Exy.Prompt.AttachmentsTest do
     assert text == "describe  please"
     assert image.mime_type == "image/png"
     assert image.filename == "vision-smoke.png"
-    assert image.width == 128
-    assert image.height == 128
+    assert image.width == 320
+    assert image.height == 200
   end
 
   test "leaves prompts without image references unchanged" do
