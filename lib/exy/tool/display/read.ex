@@ -1,5 +1,6 @@
 defmodule Exy.Tool.Display.Read do
   @moduledoc "Internal implementation module."
+  alias Exy.Model.Content
   alias Exy.Tool.Display
   alias Exy.Tool.Display.Util
 
@@ -22,8 +23,8 @@ defmodule Exy.Tool.Display.Read do
 
   defp body(%{content_type: :image, parts: parts}) when is_list(parts) do
     Enum.map(parts, fn
-      %Exy.Model.Content.Text{text: text} -> {:text, text, []}
-      %Exy.Model.Content.Image{} = image -> {:image, image, []}
+      %Content.Text{text: text} -> {:text, text, []}
+      %Content.Image{} = image -> {:image, image, []}
       part -> {:inspect, inspect(part, pretty: true), []}
     end)
   end

@@ -1,6 +1,8 @@
 defmodule Exy.Eval.ImageTest do
   use ExUnit.Case, async: true
 
+  alias Exy.Model.Content
+
   test "eval exposes Image alias and returns typed image display parts" do
     session_id = "eval-image-#{System.unique_integer([:positive])}"
 
@@ -14,7 +16,7 @@ defmodule Exy.Eval.ImageTest do
 
     assert {:ok, result} = Exy.Eval.once(code, session_id: session_id)
     assert result.value_type == Exy.Image
-    assert [%Exy.Model.Content.Text{}, %Exy.Model.Content.Image{} = image] = result.parts
+    assert [%Content.Text{}, %Content.Image{} = image] = result.parts
     assert image.filename == "tiny.png"
     assert image.mime_type == "image/png"
   end

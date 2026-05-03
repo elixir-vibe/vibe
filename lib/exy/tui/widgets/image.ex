@@ -2,19 +2,20 @@ defmodule Exy.TUI.Widgets.Image do
   @moduledoc "TUI widget for inline terminal images with text fallback."
   @behaviour Exy.TUI.Widget
 
-  alias Exy.TUI.{Image, Theme, Widget}
+  alias Exy.Model.Content
+  alias Exy.TUI.{Image, Node, Theme, Widget}
 
   defstruct [:image, max_width_cells: 80]
 
-  @type t :: %__MODULE__{image: Exy.Model.Content.Image.t(), max_width_cells: pos_integer()}
+  @type t :: %__MODULE__{image: Content.Image.t(), max_width_cells: pos_integer()}
 
-  @spec new(Exy.Model.Content.Image.t(), keyword()) :: t()
-  def new(%Exy.Model.Content.Image{} = image, opts \\ []) do
+  @spec new(Content.Image.t(), keyword()) :: t()
+  def new(%Content.Image{} = image, opts \\ []) do
     %__MODULE__{image: image, max_width_cells: Keyword.get(opts, :max_width_cells, 80)}
   end
 
   @impl true
-  def render(%Exy.TUI.Node{props: props}, width, theme) do
+  def render(%Node{props: props}, width, theme) do
     props
     |> Map.fetch!(:image)
     |> new(max_width_cells: Map.get(props, :max_width_cells, 80))

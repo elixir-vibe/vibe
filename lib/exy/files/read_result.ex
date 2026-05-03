@@ -1,6 +1,8 @@
 defmodule Exy.Files.ReadResult do
   @moduledoc "Typed result returned by file reads."
 
+  alias Exy.Model.Content
+
   @enforce_keys [:path, :content_type]
   defstruct [
     :path,
@@ -32,7 +34,7 @@ defmodule Exy.Files.ReadResult do
           size_bytes: non_neg_integer() | nil,
           width: pos_integer() | nil,
           height: pos_integer() | nil,
-          parts: [Exy.Model.Content.t()],
+          parts: [Content.t()],
           __content_parts__: [ReqLLM.Message.ContentPart.t()]
         }
 end

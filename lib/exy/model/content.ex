@@ -1,6 +1,8 @@
 defmodule Exy.Model.Content do
   @moduledoc "Provider-neutral model content parts."
 
+  alias ReqLLM.Message.ContentPart
+
   defmodule Text do
     @moduledoc "Text content part."
     defstruct [:text]
@@ -23,20 +25,16 @@ defmodule Exy.Model.Content do
 
   @type t :: Text.t() | Image.t()
 
-  @spec to_req_llm_parts([t() | ReqLLM.Message.ContentPart.t()]) :: [
-          ReqLLM.Message.ContentPart.t()
-        ]
+  @spec to_req_llm_parts([t() | ContentPart.t()]) :: [ContentPart.t()]
   def to_req_llm_parts(parts) when is_list(parts), do: Enum.map(parts, &to_req_llm_part/1)
 
-  @spec to_req_llm_tool_parts([t() | ReqLLM.Message.ContentPart.t()]) :: [
-          ReqLLM.Message.ContentPart.t()
-        ]
+  @spec to_req_llm_tool_parts([t() | ContentPart.t()]) :: [ContentPart.t()]
   def to_req_llm_tool_parts(parts) when is_list(parts),
     do: Enum.map(parts, &to_req_llm_tool_part/1)
 
-  @spec to_req_llm_part(t() | ReqLLM.Message.ContentPart.t()) :: ReqLLM.Message.ContentPart.t()
-  def to_req_llm_part(%ReqLLM.Message.ContentPart{} = part), do: part
-  def to_req_llm_part(%Text{text: text}), do: ReqLLM.Message.ContentPart.text(text)
+  @spec to_req_llm_part(t() | ContentPart.t()) :: ContentPart.t()
+  def to_req_llm_part(%ContentPart{} = part), do: part
+  def to_req_llm_part(%Text{text: text}), do: ContentPart.text(text)
 
   def to_req_llm_part(%Image{} = image) do
     metadata =
@@ -50,13 +48,12 @@ defmodule Exy.Model.Content do
 
     image.data
     |> Base.decode64!()
-    |> ReqLLM.Message.ContentPart.image(image.mime_type, metadata)
+    |> ContentPart.image(image.mime_type, metadata)
     |> Map.put(:filename, image.filename)
   end
 
-  @spec to_req_llm_tool_part(t() | ReqLLM.Message.ContentPart.t()) ::
-          ReqLLM.Message.ContentPart.t()
-  def to_req_llm_tool_part(%ReqLLM.Message.ContentPart{} = part), do: part
+  @spec to_req_llm_tool_part(t() | ContentPart.t()) :: ContentPart.t()
+  def to_req_llm_tool_part(%ContentPart{} = part), do: part
   def to_req_llm_tool_part(%Text{} = text), do: to_req_llm_part(text)
 
   def to_req_llm_tool_part(%Image{} = image) do
@@ -67,7 +64,7 @@ defmodule Exy.Model.Content do
 
     image
     |> data_uri()
-    |> ReqLLM.Message.ContentPart.image_url(metadata)
+    |> ContentPart.image_url(metadata)
   end
 
   @spec summarize(t() | [t()] | String.t()) :: String.t()

@@ -1,6 +1,10 @@
 defmodule Exy.Image do
   @moduledoc "Image data helpers for model, eval, and renderer boundaries."
 
+  alias Exy.Image.Dimensions
+  alias Exy.Model.Content
+  alias Exy.Workspace
+
   @supported_mime_types %{
     ".png" => "image/png",
     ".jpg" => "image/jpeg",
@@ -109,7 +113,7 @@ defmodule Exy.Image do
 
   @spec dimensions(binary(), String.t()) :: {pos_integer() | nil, pos_integer() | nil}
   def dimensions(binary, mime_type) when is_binary(binary) and is_binary(mime_type) do
-    case Exy.Image.Dimensions.detect(binary, mime_type) do
+    case Dimensions.detect(binary, mime_type) do
       {:ok, {width, height}} -> {width, height}
       :error -> {nil, nil}
     end
@@ -127,8 +131,8 @@ defmodule Exy.Image do
       |> Enum.join("\n")
 
     [
-      Exy.Model.Content.text(note),
-      Exy.Model.Content.image(
+      Content.text(note),
+      Content.image(
         data: image.data,
         mime_type: image.mime_type,
         filename: image.filename,
@@ -147,7 +151,7 @@ defmodule Exy.Image do
   defp resolve(path, opts) do
     case Keyword.fetch(opts, :absolute) do
       {:ok, absolute} -> {:ok, absolute}
-      :error -> Exy.Workspace.resolve(path, opts)
+      :error -> Workspace.resolve(path, opts)
     end
   end
 end

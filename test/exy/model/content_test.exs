@@ -1,13 +1,16 @@
 defmodule Exy.Model.ContentTest do
   use ExUnit.Case, async: true
 
+  alias Exy.Model.Content
+  alias ReqLLM.Message.ContentPart
+
   test "converts Exy content structs to ReqLLM content parts" do
     image_data = Base.encode64(<<1, 2, 3>>)
 
     parts =
-      Exy.Model.Content.to_req_llm_parts([
-        Exy.Model.Content.text("Look at this"),
-        Exy.Model.Content.image(
+      Content.to_req_llm_parts([
+        Content.text("Look at this"),
+        Content.image(
           data: image_data,
           mime_type: "image/png",
           filename: "tiny.png",
@@ -17,7 +20,7 @@ defmodule Exy.Model.ContentTest do
       ])
 
     assert [text, image] = parts
-    assert text == ReqLLM.Message.ContentPart.text("Look at this")
+    assert text == ContentPart.text("Look at this")
     assert image.type == :image
     assert image.data == <<1, 2, 3>>
     assert image.media_type == "image/png"
@@ -27,9 +30,9 @@ defmodule Exy.Model.ContentTest do
 
   test "summarizes images without raw base64 data" do
     summary =
-      Exy.Model.Content.summarize([
-        Exy.Model.Content.text("Describe"),
-        Exy.Model.Content.image(
+      Content.summarize([
+        Content.text("Describe"),
+        Content.image(
           data: Base.encode64("secret-bytes"),
           mime_type: "image/png",
           filename: "tiny.png",
@@ -46,14 +49,14 @@ defmodule Exy.Model.ContentTest do
   test "OpenAI Responses encodes converted images as input_image" do
     message =
       [
-        Exy.Model.Content.text("Describe"),
-        Exy.Model.Content.image(
+        Content.text("Describe"),
+        Content.image(
           data: Base.encode64(<<1, 2, 3>>),
           mime_type: "image/png",
           filename: "tiny.png"
         )
       ]
-      |> Exy.Model.Content.to_req_llm_parts()
+      |> Content.to_req_llm_parts()
       |> ReqLLM.Context.user()
 
     context = ReqLLM.Context.new([message])

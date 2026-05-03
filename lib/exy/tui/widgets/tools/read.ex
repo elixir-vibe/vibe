@@ -2,7 +2,9 @@ defmodule Exy.TUI.Widgets.Tools.Read do
   @moduledoc "Internal implementation module."
   @behaviour Exy.TUI.ToolWidget
 
+  alias Exy.Model.Content
   alias Exy.TUI.{Lines, Markdown, TextTruncation, Theme, ToolWidget, Widget}
+  alias Exy.TUI.Widgets.Image
   alias Exy.TUI.Widgets.Tools.FileTool
 
   @impl true
@@ -23,14 +25,14 @@ defmodule Exy.TUI.Widgets.Tools.Read do
   defp output_lines(_tool, %{content_type: :image, parts: parts}, width, theme)
        when is_list(parts) do
     Enum.flat_map(parts, fn
-      %Exy.Model.Content.Text{text: text} ->
+      %Content.Text{text: text} ->
         text
         |> String.split("\n")
         |> Enum.map(fn line ->
           ToolWidget.output_line(Theme.fg(theme, :tool_output, line), width)
         end)
 
-      %Exy.Model.Content.Image{} = image ->
+      %Content.Image{} = image ->
         image_lines(image, width, theme)
 
       part ->
@@ -65,10 +67,10 @@ defmodule Exy.TUI.Widgets.Tools.Read do
 
   defp output_lines(_tool, value, width, theme), do: ToolWidget.plain_lines(value, width, theme)
 
-  defp image_lines(%Exy.Model.Content.Image{} = image, width, theme) do
+  defp image_lines(%Content.Image{} = image, width, theme) do
     image
-    |> Exy.TUI.Widgets.Image.new(max_width_cells: 80)
-    |> Exy.TUI.Widgets.Image.render(width, theme)
+    |> Image.new(max_width_cells: 80)
+    |> Image.render(width, theme)
   end
 
   defp maybe_append_render_hint(lines, %{truncated?: false}, _theme, _width), do: lines

@@ -1,5 +1,6 @@
 defmodule Exy.Tool.Display.Eval do
   @moduledoc "Internal implementation module."
+  alias Exy.Model.Content
   alias Exy.Tool.Display
   alias Exy.Tool.Display.Util
 
@@ -51,10 +52,10 @@ defmodule Exy.Tool.Display.Eval do
   defp output_blocks(_tool, output),
     do: [{:inspect, format_value(output), truncation: :tail}]
 
-  defp normalize_part(%Exy.Model.Content.Text{text: text}) when text not in [nil, ""],
+  defp normalize_part(%Content.Text{text: text}) when text not in [nil, ""],
     do: {:text, trim_final_newline(text), truncation: :tail}
 
-  defp normalize_part(%Exy.Model.Content.Image{} = image), do: {:image, image, []}
+  defp normalize_part(%Content.Image{} = image), do: {:image, image, []}
 
   defp normalize_part(%{format: format, output: output}) when output not in [nil, ""] do
     {normalize_format(format), output |> format_value() |> trim_final_newline(),
