@@ -10,6 +10,30 @@ defmodule Exy.Files.ArtifactsTest do
     assert {:ok, ^image} = Artifacts.maybe_store_image(image, inline_image_bytes: 100)
   end
 
+  test "summarizes and prunes orphan artifact directories" do
+    session_dir =
+      Path.join(System.tmp_dir!(), "exy-artifact-prune-#{System.unique_integer([:positive])}")
+
+    previous = Application.get_env(:exy, :session_dir)
+    Application.put_env(:exy, :session_dir, session_dir)
+
+    try do
+      dir = Artifacts.session_artifact_dir("orphan")
+      File.mkdir_p!(dir)
+      File.write!(Path.join(dir, "image.png"), "12345")
+
+      assert Artifacts.session_artifact_summary("orphan") == %{count: 1, bytes: 5}
+      assert Artifacts.prune_orphans([]) == [dir]
+      refute File.exists?(dir)
+    after
+      if previous,
+        do: Application.put_env(:exy, :session_dir, previous),
+        else: Application.delete_env(:exy, :session_dir)
+
+      File.rm_rf(session_dir)
+    end
+  end
+
   test "stores large images as artifact refs without encoding data to JSON" do
     dir = Path.join(System.tmp_dir!(), "exy-artifact-test-#{System.unique_integer([:positive])}")
     image = image(data: Base.encode64("large-payload"))

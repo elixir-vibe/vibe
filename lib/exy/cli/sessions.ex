@@ -5,9 +5,10 @@ defmodule Exy.CLI.Sessions do
 
   @spec command([String.t()], keyword()) :: :ok | {:error, term()}
   def command(["prune", "--empty"], opts), do: Output.print(prune_empty(), opts)
+  def command(["prune", "--artifacts"], opts), do: Output.print(prune_artifacts(), opts)
 
   def command(["prune"], _opts) do
-    Output.error("Usage: exy sessions prune --empty")
+    Output.error("Usage: exy sessions prune --empty|--artifacts")
     {:error, :invalid_sessions_command}
   end
 
@@ -19,7 +20,10 @@ defmodule Exy.CLI.Sessions do
   end
 
   def command(_args, _opts) do
-    Output.error("Usage: exy sessions [--all] [--live] [--failed] [--limit n] | prune --empty")
+    Output.error(
+      "Usage: exy sessions [--all] [--live] [--failed] [--limit n] | prune --empty|--artifacts"
+    )
+
     {:error, :invalid_sessions_command}
   end
 
@@ -142,5 +146,11 @@ defmodule Exy.CLI.Sessions do
     pruned = Exy.Session.Store.prune_empty()
 
     {:ok, %{pruned: length(pruned), sessions: pruned}}
+  end
+
+  defp prune_artifacts do
+    pruned = Exy.Files.Artifacts.prune_orphans()
+
+    {:ok, %{pruned: length(pruned), artifact_dirs: pruned}}
   end
 end

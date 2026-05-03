@@ -78,6 +78,59 @@ defmodule Exy.Files.Artifacts do
     end
   end
 
+  @spec prune_orphans([String.t()] | nil) :: [Path.t()]
+  def prune_orphans(live_session_ids \\ nil) do
+    known = MapSet.new(live_session_ids || stored_session_ids())
+
+    Paths.sessions_dir()
+    |> Path.join("*")
+    |> Path.wildcard()
+    |> Enum.filter(&File.dir?/1)
+    |> Enum.reject(&(Path.basename(&1) in known))
+    |> Enum.map(&Path.join(&1, "artifacts"))
+    |> Enum.filter(&File.dir?/1)
+    |> Enum.map(fn dir ->
+      File.rm_rf!(dir)
+      dir
+    end)
+  end
+
+  @spec session_artifact_summary(String.t()) :: %{
+          count: non_neg_integer(),
+          bytes: non_neg_integer()
+        }
+  def session_artifact_summary(session_id) when is_binary(session_id) do
+    session_id
+    |> session_artifact_dir()
+    |> artifact_summary()
+  end
+
+  defp artifact_summary(dir) do
+    dir
+    |> all_files()
+    |> Enum.reduce(%{count: 0, bytes: 0}, fn path, acc ->
+      size =
+        case File.stat(path),
+          do: (
+            {:ok, stat} -> stat.size
+            _ -> 0
+          )
+
+      %{count: acc.count + 1, bytes: acc.bytes + size}
+    end)
+  end
+
+  defp all_files(dir) do
+    if File.dir?(dir),
+      do: dir |> Path.join("**/*") |> Path.wildcard() |> Enum.filter(&File.regular?/1),
+      else: []
+  end
+
+  defp stored_session_ids do
+    Exy.Session.Store.list()
+    |> Enum.map(& &1.id)
+  end
+
   @spec default_inline_image_bytes() :: pos_integer()
   def default_inline_image_bytes do
     Application.get_env(:exy, :inline_image_bytes, @default_inline_image_bytes)
