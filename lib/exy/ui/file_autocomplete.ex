@@ -14,7 +14,8 @@ defmodule Exy.UI.FileAutocomplete do
         query: prefix.raw,
         items: items,
         limit: Keyword.get(opts, :limit, 8),
-        empty_message: "No files"
+        empty_message: "No files",
+        replace_from: prefix.replace_from
       )
     else
       _ -> nil
@@ -24,14 +25,22 @@ defmodule Exy.UI.FileAutocomplete do
   @spec prefix(String.t()) :: {:ok, map()} | :error
   def prefix(text) when is_binary(text) do
     cond do
-      match = Regex.run(~r/(^|\s)@"([^"]*)$/, text) ->
-        {:ok, %{token: List.last(match), raw: List.last(match), at?: true, quoted?: true}}
+      match = Regex.run(~r/(^|\s)(@"[^"]*)$/, text) ->
+        at_token = List.last(match)
+        raw = String.trim_leading(at_token, ~s(@"))
+        replace_from = String.length(text) - String.length(at_token)
+        {:ok, %{raw: raw, at?: true, quoted?: true, replace_from: replace_from}}
 
-      match = Regex.run(~r/(^|\s)@([^\s]*)$/, text) ->
-        {:ok, %{token: List.last(match), raw: List.last(match), at?: true, quoted?: false}}
+      match = Regex.run(~r/(^|\s)(@[^\s]*)$/, text) ->
+        at_token = List.last(match)
+        raw = String.trim_leading(at_token, "@")
+        replace_from = String.length(text) - String.length(at_token)
+        {:ok, %{raw: raw, at?: true, quoted?: false, replace_from: replace_from}}
 
       match = Regex.run(~r/(^|\s)(~?\.?\.?\/?[^\s]*\/)$/, text) ->
-        {:ok, %{token: List.last(match), raw: List.last(match), at?: false, quoted?: false}}
+        path_token = List.last(match)
+        replace_from = String.length(text) - String.length(path_token)
+        {:ok, %{raw: path_token, at?: false, quoted?: false, replace_from: replace_from}}
 
       true ->
         :error

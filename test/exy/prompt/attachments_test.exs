@@ -34,6 +34,28 @@ defmodule Exy.Prompt.AttachmentsTest do
     end
   end
 
+  test "preserves quoted non-image references in fallback" do
+    assert Attachments.expand(~s(describe @"missing file.txt" please), root: "/tmp") ==
+             ~s(describe @"missing file.txt" please)
+  end
+
+  test "escapes special characters in file blocks" do
+    root = Path.join(System.tmp_dir!(), "exy-attachments-#{System.unique_integer([:positive])}")
+    File.mkdir_p!(root)
+    File.write!(Path.join(root, "a&b.txt"), "x < y")
+
+    try do
+      assert {:ok, %{text: text}} =
+               Attachments.process_file_args(["a&b.txt"], root: root)
+
+      assert text =~ "a&amp;b.txt"
+      assert text =~ "x &lt; y"
+      refute text =~ "<file name=\"" <> Path.join(root, "a&b.txt")
+    after
+      File.rm_rf(root)
+    end
+  end
+
   test "leaves prompts without image references unchanged" do
     assert Attachments.expand("email a@b.test and mention @missing.png", root: "/tmp") ==
              "email a@b.test and mention @missing.png"

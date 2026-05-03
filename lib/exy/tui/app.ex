@@ -391,8 +391,7 @@ defmodule Exy.TUI.App do
   defp handle_autocomplete_key(:tab, state) do
     case Autocomplete.selected_item(state.autocomplete) do
       %{value: value} ->
-        :ok = EditorServer.replace(state.editor, value <> " ")
-        %{state | autocomplete: nil}
+        apply_completion(state, value <> " ")
 
       nil ->
         %{state | autocomplete: nil}
@@ -412,10 +411,23 @@ defmodule Exy.TUI.App do
         %{state | autocomplete: nil}
 
       %{value: value} ->
-        :ok = EditorServer.replace(state.editor, value)
+        apply_completion(state, value)
+
+      nil ->
+        %{state | autocomplete: nil}
+    end
+  end
+
+  defp apply_completion(state, value) do
+    case state.autocomplete.replace_from do
+      pos when is_integer(pos) ->
+        editor = EditorServer.state(state.editor)
+        new_text = String.slice(editor.text, 0, pos) <> value
+        :ok = EditorServer.replace(state.editor, new_text)
         %{state | autocomplete: nil}
 
       nil ->
+        :ok = EditorServer.replace(state.editor, value)
         %{state | autocomplete: nil}
     end
   end

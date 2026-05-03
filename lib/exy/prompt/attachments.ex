@@ -69,13 +69,13 @@ defmodule Exy.Prompt.Attachments do
 
       attachments ->
         text =
-          Regex.replace(@attachment_pattern, prompt, fn _full,
+          Regex.replace(@attachment_pattern, prompt, fn full,
                                                         prefix,
                                                         double_quoted,
                                                         single_quoted,
                                                         unquoted ->
             raw_path = attachment_path([double_quoted, single_quoted, unquoted])
-            if image_attachment?(raw_path, root), do: prefix, else: "#{prefix}@#{raw_path}"
+            if image_attachment?(raw_path, root), do: prefix, else: full
           end)
 
         [Content.text(String.trim(text)) | Enum.map(attachments, &image_content/1)]
@@ -129,7 +129,23 @@ defmodule Exy.Prompt.Attachments do
 
   defp dimension_note(_image), do: ""
 
-  defp file_block(path, content), do: "<file name=\"#{path}\">#{content}</file>\n"
+  defp file_block(path, content),
+    do: "<file name=\"#{escape_xml_attr(path)}\">#{escape_xml(content)}</file>\n"
+
+  defp escape_xml_attr(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+  end
+
+  defp escape_xml(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+  end
 
   defp resolve("~" <> rest, _root), do: Path.expand("~" <> rest)
   defp resolve(path, root), do: Path.expand(path, root)

@@ -32,10 +32,11 @@ defmodule Exy.UI.Autocomplete do
           items: [Item.t()],
           selected: non_neg_integer(),
           limit: pos_integer(),
-          empty_message: String.t() | nil
+          empty_message: String.t() | nil,
+          replace_from: non_neg_integer() | nil
         }
 
-  defstruct [:title, :empty_message, query: "", items: [], selected: 0, limit: 8]
+  defstruct [:title, :empty_message, :replace_from, query: "", items: [], selected: 0, limit: 8]
 
   @spec new(t() | map() | keyword()) :: t()
   def new(%__MODULE__{} = autocomplete), do: autocomplete
@@ -50,7 +51,8 @@ defmodule Exy.UI.Autocomplete do
       items: items,
       selected: fields |> Map.get(:selected, 0) |> clamp(length(items)),
       limit: Map.get(fields, :limit, 8),
-      empty_message: Map.get(fields, :empty_message)
+      empty_message: Map.get(fields, :empty_message),
+      replace_from: Map.get(fields, :replace_from)
     }
   end
 

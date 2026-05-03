@@ -22,23 +22,31 @@ defmodule Exy.CLI.Runner do
         if opts[:direct] do
           llm_opts = Keyword.put(model_opts(opts), :session_id, session_id)
 
-          prompt = direct_prompt(prompt, opts)
+          case direct_prompt(prompt, opts) do
+            {:error, reason} ->
+              {:error, reason}
 
-          if stream?(opts) do
-            Exy.Model.Direct.stream(prompt, llm_opts)
-          else
-            direct_ask_fun(opts).(prompt, llm_opts)
+            prompt ->
+              if stream?(opts) do
+                Exy.Model.Direct.stream(prompt, llm_opts)
+              else
+                direct_ask_fun(opts).(prompt, llm_opts)
+              end
           end
         else
-          prompt = agent_prompt(prompt, opts)
+          case agent_prompt(prompt, opts) do
+            {:error, reason} ->
+              {:error, reason}
 
-          with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
-            Exy.ask(pid, prompt,
-              timeout: opts[:timeout] || @default_print_timeout_ms,
-              session_id: session_id,
-              on_result: trace_print_delta(:content),
-              on_thinking: trace_print_delta(:thinking)
-            )
+            prompt ->
+              with {:ok, pid} <- Exy.start_link(agent_opts(opts)) do
+                Exy.ask(pid, prompt,
+                  timeout: opts[:timeout] || @default_print_timeout_ms,
+                  session_id: session_id,
+                  on_result: trace_print_delta(:content),
+                  on_thinking: trace_print_delta(:thinking)
+                )
+              end
           end
         end
       end)
@@ -49,22 +57,51 @@ defmodule Exy.CLI.Runner do
   defp direct_ask_fun(opts), do: Keyword.get(opts, :direct_ask_fun, &Exy.Model.Direct.ask/2)
 
   defp direct_prompt(prompt, opts) do
-    file_args = Keyword.get(opts, :file_args, [])
-
-    case Exy.Prompt.Attachments.build_initial(prompt, file_args, root: File.cwd!()) do
-      {:ok, content} -> content
-      {:error, _reason} -> Exy.Prompt.Attachments.expand(prompt, root: File.cwd!())
+    case resolve_file_args(opts) do
+      {:ok, []} -> Exy.Prompt.Attachments.expand(prompt, root: File.cwd!())
+      {:ok, file_args} -> build_or_expand(prompt, file_args)
+      {:error, reason} -> {:error, reason}
     end
   end
 
   defp agent_prompt(prompt, opts) do
-    file_args = Keyword.get(opts, :file_args, [])
-
-    case Exy.Prompt.Attachments.process_file_args(file_args, root: File.cwd!()) do
-      {:ok, %{text: file_text}} -> file_text <> prompt
-      {:error, _reason} -> prompt
+    case resolve_file_args(opts) do
+      {:ok, []} -> prompt
+      {:ok, file_args} -> build_text_prompt(prompt, file_args)
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp resolve_file_args(opts) do
+    file_args = Keyword.get(opts, :file_args, [])
+
+    if file_args == [] do
+      {:ok, []}
+    else
+      case Exy.Prompt.Attachments.process_file_args(file_args, root: File.cwd!()) do
+        {:ok, _processed} -> {:ok, file_args}
+        {:error, reason} -> {:error, format_file_error(reason)}
+      end
+    end
+  end
+
+  defp build_or_expand(prompt, file_args) do
+    case Exy.Prompt.Attachments.build_initial(prompt, file_args, root: File.cwd!()) do
+      {:ok, content} -> content
+      {:error, reason} -> {:error, format_file_error(reason)}
+    end
+  end
+
+  defp build_text_prompt(prompt, file_args) do
+    case Exy.Prompt.Attachments.process_file_args(file_args, root: File.cwd!()) do
+      {:ok, %{text: file_text}} -> file_text <> prompt
+      {:error, reason} -> {:error, format_file_error(reason)}
+    end
+  end
+
+  defp format_file_error({:file_not_found, path}), do: "File not found: #{path}"
+  defp format_file_error({reason, path}) when is_atom(reason), do: "#{reason}: #{path}"
+  defp format_file_error(reason), do: inspect(reason)
 
   @spec tui(keyword(), keyword()) :: :ok | {:error, term()}
   def tui(opts, runtime_extra \\ []) do
