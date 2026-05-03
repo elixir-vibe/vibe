@@ -1,7 +1,7 @@
 defmodule Exy.Tool.Display.Eval do
   @moduledoc "Internal implementation module."
   alias Exy.Tool.Display
-  alias Exy.TUI.Duration
+  alias Exy.Tool.Display.Util
 
   @spec from_tool(map()) :: Display.t()
   def from_tool(tool) do
@@ -22,36 +22,34 @@ defmodule Exy.Tool.Display.Eval do
   end
 
   defp body(tool, code, output, expanded?) do
-    []
-    |> maybe_add_code(code, expanded?)
-    |> add_output_blocks(tool, output)
+    code_blocks =
+      if expanded? and is_binary(code) and code != "",
+        do: [{:source, code, language: :elixir}],
+        else: []
+
+    code_blocks ++ output_blocks(tool, output)
   end
 
-  defp maybe_add_code(blocks, code, true) when is_binary(code) and code != "",
-    do: blocks ++ [{:source, code, language: :elixir}]
+  defp output_blocks(_tool, %{error: error}),
+    do: [{:error, error |> to_string() |> trim_final_newline(), []}]
 
-  defp maybe_add_code(blocks, _code, _expanded?), do: blocks
-
-  defp add_output_blocks(blocks, _tool, %{error: error}),
-    do: blocks ++ [{:error, error |> to_string() |> trim_final_newline(), []}]
-
-  defp add_output_blocks(blocks, %{output_parts: [_ | _] = parts}, _output) do
-    blocks ++ (parts |> Enum.map(&normalize_part/1) |> Enum.reject(&is_nil/1))
+  defp output_blocks(%{output_parts: [_ | _] = parts}, _output) do
+    parts |> Enum.map(&normalize_part/1) |> Enum.reject(&is_nil/1)
   end
 
-  defp add_output_blocks(blocks, %{output_format: :markdown}, output) when is_binary(output),
-    do: blocks ++ [{:markdown, trim_final_newline(output), truncation: :tail}]
+  defp output_blocks(%{output_format: :markdown}, output) when is_binary(output),
+    do: [{:markdown, trim_final_newline(output), truncation: :tail}]
 
-  defp add_output_blocks(blocks, %{output_format: :inspect}, output) when not is_nil(output),
-    do: blocks ++ [{:inspect, format_value(output), truncation: :tail}]
+  defp output_blocks(%{output_format: :inspect}, output) when not is_nil(output),
+    do: [{:inspect, format_value(output), truncation: :tail}]
 
-  defp add_output_blocks(blocks, _tool, output) when is_binary(output),
-    do: blocks ++ [{:text, trim_final_newline(output), truncation: :tail}]
+  defp output_blocks(_tool, output) when is_binary(output),
+    do: [{:text, trim_final_newline(output), truncation: :tail}]
 
-  defp add_output_blocks(blocks, _tool, nil), do: blocks
+  defp output_blocks(_tool, nil), do: []
 
-  defp add_output_blocks(blocks, _tool, output),
-    do: blocks ++ [{:inspect, format_value(output), truncation: :tail}]
+  defp output_blocks(_tool, output),
+    do: [{:inspect, format_value(output), truncation: :tail}]
 
   defp normalize_part(%{format: format, output: output}) when output not in [nil, ""] do
     {normalize_format(format), output |> format_value() |> trim_final_newline(),
@@ -104,7 +102,7 @@ defmodule Exy.Tool.Display.Eval do
   defp fallback_summary(tool) do
     case Map.get(tool, :args) || Map.get(tool, :params) do
       nil -> nil
-      args -> Exy.TUI.ToolWidget.summarize_value(args, 80)
+      args -> Util.summarize_value(args, 80)
     end
   end
 
@@ -116,8 +114,11 @@ defmodule Exy.Tool.Display.Eval do
     end
   end
 
-  defp format_timeout(timeout) when is_integer(timeout), do: Duration.milliseconds(timeout)
+  defp format_timeout(timeout) when is_integer(timeout), do: format_milliseconds(timeout)
   defp format_timeout(timeout), do: to_string(timeout)
 
-  defp expanded?(tool), do: Map.get(tool, :expanded?, false) or Map.get(tool, :truncate?) == false
+  defp format_milliseconds(milliseconds) when milliseconds < 1_000, do: "#{milliseconds}ms"
+  defp format_milliseconds(milliseconds), do: "#{Float.round(milliseconds / 1_000, 1)}s"
+
+  defp expanded?(tool), do: Util.expanded?(tool)
 end

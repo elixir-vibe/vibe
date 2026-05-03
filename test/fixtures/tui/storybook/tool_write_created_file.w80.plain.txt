@@ -8,4 +8,5 @@
      end                                                                        
                                                                                 
      def handle_event("inc", _params, socket) do                                
+                                                                                
    … (4 more lines, ctrl+o to expand)                                           

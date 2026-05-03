@@ -7,18 +7,20 @@ defmodule Exy.Docs do
   on first-run orientation.
   """
 
-  @topics %{
-    "quickstart" => "Quickstart",
-    "eval" => "Eval",
-    "sessions" => "Sessions",
-    "slash-commands" => "Slash commands",
-    "subagents" => "Subagents",
-    "plugins" => "Plugins",
-    "storage" => "Storage",
-    "memory" => "Memory",
-    "troubleshooting" => "Troubleshooting",
-    "web" => "Web"
-  }
+  @topics [
+    {"quickstart", "Quickstart"},
+    {"sessions", "Sessions"},
+    {"eval", "Eval"},
+    {"slash-commands", "Slash commands"},
+    {"memory", "Memory"},
+    {"subagents", "Subagents"},
+    {"plugins", "Plugins"},
+    {"storage", "Storage"},
+    {"web", "Web"},
+    {"troubleshooting", "Troubleshooting"}
+  ]
+
+  @topic_titles Map.new(@topics)
 
   @aliases %{
     "commands" => "slash-commands",
@@ -34,9 +36,7 @@ defmodule Exy.Docs do
   @doc "Returns the built-in help topic names and titles."
   @spec topics() :: [%{name: String.t(), title: String.t()}]
   def topics do
-    @topics
-    |> Enum.map(fn {name, title} -> %{name: name, title: title} end)
-    |> Enum.sort_by(& &1.name)
+    Enum.map(@topics, fn {name, title} -> %{name: name, title: title} end)
   end
 
   @doc "Returns Markdown for a built-in help topic."
@@ -45,7 +45,7 @@ defmodule Exy.Docs do
   def read(topic \\ "quickstart") do
     topic = normalize_topic(topic)
 
-    case Map.fetch(@topics, topic) do
+    case Map.fetch(@topic_titles, topic) do
       {:ok, _title} -> File.read(topic_path(topic))
       :error -> {:error, {:unknown_topic, topic}}
     end

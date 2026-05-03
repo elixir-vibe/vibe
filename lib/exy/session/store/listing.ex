@@ -59,7 +59,7 @@ defmodule Exy.Session.Store.Listing do
       message_count: session.message_count || 0,
       first_message: session.first_message_preview,
       last_message_preview: session.last_message_preview,
-      status: status_atom(session.status),
+      status: stored_status(session.status),
       model: session.model,
       usage: %{
         input_tokens: session.usage_input_tokens || 0,
@@ -85,6 +85,13 @@ defmodule Exy.Session.Store.Listing do
     events
     |> Enum.map(fn {_seq, event} -> event end)
     |> then(&Reducer.apply_events(State.new(session_id: session_id), &1))
+  end
+
+  defp stored_status(status) do
+    case status_atom(status) do
+      status when status in [:working, :running] -> :idle
+      status -> status
+    end
   end
 
   defp status_atom(status) when is_binary(status) do

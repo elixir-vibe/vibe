@@ -139,15 +139,7 @@ defmodule Exy.CLI.Sessions do
   defp session_node(_session), do: nil
 
   defp prune_empty do
-    pruned =
-      Exy.Session.Store.list()
-      |> Enum.filter(fn session ->
-        not session[:live?] and (session[:message_count] || 0) == 0
-      end)
-      |> Enum.map(fn session ->
-        :ok = File.rm(session.path)
-        session.id
-      end)
+    pruned = Exy.Session.Store.prune_empty()
 
     {:ok, %{pruned: length(pruned), sessions: pruned}}
   end

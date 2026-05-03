@@ -268,6 +268,9 @@ defmodule Exy.TUI.ToolWidget do
   defp display_block_lines({:source, source, opts}, width, theme, truncate?),
     do: source_block_lines(source, width, theme, truncate?, opts)
 
+  defp display_block_lines({:diff, diff, opts}, width, theme, truncate?),
+    do: diff_block_lines(diff, width, theme, truncate?, opts)
+
   defp display_block_lines({:markdown, markdown, opts}, width, theme, truncate?) do
     truncation = line_window(markdown, truncate?, opts)
 
@@ -314,6 +317,22 @@ defmodule Exy.TUI.ToolWidget do
       end)
       |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
       |> maybe_append_read_limit_footer(truncation, opts, theme)
+
+    Lines.join(lines, [""])
+  end
+
+  defp diff_block_lines(diff, width, theme, truncate?, opts) do
+    truncation = line_window(diff, truncate?, opts)
+    language = Keyword.get(opts, :language)
+
+    lines =
+      truncation.lines
+      |> Enum.flat_map(fn line ->
+        line
+        |> highlight_diff_line(language, theme)
+        |> output_line(width)
+      end)
+      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
 
     Lines.join(lines, [""])
   end
@@ -373,6 +392,28 @@ defmodule Exy.TUI.ToolWidget do
     highlighted
   rescue
     _error -> Theme.fg(theme, :tool_output, line)
+  end
+
+  defp highlight_diff_line("+" <> rest, language, theme),
+    do: [Theme.fg(theme, :success, "+"), highlight_diff_rest(rest, language, theme)]
+
+  defp highlight_diff_line("-" <> rest, language, theme),
+    do: [Theme.fg(theme, :error, "-"), highlight_diff_rest(rest, language, theme)]
+
+  defp highlight_diff_line(line, _language, theme), do: Theme.fg(theme, :dim, line)
+
+  defp highlight_diff_rest(rest, language, theme) do
+    case split_diff_number_prefix(rest) do
+      {prefix, source} -> [Theme.fg(theme, :dim, prefix), highlight_source_line(source, language, theme)]
+      :error -> Theme.fg(theme, :dim, rest)
+    end
+  end
+
+  defp split_diff_number_prefix(rest) do
+    case Regex.run(~r/^(\s*\d+\s+\s)(.*)$/, rest, capture: :all_but_first) do
+      [prefix, source] -> {prefix, source}
+      _no_match -> :error
+    end
   end
 
   defp trim_trailing_blank(lines),

@@ -87,6 +87,7 @@ defmodule Exy.MixProject do
       {:req_llm, "~> 1.10"},
       {:phoenix, "~> 1.8"},
       {:phoenix_live_view, "~> 1.1"},
+      {:phoenix_streamdown, "~> 1.0.0-beta"},
       {:plug_cowboy, "~> 2.7"},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:volt, "~> 0.8.1"},

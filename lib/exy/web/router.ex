@@ -17,6 +17,12 @@ defmodule Exy.Web.Router do
     live("/", SessionsLive, :index)
     live("/sessions", SessionsLive, :index)
     live("/sessions/:id", SessionLive, :show)
+    live("/jobs", JobsLive, :index)
+    live("/memory", MemoryLive, :index)
+    live("/docs", DocsLive, :show)
+    live("/docs/:topic", DocsLive, :show)
+    live("/storage", StorageLive, :index)
+    live("/settings", SettingsLive, :index)
     live("/search", SearchLive, :index)
     live("/runtime", RuntimeLive, :index)
   end

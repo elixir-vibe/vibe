@@ -5,8 +5,9 @@ defmodule Exy.Session.Store do
 
   import Ecto.Query
 
+  alias Exy.Repo
   alias Exy.Session.Store.{Codec, Listing, Summary}
-  alias Exy.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent}
+  alias Exy.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent, UIEventFTS}
   alias Exy.Trajectory
   alias Exy.UI.Event
 
@@ -101,6 +102,38 @@ defmodule Exy.Session.Store do
     |> order_by([event], [event.at, event.id])
     |> Exy.Repo.all()
     |> Enum.flat_map(&decode_trajectory_record/1)
+  end
+
+  @spec delete(String.t()) :: :ok | {:error, :live}
+  def delete(session_id) when is_binary(session_id) do
+    Exy.Storage.ensure!()
+
+    if live_session?(session_id) do
+      {:error, :live}
+    else
+      delete_stored_session(session_id)
+      :ok
+    end
+  end
+
+  @spec delete_many([String.t()]) :: %{deleted: [String.t()], skipped: [{String.t(), term()}]}
+  def delete_many(session_ids) when is_list(session_ids) do
+    Enum.reduce(session_ids, %{deleted: [], skipped: []}, fn session_id, acc ->
+      case delete(session_id) do
+        :ok -> %{acc | deleted: [session_id | acc.deleted]}
+        {:error, reason} -> %{acc | skipped: [{session_id, reason} | acc.skipped]}
+      end
+    end)
+    |> Map.update!(:deleted, &Enum.reverse/1)
+    |> Map.update!(:skipped, &Enum.reverse/1)
+  end
+
+  @spec prune_empty() :: [String.t()]
+  def prune_empty do
+    Exy.Session.Store.list()
+    |> Enum.filter(fn session -> not session[:live?] and (session[:message_count] || 0) == 0 end)
+    |> Enum.map(& &1.id)
+    |> tap(&delete_many/1)
   end
 
   @spec clear() :: :ok
@@ -323,6 +356,28 @@ defmodule Exy.Session.Store do
       :error -> []
     end
   end
+
+  defp live_session?(session_id) do
+    case Registry.lookup(Exy.Registry, {:session, session_id}) do
+      [] -> false
+      _sessions -> true
+    end
+  end
+
+  defp delete_stored_session(session_id) do
+    Repo.delete_all(from(row in UIEventFTS, where: row.session_id == ^session_id))
+    Repo.delete_all(from(row in UIEvent, where: row.session_id == ^session_id))
+    Repo.delete_all(from(row in TrajectoryEvent, where: row.session_id == ^session_id))
+    Repo.delete_all(from(row in EvalState, where: row.session_id == ^session_id))
+    Repo.delete_all(from(row in Session, where: row.id == ^session_id))
+
+    session_id |> path() |> File.rm() |> ignore_missing_file()
+    session_id |> log_path() |> File.rm() |> ignore_missing_file()
+  end
+
+  defp ignore_missing_file(:ok), do: :ok
+  defp ignore_missing_file({:error, :enoent}), do: :ok
+  defp ignore_missing_file({:error, reason}), do: {:error, reason}
 
   defp ok({:ok, _result}), do: :ok
   defp ok({:error, reason}), do: {:error, reason}

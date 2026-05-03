@@ -1,17 +1,17 @@
 defmodule Exy.Tool.Display.Read do
   @moduledoc "Internal implementation module."
   alias Exy.Tool.Display
-  alias Exy.TUI.Widgets.Tools.FileTool
+  alias Exy.Tool.Display.Util
 
   @spec from_tool(map()) :: Display.t()
   def from_tool(tool) do
-    result = Exy.TUI.ToolWidget.output(tool)
-    expanded? = Map.get(tool, :expanded?, false) or Map.get(tool, :truncate?) == false
+    result = Util.tool_output(tool)
+    expanded? = Util.expanded?(tool)
 
     %Display{
       name: :read,
       status: Map.get(tool, :status),
-      summary: FileTool.path_summary(tool, result),
+      summary: Util.path_summary(tool, result),
       body: body(result),
       expanded?: expanded?,
       truncate?: Map.get(tool, :truncate?, true)
@@ -32,7 +32,10 @@ defmodule Exy.Tool.Display.Read do
     [{kind, content, opts}]
   end
 
-  defp body(value), do: [{:text, Exy.TUI.ToolWidget.format_value(value), []}]
+  defp body(value), do: [{:text, format_value(value), []}]
+
+  defp format_value(value) when is_binary(value), do: value
+  defp format_value(value), do: inspect(value, pretty: true, limit: 20)
 
   defp read_limit_truncated?(result),
     do: Map.get(result, :omitted_lines, 0) > 0 or Map.get(result, :omitted_bytes, 0) > 0

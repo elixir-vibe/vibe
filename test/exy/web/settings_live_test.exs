@@ -1,0 +1,13 @@
+defmodule Exy.Web.SettingsLiveTest do
+  use Exy.WebCase, async: false
+
+  test "renders model and auth settings" do
+    conn = build_conn() |> get("/settings")
+    html = html_response(conn, 200)
+
+    assert html =~ "Settings"
+    assert html =~ "Default model"
+    assert html =~ "Auth"
+    assert html =~ "Roles"
+  end
+end

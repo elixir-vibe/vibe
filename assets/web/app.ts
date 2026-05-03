@@ -11,6 +11,16 @@ const Hooks = {
       this.el.scrollTop = this.el.scrollHeight;
     },
   },
+  SubmitShortcut: {
+    mounted() {
+      this.el.addEventListener("keydown", (event: KeyboardEvent) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          event.preventDefault();
+          this.el.requestSubmit();
+        }
+      });
+    },
+  },
 };
 
 const csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content") ?? "";
