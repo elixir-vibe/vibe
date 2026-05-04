@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Lines do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Line list manipulation helpers for TUI rendering."
   alias Exy.Support.Lists
 
   @type line :: IO.chardata()

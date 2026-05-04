@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.AST do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: AST search/replace results."
   @behaviour Exy.TUI.ToolWidget
 
   alias Exy.Code.AST.Result

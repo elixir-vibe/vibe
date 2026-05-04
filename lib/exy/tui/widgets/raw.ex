@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Raw do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: pre-rendered iodata passthrough."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Widget

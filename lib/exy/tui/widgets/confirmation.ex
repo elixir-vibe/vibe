@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Confirmation do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: yes/no confirmation dialog."
   @behaviour Exy.TUI.Widget
 
   alias Exy.Support.Lists

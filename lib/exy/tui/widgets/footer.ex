@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Footer do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: status bar with model, usage, and session info."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

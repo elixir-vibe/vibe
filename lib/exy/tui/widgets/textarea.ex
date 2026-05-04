@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Textarea do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: multiline text editor display."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Vertical do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: vertical layout container."
   @behaviour Exy.TUI.Widget
 
   @impl true

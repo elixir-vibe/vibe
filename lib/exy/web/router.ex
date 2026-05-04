@@ -1,5 +1,5 @@
 defmodule Exy.Web.Router do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Phoenix router: LiveView routes and artifact serving."
   use Exy.Web, :router
 
   pipeline :browser do

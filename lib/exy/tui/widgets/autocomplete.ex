@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Autocomplete do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: autocomplete dropdown overlay."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget, Width}

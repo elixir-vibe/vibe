@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.SubagentJob do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: subagent job records."
   use Ecto.Schema
 
   @primary_key {:id, :string, autogenerate: false}

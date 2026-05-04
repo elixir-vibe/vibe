@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.FileMutation do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: shared file mutation display."
   alias Exy.TUI.{Syntax, TextTruncation, Theme, ToolWidget, Widget}
 
   @spec output_lines(term(), pos_integer(), Theme.t()) :: [IO.chardata()]

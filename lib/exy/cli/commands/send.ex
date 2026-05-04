@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Send do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `send` command: dispatch a prompt to a session by ID."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Sessions

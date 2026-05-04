@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.Session do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: session metadata and message counts."
   use Ecto.Schema
 
   @primary_key {:id, :string, autogenerate: false}

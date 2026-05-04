@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Truncate do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: content truncation with expand hint."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Widget, Width}

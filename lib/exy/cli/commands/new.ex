@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.New do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `new` command: create a fresh server session."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Sessions

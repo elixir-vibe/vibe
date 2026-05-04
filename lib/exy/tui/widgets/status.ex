@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Status do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: colored status indicator."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

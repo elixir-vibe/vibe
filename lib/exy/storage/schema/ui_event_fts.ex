@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.UIEventFTS do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: FTS5 virtual table for UI event search."
   use Ecto.Schema
 
   @primary_key false

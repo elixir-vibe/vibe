@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Storage do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Storage subcommand dispatch: migrate, search, import."
   alias Exy.CLI.Output
 
   @spec command([String.t()], keyword()) :: :ok | {:error, term()}

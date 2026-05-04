@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Search do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `search` command: FTS query shortcut."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Storage

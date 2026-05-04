@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Padding do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: padding wrapper."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Lines, Widget}

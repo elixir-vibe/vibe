@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Compact do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /compact — trigger context compaction."
   @behaviour Exy.UI.SlashCommands.Command
 
   @impl true

@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.EvalState do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: persisted eval session state snapshots."
   use Ecto.Schema
 
   @primary_key {:session_id, :string, autogenerate: false}

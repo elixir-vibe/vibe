@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Clear do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /clear — reset session history."
   @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event

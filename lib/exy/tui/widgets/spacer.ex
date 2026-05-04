@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Spacer do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: vertical space."
   @behaviour Exy.TUI.Widget
 
   @impl true

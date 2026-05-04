@@ -9,12 +9,12 @@ defmodule Exy.UI.Block do
   end
 
   defmodule AssistantMessage do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Assistant response block with text, error, or streaming loader."
     defstruct [:id, :text, :error, :result, :at, :loader_label]
   end
 
   defmodule ToolCall do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Tool invocation block with args, status, and output."
     defstruct [
       :id,
       :name,
@@ -29,7 +29,7 @@ defmodule Exy.UI.Block do
   end
 
   defmodule SubagentLifecycle do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Subagent job lifecycle event block."
     defstruct [
       :id,
       :job_id,
@@ -44,7 +44,7 @@ defmodule Exy.UI.Block do
   end
 
   defmodule Footer do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Footer state: model, effort, usage, session, and plugin statuses."
     defstruct [
       :cwd,
       :model,
@@ -60,21 +60,21 @@ defmodule Exy.UI.Block do
   end
 
   defmodule Overlay do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Modal overlay state for selectors and dialogs."
     defstruct [:kind, :data]
 
     @type t :: %__MODULE__{}
   end
 
   defmodule NotificationList do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Transient notification stack."
     defstruct items: []
 
     @type t :: %__MODULE__{}
   end
 
   defmodule PluginWidget do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Plugin-owned semantic widget rendered in the session UI."
     defstruct [:id, :type, :props, placement: :above_editor, version: 0]
 
     @type t :: %__MODULE__{}

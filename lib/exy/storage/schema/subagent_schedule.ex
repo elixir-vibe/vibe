@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.SubagentSchedule do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: subagent schedule definitions."
   use Ecto.Schema
 
   @primary_key {:id, :string, autogenerate: false}

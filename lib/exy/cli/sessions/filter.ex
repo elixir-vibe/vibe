@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Sessions.Filter do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Session list filtering by status, age, and flags."
   @spec apply([map()], keyword()) :: [map()]
   def apply(sessions, opts) do
     sessions

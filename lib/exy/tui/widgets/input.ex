@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Input do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: single-line text input."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget, Width}

@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Horizontal do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: horizontal layout container."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Widget

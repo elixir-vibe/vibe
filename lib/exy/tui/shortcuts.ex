@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Shortcuts do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Keybinding-to-action mapping for the TUI."
   alias Exy.TUI.Theme
 
   @shortcuts %{

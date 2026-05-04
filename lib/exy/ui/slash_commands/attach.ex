@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Attach do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /attach — switch to an existing session."
   @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event

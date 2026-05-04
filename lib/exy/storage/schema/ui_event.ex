@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.UIEvent do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: session UI events."
   use Ecto.Schema
 
   schema "ui_events" do

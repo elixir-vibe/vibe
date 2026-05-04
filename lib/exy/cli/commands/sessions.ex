@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Sessions do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `sessions` command: list and prune sessions."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Sessions

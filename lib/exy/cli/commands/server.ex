@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Server do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `server` command: start, stop, restart, status."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Server

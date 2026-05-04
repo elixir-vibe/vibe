@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.PluginWidget do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: plugin-owned semantic content."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Widget

@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Dialog do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: modal dialog with message and actions."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Lines, Theme}

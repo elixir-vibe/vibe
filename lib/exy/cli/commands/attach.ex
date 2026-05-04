@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Attach do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `attach` command: connect to a live session."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Sessions

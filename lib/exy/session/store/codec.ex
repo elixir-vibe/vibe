@@ -1,5 +1,5 @@
 defmodule Exy.Session.Store.Codec do
-  @moduledoc "Internal implementation module."
+  @moduledoc "JSON codec for session event serialization and deserialization."
   alias Exy.Trajectory
   alias Exy.UI.Event
 

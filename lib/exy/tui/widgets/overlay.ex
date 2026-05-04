@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Overlay do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: floating overlay panel."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI

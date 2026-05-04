@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Notifications do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: transient notification stack."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

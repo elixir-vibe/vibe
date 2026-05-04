@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Registry do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command registry: discovery and dispatch."
   @builtin [
     Exy.UI.SlashCommands.Sessions,
     Exy.UI.SlashCommands.New,

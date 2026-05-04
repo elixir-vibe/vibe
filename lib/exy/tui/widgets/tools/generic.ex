@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.Generic do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: fallback for unrecognized tools."
   @behaviour Exy.TUI.ToolWidget
 
   @impl true

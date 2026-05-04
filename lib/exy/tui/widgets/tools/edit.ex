@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.Edit do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: file edit diff."
   @behaviour Exy.TUI.ToolWidget
 
   alias Exy.TUI.ToolWidget

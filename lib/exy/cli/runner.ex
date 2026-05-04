@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Runner do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Prompt execution for print mode and TUI startup."
   alias Exy.CLI.{Logging, Output}
   alias Exy.Model.Content
 

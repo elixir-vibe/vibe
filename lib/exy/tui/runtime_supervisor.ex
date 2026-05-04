@@ -1,5 +1,5 @@
 defmodule Exy.TUI.RuntimeSupervisor do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Supervisor for TUI runtime child processes."
   use Supervisor
 
   alias Exy.Session

@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Parser do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI argv parser using OptionParser strict mode."
   @switches [
     help: :boolean,
     version: :boolean,

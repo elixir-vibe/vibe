@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Effort do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /effort — set reasoning effort level."
   @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.Model.Effort

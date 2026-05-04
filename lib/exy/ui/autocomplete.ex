@@ -1,7 +1,7 @@
 defmodule Exy.UI.Autocomplete do
   @moduledoc "Autocomplete state model shared by TUI and future LiveView adapters."
   defmodule Item do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Single autocomplete suggestion with value, label, and optional detail."
     @type t :: %__MODULE__{
             value: String.t(),
             label: String.t(),

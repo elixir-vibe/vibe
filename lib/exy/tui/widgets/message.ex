@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Message do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: chat message bubble with role styling."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Markdown, Theme, Widget}

@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.ModelInfo do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: model and effort status display."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

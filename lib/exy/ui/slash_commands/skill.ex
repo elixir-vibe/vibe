@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Skill do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /skill — invoke executable skills."
   @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event

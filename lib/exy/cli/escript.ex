@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Escript do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Escript entrypoint for the standalone `exy` binary."
   @version Mix.Project.config()[:version]
   def main(argv) do
     %{opts: opts} = Exy.CLI.parse(argv)

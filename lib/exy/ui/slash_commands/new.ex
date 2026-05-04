@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.New do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /new — start a fresh session."
   @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event

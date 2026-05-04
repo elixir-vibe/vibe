@@ -1,5 +1,5 @@
 defmodule Exy.Web.Assets do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Volt-based web asset compilation and serving."
   @spec ensure_built!() :: :ok
   def ensure_built! do
     build_tailwind!()

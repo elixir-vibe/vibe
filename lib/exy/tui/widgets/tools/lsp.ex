@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.LSP do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: LSP diagnostics and results."
   @behaviour Exy.TUI.ToolWidget
 
   alias Exy.TUI.{Duration, ToolWidget}

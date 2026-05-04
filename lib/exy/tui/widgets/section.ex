@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Section do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: labeled collapsible section."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget, Width}

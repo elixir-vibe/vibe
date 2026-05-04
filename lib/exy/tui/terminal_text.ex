@@ -1,5 +1,5 @@
 defmodule Exy.TUI.TerminalText do
-  @moduledoc "Internal implementation module."
+  @moduledoc "ANSI escape and control character sanitizer for display."
   @escape 0x1B
   @bell 0x07
 

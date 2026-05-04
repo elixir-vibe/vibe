@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Markdown.Mermaid do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Mermaid diagram detection and fallback rendering."
   @spec render(String.t(), pos_integer()) :: {:ok, [String.t()]} | :error
   def render(source, width) when is_binary(source) and is_integer(width) do
     with {:ok, direction, vertices, edges} <- parse(source),

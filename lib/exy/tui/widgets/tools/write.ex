@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.Write do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: file creation result."
   @behaviour Exy.TUI.ToolWidget
 
   alias Exy.TUI.ToolWidget

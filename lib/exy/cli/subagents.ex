@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Subagents do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Subagent listing and inspection for CLI."
   alias Exy.CLI.{Output, Server}
 
   @spec command([String.t()], keyword()) :: :ok | {:error, term()}

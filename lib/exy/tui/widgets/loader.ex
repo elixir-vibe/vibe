@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Loader do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: animated working/thinking indicator."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Theme

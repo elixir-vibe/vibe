@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Markdown do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: rendered Markdown content block."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Markdown

@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.SelectList do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: navigable selection list."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

@@ -1,5 +1,5 @@
 defmodule Exy.Session.Store.Summary do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Session summary extraction for dashboards and previews."
   alias Exy.Session.Store.Listing
   alias Exy.Storage.Schema.Session
 

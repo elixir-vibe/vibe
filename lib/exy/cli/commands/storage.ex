@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Storage do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `storage` command: migrate, search, import, vacuum."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Storage

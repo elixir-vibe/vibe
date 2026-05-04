@@ -1,5 +1,5 @@
 defmodule Exy.Session.Store.Listing do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Session listing queries against SQLite storage."
   import Ecto.Query
 
   alias Exy.Storage.Schema.Session

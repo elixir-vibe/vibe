@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.FileTool do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: shared file path summary."
   alias Exy.TUI.ToolWidget
 
   @spec path_summary(map(), term()) :: String.t() | nil

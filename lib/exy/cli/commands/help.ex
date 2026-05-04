@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Help do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `help` command: built-in topic browser."
   @behaviour Exy.CLI.Command
 
   @impl true

@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Server do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Server subcommand dispatch: start, stop, restart, status."
   alias Exy.CLI.Output
   alias Exy.Server.Metadata
 

@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.Read do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: file read with syntax and images."
   @behaviour Exy.TUI.ToolWidget
 
   alias Exy.Model.Content

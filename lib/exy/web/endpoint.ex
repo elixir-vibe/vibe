@@ -1,5 +1,5 @@
 defmodule Exy.Web.Endpoint do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Phoenix endpoint configuration for the web console."
   use Phoenix.Endpoint, otp_app: :exy
 
   @session_options [

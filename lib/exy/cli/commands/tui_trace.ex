@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.TUITrace do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `tui-trace` command: replay TUI trace recordings."
   alias Exy.CLI.Output
   alias Exy.TUI.Trace
 

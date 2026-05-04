@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.Memory do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: curated long-term memory entries."
   use Ecto.Schema
 
   @primary_key {:id, :string, autogenerate: false}

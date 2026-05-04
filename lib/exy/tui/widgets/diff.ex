@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Diff do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: colored unified diff display."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.{Theme, Widget}

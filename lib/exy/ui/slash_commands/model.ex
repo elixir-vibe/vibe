@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Model do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /model — switch the active model."
   @behaviour Exy.UI.SlashCommands.Command
 
   @impl true

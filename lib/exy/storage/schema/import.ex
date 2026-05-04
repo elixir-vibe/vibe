@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.Import do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: imported session metadata."
   use Ecto.Schema
 
   @primary_key {:id, :string, autogenerate: false}

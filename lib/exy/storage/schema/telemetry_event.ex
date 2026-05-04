@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Schema.TelemetryEvent do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto schema: local telemetry event storage."
   use Ecto.Schema
 
   schema "telemetry_events" do

@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Skill do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `skill` command: list, show, and manage skills."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Output

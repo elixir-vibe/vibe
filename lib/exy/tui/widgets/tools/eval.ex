@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Tools.Eval do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI tool widget: eval output with ANSI."
   @behaviour Exy.TUI.ToolWidget
 
   alias Exy.TUI.{Duration, Lines, Markdown, Syntax, TextTruncation, ToolWidget}

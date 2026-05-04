@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Commands do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /commands — list available slash commands."
   @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event

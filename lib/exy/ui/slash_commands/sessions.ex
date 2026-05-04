@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Sessions do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /sessions — list active sessions."
   @behaviour Exy.UI.SlashCommands.Command
 
   alias Exy.UI.Event

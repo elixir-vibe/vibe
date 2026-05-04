@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Box do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: bordered box container."
   @behaviour Exy.TUI.Widget
 
   alias Exy.TUI.Lines

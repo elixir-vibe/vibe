@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Trace do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Compile-time-gated TUI frame trace recording."
   alias Exy.TUI.Width
 
   defstruct [:dir, :started_at, seq: 0]

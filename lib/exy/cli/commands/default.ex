@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Default do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Default CLI entrypoint: prompt, TUI, eval, and flag dispatch."
   alias Exy.CLI.{Output, Runner, Sessions}
   alias Exy.Web
 

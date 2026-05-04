@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Widgets.Frame do
-  @moduledoc "Internal implementation module."
+  @moduledoc "TUI widget: titled frame with optional border."
   alias Exy.TUI.{Node, Theme, Widget, Width}
 
   @spec border(Theme.t(), pos_integer(), atom(), atom(), IO.chardata() | nil) :: IO.chardata()

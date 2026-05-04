@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Command do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI command dispatch and behaviour definition."
   @callback names() :: [String.t()]
   @callback run([String.t()], keyword()) :: :ok | {:error, term()}
 

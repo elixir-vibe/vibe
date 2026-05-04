@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Duration do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Human-readable duration formatting for tool timing."
   @spec milliseconds(term()) :: String.t() | nil
   def milliseconds(ms) when is_integer(ms) and ms > 0 and rem(ms, 1000) == 0,
     do: "#{div(ms, 1000)}s"

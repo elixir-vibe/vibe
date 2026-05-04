@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Output do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI output formatting: ok/error results, tables, JSON."
   alias Exy.Eval.Result, as: EvalResult
   alias Exy.Storage.Search
   alias Exy.Subagents.{JobInfo, Schedule}

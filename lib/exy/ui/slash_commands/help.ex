@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands.Help do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command: /help — show built-in help topics."
   @behaviour Exy.UI.SlashCommands.Command
 
   @impl true

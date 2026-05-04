@@ -1,5 +1,5 @@
 defmodule Exy.CLI.Commands.Subagents do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI `subagents` command: list and inspect subagent jobs."
   @behaviour Exy.CLI.Command
 
   alias Exy.CLI.Subagents

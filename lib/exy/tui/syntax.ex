@@ -1,5 +1,5 @@
 defmodule Exy.TUI.Syntax do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Terminal syntax highlighting via Lumis."
   @dim_elixir_theme %Lumis.Theme{
     name: "exy_dim_elixir",
     appearance: :dark,
