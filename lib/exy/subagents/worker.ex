@@ -1,5 +1,5 @@
 defmodule Exy.Subagents.Worker do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Supervised worker process for individual subagent tasks."
   use GenServer
 
   def start_link(spec, parent, budget) do

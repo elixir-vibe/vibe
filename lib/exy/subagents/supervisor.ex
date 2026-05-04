@@ -1,5 +1,5 @@
 defmodule Exy.Subagents.Supervisor do
-  @moduledoc "Internal implementation module."
+  @moduledoc "DynamicSupervisor for subagent job processes."
   use Supervisor
 
   @spec start_link(keyword()) :: Supervisor.on_start()

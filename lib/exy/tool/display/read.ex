@@ -1,5 +1,5 @@
 defmodule Exy.Tool.Display.Read do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Semantic display builder for read tool results."
   alias Exy.Files.ImageRef
   alias Exy.Model.Content
   alias Exy.Tool.Display

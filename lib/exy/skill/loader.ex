@@ -1,5 +1,5 @@
 defmodule Exy.Skill.Loader do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Skill discovery from priv, project, and user directories."
   alias Exy.Plugin.API
   alias Exy.Skill.Executable
 

@@ -1,5 +1,5 @@
 defmodule Exy.Command.Job do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Supervised background command job."
   @enforce_keys [:id, :argv, :cwd, :pid, :output_path, :started_at]
   defstruct [:id, :argv, :cwd, :pid, :output_path, :started_at]
 

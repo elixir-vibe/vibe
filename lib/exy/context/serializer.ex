@@ -1,5 +1,5 @@
 defmodule Exy.Context.Serializer do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Serializes session history for compaction and context injection."
   alias Exy.Trajectory
 
   @tool_result_max_chars 2_000

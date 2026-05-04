@@ -1,5 +1,5 @@
 defmodule Exy.Env do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Runtime environment detection helpers."
   @spec to_charlist_pairs(map() | keyword()) :: [{charlist(), charlist()}]
   def to_charlist_pairs(env) when is_map(env), do: env |> Map.to_list() |> to_charlist_pairs()
 

@@ -1,5 +1,5 @@
 defmodule Exy.Plugins.WebSearch do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Web search plugin providing the `Web` eval alias."
   use Exy.Plugin
 
   api(

@@ -1,5 +1,5 @@
 defmodule Exy.UI.Autocomplete do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Autocomplete state model shared by TUI and future LiveView adapters."
   defmodule Item do
     @moduledoc "Internal implementation module."
     @type t :: %__MODULE__{

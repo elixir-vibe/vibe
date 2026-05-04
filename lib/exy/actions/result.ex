@@ -1,5 +1,5 @@
 defmodule Exy.Actions.Result do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Shared tool result formatting."
   @type t :: {:ok, term()} | {:error, term()}
 
   @spec run((-> t() | term())) :: t()

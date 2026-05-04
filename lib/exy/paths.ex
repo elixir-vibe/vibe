@@ -1,5 +1,5 @@
 defmodule Exy.Paths do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Canonical filesystem paths for Exy runtime data."
   @spec home() :: String.t()
   def home do
     (System.get_env("EXY_HOME") || Application.get_env(:exy, :home_dir, "~/.exy"))

@@ -1,5 +1,5 @@
 defmodule Exy.Subagents.Scheduler do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Scheduled subagent job execution."
   use GenServer
 
   alias Exy.Subagents.{Schedule, Store}

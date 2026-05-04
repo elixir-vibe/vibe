@@ -1,5 +1,5 @@
 defmodule Exy.Prompts do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Compile-time prompt embedding from `priv/prompts/*.md`."
   @prompt_files %{
     system: "system.md",
     summarization_system: "summarization_system.md",

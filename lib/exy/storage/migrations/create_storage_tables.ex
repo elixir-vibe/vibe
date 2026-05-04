@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Migrations.CreateStorageTables do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Migration: core storage tables for sessions, events, memory, telemetry."
   use Ecto.Migration
 
   def change do

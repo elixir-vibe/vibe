@@ -1,5 +1,5 @@
 defmodule Exy.Build do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Compile-time build metadata embedding."
   @spec id() :: String.t()
   def id do
     modules = [Exy, Exy.Session, Exy.TUI, Exy.CLI]

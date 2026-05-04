@@ -1,5 +1,5 @@
 defmodule Exy.Command.Streaming do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Streaming output capture for long-running commands."
   alias Exy.UI.{Event, ToolEvent}
 
   @process_key :exy_eval_command_stream_session_id

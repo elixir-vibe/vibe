@@ -1,5 +1,5 @@
 defmodule Exy.Storage do
-  @moduledoc "Internal implementation module."
+  @moduledoc "SQLite-backed durable state: sessions, events, memory, telemetry."
   @sqlite_busy_timeout_ms 5_000
 
   @schemas [

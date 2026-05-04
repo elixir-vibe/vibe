@@ -1,5 +1,5 @@
 defmodule Exy.Actions.Read do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Model-facing file and image read tool."
   import JSONSpec
 
   @schema schema(

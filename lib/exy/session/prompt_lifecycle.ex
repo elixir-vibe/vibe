@@ -1,5 +1,5 @@
 defmodule Exy.Session.PromptLifecycle do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Prompt submission, cancellation, memory injection, and result recording."
   alias Exy.Model.Usage
   alias Exy.UI.{Event, PromptRunner}
 

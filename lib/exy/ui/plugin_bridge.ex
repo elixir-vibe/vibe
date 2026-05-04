@@ -1,5 +1,5 @@
 defmodule Exy.UI.PluginBridge do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Bridges plugin events into the session UI state loop."
 
   alias Exy.UI.{Event, State}
 

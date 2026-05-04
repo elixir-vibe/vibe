@@ -1,5 +1,5 @@
 defmodule Exy.Actions.Eval do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Model-facing Elixir eval tool."
   import JSONSpec
 
   alias Exy.Actions.ToolResult

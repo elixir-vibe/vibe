@@ -1,5 +1,5 @@
 defmodule Exy.Subagents.Store do
-  @moduledoc "Internal implementation module."
+  @moduledoc "JSONL-backed subagent schedule persistence."
   import Ecto.Query
 
   alias Exy.Storage

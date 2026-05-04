@@ -1,5 +1,5 @@
 defmodule Exy.Plugins.WebSearch.Result do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Typed web search result for plugin UI."
   @type t :: %__MODULE__{
           title: String.t(),
           url: String.t(),

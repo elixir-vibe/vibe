@@ -1,5 +1,5 @@
 defmodule Exy.Skill.Executable do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Trusted executable Elixir skill evaluation."
 
   alias Exy.Plugin.API
 

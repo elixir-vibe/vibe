@@ -1,5 +1,5 @@
 defmodule Exy.Storage.FTS.Migration do
-  @moduledoc "Internal implementation module."
+  @moduledoc "FTS5 virtual table DDL helpers for migrations."
   import Ecto.Migration
 
   @spec create_fts5(atom(), keyword()) :: :ok

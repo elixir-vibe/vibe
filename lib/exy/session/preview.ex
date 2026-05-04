@@ -1,5 +1,5 @@
 defmodule Exy.Session.Preview do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Lightweight session preview extraction for dashboards."
 
   alias ReqLLM.Error.API.Request
   @spec message(map() | nil) :: String.t()

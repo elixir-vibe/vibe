@@ -1,5 +1,5 @@
 defmodule Exy.Subagents.Job do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Supervised subagent job process."
   use GenServer
 
   alias Exy.Session

@@ -1,5 +1,5 @@
 defmodule Exy.Server.Cookie do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Erlang distribution cookie management for the background server."
   @spec path() :: Path.t()
   def path, do: Exy.Paths.server_cookie()
 

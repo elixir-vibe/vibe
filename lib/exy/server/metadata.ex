@@ -1,5 +1,5 @@
 defmodule Exy.Server.Metadata do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Server node metadata persistence for client discovery."
   @spec path() :: Path.t()
   def path, do: Exy.Paths.server_metadata()
 

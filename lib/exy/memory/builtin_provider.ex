@@ -1,5 +1,5 @@
 defmodule Exy.Memory.BuiltinProvider do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Default memory provider backed by SQLite storage."
   use Exy.Memory.Provider
 
   @subagent_result_preview_chars 2_000

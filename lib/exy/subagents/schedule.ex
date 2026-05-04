@@ -1,5 +1,5 @@
 defmodule Exy.Subagents.Schedule do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Cron-like subagent schedule definition."
   @type t :: %__MODULE__{}
 
   @enforce_keys [:id, :task]

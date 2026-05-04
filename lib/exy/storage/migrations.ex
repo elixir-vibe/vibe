@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Migrations do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Ecto migration runner for the local SQLite database."
   @create_storage_tables_version 20_260_426_104_000
   @create_fts_indexes_version 20_260_426_121_000
 

@@ -1,5 +1,5 @@
 defmodule Exy.Model.Direct do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Direct LLM generation bypassing the Jido agent loop."
 
   alias Exy.Model.Content
   alias ReqLLM.Message.ContentPart

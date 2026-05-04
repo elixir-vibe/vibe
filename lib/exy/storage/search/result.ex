@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Search.Result do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Typed FTS search result with ranking and snippets."
   @type source :: :session | :memory
 
   @type t :: %__MODULE__{

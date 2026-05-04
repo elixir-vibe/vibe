@@ -1,5 +1,5 @@
 defmodule Exy.Actions.ToolResult do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Tool result struct for Jido action outputs."
   @type raw_result :: {:ok, term()} | {:error, term()} | term()
   @type tool_result :: {:ok, term()}
 

@@ -4,7 +4,7 @@ defmodule Exy.UI.Block do
   """
 
   defmodule UserMessage do
-    @moduledoc "Internal implementation module."
+    @moduledoc "Semantic content block types for UI state messages."
     defstruct [:id, :text, :at]
   end
 

@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Import do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Session import dispatcher for external sources."
   alias Exy.Storage.Schema.Import
 
   @providers %{

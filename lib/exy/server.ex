@@ -1,5 +1,5 @@
 defmodule Exy.Server do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Background session server for tmux-style detached operation."
   alias Exy.Server.{Cookie, Metadata}
 
   @remote_stop_timeout_ms 5_000

@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Import.Pi do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Pi JSONL session importer."
   @behaviour Exy.Storage.Importer
 
   alias Exy.UI.Event

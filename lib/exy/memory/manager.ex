@@ -1,5 +1,5 @@
 defmodule Exy.Memory.Manager do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Curated long-term memory lifecycle: turn hooks, sync, and recall."
   use GenServer
 
   alias Exy.Support.Lists

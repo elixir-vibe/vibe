@@ -1,5 +1,5 @@
 defmodule Exy.Agent.Options do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Agent startup option resolution and validation."
   @spec resolve(keyword()) :: {:ok, keyword()} | {:error, term()}
   def resolve(opts) do
     with :ok <- validate_role(opts) do

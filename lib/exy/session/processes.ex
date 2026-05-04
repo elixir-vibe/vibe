@@ -1,5 +1,5 @@
 defmodule Exy.Session.Processes do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Registry-backed live session process tracker."
   use GenServer
 
   @spec start_link(keyword()) :: GenServer.on_start()

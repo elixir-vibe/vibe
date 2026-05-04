@@ -1,5 +1,5 @@
 defmodule Exy.Remote do
-  @moduledoc "Internal implementation module."
+  @moduledoc "RPC bridge for server-mode session operations."
   alias Exy.Server.{Cookie, Metadata}
 
   @spec connect() :: {:ok, node()} | {:error, term()}

@@ -1,5 +1,5 @@
 defmodule Exy.Eval.Evaluator do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Per-session stateful Elixir evaluator process."
   use GenServer
 
   alias Exy.Command

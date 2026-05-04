@@ -1,5 +1,5 @@
 defmodule Exy.Auth.Codex.CallbackServer do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Local HTTP server for OAuth redirect callbacks."
   @redirect_port 1455
   @startup_timeout_ms 2_000
   @accept_timeout_ms 180_000

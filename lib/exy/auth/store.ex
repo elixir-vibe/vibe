@@ -1,5 +1,5 @@
 defmodule Exy.Auth.Store do
-  @moduledoc "Internal implementation module."
+  @moduledoc "JSON-backed credential storage under `~/.exy/auth.json`."
   @spec path() :: Path.t()
   def path, do: Exy.Paths.auth_file()
 

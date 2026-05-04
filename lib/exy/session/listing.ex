@@ -1,5 +1,5 @@
 defmodule Exy.Session.Listing do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Session list queries combining live processes and stored records."
   @spec active_count() :: non_neg_integer()
   def active_count do
     Registry.select(Exy.Registry, [{{{:session, :"$1"}, :"$2", :"$3"}, [], [true]}])

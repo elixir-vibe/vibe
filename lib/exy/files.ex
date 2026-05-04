@@ -1,5 +1,5 @@
 defmodule Exy.Files do
-  @moduledoc "Internal implementation module."
+  @moduledoc "File read, write, and edit operations for agent tools."
 
   alias Exy.Files.{Artifacts, ImageRef, ReadResult}
   alias Exy.Image

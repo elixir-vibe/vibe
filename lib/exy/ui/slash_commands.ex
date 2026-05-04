@@ -1,5 +1,5 @@
 defmodule Exy.UI.SlashCommands do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Slash command dispatch and autocomplete."
   alias Exy.UI.Autocomplete
   alias Exy.UI.Event
   alias Exy.UI.SlashCommands.Registry

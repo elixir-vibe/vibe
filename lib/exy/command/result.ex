@@ -1,5 +1,5 @@
 defmodule Exy.Command.Result do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Structured result from a supervised command execution."
   @enforce_keys [:id, :argv, :cwd, :status, :output, :output_path, :duration_ms]
   defstruct [:id, :argv, :cwd, :status, :exit_status, :output, :output_path, :duration_ms]
 

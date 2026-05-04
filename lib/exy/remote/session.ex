@@ -1,5 +1,5 @@
 defmodule Exy.Remote.Session do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Remote session lifecycle commands over distributed Erlang."
 
   alias Exy.UI.Command
   @spec list() :: {:ok, [map()]} | {:error, term()} | {:badrpc, term()}

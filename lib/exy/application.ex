@@ -1,5 +1,5 @@
 defmodule Exy.Application do
-  @moduledoc "Internal implementation module."
+  @moduledoc "OTP application supervisor."
   use Application
 
   @slow_jido_signal_threshold_ms 1_000

@@ -1,5 +1,5 @@
 defmodule Exy.Actions.AST do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Model-facing AST search and replace tool."
   import JSONSpec
 
   @schema schema(

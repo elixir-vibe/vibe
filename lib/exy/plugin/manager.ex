@@ -1,5 +1,5 @@
 defmodule Exy.Plugin.Manager do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Supervised plugin lifecycle, discovery, and dispatch."
   use GenServer
 
   alias Exy.Plugin.API

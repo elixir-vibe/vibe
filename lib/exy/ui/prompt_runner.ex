@@ -1,5 +1,5 @@
 defmodule Exy.UI.PromptRunner do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Task-based prompt execution for interactive sessions."
   @default_prompt_timeout_ms 86_400_000
 
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})

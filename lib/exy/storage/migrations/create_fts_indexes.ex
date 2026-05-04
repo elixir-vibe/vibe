@@ -1,5 +1,5 @@
 defmodule Exy.Storage.Migrations.CreateFTSIndexes do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Migration: FTS5 virtual tables for session and memory search."
   use Ecto.Migration
 
   import Exy.Storage.FTS.Migration

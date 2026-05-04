@@ -1,5 +1,5 @@
 defmodule Exy.Actions.LSP do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Model-facing LSP interaction tool."
   import JSONSpec
 
   @schema schema(

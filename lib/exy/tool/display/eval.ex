@@ -1,5 +1,5 @@
 defmodule Exy.Tool.Display.Eval do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Semantic display builder for eval tool results."
   alias Exy.Model.Content
   alias Exy.Tool.Display
   alias Exy.Tool.Display.Util

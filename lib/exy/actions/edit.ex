@@ -1,5 +1,5 @@
 defmodule Exy.Actions.Edit do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Model-facing file edit tool."
   import JSONSpec
 
   @schema schema(

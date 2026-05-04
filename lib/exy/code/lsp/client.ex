@@ -1,5 +1,5 @@
 defmodule Exy.Code.LSP.Client do
-  @moduledoc "Internal implementation module."
+  @moduledoc "LSP JSON-RPC client for language server communication."
   use GenServer
 
   @default_request_timeout_ms 30_000

@@ -1,5 +1,5 @@
 defmodule Exy.Actions.Write do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Model-facing file write tool."
   import JSONSpec
 
   @schema schema(

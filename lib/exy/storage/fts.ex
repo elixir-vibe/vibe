@@ -1,5 +1,5 @@
 defmodule Exy.Storage.FTS do
-  @moduledoc "Internal implementation module."
+  @moduledoc "SQLite FTS5 full-text search query helpers."
   import Ecto.Query
 
   alias Exy.Repo

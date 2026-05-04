@@ -1,5 +1,5 @@
 defmodule Exy.UI.Notification do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Transient notification state for TUI and web UI."
   @type level :: :info | :success | :warning | :error | atom()
   @type t :: %__MODULE__{id: term(), level: level(), text: String.t()}
 

@@ -1,5 +1,5 @@
 defmodule Exy.Context.Compactor do
-  @moduledoc "Internal implementation module."
+  @moduledoc "LLM-driven context compaction for long sessions."
   alias Exy.Context.Serializer
   alias Exy.Trajectory
 

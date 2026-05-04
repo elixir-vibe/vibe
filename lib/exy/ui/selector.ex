@@ -1,5 +1,5 @@
 defmodule Exy.UI.Selector do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Modal selector state for model/effort/session pickers."
   @type t :: %__MODULE__{
           kind: atom() | nil,
           overlay_kind: atom() | nil,

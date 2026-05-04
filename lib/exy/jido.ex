@@ -1,5 +1,5 @@
 defmodule Exy.Jido do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Jido agent server lifecycle bridge."
   use Jido, otp_app: :exy
 
   def config(overrides) do

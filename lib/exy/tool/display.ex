@@ -1,5 +1,5 @@
 defmodule Exy.Tool.Display do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Renderer-neutral semantic display document for tool results."
   defstruct name: nil,
             status: nil,
             summary: nil,

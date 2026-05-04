@@ -1,5 +1,5 @@
 defmodule Exy.Code.AST.TextDiff do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Line-level text diff for AST replace previews."
   @spec unified(String.t(), String.t(), String.t()) :: String.t()
   def unified(old_source, new_source, path \\ "source") do
     old_lines = String.split(old_source, "\n")

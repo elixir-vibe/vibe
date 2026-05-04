@@ -1,5 +1,5 @@
 defmodule Exy.Context.Recall do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Retrieves relevant context from storage and memory for prompts."
   alias Exy.Storage.Search.Result
 
   @default_limit 3

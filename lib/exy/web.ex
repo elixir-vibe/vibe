@@ -1,5 +1,5 @@
 defmodule Exy.Web do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Phoenix endpoint, router, and asset configuration for the web console."
   @static_paths ~w(assets fonts images favicon.ico robots.txt)
 
   @spec static_paths() :: [String.t()]

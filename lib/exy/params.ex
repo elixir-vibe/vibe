@@ -1,5 +1,5 @@
 defmodule Exy.Params do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Shared parameter coercion helpers."
   @spec fetch_required(map(), atom()) :: {:ok, term()} | {:error, String.t()}
   def fetch_required(params, key) do
     case Map.fetch(params, key) do

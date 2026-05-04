@@ -1,5 +1,5 @@
 defmodule Exy.Subagents.JobStore do
-  @moduledoc "Internal implementation module."
+  @moduledoc "Persistent subagent job storage."
   import Ecto.Query
 
   alias Exy.Storage

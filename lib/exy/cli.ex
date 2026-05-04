@@ -1,5 +1,5 @@
 defmodule Exy.CLI do
-  @moduledoc "Internal implementation module."
+  @moduledoc "CLI entrypoint for argv parsing and command dispatch."
   @spec main([String.t()]) :: :ok | {:error, term()}
   def main(argv) do
     argv
