@@ -57,10 +57,8 @@ defmodule Exy.CLI.Commands.Default do
   end
 
   defp split_file_args(args) do
-    Enum.split_with(args, &String.starts_with?(&1, "@"))
-    |> then(fn {files, messages} ->
-      {Enum.map(files, &String.trim_leading(&1, "@")), messages}
-    end)
+    {files, messages} = Enum.split_with(args, &String.starts_with?(&1, "@"))
+    {Enum.map(files, &String.replace_prefix(&1, "@", "")), messages}
   end
 
   defp web(opts) do

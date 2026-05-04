@@ -32,7 +32,7 @@ defmodule Exy.Image.Resize.Backends.Vips do
                  "--size",
                  "down"
                ],
-               opts
+               Keyword.take(opts, [:timeout])
              ) do
         Command.image_from_output(image, output, image.mime_type)
       end

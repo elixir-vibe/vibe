@@ -30,6 +30,10 @@ defmodule Exy.Model.Direct do
       result = {:ok, final_response}
       record_response(result, session_id)
       result
+    else
+      {:error, _reason} = error ->
+        record_response(error, session_id)
+        error
     end
   end
 

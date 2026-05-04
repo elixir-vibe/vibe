@@ -22,30 +22,34 @@ defmodule Exy.UI.FileAutocomplete do
     end
   end
 
+  @prefix_patterns [
+    {~r/(^|\s)(@"[^"]*)$/, :quoted_at},
+    {~r/(^|\s)(@[^\s]*)$/, :bare_at},
+    {~r/(^|\s)(~?\.?\.?\/?[^\s]*\/)$/, :path}
+  ]
+
   @spec prefix(String.t()) :: {:ok, map()} | :error
   def prefix(text) when is_binary(text) do
-    cond do
-      match = Regex.run(~r/(^|\s)(@"[^"]*)$/, text) ->
-        at_token = List.last(match)
-        raw = String.trim_leading(at_token, ~s(@"))
-        replace_from = String.length(text) - String.length(at_token)
-        {:ok, %{raw: raw, at?: true, quoted?: true, replace_from: replace_from}}
+    Enum.find_value(@prefix_patterns, :error, fn {pattern, kind} ->
+      case Regex.run(pattern, text) do
+        [_full, _space, token] ->
+          replace_from = String.length(text) - String.length(token)
+          {:ok, Map.put(build_prefix(kind, token), :replace_from, replace_from)}
 
-      match = Regex.run(~r/(^|\s)(@[^\s]*)$/, text) ->
-        at_token = List.last(match)
-        raw = String.trim_leading(at_token, "@")
-        replace_from = String.length(text) - String.length(at_token)
-        {:ok, %{raw: raw, at?: true, quoted?: false, replace_from: replace_from}}
-
-      match = Regex.run(~r/(^|\s)(~?\.?\.?\/?[^\s]*\/)$/, text) ->
-        path_token = List.last(match)
-        replace_from = String.length(text) - String.length(path_token)
-        {:ok, %{raw: path_token, at?: false, quoted?: false, replace_from: replace_from}}
-
-      true ->
-        :error
-    end
+        _ ->
+          nil
+      end
+    end)
   end
+
+  defp build_prefix(:quoted_at, token),
+    do: %{raw: String.replace_prefix(token, ~s(@"), ""), at?: true, quoted?: true}
+
+  defp build_prefix(:bare_at, token),
+    do: %{raw: String.replace_prefix(token, "@", ""), at?: true, quoted?: false}
+
+  defp build_prefix(:path, token),
+    do: %{raw: token, at?: false, quoted?: false}
 
   defp suggestions(prefix, opts) do
     root = Keyword.get_lazy(opts, :root, &File.cwd!/0)

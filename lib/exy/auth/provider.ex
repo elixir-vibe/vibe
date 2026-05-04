@@ -27,7 +27,10 @@ defmodule Exy.Auth.Provider do
   @spec for_model(String.t(), %{String.t() => module()}) ::
           {module(), String.t(), String.t()} | nil
   def for_model(model, providers \\ Exy.Auth.providers()) do
-    Enum.find_value(providers, fn {_name, module} ->
+    providers
+    |> Map.values()
+    |> Enum.uniq()
+    |> Enum.find_value(fn module ->
       Enum.find_value(module.model_prefixes(), fn prefix ->
         if String.starts_with?(model, prefix <> ":") do
           model_id = String.trim_leading(model, prefix <> ":")

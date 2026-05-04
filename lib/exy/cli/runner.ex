@@ -1,6 +1,7 @@
 defmodule Exy.CLI.Runner do
   @moduledoc "Internal implementation module."
   alias Exy.CLI.{Logging, Output}
+  alias Exy.Model.Content
 
   require Exy.Debug
 
@@ -57,45 +58,39 @@ defmodule Exy.CLI.Runner do
   defp direct_ask_fun(opts), do: Keyword.get(opts, :direct_ask_fun, &Exy.Model.Direct.ask/2)
 
   defp direct_prompt(prompt, opts) do
-    case resolve_file_args(opts) do
-      {:ok, []} -> Exy.Prompt.Attachments.expand(prompt, root: File.cwd!())
-      {:ok, file_args} -> build_or_expand(prompt, file_args)
-      {:error, reason} -> {:error, reason}
+    case process_file_args(opts) do
+      {:ok, nil} ->
+        Exy.Prompt.Attachments.expand(prompt, root: File.cwd!())
+
+      {:ok, %{images: []}} ->
+        Exy.Prompt.Attachments.expand(prompt, root: File.cwd!())
+
+      {:ok, %{text: file_text, images: images}} ->
+        [Content.text(file_text <> prompt) | Enum.reverse(images)]
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   defp agent_prompt(prompt, opts) do
-    case resolve_file_args(opts) do
-      {:ok, []} -> prompt
-      {:ok, file_args} -> build_text_prompt(prompt, file_args)
+    case process_file_args(opts) do
+      {:ok, nil} -> prompt
+      {:ok, %{text: file_text}} -> file_text <> prompt
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp resolve_file_args(opts) do
+  defp process_file_args(opts) do
     file_args = Keyword.get(opts, :file_args, [])
 
     if file_args == [] do
-      {:ok, []}
+      {:ok, nil}
     else
       case Exy.Prompt.Attachments.process_file_args(file_args, root: File.cwd!()) do
-        {:ok, _processed} -> {:ok, file_args}
+        {:ok, processed} -> {:ok, processed}
         {:error, reason} -> {:error, format_file_error(reason)}
       end
-    end
-  end
-
-  defp build_or_expand(prompt, file_args) do
-    case Exy.Prompt.Attachments.build_initial(prompt, file_args, root: File.cwd!()) do
-      {:ok, content} -> content
-      {:error, reason} -> {:error, format_file_error(reason)}
-    end
-  end
-
-  defp build_text_prompt(prompt, file_args) do
-    case Exy.Prompt.Attachments.process_file_args(file_args, root: File.cwd!()) do
-      {:ok, %{text: file_text}} -> file_text <> prompt
-      {:error, reason} -> {:error, format_file_error(reason)}
     end
   end
 

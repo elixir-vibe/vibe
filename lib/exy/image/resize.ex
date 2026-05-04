@@ -86,5 +86,5 @@ defmodule Exy.Image.Resize do
 
   defp too_large?(_image, _opts), do: false
 
-  defp encoded_size(bytes), do: bytes |> Kernel./(3) |> Float.ceil() |> trunc() |> Kernel.*(4)
+  defp encoded_size(bytes), do: div(bytes + 2, 3) * 4
 end

@@ -87,7 +87,7 @@ defmodule Exy.Files.Artifacts do
     |> Path.join("*")
     |> Path.wildcard()
     |> Enum.filter(&File.dir?/1)
-    |> Enum.reject(&(Path.basename(&1) in known))
+    |> Enum.reject(&MapSet.member?(known, Path.basename(&1)))
     |> Enum.map(&Path.join(&1, "artifacts"))
     |> Enum.filter(&File.dir?/1)
     |> Enum.map(fn dir ->
@@ -111,11 +111,10 @@ defmodule Exy.Files.Artifacts do
     |> all_files()
     |> Enum.reduce(%{count: 0, bytes: 0}, fn path, acc ->
       size =
-        case File.stat(path),
-          do: (
-            {:ok, stat} -> stat.size
-            _ -> 0
-          )
+        case File.stat(path) do
+          {:ok, stat} -> stat.size
+          _ -> 0
+        end
 
       %{count: acc.count + 1, bytes: acc.bytes + size}
     end)

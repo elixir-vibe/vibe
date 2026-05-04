@@ -15,7 +15,9 @@ defmodule Exy.Web.ArtifactController do
       |> Conn.put_resp_content_type(MIME.from_path(path) || "application/octet-stream")
       |> Conn.send_file(200, path)
     else
-      _ -> Conn.send_resp(conn, 404, "not found")
+      {:error, :invalid_session_id} -> Conn.send_resp(conn, 404, "not found")
+      {:error, :invalid_artifact_path} -> Conn.send_resp(conn, 404, "not found")
+      false -> Conn.send_resp(conn, 404, "not found")
     end
   end
 
