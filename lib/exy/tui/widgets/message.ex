@@ -6,8 +6,8 @@ defmodule Exy.TUI.Widgets.Message do
   alias Exy.TUI.Widgets.Loader
 
   @impl true
-  def render(%{props: %{role: :user, text: text}}, width, theme) do
-    safe_render(width, theme, fn -> render_user(text, width, theme) end)
+  def render(%{props: %{role: :user, text: text} = props}, width, theme) do
+    safe_render(width, theme, fn -> render_user(text, props, width, theme) end)
   end
 
   def render(%{props: %{error: error}}, width, theme) when is_binary(error) do
@@ -36,12 +36,25 @@ defmodule Exy.TUI.Widgets.Message do
     safe_render(width, theme, fn -> render_subagent(props, width, theme) end)
   end
 
-  def render(%{props: %{text: text}}, width, theme) do
-    safe_render(width, theme, fn -> render_user(text, width, theme) end)
+  def render(%{props: %{text: text} = props}, width, theme) do
+    safe_render(width, theme, fn -> render_user(text, props, width, theme) end)
   end
 
-  defp render_user(text, width, theme) do
-    render_block(text, width, theme, :user_message_bg, :user_message_text)
+  defp render_user(text, props, width, theme) do
+    text
+    |> user_text_with_attachments(props)
+    |> render_block(width, theme, :user_message_bg, :user_message_text)
+  end
+
+  defp user_text_with_attachments(text, props) do
+    case Map.get(props, :image_count, 0) do
+      count when is_integer(count) and count > 0 ->
+        label = if count == 1, do: "image", else: "images"
+        [to_string(text), "\n[", Integer.to_string(count), " ", label, " attached]"]
+
+      _count ->
+        text
+    end
   end
 
   defp render_subagent(props, width, theme) do

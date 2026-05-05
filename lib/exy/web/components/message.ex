@@ -26,7 +26,12 @@ defmodule Exy.Web.Components.Message do
         else: "border-l-2 border-violet-300/25 text-zinc-100"
       )
     ]}>
-      <div :if={@message.role == :user} class="whitespace-pre-wrap break-words font-sans [overflow-wrap:anywhere]">{message_text(@message)}</div>
+      <div :if={@message.role == :user} class="space-y-2">
+        <div class="whitespace-pre-wrap break-words font-sans [overflow-wrap:anywhere]">{message_text(@message)}</div>
+        <div :if={image_count(@message) > 0} class="inline-flex items-center rounded-full border border-orange-300/20 bg-orange-300/10 px-2 py-0.5 text-xs text-orange-100/80">
+          {image_count(@message)} {if image_count(@message) == 1, do: "image", else: "images"} attached
+        </div>
+      </div>
       <pre :if={@message.role != :user and preformatted_message?(message_text(@message))} class="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{message_text(@message)}</pre>
       <PhoenixStreamdown.markdown
         :if={@message.role != :user and !preformatted_message?(message_text(@message))}
@@ -52,6 +57,13 @@ defmodule Exy.Web.Components.Message do
   defp message_dom_id(message) do
     Map.get(message, :dom_id) ||
       "message-#{:erlang.phash2({message[:role], message_text(message)})}"
+  end
+
+  defp image_count(message) do
+    case Map.get(message, :image_count, 0) do
+      count when is_integer(count) and count > 0 -> count
+      _count -> 0
+    end
   end
 
   defp message_text(%{text: text}) when is_binary(text), do: text

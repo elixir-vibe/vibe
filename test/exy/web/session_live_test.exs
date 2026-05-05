@@ -15,6 +15,20 @@ defmodule Exy.Web.SessionLiveTest do
     assert html_response(conn, 200) =~ "Ask Exy"
   end
 
+  test "renders user attachment badge" do
+    session_id = "web-user-attachment-session"
+
+    Exy.Session.Store.append_ui_events([
+      {1, Event.new(:user_message_added, session_id, %{text: "describe", image_count: 1})}
+    ])
+
+    conn = build_conn() |> get("/sessions/#{session_id}")
+    html = html_response(conn, 200)
+
+    assert html =~ "describe"
+    assert html =~ "1 image attached"
+  end
+
   test "renders tool calls as structured widgets" do
     session_id = "web-tool-session"
 

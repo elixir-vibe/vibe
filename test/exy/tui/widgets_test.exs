@@ -87,6 +87,13 @@ defmodule Exy.TUI.WidgetsTest do
              String.duplicate(" ", 40)
            ]
 
+    user_with_image =
+      TUI.message(%{role: :user, text: "hello", image_count: 1})
+      |> Widget.render(40, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(user_with_image, &String.contains?(&1, "[1 image attached]"))
+
     assert assistant == [
              String.duplicate(" ", 40),
              "  hi" <> String.duplicate(" ", 36),
