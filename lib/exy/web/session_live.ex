@@ -20,7 +20,7 @@ defmodule Exy.Web.SessionLive do
     prompt = String.trim(prompt)
 
     if prompt != "" do
-      :ok = Exy.Session.dispatch(socket.assigns.session, {:submit_prompt, %{text: prompt}})
+      :ok = Exy.Session.dispatch(socket.assigns.session, submit_prompt_command(prompt, socket))
     end
 
     {:noreply, assign(socket, prompt: "")}
@@ -44,6 +44,15 @@ defmodule Exy.Web.SessionLive do
   end
 
   def handle_info(_message, socket), do: {:noreply, socket}
+
+  defp submit_prompt_command(prompt, socket) do
+    root = socket.assigns.ui_state.cwd || File.cwd!()
+
+    case Exy.Prompt.Attachments.expand(prompt, root: root) do
+      expanded when is_list(expanded) -> {:submit_prompt, %{text: prompt, content: expanded}}
+      _text -> {:submit_prompt, %{text: prompt}}
+    end
+  end
 
   @impl true
   def terminate(_reason, socket) do

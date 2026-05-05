@@ -1,6 +1,6 @@
 defmodule Exy.Session.PromptLifecycle do
   @moduledoc "Prompt submission, cancellation, memory injection, and result recording."
-  alias Exy.Model.Usage
+  alias Exy.Model.{Content, Usage}
   alias Exy.UI.{Event, PromptRunner}
 
   require Exy.Debug
@@ -14,11 +14,13 @@ defmodule Exy.Session.PromptLifecycle do
     |> maybe_put_llm_provider_options(Keyword.get(opts, :provider_options))
   end
 
-  @spec submit(map(), String.t(), emit_fun()) :: map()
-  def submit(state, text, emit) when is_binary(text) do
+  @spec submit(map(), String.t() | [Content.t()], emit_fun()) :: map()
+  def submit(state, prompt, emit) when is_binary(prompt) or is_list(prompt) do
+    text = Content.summarize(prompt)
     session_id = state.state.session_id
-    state = emit.(state, Event.new(:prompt_submitted, session_id, %{text: text}))
-    state = emit.(state, Event.new(:user_message_added, session_id, %{text: text}))
+    event_data = prompt_event_data(prompt, text)
+    state = emit.(state, Event.new(:prompt_submitted, session_id, event_data))
+    state = emit.(state, Event.new(:user_message_added, session_id, event_data))
     ask_fun = state.ask_fun
     parent = self()
     ref = make_ref()
@@ -124,6 +126,14 @@ defmodule Exy.Session.PromptLifecycle do
 
   defp maybe_put_llm_provider_options(opts, provider_options),
     do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
+
+  defp prompt_event_data(prompt, text) when is_list(prompt) do
+    images = Enum.filter(prompt, &match?(%Content.Image{}, &1))
+
+    %{text: text, content: prompt, image_count: length(images)}
+  end
+
+  defp prompt_event_data(_prompt, text), do: %{text: text}
 
   defp prompt_with_memory(text, context) do
     [

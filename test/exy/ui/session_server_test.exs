@@ -23,6 +23,30 @@ defmodule Exy.SessionProcessTest do
     assert state.usage.total_tokens == 10
   end
 
+  test "semantic prompt content is preserved in UI events" do
+    prompt = [
+      Exy.Model.Content.text("describe"),
+      Exy.Model.Content.image(data: Base.encode64(<<1, 2, 3>>), mime_type: "image/png")
+    ]
+
+    {:ok, server} =
+      Exy.Session.start_link(
+        persist?: false,
+        session_id: "semantic-content-session",
+        ask_fun: fn text, _opts -> {:ok, text} end
+      )
+
+    :ok = Exy.Session.subscribe(server)
+    :ok = Exy.Session.dispatch(server, {:submit_prompt, %{content: prompt}})
+
+    assert_receive {Exy.Session, :event,
+                    %{type: :user_message_added, data: %{content: ^prompt, image_count: 1}}},
+                   500
+
+    assert [%{role: :user, content: ^prompt, image_count: 1} | _] =
+             Exy.Session.state(server).messages
+  end
+
   test "restores snapshot from durable UI events" do
     session_id = "restore-session-#{System.unique_integer([:positive])}"
     path = Exy.Session.Store.ui_events_path(session_id)

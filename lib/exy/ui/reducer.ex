@@ -19,7 +19,11 @@ defmodule Exy.UI.Reducer do
 
   defp reduce(state, %Event{type: :user_message_added, at: at, data: data}) do
     text = Map.fetch!(data, :text)
-    message = %{role: :user, text: text, at: at}
+
+    message =
+      %{role: :user, text: text, at: at}
+      |> maybe_put(:content, Map.get(data, :content))
+      |> maybe_put(:image_count, Map.get(data, :image_count))
 
     %{
       state
@@ -427,6 +431,9 @@ defmodule Exy.UI.Reducer do
         {Lists.append(messages, updated), updated}
     end
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp tool_event_map(%ToolEvent{} = event) do
     event

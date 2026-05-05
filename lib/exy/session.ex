@@ -241,6 +241,11 @@ defmodule Exy.Session do
     end
   end
 
+  defp handle_command(%Command{type: :submit_prompt, data: %{content: content}}, state)
+       when is_list(content) do
+    PromptLifecycle.submit(state, content, &emit/2)
+  end
+
   defp handle_command(%Command{type: :submit_prompt, data: %{text: text}}, state)
        when is_binary(text) do
     PromptLifecycle.submit(state, text, &emit/2)

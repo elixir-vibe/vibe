@@ -450,7 +450,7 @@ defmodule Exy.TUI.App do
   end
 
   defp handle_editor_command({:submit, text}, state) do
-    dispatch_async(state.ui, Command.new(:submit_prompt, %{text: text}))
+    dispatch_async(state.ui, submit_prompt_command(text, state))
   end
 
   defp handle_editor_command({:slash_command, command, args}, state) do
@@ -470,6 +470,16 @@ defmodule Exy.TUI.App do
 
   defp handle_editor_command({:external_editor, text}, state) do
     dispatch_async(state.ui, Command.new(:external_editor_requested, %{text: text}))
+  end
+
+  defp submit_prompt_command(text, state) do
+    case Exy.Prompt.Attachments.expand(text, root: state.ui_snapshot.cwd || File.cwd!()) do
+      expanded when is_list(expanded) ->
+        Command.new(:submit_prompt, %{text: text, content: expanded})
+
+      _text ->
+        Command.new(:submit_prompt, %{text: text})
+    end
   end
 
   defp dispatch_async(session, command) do
