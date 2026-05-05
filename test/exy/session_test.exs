@@ -52,6 +52,17 @@ defmodule Exy.SessionTest do
     assert restored_event.data.text == "hello"
   end
 
+  test "session JSON decoding leaves unknown boundary keys as strings" do
+    session_id = "codec-boundary"
+
+    Exy.Session.Store.append_trajectory(
+      :assistant_message,
+      %{result: %{"provider_specific" => "kept"}}, session_id: session_id)
+
+    assert [%{data: %{result: %{"provider_specific" => "kept"}}}] =
+             Exy.Session.Store.events(session_id)
+  end
+
   test "restores tool UI events as tool event structs" do
     session_id = "tool-ui-event-#{System.unique_integer([:positive])}"
 

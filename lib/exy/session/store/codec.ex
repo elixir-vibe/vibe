@@ -3,6 +3,50 @@ defmodule Exy.Session.Store.Codec do
   alias Exy.Trajectory
   alias Exy.UI.Event
 
+  @json_atom_keys MapSet.new([
+                    "args",
+                    "content",
+                    "cwd",
+                    "data",
+                    "error",
+                    "filename",
+                    "height",
+                    "id",
+                    "image",
+                    "input_tokens",
+                    "image_count",
+                    "kind",
+                    "level",
+                    "lifecycle",
+                    "mime_type",
+                    "model",
+                    "name",
+                    "output",
+                    "output_format",
+                    "output_parts",
+                    "output_tokens",
+                    "overlay_kind",
+                    "parts",
+                    "path",
+                    "phase",
+                    "placement",
+                    "prompt",
+                    "result",
+                    "role",
+                    "selector_kind",
+                    "seq",
+                    "size_bytes",
+                    "status",
+                    "text",
+                    "tool_call_id",
+                    "tool_name",
+                    "total_cost",
+                    "total_tokens",
+                    "type",
+                    "usage",
+                    "width"
+                  ])
+
   @spec encode_trajectory(Trajectory.t()) :: map()
   def encode_trajectory(%Trajectory{} = event) do
     event
@@ -290,7 +334,10 @@ defmodule Exy.Session.Store.Codec do
 
   defp decode_json_value(_key, value), do: atomize_keys(value)
 
-  defp atomize_key(key) when is_binary(key), do: existing_atom_or_string(key)
+  defp atomize_key(key) when is_binary(key) do
+    if MapSet.member?(@json_atom_keys, key), do: String.to_existing_atom(key), else: key
+  end
+
   defp atomize_key(key), do: key
 
   defp existing_atom_or_string(value) do

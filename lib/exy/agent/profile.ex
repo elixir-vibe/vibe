@@ -177,8 +177,10 @@ defmodule Exy.Agent.Profile do
   defp provider_option({"openai_reuse_websocket", value}) when is_boolean(value),
     do: [openai_reuse_websocket: value]
 
-  defp provider_option({"openai_stream_transport", value}) when value in ["sse", "websocket"],
-    do: [openai_stream_transport: value]
+  defp provider_option({"openai_stream_transport", "sse"}), do: [openai_stream_transport: :sse]
+
+  defp provider_option({"openai_stream_transport", "websocket"}),
+    do: [openai_stream_transport: :websocket]
 
   defp provider_option({"reasoning_effort", value}), do: [reasoning_effort: value]
   defp provider_option({"session_id", value}), do: [session_id: value]

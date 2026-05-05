@@ -61,7 +61,7 @@ defmodule Exy.Agent.ProfileTest do
     assert Exy.Agent.Profile.provider_options(:openrouter) == [
              app_title: "Exy Test",
              openai_reuse_websocket: true,
-             openai_stream_transport: "websocket"
+             openai_stream_transport: :websocket
            ]
 
     assert Exy.Agent.Profile.models() == ["default:model", "openrouter:test/model"]
