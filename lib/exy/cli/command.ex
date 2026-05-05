@@ -14,6 +14,7 @@ defmodule Exy.CLI.Command do
     Commands.Storage,
     Commands.Search,
     Commands.TUITrace,
+    Commands.Gateway,
     Commands.Skill,
     Commands.Subagents,
     Commands.Send,

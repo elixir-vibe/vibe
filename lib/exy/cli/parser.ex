@@ -35,7 +35,17 @@ defmodule Exy.CLI.Parser do
     web: :boolean,
     port: :integer,
     trace_tui: :string,
-    frame: :integer
+    frame: :integer,
+    token: :string,
+    bot_id: :string,
+    bot_username: :string,
+    allow_all: :boolean,
+    allowed_users: :string,
+    group_allowed_users: :string,
+    group_allowed_chats: :string,
+    require_mention: :boolean,
+    free_response_chats: :string,
+    stream_mode: :string
   ]
 
   @aliases [h: :help, v: :version, p: :print]

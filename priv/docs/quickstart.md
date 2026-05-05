@@ -47,6 +47,22 @@ Open the prototype web UI over the same session/runtime model:
 exy --web --port 4321
 ```
 
+Run the Telegram gateway in foreground polling mode:
+
+```bash
+TELEGRAM_BOT_TOKEN=123:abc \
+TELEGRAM_ALLOWED_USERS=123456 \
+exy gateway telegram --foreground --bot-username exy_bot
+```
+
+Group chats should normally require a mention or reply:
+
+```bash
+TELEGRAM_BOT_TOKEN=123:abc \
+TELEGRAM_GROUP_ALLOWED_CHATS=-100123456 \
+exy gateway telegram --foreground --bot-username exy_bot --require-mention
+```
+
 Run local validation gates:
 
 ```bash
