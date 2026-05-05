@@ -9,6 +9,8 @@ defmodule Exy.Gateway.Telegram.Config do
 
   @enforce_keys [:token]
   defstruct token: nil,
+            bot_id: nil,
+            bot_username: nil,
             method: :polling,
             webhook_url: nil,
             webhook_secret: nil,
@@ -27,6 +29,8 @@ defmodule Exy.Gateway.Telegram.Config do
 
   @type t :: %__MODULE__{
           token: String.t(),
+          bot_id: String.t() | nil,
+          bot_username: String.t() | nil,
           method: method(),
           webhook_url: String.t() | nil,
           webhook_secret: String.t() | nil,
@@ -51,6 +55,9 @@ defmodule Exy.Gateway.Telegram.Config do
       {:ok,
        %__MODULE__{
          token: token,
+         bot_id: optional_string(setting(overrides, :bot_id, "TELEGRAM_BOT_ID")),
+         bot_username:
+           optional_string(setting(overrides, :bot_username, "TELEGRAM_BOT_USERNAME")),
          method: method,
          webhook_url: setting(overrides, :webhook_url, "TELEGRAM_WEBHOOK_URL"),
          webhook_secret: webhook_secret,
@@ -148,6 +155,11 @@ defmodule Exy.Gateway.Telegram.Config do
   defp stream_mode("draft"), do: :draft
   defp stream_mode("auto"), do: :auto
   defp stream_mode(_value), do: :edit
+
+  defp optional_string(nil), do: nil
+  defp optional_string(""), do: nil
+  defp optional_string(value) when is_binary(value), do: value
+  defp optional_string(value), do: to_string(value)
 
   defp bool(value) when value in [true, false], do: value
   defp bool(nil), do: false

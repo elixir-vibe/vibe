@@ -36,7 +36,16 @@ defmodule Exy.Application do
       Exy.Memory.Manager
     ]
 
+    children = children ++ gateway_children()
+
     Supervisor.start_link(children, strategy: :one_for_one, name: Exy.Supervisor)
+  end
+
+  defp gateway_children do
+    case Application.get_env(:exy, :gateways, []) do
+      [] -> []
+      gateways -> [{Exy.Gateway.Supervisor, gateways: gateways, name: Exy.Gateway.Supervisor}]
+    end
   end
 
   @doc """
