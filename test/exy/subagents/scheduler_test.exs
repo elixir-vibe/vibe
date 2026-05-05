@@ -29,11 +29,17 @@ defmodule Exy.Subagents.SchedulerTest do
     assert {:ok, schedule} =
              Exy.Subagents.schedule("scheduled task",
                every: @schedule_interval_ms,
+               model: "openai_codex:gpt-5.5",
+               unexpected: "ignored",
                ask_fun: fn text, _opts -> {:ok, "scheduled: #{text}"} end
              )
 
     assert Enum.any?(Exy.Subagents.scheduled(), &(&1.id == schedule.id))
-    assert Enum.any?(Exy.Subagents.Store.schedules(), &(&1.id == schedule.id))
+
+    assert persisted = Enum.find(Exy.Subagents.Store.schedules(), &(&1.id == schedule.id))
+    assert persisted.opts[:model] == "openai_codex:gpt-5.5"
+    refute Keyword.has_key?(persisted.opts, :unexpected)
+
     assert :ok = Exy.Subagents.unschedule(schedule.id)
     refute Enum.any?(Exy.Subagents.scheduled(), &(&1.id == schedule.id))
   end

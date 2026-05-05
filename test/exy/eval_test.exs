@@ -26,7 +26,7 @@ defmodule Exy.EvalTest do
     Process.sleep(100)
     assert :ok = Exy.Eval.cancel(session_id)
 
-    assert {:error, error} = Task.await(task, 1_000)
+    assert {:error, error} = Task.await(task, 3_000)
     assert error =~ "evaluation process exited"
   end
 

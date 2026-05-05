@@ -77,10 +77,21 @@ defmodule Exy.Subagents.Store do
   end
 
   defp decode_opts(opts) when is_map(opts) do
-    Enum.map(opts, fn {key, value} -> {String.to_existing_atom(key), value} end)
-  rescue
-    ArgumentError -> []
+    opts
+    |> Enum.flat_map(&decode_opt/1)
   end
+
+  defp decode_opt({"role", value}), do: [role: value]
+  defp decode_opt({"parent_session_id", value}), do: [parent_session_id: value]
+  defp decode_opt({"model", value}), do: [model: value]
+  defp decode_opt({"provider_options", value}), do: [provider_options: value]
+  defp decode_opt({"tools", value}), do: [tools: value]
+  defp decode_opt({:role, value}), do: [role: value]
+  defp decode_opt({:parent_session_id, value}), do: [parent_session_id: value]
+  defp decode_opt({:model, value}), do: [model: value]
+  defp decode_opt({:provider_options, value}), do: [provider_options: value]
+  defp decode_opt({:tools, value}), do: [tools: value]
+  defp decode_opt({_unknown, _value}), do: []
 
   defp json_safe(value) when is_atom(value), do: Atom.to_string(value)
   defp json_safe(value), do: value
