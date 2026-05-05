@@ -39,6 +39,7 @@ defmodule Exy.Agent.ProfileTest do
 
     [providers.openrouter]
     app_title = "Exy Test"
+    unknown_option = "ignored"
 
     [roles.scout]
     model = "openrouter:test/model"

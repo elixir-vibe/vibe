@@ -165,9 +165,18 @@ defmodule Exy.Agent.Profile do
     with {:ok, data} <- load(),
          providers when is_map(providers) <- Map.get(data, "providers", %{}),
          opts when is_map(opts) <- Map.get(providers, to_string(provider)) do
-      Enum.map(opts, fn {key, value} -> {String.to_atom(key), value} end)
+      opts
+      |> Enum.flat_map(&provider_option/1)
     else
       _ -> []
     end
   end
+
+  defp provider_option({"app_title", value}), do: [app_title: value]
+  defp provider_option({"reasoning_effort", value}), do: [reasoning_effort: value]
+  defp provider_option({"session_id", value}), do: [session_id: value]
+  defp provider_option({:app_title, value}), do: [app_title: value]
+  defp provider_option({:reasoning_effort, value}), do: [reasoning_effort: value]
+  defp provider_option({:session_id, value}), do: [session_id: value]
+  defp provider_option({_unknown, _value}), do: []
 end

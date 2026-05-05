@@ -109,13 +109,24 @@ defmodule Exy.Subagents do
   end
 
   defp run_spec(%{"task" => task} = spec, opts) when is_binary(task) do
-    atom_spec = Map.new(spec, fn {key, value} -> {String.to_existing_atom(key), value} end)
-    run_spec(atom_spec, opts)
-  rescue
-    ArgumentError -> {:error, :invalid_task_spec}
+    atom_spec =
+      spec
+      |> Enum.flat_map(&task_spec_field/1)
+      |> Map.new()
+
+    run_spec(Map.put(atom_spec, :task, task), opts)
   end
 
   defp run_spec(spec, _opts), do: {:error, {:invalid_task_spec, spec}}
+
+  defp task_spec_field({"task", value}), do: [task: value]
+  defp task_spec_field({"role", value}), do: [role: value]
+  defp task_spec_field({"model", value}), do: [model: value]
+  defp task_spec_field({"timeout", value}), do: [timeout: value]
+  defp task_spec_field({"parent_session_id", value}), do: [parent_session_id: value]
+  defp task_spec_field({"child_session_id", value}), do: [child_session_id: value]
+  defp task_spec_field({"id", value}), do: [id: value]
+  defp task_spec_field({_unknown, _value}), do: []
 
   defp run_function_spec(spec) do
     id = Map.get(spec, :id, new_id())
