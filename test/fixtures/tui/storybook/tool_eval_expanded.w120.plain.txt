@@ -1,4 +1,4 @@
- ◆ eval • 60.0s  ✓                                                                                                     
+ ◆ eval • 60s  ✓                                                                                                       
                                                                                                                         
    projects = ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex)                           
    for dir <- projects do                                                                                               

@@ -145,11 +145,20 @@ defmodule Exy.Auth.Codex do
   end
 
   defp login_result(credentials) do
+    credentials = normalize_credential_keys(credentials)
+
     %{
       provider: id(),
-      account_id: credentials[:accountId] || credentials["accountId"],
-      expires: credentials[:expires] || credentials["expires"]
+      account_id: credentials[:accountId],
+      expires: credentials[:expires]
     }
+  end
+
+  defp normalize_credential_keys(credentials) do
+    Map.new(credentials, fn
+      {key, value} when is_binary(key) -> {String.to_atom(key), value}
+      entry -> entry
+    end)
   end
 
   defp format_error(reason) when is_binary(reason), do: reason

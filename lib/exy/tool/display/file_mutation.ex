@@ -22,6 +22,10 @@ defmodule Exy.Tool.Display.FileMutation do
     [{:diff, diff, language: Util.language_from_path(Map.get(result, :path))}]
   end
 
+  defp body(%{diff: diff} = result, :edit) when is_binary(diff) do
+    [{:diff, diff, language: Util.language_from_path(Map.get(result, :path))}]
+  end
+
   defp body(%{change: %{new: source}} = result, :write) when is_binary(source) do
     [{:source, source, language: Util.language_from_path(Map.get(result, :path))}]
   end

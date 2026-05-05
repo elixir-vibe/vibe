@@ -124,6 +124,10 @@ defmodule Exy.Tool.Display.Eval do
   defp format_timeout(timeout), do: to_string(timeout)
 
   defp format_milliseconds(milliseconds) when milliseconds < 1_000, do: "#{milliseconds}ms"
+
+  defp format_milliseconds(milliseconds) when rem(milliseconds, 1_000) == 0,
+    do: "#{div(milliseconds, 1_000)}s"
+
   defp format_milliseconds(milliseconds), do: "#{Float.round(milliseconds / 1_000, 1)}s"
 
   defp expanded?(tool), do: Util.expanded?(tool)

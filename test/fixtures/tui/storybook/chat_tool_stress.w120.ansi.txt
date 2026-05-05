@@ -2,7 +2,7 @@
 [48;2;37;39;47m  [38;2;232;232;236mRun the test matrix, inspect the README, and stop if it takes too long.[0m[48;2;37;39;47m[0m[48;2;37;39;47m                                               [0m
 [48;2;37;39;47m  [38;2;232;232;236m[0m[48;2;37;39;47m[0m[48;2;37;39;47m                                                                                                                      [0m
 
- [38;2;220;224;230m[38;2;178;148;187m◆[0m[0m [1meval[0m • for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex) do  … [38;2;156;160;168m·[0m[0m [38;2;156;160;168m900.0s[0m[0m  [38;2;126;170;115m✓[0m[0m[0m[0m 
+ [38;2;220;224;230m[38;2;178;148;187m◆[0m[0m [1meval[0m • for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_replay vue-pencil vize_ex oxc_ex) do   p… [38;2;156;160;168m·[0m[0m [38;2;156;160;168m900s[0m[0m  [38;2;126;170;115m✓[0m[0m[0m[0m 
                                                                                                                         
    [38;2;156;160;168m… (16 more lines, [0m[0m[38;2;178;148;187mctrl+o[0m[0m[38;2;156;160;168m to expand[0m[0m[38;2;156;160;168m)[0m[0m                                                                                  
                                                                                                                         

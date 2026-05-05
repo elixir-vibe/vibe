@@ -6,7 +6,7 @@ defmodule Exy.Web.Sessions.Query do
     filtered = sessions(query)
     total_pages = max(1, ceil_div(length(filtered), page_size))
     page = requested_page |> max(1) |> min(total_pages)
-    sessions = filtered |> Enum.drop((page - 1) * page_size) |> Enum.take(page_size)
+    sessions = Enum.slice(filtered, (page - 1) * page_size, page_size)
 
     %{
       query: query || "",

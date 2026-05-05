@@ -4,7 +4,7 @@
   long.                                 
                                         
 
- ◆ eval • for dir <- ~w(r… · 900.0s  ✓ 
+ ◆ eval • for dir <- ~w(rea… · 900s  ✓ 
                                         
    … (16 more lines, ctrl+o to expand)  
                                         

@@ -58,17 +58,16 @@ defmodule Exy.Agent.Streaming.Trace do
   end
 
   defp joined(events, kind) do
-    events
-    |> Enum.filter(&(&1["kind"] == kind))
-    |> Enum.map(&(&1["delta"] || &1["text"] || ""))
-    |> Enum.join("")
+    Enum.map_join(
+      Enum.filter(events, &(&1["kind"] == kind)),
+      &(&1["delta"] || &1["text"] || "")
+    )
   end
 
   defp joined_by_runtime_seq(events) do
     events
     |> Enum.sort_by(fn event -> event["runtime_seq"] || 0 end)
-    |> Enum.map(&(&1["delta"] || ""))
-    |> Enum.join("")
+    |> Enum.map_join(&(&1["delta"] || ""))
   end
 
   defp final_text(nil), do: ""

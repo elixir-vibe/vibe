@@ -23,14 +23,16 @@ defmodule Mix.Tasks.Exy.Install do
 
   use Mix.Task
 
+  alias Mix.Task
+
   @impl true
   def run(argv) do
     force? = "--no-force" not in argv
     install_args = if force?, do: ["--force"], else: []
 
-    Mix.Task.run("escript.build")
-    Mix.Task.reenable("escript.install")
-    Mix.Task.run("escript.install", install_args)
+    Task.run("escript.build")
+    Task.reenable("escript.install")
+    Task.run("escript.install", install_args)
 
     print_path_hint()
   end

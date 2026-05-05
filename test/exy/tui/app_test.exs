@@ -34,7 +34,7 @@ defmodule Exy.TUI.AppTest do
   test "routes slash commands into semantic UI events" do
     {:ok, app} = App.start_link()
 
-    :ok = App.key(app, {:insert, "/model openai_codex:gpt-5.5"})
+    :ok = App.key(app, {:insert, "/model"})
     :ok = App.key(app, :submit)
 
     snapshot =

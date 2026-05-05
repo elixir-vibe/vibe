@@ -34,9 +34,21 @@ defmodule Exy.Tool.Display.LSP do
   defp meta(tool) do
     args = Map.get(tool, :args) || %{}
 
-    case Util.arg(args, :action) do
-      nil -> []
-      action -> [to_string(action)]
+    [Util.arg(args, :action), wait_summary(args)]
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.map(&to_string/1)
+  end
+
+  defp wait_summary(args) do
+    case Util.arg(args, :wait_ms) do
+      milliseconds when is_integer(milliseconds) and rem(milliseconds, 1_000) == 0 ->
+        "#{div(milliseconds, 1_000)}s"
+
+      milliseconds when is_integer(milliseconds) ->
+        "#{Float.round(milliseconds / 1_000, 1)}s"
+
+      _wait ->
+        nil
     end
   end
 

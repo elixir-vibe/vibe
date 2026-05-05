@@ -2,7 +2,7 @@
   Run the test matrix, inspect the README, and stop if it takes too long.       
                                                                                 
 
- ◆ eval • for dir <- ~w(reach quickbeam volt phoenix_vapor phoeni… · 900.0s  ✓ 
+ ◆ eval • for dir <- ~w(reach quickbeam volt phoenix_vapor phoenix_… · 900s  ✓ 
                                                                                 
    … (16 more lines, ctrl+o to expand)                                          
                                                                                 

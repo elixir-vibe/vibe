@@ -112,7 +112,7 @@ defmodule Exy.UI.ViewModel do
       _ -> nil
     end)
     |> Enum.reject(&is_nil/1)
-    |> Enum.join("")
+    |> Enum.join()
   end
 
   defp content_text(_content), do: nil

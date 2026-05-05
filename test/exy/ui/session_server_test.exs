@@ -174,7 +174,7 @@ defmodule Exy.SessionProcessTest do
   test "updates token preview from streaming callbacks before final usage" do
     ask_fun = fn _text, opts ->
       opts[:on_result].("streaming text")
-      Process.sleep(20)
+      Process.sleep(100)
 
       {:ok,
        %{

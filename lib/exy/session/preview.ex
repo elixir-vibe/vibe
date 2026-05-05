@@ -56,7 +56,7 @@ defmodule Exy.Session.Preview do
       value -> preview_text(value)
     end)
     |> Enum.reject(&(&1 in [nil, ""]))
-    |> Enum.join("")
+    |> Enum.join()
   end
 
   defp content_text(content), do: preview_text(content)

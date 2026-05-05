@@ -134,7 +134,7 @@ defmodule Exy.TUI.TerminalPainter do
   end
 
   defp replacement_lines(lines, first, count) do
-    replacement = lines |> Enum.drop(first) |> Enum.take(count)
+    replacement = Enum.slice(lines, first, count)
     Exy.TUI.Lines.join(replacement, List.duplicate("", count - length(replacement)))
   end
 

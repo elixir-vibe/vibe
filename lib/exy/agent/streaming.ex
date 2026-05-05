@@ -73,12 +73,15 @@ defmodule Exy.Agent.Streaming do
     call_id = call_id(data)
     suppressed? = runtime_delta_call?(agent_id, call_id)
 
+    trace_data = normalize_event_data(data)
+    _ = trace_data
+
     Exy.Debug.run do
       Exy.Agent.Streaming.Trace.record(:derived_llm_delta, %{
         agent_id: agent_id,
         call_id: call_id,
-        chunk_type: Map.get(data, :chunk_type) || Map.get(data, "chunk_type"),
-        delta: Map.get(data, :delta) || Map.get(data, "delta") || "",
+        chunk_type: Map.get(trace_data, :chunk_type),
+        delta: Map.get(trace_data, :delta, ""),
         suppressed?: suppressed?
       })
     end
@@ -190,8 +193,15 @@ defmodule Exy.Agent.Streaming do
 
   defp maybe_put_callback(callbacks, _key, _callback), do: callbacks
 
-  defp call_id(data), do: Map.get(data, :call_id) || Map.get(data, "call_id")
-  defp runtime_seq(data), do: Map.get(data, :runtime_seq) || Map.get(data, "runtime_seq")
+  defp call_id(data), do: data |> normalize_event_data() |> Map.get(:call_id)
+  defp runtime_seq(data), do: data |> normalize_event_data() |> Map.get(:runtime_seq)
+
+  defp normalize_event_data(data) do
+    Map.new(data, fn
+      {key, value} when is_binary(key) -> {String.to_atom(key), value}
+      entry -> entry
+    end)
+  end
 
   defp flush_runtime_deltas(%{next: next, buffer: buffer} = entry, dispatches) do
     case Map.pop(buffer, next) do
