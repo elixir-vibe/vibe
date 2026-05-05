@@ -10,4 +10,11 @@ defmodule Exy.UI.EditorServerTest do
     assert [{:submit, "hello"}] = EditorServer.key(pid, :submit)
     assert EditorServer.state(pid).text == ""
   end
+
+  test "inserts text programmatically" do
+    {:ok, pid} = EditorServer.start_link(text: "describe")
+
+    assert :ok = EditorServer.insert(pid, " @image.png")
+    assert EditorServer.state(pid).text == "describe @image.png"
+  end
 end

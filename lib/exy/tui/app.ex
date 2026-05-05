@@ -468,8 +468,42 @@ defmodule Exy.TUI.App do
     dispatch_async(state.ui, Command.new(:toggle_truncation))
   end
 
+  defp handle_editor_command(:paste_image, state) do
+    session_id = state.ui_snapshot.session_id
+
+    case Exy.Prompt.ClipboardImage.save(session_id: session_id) do
+      {:ok, path} ->
+        marker = " @#{Path.relative_to(path, state.ui_snapshot.cwd || File.cwd!())}"
+        :ok = EditorServer.insert(state.editor, marker)
+        refresh_autocomplete(state)
+
+      {:error, reason} ->
+        notify_clipboard_image_error(state, reason)
+    end
+  end
+
   defp handle_editor_command({:external_editor, text}, state) do
     dispatch_async(state.ui, Command.new(:external_editor_requested, %{text: text}))
+  end
+
+  defp notify_clipboard_image_error(state, :pngpaste_not_found) do
+    dispatch_async(
+      state.ui,
+      Command.new(:notification_added, %{
+        level: :warning,
+        text: "pngpaste is required to paste clipboard images"
+      })
+    )
+  end
+
+  defp notify_clipboard_image_error(state, reason) do
+    dispatch_async(
+      state.ui,
+      Command.new(:notification_added, %{
+        level: :warning,
+        text: "could not paste clipboard image: #{inspect(reason)}"
+      })
+    )
   end
 
   defp submit_prompt_command(text, state) do

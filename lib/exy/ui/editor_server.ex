@@ -29,6 +29,9 @@ defmodule Exy.UI.EditorServer do
   @spec replace(pid() | atom(), String.t()) :: :ok
   def replace(server, text), do: :gen_statem.call(server, {:replace, text})
 
+  @spec insert(pid() | atom(), String.t()) :: :ok
+  def insert(server, text), do: :gen_statem.call(server, {:insert, text})
+
   @impl true
   def callback_mode, do: :handle_event_function
 
@@ -44,6 +47,11 @@ defmodule Exy.UI.EditorServer do
 
   def handle_event({:call, from}, {:replace, text}, _state_name, editor) do
     editor = %{editor | text: text, cursor: String.length(text)}
+    {:next_state, :editing, editor, [{:reply, from, :ok}]}
+  end
+
+  def handle_event({:call, from}, {:insert, text}, _state_name, editor) do
+    {editor, _commands} = Editor.handle_key(editor, {:insert, text})
     {:next_state, :editing, editor, [{:reply, from, :ok}]}
   end
 

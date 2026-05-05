@@ -29,6 +29,7 @@ defmodule Exy.UI.Editor do
           | :cycle_model_forward
           | :cycle_model_backward
           | :open_model_selector
+          | :paste_image
           | :cycle_effort
           | :tab
           | {:insert, String.t()}
@@ -42,6 +43,7 @@ defmodule Exy.UI.Editor do
           | {:slash_command, String.t(), String.t()}
           | :cancel
           | :toggle_truncation
+          | :paste_image
           | {:external_editor, String.t()}
   @type t :: %__MODULE__{}
 
@@ -49,7 +51,8 @@ defmodule Exy.UI.Editor do
   def new(opts \\ []) do
     %__MODULE__{
       text: Keyword.get(opts, :text, ""),
-      cursor: Keyword.get(opts, :cursor, 0),
+      cursor:
+        Keyword.get_lazy(opts, :cursor, fn -> String.length(Keyword.get(opts, :text, "")) end),
       history: Keyword.get(opts, :history, [])
     }
     |> clamp_cursor()
@@ -93,6 +96,7 @@ defmodule Exy.UI.Editor do
   def handle_key(%__MODULE__{} = editor, :enter), do: {insert(editor, "\n"), []}
   def handle_key(%__MODULE__{} = editor, :cancel), do: {editor, [:cancel]}
   def handle_key(%__MODULE__{} = editor, :toggle_truncation), do: {editor, [:toggle_truncation]}
+  def handle_key(%__MODULE__{} = editor, :paste_image), do: {editor, [:paste_image]}
 
   def handle_key(%__MODULE__{} = editor, :external_editor),
     do: {editor, [{:external_editor, editor.text}]}

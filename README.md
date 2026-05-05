@@ -103,7 +103,7 @@ mix run scripts/image_model_smoke.exs
 EXY_REAL_MODEL=1 mix run scripts/image_agent_smoke.exs
 ```
 
-Image files read by the agent are model-facing through `read`, resized through pluggable command backends (`magick`, `sips`, `vips`) when needed, and large payloads are stored as session artifacts instead of being duplicated in JSON logs. Interactive image prompts keep the original text visible while sending the image as semantic content; TUI and Web transcripts show attachment badges.
+Image files read by the agent are model-facing through `read`, resized through pluggable command backends (`magick`, `sips`, `vips`) when needed, and large payloads are stored as session artifacts instead of being duplicated in JSON logs. Interactive image prompts keep the original text visible while sending the image as semantic content; TUI and Web transcripts show attachment badges. In the TUI, `Ctrl+V` can paste a clipboard PNG into the composer as an `@path` marker when `pngpaste` is installed.
 
 Open the prototype Phoenix LiveView client:
 

@@ -1,6 +1,6 @@
 # Slash commands
 
-Type `/` in the TUI to open command autocomplete.
+Type `/` in the TUI to open command autocomplete. Clipboard image paste is a keybinding (`Ctrl+V`), not a slash command.
 
 Built-in commands:
 

@@ -16,6 +16,7 @@ defmodule Exy.TUI.KeyDecoderTest do
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :backspace}) == [:backspace]
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :escape}) == [:cancel]
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :c, mods: [:ctrl]}) == [:cancel]
+    assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :v, mods: [:ctrl]}) == [:paste_image]
 
     assert KeyDecoder.decode_event(%Ghostty.KeyEvent{key: :p, mods: [:ctrl]}) == [
              :cycle_model_forward
