@@ -123,5 +123,22 @@ defmodule Exy.Code.LSP do
   defp fetch(params, key), do: Exy.Params.fetch_required(params, key)
 
   defp normalize_key(key) when is_atom(key), do: key
-  defp normalize_key(key) when is_binary(key), do: String.to_atom(key)
+
+  defp normalize_key(key) when is_binary(key) do
+    case key do
+      "action" -> :action
+      "cwd" -> :cwd
+      "file" -> :file
+      "line" -> :line
+      "column" -> :column
+      "end_line" -> :end_line
+      "end_column" -> :end_column
+      "wait_ms" -> :wait_ms
+      "open_wait_ms" -> :open_wait_ms
+      "query" -> :query
+      "context" -> :context
+      "include_declaration" -> :include_declaration
+      _unknown -> key
+    end
+  end
 end

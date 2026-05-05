@@ -144,7 +144,26 @@ defmodule Exy.Code.AST do
   end
 
   defp normalize_key(key) when is_atom(key), do: key
-  defp normalize_key(key) when is_binary(key), do: String.to_atom(key)
+
+  defp normalize_key(key) when is_binary(key) do
+    case key do
+      "action" -> :action
+      "path" -> :path
+      "pattern" -> :pattern
+      "patterns" -> :patterns
+      "replacement" -> :replacement
+      "old_file" -> :old_file
+      "new_file" -> :new_file
+      "old_source" -> :old_source
+      "new_source" -> :new_source
+      "inside" -> :inside
+      "not_inside" -> :not_inside
+      "dry_run" -> :dry_run
+      "allow_broad" -> :allow_broad
+      "limit" -> :limit
+      _unknown -> key
+    end
+  end
 
   defp normalize_value(key, value) when key in [:action, "action"], do: normalize_action(value)
   defp normalize_value(_key, value), do: value
