@@ -100,6 +100,7 @@ exy --direct "describe @test/fixtures/images/vision-smoke.png"
 exy
 # then type: describe @test/fixtures/images/vision-smoke.png
 mix run scripts/image_model_smoke.exs
+EXY_REAL_MODEL=1 mix run scripts/image_agent_smoke.exs
 ```
 
 Image files read by the agent are model-facing through `read`, resized through pluggable command backends (`magick`, `sips`, `vips`) when needed, and large payloads are stored as session artifacts instead of being duplicated in JSON logs. Interactive image prompts keep the original text visible while sending the image as semantic content; TUI and Web transcripts show attachment badges.
