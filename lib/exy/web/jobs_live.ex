@@ -38,7 +38,7 @@ defmodule Exy.Web.JobsLive do
   end
 
   defp assign_jobs(socket) do
-    jobs = Exy.Subagents.JobStore.list()
+    jobs = Exy.Subagents.JobStore.list(parent_session_id: nil)
 
     socket
     |> assign(:jobs, jobs)

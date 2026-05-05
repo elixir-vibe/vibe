@@ -29,11 +29,12 @@ defmodule Exy.Subagents.JobStore do
     |> ok()
   end
 
-  @spec list() :: [JobInfo.t()]
-  def list do
+  @spec list(keyword()) :: [JobInfo.t()]
+  def list(opts \\ []) do
     Storage.ensure!()
 
     SubagentJob
+    |> maybe_filter_parent_session(Keyword.get(opts, :parent_session_id))
     |> order_by([job], desc: job.started_at)
     |> Exy.Repo.all()
     |> Enum.map(&decode_job/1)
@@ -47,6 +48,12 @@ defmodule Exy.Subagents.JobStore do
       %SubagentJob{} = job -> decode_job(job)
       nil -> nil
     end
+  end
+
+  defp maybe_filter_parent_session(query, nil), do: query
+
+  defp maybe_filter_parent_session(query, parent_session_id) when is_binary(parent_session_id) do
+    where(query, [job], job.parent_session_id == ^parent_session_id)
   end
 
   defp decode_job(%SubagentJob{} = job) do

@@ -29,4 +29,14 @@ defmodule Exy.Model.UsageTest do
     assert %{total_tokens: 10} =
              Exy.Model.Usage.summarize([%{input_tokens: 4, output_tokens: 6}])
   end
+
+  test "ignores unknown usage keys instead of atomizing them" do
+    usage =
+      Exy.Model.Usage.from_response(%{
+        usage: %{"input_tokens" => 4, "surprise_provider_key" => "ignored"}
+      })
+
+    assert usage == %{input_tokens: 4}
+    refute Map.has_key?(usage, :surprise_provider_key)
+  end
 end
