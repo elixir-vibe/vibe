@@ -54,22 +54,24 @@ defmodule Exy.Gateway.Telegram.Update do
   end
 
   defp source(message) do
-    with chat when not is_nil(chat) <- field(message, :chat) do
-      chat_type = chat_type(chat)
-      thread_id = thread_id(message, chat_type)
+    case field(message, :chat) do
+      nil ->
+        {:error, :telegram_chat_missing}
 
-      {:ok,
-       Source.new(:telegram,
-         chat_id: required_field(chat, :id),
-         chat_name: chat_title(chat),
-         chat_type: chat_type,
-         user_id: user_id(message, chat),
-         user_name: user_name(message, chat),
-         thread_id: thread_id,
-         message_id: optional_field(message, :message_id)
-       )}
-    else
-      _missing -> {:error, :telegram_chat_missing}
+      chat ->
+        chat_type = chat_type(chat)
+        thread_id = thread_id(message, chat_type)
+
+        {:ok,
+         Source.new(:telegram,
+           chat_id: required_field(chat, :id),
+           chat_name: chat_title(chat),
+           chat_type: chat_type,
+           user_id: user_id(message, chat),
+           user_name: user_name(message, chat),
+           thread_id: thread_id,
+           message_id: optional_field(message, :message_id)
+         )}
     end
   end
 
