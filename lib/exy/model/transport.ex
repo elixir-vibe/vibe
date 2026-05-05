@@ -24,7 +24,7 @@ defmodule Exy.Model.Transport do
   end
 
   defp put_reusable_responses_websocket(model, request_opts, provider_opts, session_id) do
-    with {:ok, pid} <- Exy.Model.WebSocketSession.get(model, request_opts, session_id) do
+    with {:ok, pid} <- Exy.Model.Transport.WebSocketPool.get(model, request_opts, session_id) do
       provider_opts =
         provider_opts
         |> Keyword.put(:openai_stream_transport, :websocket)

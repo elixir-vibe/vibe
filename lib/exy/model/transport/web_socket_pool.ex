@@ -1,6 +1,6 @@
-defmodule Exy.Model.WebSocketSession do
+defmodule Exy.Model.Transport.WebSocketPool do
   @moduledoc """
-  Caches reusable ReqLLM Responses WebSocket sessions per Exy session and model.
+  Pools reusable ReqLLM Responses WebSocket sessions per Exy session and model.
 
   The cache is deliberately opt-in. Callers request a session only after provider
   options enable OpenAI Responses WebSocket reuse, and failures are reported to the
