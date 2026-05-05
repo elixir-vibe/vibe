@@ -30,7 +30,7 @@ defmodule Exy.Gateway.Supervisor do
     backend = Keyword.fetch!(opts, :backend)
     config = load_config!(backend, opts)
     runtime_id = {:gateway_runtime, id}
-    runtime_name = Keyword.get(opts, :runtime_name)
+    runtime_name = Keyword.get(opts, :runtime_name, runtime_name(id))
 
     runtime_child = %{
       id: runtime_id,
@@ -47,11 +47,12 @@ defmodule Exy.Gateway.Supervisor do
          ]}
     }
 
-    runtime_ref = runtime_name || runtime_id
-    backend_children = backend_children(backend, config, runtime_ref)
+    backend_children = backend_children(backend, config, runtime_name)
 
     [runtime_child | backend_children]
   end
+
+  defp runtime_name(id), do: {:via, Registry, {Exy.Registry, {:gateway_runtime, id}}}
 
   defp load_config!(backend, opts) do
     case Keyword.fetch(opts, :config) do

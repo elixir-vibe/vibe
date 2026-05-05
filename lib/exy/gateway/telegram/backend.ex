@@ -10,7 +10,7 @@ defmodule Exy.Gateway.Telegram.Backend do
   @behaviour Exy.Gateway.Backend
 
   alias Exy.Gateway.Message
-  alias Exy.Gateway.Telegram.{Adapter, Authorization, Config, Update}
+  alias Exy.Gateway.Telegram.{Adapter, Authorization, Config, Polling, Update}
 
   @impl true
   def load_config(opts), do: Config.load(opts)
@@ -33,5 +33,14 @@ defmodule Exy.Gateway.Telegram.Backend do
   def outbound_adapter(%Config{}), do: Adapter
 
   @impl true
+  def child_specs(%Config{method: :polling} = config, runtime) do
+    [
+      %{
+        id: :telegram_polling,
+        start: {Polling, :start_link, [[config: config, runtime: runtime]]}
+      }
+    ]
+  end
+
   def child_specs(%Config{}, _runtime), do: []
 end

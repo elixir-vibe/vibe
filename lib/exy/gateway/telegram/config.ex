@@ -23,7 +23,9 @@ defmodule Exy.Gateway.Telegram.Config do
             ignored_threads: MapSet.new(),
             edit_interval_ms: 1_000,
             buffer_threshold: 40,
-            stream_mode: :edit
+            stream_mode: :edit,
+            poll_interval_ms: 100,
+            poll_timeout_s: 50
 
   @type method :: :polling | :webhook
 
@@ -43,7 +45,9 @@ defmodule Exy.Gateway.Telegram.Config do
           ignored_threads: MapSet.t(String.t()),
           edit_interval_ms: pos_integer(),
           buffer_threshold: pos_integer(),
-          stream_mode: :edit | :draft | :auto
+          stream_mode: :edit | :draft | :auto,
+          poll_interval_ms: pos_integer(),
+          poll_timeout_s: pos_integer()
         }
 
   @doc "Loads Telegram gateway config from application/env settings."
@@ -77,7 +81,11 @@ defmodule Exy.Gateway.Telegram.Config do
            integer_setting(overrides, :edit_interval_ms, "TELEGRAM_EDIT_INTERVAL_MS", 1_000),
          buffer_threshold:
            integer_setting(overrides, :buffer_threshold, "TELEGRAM_BUFFER_THRESHOLD", 40),
-         stream_mode: stream_mode(setting(overrides, :stream_mode, "TELEGRAM_STREAM_MODE"))
+         stream_mode: stream_mode(setting(overrides, :stream_mode, "TELEGRAM_STREAM_MODE")),
+         poll_interval_ms:
+           integer_setting(overrides, :poll_interval_ms, "TELEGRAM_POLL_INTERVAL_MS", 100),
+         poll_timeout_s:
+           integer_setting(overrides, :poll_timeout_s, "TELEGRAM_POLL_TIMEOUT_S", 50)
        }}
     end
   end
