@@ -11,6 +11,7 @@ defmodule Exy.Agent.Streaming do
   use GenServer
 
   alias Exy.UI.ToolEvent
+  alias ReqLLM.StreamChunk
 
   require Exy.Debug
 
@@ -68,23 +69,23 @@ defmodule Exy.Agent.Streaming do
   Derived deltas do not always carry ordering metadata, so they are suppressed
   after a ReAct runtime delta is observed for the same `{agent_id, call_id}`.
   """
-  @spec dispatch(String.t(), map()) :: :ok
-  def dispatch(agent_id, data) when is_binary(agent_id) and is_map(data) do
-    call_id = call_id(data)
+  @spec dispatch(String.t(), StreamChunk.t()) :: :ok
+  def dispatch(agent_id, %StreamChunk{} = chunk) when is_binary(agent_id) do
+    call_id = call_id(chunk)
     suppressed? = runtime_delta_call?(agent_id, call_id)
 
     Exy.Debug.run do
       Exy.Agent.Streaming.Trace.record(:derived_llm_delta, %{
         agent_id: agent_id,
         call_id: call_id,
-        chunk_type: Map.get(data, :chunk_type),
-        delta: Map.get(data, :delta, ""),
+        chunk_type: chunk.type,
+        delta: chunk.text || "",
         suppressed?: suppressed?
       })
     end
 
     unless suppressed? do
-      dispatch_chunk(agent_id, data)
+      dispatch_chunk(agent_id, chunk)
     end
 
     :ok
@@ -96,9 +97,10 @@ defmodule Exy.Agent.Streaming do
   Out-of-order runtime arrivals are buffered per `{agent_id, call_id}` until the
   missing sequence arrives or the call finishes.
   """
-  @spec dispatch_runtime_delta(String.t(), String.t() | nil, map()) :: :ok
-  def dispatch_runtime_delta(agent_id, call_id, data) when is_binary(agent_id) and is_map(data) do
-    GenServer.call(__MODULE__, {:runtime_delta, agent_id, call_id, runtime_seq(data), data})
+  @spec dispatch_runtime_delta(String.t(), String.t() | nil, StreamChunk.t()) :: :ok
+  def dispatch_runtime_delta(agent_id, call_id, %StreamChunk{} = chunk)
+      when is_binary(agent_id) do
+    GenServer.call(__MODULE__, {:runtime_delta, agent_id, call_id, runtime_seq(chunk), chunk})
   end
 
   @doc """
@@ -190,8 +192,8 @@ defmodule Exy.Agent.Streaming do
 
   defp maybe_put_callback(callbacks, _key, _callback), do: callbacks
 
-  defp call_id(data), do: Map.get(data, :call_id)
-  defp runtime_seq(data), do: Map.get(data, :runtime_seq)
+  defp call_id(%StreamChunk{metadata: metadata}), do: Map.get(metadata, :call_id)
+  defp runtime_seq(%StreamChunk{metadata: metadata}), do: Map.get(metadata, :runtime_seq)
 
   defp flush_runtime_deltas(%{next: next, buffer: buffer} = entry, dispatches) do
     case Map.pop(buffer, next) do
@@ -204,13 +206,11 @@ defmodule Exy.Agent.Streaming do
     end
   end
 
-  defp chunk(data) do
-    type = Map.get(data, :chunk_type, :content)
-    text = Map.get(data, :delta, "")
-    {normalize_type(type), text}
+  defp chunk(%StreamChunk{} = chunk) do
+    {normalize_type(chunk.type), chunk.text || ""}
   end
 
-  defp dispatch_chunk(agent_id, data) do
+  defp dispatch_chunk(agent_id, %StreamChunk{} = data) do
     with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
       data
       |> chunk()

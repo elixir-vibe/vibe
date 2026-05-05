@@ -2,6 +2,7 @@ defmodule Exy.Agent.StreamingTest do
   use ExUnit.Case, async: false
 
   alias Exy.UI.ToolEvent
+  alias ReqLLM.StreamChunk
 
   setup do
     {:ok, agent} = Exy.start_link(session_id: "streaming-test")
@@ -20,14 +21,14 @@ defmodule Exy.Agent.StreamingTest do
       on_thinking: &send(test_pid, {:thinking, &1})
     )
 
-    Exy.Agent.Streaming.dispatch(agent_id, %{chunk_type: :content, delta: "hello"})
-    Exy.Agent.Streaming.dispatch(agent_id, %{chunk_type: :thinking, delta: "hmm"})
+    Exy.Agent.Streaming.dispatch(agent_id, StreamChunk.text("hello"))
+    Exy.Agent.Streaming.dispatch(agent_id, StreamChunk.thinking("hmm"))
 
     assert_receive {:content, "hello"}
     assert_receive {:thinking, "hmm"}
 
     Exy.Agent.Streaming.unregister(agent)
-    Exy.Agent.Streaming.dispatch(agent_id, %{chunk_type: :content, delta: "ignored"})
+    Exy.Agent.Streaming.dispatch(agent_id, StreamChunk.text("ignored"))
 
     refute_receive {:content, "ignored"}, 50
   end
@@ -114,6 +115,12 @@ defmodule Exy.Agent.StreamingTest do
     assert_receive {:content, "c"}
   after
     Exy.Agent.Streaming.unregister(agent)
+  end
+
+  test "core dispatcher requires ReqLLM stream chunks", %{agent_id: agent_id} do
+    assert_raise FunctionClauseError, fn ->
+      apply(Exy.Agent.Streaming, :dispatch, [agent_id, %{chunk_type: :content, delta: "bad"}])
+    end
   end
 
   test "plugin forwards Jido LLM delta signals", %{agent: agent, agent_id: agent_id} do

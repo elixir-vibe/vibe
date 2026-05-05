@@ -21,6 +21,7 @@ defmodule Exy.Agent.Streaming.Plugin do
     ]
 
   alias Exy.UI.ToolEvent
+  alias ReqLLM.StreamChunk
 
   require Exy.Debug
 
@@ -51,12 +52,7 @@ defmodule Exy.Agent.Streaming.Plugin do
         Exy.Agent.Streaming.dispatch_runtime_delta(
           agent_id,
           call_id,
-          %{
-            call_id: call_id,
-            runtime_seq: event_field(event, :seq),
-            chunk_type: event_field(data, :chunk_type, :content),
-            delta: event_field(data, :delta, "")
-          }
+          stream_chunk(data, call_id: call_id, runtime_seq: event_field(event, :seq))
         )
 
       :llm_completed ->
@@ -133,11 +129,23 @@ defmodule Exy.Agent.Streaming.Plugin do
   defp event_data(event), do: event_field(event, :data, %{}) || %{}
 
   defp delta_data(data) when is_map(data) do
-    %{
-      call_id: event_field(data, :call_id),
-      chunk_type: event_field(data, :chunk_type, :content),
-      delta: event_field(data, :delta, "")
-    }
+    stream_chunk(data, call_id: event_field(data, :call_id))
+  end
+
+  defp stream_chunk(data, metadata) do
+    type = event_field(data, :chunk_type, :content)
+    text = event_field(data, :delta, "")
+
+    metadata =
+      metadata
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      |> Map.new()
+
+    case type do
+      :thinking -> StreamChunk.thinking(text, metadata)
+      "thinking" -> StreamChunk.thinking(text, metadata)
+      _type -> StreamChunk.text(text, metadata)
+    end
   end
 
   defp event_field(map, key, default \\ nil) when is_map(map) do
