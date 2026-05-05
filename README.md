@@ -38,7 +38,12 @@ mix exy --help
 Install a local `exy` executable:
 
 ```bash
-mix escript.install --force
+mix exy.install
+```
+
+`mix exy.install` builds the escript, installs it with `mix escript.install --force`, and prints the exact PATH line to add when the Mix escripts directory is not already available. For standard Elixir installs this is usually:
+
+```bash
 export PATH="$HOME/.mix/escripts:$PATH"
 ```
 
