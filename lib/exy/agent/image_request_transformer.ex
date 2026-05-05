@@ -3,15 +3,51 @@ defmodule Exy.Agent.ImageRequestTransformer do
 
   @behaviour Jido.AI.Reasoning.ReAct.RequestTransformer
 
+  alias Exy.Model.Content
   alias ReqLLM.Message.ContentPart
 
   @impl true
-  def transform_request(%{messages: messages} = _request, _state, _config, _runtime_context)
+  def transform_request(%{messages: messages} = _request, _state, _config, runtime_context)
       when is_list(messages) do
-    {:ok, %{messages: Enum.flat_map(messages, &message_with_image_follow_up/1)}}
+    messages =
+      messages
+      |> attach_semantic_prompt_images(runtime_context)
+      |> Enum.flat_map(&message_with_image_follow_up/1)
+
+    {:ok, %{messages: messages}}
   end
 
   def transform_request(_request, _state, _config, _runtime_context), do: {:ok, %{}}
+
+  defp attach_semantic_prompt_images(messages, runtime_context) do
+    images = semantic_prompt_images(runtime_context)
+
+    if images == [] do
+      messages
+    else
+      List.update_at(messages, -1, &append_images_to_user_message(&1, images))
+    end
+  end
+
+  defp semantic_prompt_images(%{semantic_prompt_content: content}) when is_list(content) do
+    content
+    |> Content.to_req_llm_parts()
+    |> Enum.filter(&image_part?/1)
+  end
+
+  defp semantic_prompt_images(_runtime_context), do: []
+
+  defp append_images_to_user_message(%{role: :user, content: text} = message, images)
+       when is_binary(text) do
+    %{message | content: [ContentPart.text(text) | images]}
+  end
+
+  defp append_images_to_user_message(%{role: :user, content: content} = message, images)
+       when is_list(content) do
+    %{message | content: content ++ images}
+  end
+
+  defp append_images_to_user_message(message, _images), do: message
 
   defp message_with_image_follow_up(message) do
     case tool_image_parts(message) do

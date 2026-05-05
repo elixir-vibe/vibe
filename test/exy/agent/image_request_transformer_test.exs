@@ -2,6 +2,7 @@ defmodule Exy.Agent.ImageRequestTransformerTest do
   use ExUnit.Case, async: true
 
   alias Exy.Agent.ImageRequestTransformer
+  alias Exy.Model.Content
   alias ReqLLM.Message.ContentPart
 
   test "injects image tool output as follow-up user content" do
@@ -30,6 +31,28 @@ defmodule Exy.Agent.ImageRequestTransformerTest do
     assert [text, ^image] = follow_up.content
     assert text.type == :text
     assert text.text =~ "previous tool result included image content"
+  end
+
+  test "injects semantic prompt images into the latest user message" do
+    image =
+      Content.image(
+        data: Base.encode64(<<1, 2, 3>>),
+        mime_type: "image/png",
+        filename: "tiny.png",
+        width: 1,
+        height: 1
+      )
+
+    request = %{messages: [%{role: :user, content: "describe this"}], llm_opts: [], tools: []}
+
+    assert {:ok, %{messages: [%{content: [text, image_part]}]}} =
+             ImageRequestTransformer.transform_request(request, nil, nil, %{
+               semantic_prompt_content: [Content.text("describe this"), image]
+             })
+
+    assert text == ContentPart.text("describe this")
+    assert image_part.type == :image
+    assert image_part.filename == "tiny.png"
   end
 
   test "read image tool output reaches OpenAI Responses as input_image" do

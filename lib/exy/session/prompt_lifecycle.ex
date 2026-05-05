@@ -29,6 +29,7 @@ defmodule Exy.Session.PromptLifecycle do
     prompt_text = prompt_with_memory(text, context)
 
     {ask_opts, state} = ask_options(state, parent, ref, session_id, emit)
+    ask_opts = maybe_put_semantic_content(ask_opts, prompt)
 
     {:ok, task} = PromptRunner.start(ask_fun, prompt_text, ask_opts, parent, ref)
 
@@ -126,6 +127,14 @@ defmodule Exy.Session.PromptLifecycle do
 
   defp maybe_put_llm_provider_options(opts, provider_options),
     do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
+
+  defp maybe_put_semantic_content(opts, prompt) when is_list(prompt) do
+    Keyword.update(opts, :tool_context, %{semantic_prompt_content: prompt}, fn context ->
+      Map.put(context, :semantic_prompt_content, prompt)
+    end)
+  end
+
+  defp maybe_put_semantic_content(opts, _prompt), do: opts
 
   defp prompt_event_data(prompt, text) when is_list(prompt) do
     images = Enum.filter(prompt, &match?(%Content.Image{}, &1))
