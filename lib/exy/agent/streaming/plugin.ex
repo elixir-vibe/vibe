@@ -70,7 +70,7 @@ defmodule Exy.Agent.Streaming.Plugin do
   end
 
   def handle_signal(%{type: "ai.llm.delta", data: data}, %{agent: %{id: agent_id}}) do
-    Exy.Agent.Streaming.dispatch(agent_id, data || %{})
+    Exy.Agent.Streaming.dispatch(agent_id, delta_data(data || %{}))
     {:ok, :continue}
   end
 
@@ -131,6 +131,14 @@ defmodule Exy.Agent.Streaming.Plugin do
   end
 
   defp event_data(event), do: event_field(event, :data, %{}) || %{}
+
+  defp delta_data(data) when is_map(data) do
+    %{
+      call_id: event_field(data, :call_id),
+      chunk_type: event_field(data, :chunk_type, :content),
+      delta: event_field(data, :delta, "")
+    }
+  end
 
   defp event_field(map, key, default \\ nil) when is_map(map) do
     Map.get(map, key, Map.get(map, to_string(key), default))
