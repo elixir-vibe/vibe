@@ -4,9 +4,10 @@ defmodule Exy.Actions.AST do
 
   @schema schema(
             %{
-              required(:action) => :search | :replace | :diff,
+              required(:action) => :search | :search_many | :replace | :diff,
               optional(:path) => String.t(),
               optional(:pattern) => String.t(),
+              optional(:patterns) => map(),
               optional(:replacement) => String.t(),
               optional(:old_file) => String.t(),
               optional(:new_file) => String.t(),
@@ -14,12 +15,16 @@ defmodule Exy.Actions.AST do
               optional(:new_source) => String.t(),
               optional(:inside) => String.t(),
               optional(:not_inside) => String.t(),
-              optional(:dry_run) => boolean()
+              optional(:dry_run) => boolean(),
+              optional(:allow_broad) => boolean(),
+              optional(:limit) => non_neg_integer()
             },
             doc: [
               action: "search, replace, or diff",
               path: "File or directory path(s) for search/replace",
               pattern: "ExAST pattern",
+              patterns:
+                "Map or keyword-style object of pattern names to ExAST patterns for search_many",
               replacement: "ExAST replacement template",
               dry_run: "Preview replacements without writing"
             ]
@@ -28,7 +33,7 @@ defmodule Exy.Actions.AST do
   use Jido.Action,
     name: "ast",
     description:
-      "Structural Elixir search/replace/diff via ExAST. Use instead of grep for Elixir syntax.",
+      "Structural Elixir search/replace/diff via ExAST. Use search_many for multiple patterns over the same files.",
     schema: @schema
 
   @impl true

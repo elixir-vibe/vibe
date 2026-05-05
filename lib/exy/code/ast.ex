@@ -16,6 +16,7 @@ defmodule Exy.Code.AST do
 
     case Map.get(params, :action) do
       :search -> search(params)
+      :search_many -> search_many(params)
       :replace -> replace(params)
       :diff -> diff(params)
       other -> {:error, "unknown ast action: #{inspect(other)}"}
@@ -35,6 +36,21 @@ defmodule Exy.Code.AST do
          path: path,
          pattern: pattern,
          result: ExAST.search(path, pattern, opts)
+       }}
+    end
+  end
+
+  defp search_many(params) do
+    with {:ok, path} <- fetch(params, :path),
+         {:ok, patterns} <- fetch(params, :patterns) do
+      opts = where_opts(params) |> maybe_put(:limit, Map.get(params, :limit))
+
+      {:ok,
+       %Result{
+         action: :search_many,
+         path: path,
+         pattern: patterns,
+         result: ExAST.search_many(path, patterns, opts)
        }}
     end
   end
@@ -102,6 +118,7 @@ defmodule Exy.Code.AST do
     []
     |> maybe_put(:inside, Map.get(params, :inside))
     |> maybe_put(:not_inside, Map.get(params, :not_inside))
+    |> maybe_put(:allow_broad, Map.get(params, :allow_broad))
   end
 
   defp maybe_put(opts, _key, nil), do: opts
@@ -132,6 +149,7 @@ defmodule Exy.Code.AST do
   defp normalize_value(key, value) when key in [:action, "action"], do: normalize_action(value)
   defp normalize_value(_key, value), do: value
 
+  defp normalize_action("search_many"), do: :search_many
   defp normalize_action(value) when is_atom(value), do: value
 
   defp normalize_action(value) when is_binary(value) do

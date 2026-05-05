@@ -172,9 +172,29 @@ defmodule Exy.Code.Checks do
     disabled = config |> get_in([:checks, :disabled]) |> List.wrap() |> Enum.map(&check_module/1)
 
     checks
-    |> Enum.map(&check_module/1)
-    |> Enum.filter(&match?(<<"Elixir.ExSlop.", _::binary>>, Atom.to_string(&1)))
+    |> Enum.flat_map(&expand_ex_slop_check/1)
     |> Enum.reject(&(&1 in disabled))
+    |> Enum.uniq()
+  end
+
+  defp expand_ex_slop_check({ExSlop, _params}) do
+    if Code.ensure_loaded?(ExSlop) do
+      # ExSlop is dev/test-only, so production builds must avoid a static remote call.
+      # credo:disable-for-next-line Credo.Check.Refactor.Apply
+      apply(ExSlop, :recommended_checks, [])
+    else
+      []
+    end
+  end
+
+  defp expand_ex_slop_check(check) do
+    module = check_module(check)
+
+    if String.starts_with?(Atom.to_string(module), "Elixir.ExSlop.") do
+      [module]
+    else
+      []
+    end
   end
 
   defp credo_config do

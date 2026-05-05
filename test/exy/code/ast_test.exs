@@ -8,6 +8,22 @@ defmodule Exy.Code.ASTTest do
     assert is_list(matches)
   end
 
+  test "search_many finds multiple named patterns in one traversal" do
+    assert {:ok, %{action: :search_many, result: matches}} =
+             Exy.Code.AST.run(%{
+               action: :search_many,
+               path: "lib/exy/code/ast.ex",
+               allow_broad: true,
+               patterns: %{
+                 private_defs: "defp _ do ... end",
+                 ast_calls: "ExAST.search(_, _, _)"
+               }
+             })
+
+    assert Enum.any?(matches, &(&1.pattern == :private_defs))
+    assert Enum.any?(matches, &(&1.pattern == :ast_calls))
+  end
+
   test "diff reports semantic edits" do
     assert {:ok, diff} =
              Exy.Code.AST.run(%{

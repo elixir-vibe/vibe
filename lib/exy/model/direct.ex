@@ -63,9 +63,15 @@ defmodule Exy.Model.Direct do
         :on_tool_call
       ])
       |> Keyword.merge(provider_opts)
+      |> maybe_put_openrouter_session(model, session_id)
 
     {reqllm_model, messages, session_id, request_opts}
   end
+
+  defp maybe_put_openrouter_session(opts, "openrouter:" <> _model, session_id),
+    do: Keyword.put_new(opts, :session_id, session_id)
+
+  defp maybe_put_openrouter_session(opts, _model, _session_id), do: opts
 
   defp resolve_model_with_auth(model) do
     case Exy.Auth.Provider.for_model(model) do

@@ -1,6 +1,16 @@
 defmodule Exy.Code.AST.Result do
   @moduledoc "Structured AST operation result."
   @derive Jason.Encoder
+  @type t :: %__MODULE__{
+          action: Exy.Code.AST.action(),
+          path: String.t() | nil,
+          pattern: term(),
+          replacement: term(),
+          dry_run: boolean() | nil,
+          result: term(),
+          diff: term()
+        }
+
   defstruct action: nil,
             path: nil,
             pattern: nil,

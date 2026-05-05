@@ -231,7 +231,11 @@ defmodule Exy.Eval.Evaluator do
 
   defp plugin_env(env) do
     aliases =
-      [{Cmd, Command}, {Elixir.Image, Image}, {MD, MD}] ++
+      [
+        {Module.concat([:Cmd]), Command},
+        {Module.concat([:Image]), Image},
+        {Module.concat([:MD]), MD}
+      ] ++
         Enum.map(
           Exy.Plugin.Manager.apis() ++ Exy.Skill.apis(),
           &{Module.concat([&1.alias]), &1.module}
