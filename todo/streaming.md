@@ -1,5 +1,18 @@
 # Streaming TODO
 
+## Jido.AI multimodal ReAct queries
+
+- Track `agentjido/jido_ai#278` (`feat: support multimodal ReAct queries`).
+  - Adds a bounded `Jido.AI.Query` contract for `String.t() | [ReqLLM.Message.ContentPart.t()]`.
+  - Allows ReAct request, runner, and action entrypoints to accept ReqLLM content parts directly.
+  - Preserves multimodal user entries through `Jido.AI.Context` and request projection.
+  - Summarizes multimodal queries for runtime event metadata while sending full content to ReqLLM.
+- After it lands and Exy updates to a Jido.AI version that includes it:
+  - Remove or reduce `tool_context[:semantic_prompt_content]` prompt-image side channel.
+  - Pass semantic prompt content directly into `Exy.ask/3` / Jido where supported.
+  - Keep `Exy.Agent.ImageRequestTransformer` only for tool-result image follow-ups if still needed.
+  - Run `EXY_REAL_MODEL=1 mix run scripts/image_agent_smoke.exs` before and after removing the workaround.
+
 ## Upstream stream-ordering metadata
 
 - Track `agentjido/jido_ai#271` (`fix: preserve LLM delta ordering metadata`).

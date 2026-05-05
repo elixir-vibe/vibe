@@ -11,6 +11,8 @@ defmodule Exy.Docs do
     {"quickstart", "Quickstart"},
     {"sessions", "Sessions"},
     {"eval", "Eval"},
+    {"ast", "AST"},
+    {"lsp", "LSP"},
     {"slash-commands", "Slash commands"},
     {"memory", "Memory"},
     {"subagents", "Subagents"},
@@ -30,7 +32,9 @@ defmodule Exy.Docs do
     "subagent" => "subagents",
     "plugin" => "plugins",
     "search" => "web",
-    "fetch" => "web"
+    "fetch" => "web",
+    "code" => "ast",
+    "code-intelligence" => "lsp"
   }
 
   @doc "Returns the built-in help topic names and titles."

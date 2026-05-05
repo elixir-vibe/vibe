@@ -25,7 +25,8 @@ defmodule Exy.Model.Direct do
 
     record_request(prompt, model, session_id)
 
-    with {:ok, response} <- ReqLLM.stream_text(model, messages, request_opts),
+    with {:ok, request_opts} <- maybe_put_reusable_websocket(model, request_opts, session_id),
+         {:ok, response} <- ReqLLM.stream_text(model, messages, request_opts),
          {:ok, final_response} <- ReqLLM.StreamResponse.process_stream(response, callback_opts) do
       result = {:ok, final_response}
       record_response(result, session_id)
@@ -72,6 +73,25 @@ defmodule Exy.Model.Direct do
     do: Keyword.put_new(opts, :session_id, session_id)
 
   defp maybe_put_openrouter_session(opts, _model, _session_id), do: opts
+
+  defp maybe_put_reusable_websocket(model, request_opts, session_id) do
+    provider_opts = Keyword.get(request_opts, :provider_options, [])
+
+    case Keyword.get(provider_opts, :openai_reuse_websocket, false) do
+      true ->
+        with {:ok, pid} <- Exy.Model.WebSocketSession.get(model, request_opts, session_id) do
+          provider_opts =
+            provider_opts
+            |> Keyword.put(:openai_stream_transport, :websocket)
+            |> Keyword.put(:openai_websocket_session, pid)
+
+          {:ok, Keyword.put(request_opts, :provider_options, provider_opts)}
+        end
+
+      _other ->
+        {:ok, request_opts}
+    end
+  end
 
   defp resolve_model_with_auth(model) do
     case Exy.Auth.Provider.for_model(model) do

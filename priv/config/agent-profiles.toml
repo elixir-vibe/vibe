@@ -4,6 +4,11 @@ default_effort = "medium"
 [providers.openrouter]
 app_title = "Exy"
 
+# Optional for OpenAI/OpenAI Codex Responses streaming after upstream reuse paths are enabled:
+# [providers.openai_codex]
+# openai_stream_transport = "websocket"
+# openai_reuse_websocket = true
+
 [roles.scout]
 model = "openrouter:anthropic/claude-3.5-haiku"
 system = "Find relevant facts. Do not edit files."

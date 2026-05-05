@@ -39,6 +39,8 @@ defmodule Exy.Agent.ProfileTest do
 
     [providers.openrouter]
     app_title = "Exy Test"
+    openai_reuse_websocket = true
+    openai_stream_transport = "websocket"
     unknown_option = "ignored"
 
     [roles.scout]
@@ -55,7 +57,13 @@ defmodule Exy.Agent.ProfileTest do
     assert Exy.Agent.Profile.effort_for(role: :missing) == :low
     assert Exy.Agent.Profile.system_for(role: :scout) == "Scout only"
     assert Exy.Agent.Profile.tools_for(role: :scout) == ["read", "eval"]
-    assert Exy.Agent.Profile.provider_options(:openrouter) == [app_title: "Exy Test"]
+
+    assert Exy.Agent.Profile.provider_options(:openrouter) == [
+             app_title: "Exy Test",
+             openai_reuse_websocket: true,
+             openai_stream_transport: "websocket"
+           ]
+
     assert Exy.Agent.Profile.models() == ["default:model", "openrouter:test/model"]
   end
 end

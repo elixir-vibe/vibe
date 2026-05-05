@@ -173,9 +173,23 @@ defmodule Exy.Agent.Profile do
   end
 
   defp provider_option({"app_title", value}), do: [app_title: value]
+
+  defp provider_option({"openai_reuse_websocket", value}) when is_boolean(value),
+    do: [openai_reuse_websocket: value]
+
+  defp provider_option({"openai_stream_transport", value}) when value in ["sse", "websocket"],
+    do: [openai_stream_transport: value]
+
   defp provider_option({"reasoning_effort", value}), do: [reasoning_effort: value]
   defp provider_option({"session_id", value}), do: [session_id: value]
   defp provider_option({:app_title, value}), do: [app_title: value]
+
+  defp provider_option({:openai_reuse_websocket, value}) when is_boolean(value),
+    do: [openai_reuse_websocket: value]
+
+  defp provider_option({:openai_stream_transport, value}) when value in [:sse, :websocket],
+    do: [openai_stream_transport: value]
+
   defp provider_option({:reasoning_effort, value}), do: [reasoning_effort: value]
   defp provider_option({:session_id, value}), do: [session_id: value]
   defp provider_option({_unknown, _value}), do: []

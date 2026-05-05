@@ -31,6 +31,7 @@ defmodule Exy.Application do
       Exy.Session.Processes,
       Exy.Agent.Memory,
       Exy.Agent.Streaming,
+      Exy.Model.WebSocketSession,
       Exy.Plugin.Manager,
       Exy.Memory.Manager
     ]
