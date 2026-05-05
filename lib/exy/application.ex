@@ -24,6 +24,7 @@ defmodule Exy.Application do
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Terminal.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Eval.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.Plugin.Supervisor},
+      {DynamicSupervisor, strategy: :one_for_one, name: Exy.Gateway.BridgeSupervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Exy.SessionSupervisor},
       {Task.Supervisor, name: Exy.TaskSupervisor},
       {Task.Supervisor, name: Exy.UI.PluginTaskSupervisor},
