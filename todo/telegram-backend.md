@@ -30,7 +30,8 @@ Prefer `ex_gram` unless implementation research finds a blocker.
   - MessageEntity builder and optional MDEx integration for Markdown-safe Telegram output.
 - `telegram_bot_api` is a recent Erlang alternative with Bot API 9.5 support, but has much lower adoption and is lower-level.
 - `nadia` is historically popular but stale for modern Bot API features.
-- Telegram Bot API itself does not provide token-level AI response streaming. Hermes-style streaming is implemented by sending a first message and periodically editing it while agent/model deltas arrive.
+- ExGram v0.65 exposes Bot API 9.6, including `send_message_draft/4` (`sendMessageDraft`), Telegram's newer partial-message/draft API for private chats.
+- Hermes-style streaming is implemented by sending a first message and periodically editing it while agent/model deltas arrive. Exy should support that universal fallback, and then add a Telegram-specific `sendMessageDraft` mode for private chats where the client supports it.
 
 ## Hermes architecture to port conceptually
 
@@ -167,6 +168,21 @@ Exy should implement both layers:
 - callback authorization for inline buttons, not just incoming messages.
 
 Use BotFather privacy-mode docs in setup help; privacy mode changes what group messages the bot receives at all.
+
+## Native Telegram draft streaming
+
+Telegram Bot API 9.5+ includes `sendMessageDraft`, described by ExGram as: "Use this method to stream a partial message to a user while the message is being generated. Returns True on success."
+
+Implications for Exy:
+
+- Keep edit-based streaming as the baseline because it works in groups, topics, and across older client behavior.
+- Add a Telegram-specific stream mode after the generic consumer exists:
+  - `:edit` — placeholder + `editMessageText` fallback, Hermes-compatible.
+  - `:draft` — call `sendMessageDraft` for intermediate private-chat partials, then send the final message normally.
+  - `:auto` — use draft only when source is a DM/private chat and no reply/thread constraints require a normal message; otherwise edit.
+- `sendMessageDraft` requires a `draft_id`; derive a stable per-run integer or keep a per-run counter in the Telegram stream process.
+- Draft streaming likely should not expose a visible cursor or persistent preview message because drafts are transient client UI.
+- Tests must cover fallback to edit mode when draft calls fail or when source is group/forum/channel.
 
 ## Streaming consumer behavior to port
 

@@ -83,6 +83,7 @@ defmodule Exy.MixProject do
       {:toml, "~> 0.7"},
       {:ecto_sql, "~> 3.12"},
       {:ecto_sqlite3, "~> 0.18"},
+      {:ex_gram, "~> 0.65"},
       {:req, "~> 0.5"},
       {:req_llm, "~> 1.11"},
       {:phoenix, "~> 1.8"},
