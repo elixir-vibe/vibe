@@ -50,7 +50,7 @@ Exy.Model.Direct.ask([
 ])
 ```
 
-Use `mix run scripts/image_model_smoke.exs` to verify the configured multimodal provider against a labeled fixture.
+Use `mix run scripts/image_model_smoke.exs` to verify the configured multimodal provider against a labeled fixture. Interactive TUI and Web prompts also accept inline image references such as `describe @screenshot.png`; Exy keeps the visible prompt text unchanged while passing image content semantically through the session and model request pipeline.
 
 Prefer `Cmd.run/2` and `Cmd.start/2` over raw `System.cmd/3`; command jobs are supervised and expose status/output/cancellation APIs.
 

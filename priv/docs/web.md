@@ -75,7 +75,17 @@ The LiveView console renders image tool results semantically. Inline images use 
 /sessions/<session-id>/artifacts/images/<file>.png
 ```
 
-Artifact-backed previews include an “Open original” link. Orphan artifact directories can be cleaned with:
+Artifact-backed previews include an “Open original” link.
+
+The session composer accepts inline image references such as:
+
+```text
+describe @screenshots/login.png
+```
+
+Image references are converted into semantic prompt content before dispatch. The transcript keeps the user's original text and shows an attachment badge, while the model request receives image content parts.
+
+Orphan artifact directories can be cleaned with:
 
 ```bash
 exy sessions prune --artifacts
