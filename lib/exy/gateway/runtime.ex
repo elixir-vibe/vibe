@@ -105,10 +105,22 @@ defmodule Exy.Gateway.Runtime do
       _ignored =
         Exy.Gateway.SessionBridge.start(message, session_id,
           adapter: state.backend.outbound_adapter(state.config),
-          adapter_opts: [config: state.config]
+          adapter_opts: [config: state.config],
+          consumer_module: consumer_module(message, state.config)
         )
     end
   end
+
+  defp consumer_module(message, %{stream_mode: :draft}) do
+    if message.source.chat_type == :dm,
+      do: Exy.Gateway.Telegram.StreamConsumer,
+      else: Exy.Gateway.StreamConsumer
+  end
+
+  defp consumer_module(message, %{stream_mode: :auto}),
+    do: consumer_module(message, %{stream_mode: :draft})
+
+  defp consumer_module(_message, _config), do: Exy.Gateway.StreamConsumer
 
   defp dispatch_failed(state, reason) do
     Logger.debug("gateway message dispatch failed: #{inspect(reason)}")

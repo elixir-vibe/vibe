@@ -42,6 +42,7 @@ defmodule Exy.Gateway.SessionBridge do
          message: message,
          adapter: Keyword.fetch!(opts, :adapter),
          adapter_opts: Keyword.get(opts, :adapter_opts, []),
+         consumer_module: Keyword.get(opts, :consumer_module, StreamConsumer),
          consumer: nil,
          stream_started?: false,
          done?: false,
@@ -65,7 +66,7 @@ defmodule Exy.Gateway.SessionBridge do
        when is_binary(text) do
     case ensure_consumer(state) do
       {:ok, state} ->
-        StreamConsumer.delta(state.consumer, text)
+        state.consumer_module.delta(state.consumer, text)
         {:noreply, state}
 
       {:error, _reason} ->
@@ -103,7 +104,7 @@ defmodule Exy.Gateway.SessionBridge do
       ]
       |> Keyword.merge(state.consumer_opts)
 
-    case StreamConsumer.start_link(opts) do
+    case state.consumer_module.start_link(opts) do
       {:ok, pid} -> {:ok, %{state | consumer: pid}}
       {:error, reason} -> {:error, reason}
     end
@@ -116,7 +117,7 @@ defmodule Exy.Gateway.SessionBridge do
   defp finish_consumer(%{consumer: nil} = state, _text), do: state
 
   defp finish_consumer(%{consumer: pid} = state, _text) do
-    StreamConsumer.finish(pid)
+    state.consumer_module.finish(pid)
     %{state | done?: true}
   end
 
