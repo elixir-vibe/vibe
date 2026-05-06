@@ -72,11 +72,11 @@ defmodule Vibe.TUI.Widgets.ListPanel do
     theme |> Theme.fg(:dim, message) |> Widget.pad_line(width)
   end
 
-  defp blank_line(width, theme), do: Theme.bg(theme, :input_bg, Widget.spaces(width))
+  defp blank_line(width, theme), do: Widget.background_line("", width, theme, :input_bg)
 
   defp frame_line(content, width, theme) do
     line = Widget.pad_line(["  ", content], max(width - 2, 0))
-    Theme.bg(theme, :input_bg, line)
+    Widget.background_line(line, width, theme, :input_bg)
   end
 
   defp item_label(%{label: label}), do: label

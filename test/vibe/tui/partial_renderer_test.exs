@@ -16,7 +16,7 @@ defmodule Vibe.TUI.PartialRendererTest do
     second_stats = RenderState.stats(state)
 
     assert second_stats.hits >= first_stats.hits + 3
-    assert second_stats.misses == first_stats.misses + 1
+    assert second_stats.misses == first_stats.misses + 2
   end
 
   test "partial body rendering matches pure chat renderer" do

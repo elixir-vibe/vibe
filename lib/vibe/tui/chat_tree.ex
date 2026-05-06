@@ -18,6 +18,7 @@ defmodule Vibe.TUI.ChatTree do
       |> append_if(notice_margin?(view, plugin_widgets), spacer_component(:notice_margin))
       |> append_one(Map.get(view, :notifications))
       |> append_one(picker_component(Map.get(view, :picker)))
+      |> append_if(picker_margin?(view), spacer_component(:picker_margin))
       |> append_if(footer_margin?(view, plugin_widgets), spacer_component(:footer_margin))
       |> append_one(Map.fetch!(view, :footer))
       |> append_many(plugin_widgets(view, :below_editor))
@@ -89,6 +90,9 @@ defmodule Vibe.TUI.ChatTree do
     not is_nil(Map.get(view, :notifications)) and
       (Map.fetch!(view, :body) != [] or plugin_widgets != [])
   end
+
+  defp picker_margin?(%{picker: %{type: :autocomplete}}), do: true
+  defp picker_margin?(_view), do: false
 
   defp footer_margin?(view, plugin_widgets) do
     Map.fetch!(view, :body) != [] or plugin_widgets != [] or

@@ -16,7 +16,7 @@ defmodule Vibe.TUI.SelectionTest do
       |> Widget.render(40, Theme.default())
       |> Enum.map(&Width.visible_text/1)
 
-    assert hd(lines) == "  Models                              "
+    assert hd(lines) == "  Models                                "
     assert length(lines) == 7
     assert Enum.any?(lines, &String.contains?(&1, "model-11"))
     refute Enum.any?(lines, &String.contains?(&1, "█"))

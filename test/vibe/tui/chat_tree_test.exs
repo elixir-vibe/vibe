@@ -16,6 +16,7 @@ defmodule Vibe.TUI.ChatTreeTest do
              {:spacer, :notice_margin},
              :notifications,
              {:picker, :autocomplete, :erlang.phash2(picker().props)},
+             {:spacer, :picker_margin},
              {:spacer, :footer_margin},
              :footer,
              {:plugin_widget, "below"},
