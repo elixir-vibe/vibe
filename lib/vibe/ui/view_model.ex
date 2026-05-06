@@ -14,6 +14,7 @@ defmodule Vibe.UI.ViewModel do
     Overlay,
     PluginWidget,
     SubagentLifecycle,
+    SystemMessage,
     ToolCall,
     UserMessage
   }
@@ -68,6 +69,7 @@ defmodule Vibe.UI.ViewModel do
       case message.role do
         :user -> %UserMessage{id: id, text: message.text, at: message.at}
         :assistant -> assistant_block(id, message)
+        :system -> system_block(id, message)
         :tool -> tool_block(message, state)
         :subagent -> subagent_block(id, message)
       end
@@ -85,6 +87,15 @@ defmodule Vibe.UI.ViewModel do
       task: Map.get(message, :task),
       child_session_id: Map.get(message, :child_session_id),
       error: Map.get(message, :error),
+      at: message.at
+    }
+  end
+
+  defp system_block(id, message) do
+    %SystemMessage{
+      id: id,
+      text: Map.get(message, :text),
+      level: Map.get(message, :level, :info),
       at: message.at
     }
   end

@@ -36,6 +36,8 @@ defmodule Vibe.UI.ReducerTest do
 
     assert state.model == "model-b"
     assert state.effort == :high
+    assert Enum.map(state.messages, & &1.role) == [:system, :system]
+    assert Enum.map(state.messages, & &1.text) == ["Model: model-b", "Effort: high"]
   end
 
   test "previews token usage while assistant response streams" do

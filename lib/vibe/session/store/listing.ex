@@ -33,7 +33,7 @@ defmodule Vibe.Session.Store.Listing do
       nil
     else
       state = session_id |> restore_state(events) |> finalize_restored_state()
-      messages = Enum.reject(state.messages, &match?(%{streaming?: true}, &1))
+      messages = conversation_messages(state.messages)
       first_user = Enum.find(messages, &(&1[:role] == :user))
       last_message = last_message(messages)
 
@@ -80,6 +80,12 @@ defmodule Vibe.Session.Store.Listing do
   end
 
   defp finalize_restored_state(state), do: state
+
+  defp conversation_messages(messages) do
+    Enum.reject(messages, fn message ->
+      match?(%{streaming?: true}, message) or message[:role] == :system
+    end)
+  end
 
   defp last_message([]), do: nil
   defp last_message([message]), do: message

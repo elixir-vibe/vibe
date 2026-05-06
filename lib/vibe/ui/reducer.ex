@@ -171,13 +171,33 @@ defmodule Vibe.UI.Reducer do
     %{state | status: status}
   end
 
-  defp reduce(state, %Event{type: :model_selected, data: %{model: model}}) do
-    %{state | model: model}
+  defp reduce(state, %Event{type: :model_selected, at: at, data: %{model: model}}) do
+    %{
+      state
+      | model: model,
+        messages:
+          Lists.append(state.messages, %{
+            role: :system,
+            text: "Model: #{model}",
+            level: :info,
+            at: at
+          })
+    }
   end
 
-  defp reduce(state, %Event{type: :effort_selected, data: %{effort: effort}})
+  defp reduce(state, %Event{type: :effort_selected, at: at, data: %{effort: effort}})
        when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
-    %{state | effort: effort}
+    %{
+      state
+      | effort: effort,
+        messages:
+          Lists.append(state.messages, %{
+            role: :system,
+            text: "Effort: #{Vibe.Model.Effort.label(effort)}",
+            level: :info,
+            at: at
+          })
+    }
   end
 
   defp reduce(state, %Event{type: :session_selected, data: %{session_id: session_id}}) do

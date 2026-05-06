@@ -33,6 +33,10 @@ defmodule Vibe.TUI.Widgets.Message do
     end)
   end
 
+  def render(%{props: %{role: :system} = props}, width, theme) do
+    safe_render(width, theme, fn -> render_system(props, width, theme) end)
+  end
+
   def render(%{props: %{role: :subagent} = props}, width, theme) do
     safe_render(width, theme, fn -> render_subagent(props, width, theme) end)
   end
@@ -47,6 +51,11 @@ defmodule Vibe.TUI.Widgets.Message do
     |> render_block(width, theme, :user_message_bg, :user_message_text)
   end
 
+  defp system_color(:success), do: :success
+  defp system_color(:warning), do: :warning
+  defp system_color(:error), do: :error
+  defp system_color(_level), do: :accent
+
   defp user_text_with_attachments(text, props) do
     case Map.get(props, :image_count, 0) do
       count when is_integer(count) and count > 0 ->
@@ -56,6 +65,14 @@ defmodule Vibe.TUI.Widgets.Message do
       _count ->
         text
     end
+  end
+
+  defp render_system(props, width, theme) do
+    text = props |> Map.get(:text, "") |> to_string()
+    icon = Theme.fg(theme, system_color(Map.get(props, :level)), "◆")
+
+    [[icon, " ", Theme.fg(theme, :muted, text)]]
+    |> render_block_lines(width, theme, :assistant_message_bg, :muted)
   end
 
   defp render_subagent(props, width, theme) do

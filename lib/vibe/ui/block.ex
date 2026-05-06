@@ -13,6 +13,11 @@ defmodule Vibe.UI.Block do
     defstruct [:id, :text, :error, :result, :at, :loader_label]
   end
 
+  defmodule SystemMessage do
+    @moduledoc "Session history marker for local UI state changes."
+    defstruct [:id, :text, :level, :at]
+  end
+
   defmodule ToolCall do
     @moduledoc "Tool invocation block with args, status, and output."
     defstruct [

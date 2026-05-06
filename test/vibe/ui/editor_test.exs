@@ -44,6 +44,20 @@ defmodule Vibe.UI.EditorTest do
     assert editor.cursor == 11
   end
 
+  test "deletes word before cursor" do
+    editor = Editor.new(text: "hello brave world", cursor: 17)
+    {editor, []} = Editor.handle_key(editor, :delete_word_left)
+
+    assert editor.text == "hello brave "
+    assert editor.cursor == 12
+
+    editor = Editor.new(text: "hello brave   ", cursor: 14)
+    {editor, []} = Editor.handle_key(editor, :delete_word_left)
+
+    assert editor.text == "hello "
+    assert editor.cursor == 6
+  end
+
   test "submits slash commands separately" do
     editor = Editor.new(text: "/model openai_codex:gpt-5.5", cursor: 27)
     {_editor, [{:slash_command, command, args}]} = Editor.handle_key(editor, :submit)

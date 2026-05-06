@@ -46,10 +46,17 @@ defmodule Vibe.Session.Listing do
       live?: true,
       status: state.status,
       model: state.model,
-      message_count: length(state.messages),
-      last_message_preview: state.messages |> List.last() |> Vibe.Session.Preview.message(),
+      message_count: length(conversation_messages(state.messages)),
+      last_message_preview:
+        state.messages |> conversation_messages() |> List.last() |> Vibe.Session.Preview.message(),
       usage: state.usage
     })
+  end
+
+  defp conversation_messages(messages) do
+    Enum.reject(messages, fn message ->
+      match?(%{streaming?: true}, message) or message[:role] == :system
+    end)
   end
 
   defp stored?(id) do

@@ -17,6 +17,7 @@ defmodule Vibe.TUI.KeymapTest do
     assert Keymap.from_event(%Ghostty.KeyEvent{key: :escape}) == [:cancel]
     assert Keymap.from_event(%Ghostty.KeyEvent{key: :c, mods: [:ctrl]}) == [:cancel]
     assert Keymap.from_event(%Ghostty.KeyEvent{key: :v, mods: [:ctrl]}) == [:paste_image]
+    assert Keymap.from_event(%Ghostty.KeyEvent{key: :w, mods: [:ctrl]}) == [:delete_word_left]
 
     assert Keymap.from_event(%Ghostty.KeyEvent{key: :p, mods: [:ctrl]}) == [
              :cycle_model_forward
@@ -55,6 +56,7 @@ defmodule Vibe.TUI.KeymapTest do
     assert Keymap.from_bytes(<<12>>) == [:open_model_selector]
     assert Keymap.from_bytes(<<15>>) == [:toggle_truncation]
     assert Keymap.from_bytes(<<16>>) == [:cycle_model_forward]
+    assert Keymap.from_bytes(<<23>>) == [:delete_word_left]
     assert Keymap.from_bytes("\e[Z") == [:cycle_effort]
   end
 

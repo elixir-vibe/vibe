@@ -30,6 +30,18 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
   end
 
+  test "ctrl-w deletes the word before the cursor" do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
+
+    assert :ok = TerminalLoop.input(loop, "hello brave world")
+    assert :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :w, mods: [:ctrl]})
+
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(plain, &String.contains?(&1, "hello brave"))
+    refute Enum.any?(plain, &String.contains?(&1, "world"))
+  end
+
   test "preserves eval inspect highlighting through session view model" do
     session_id = "terminal-color-#{System.unique_integer([:positive])}"
     {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)

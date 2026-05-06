@@ -29,6 +29,9 @@ defmodule Vibe.TUI.Keymap do
   def from_event(%Ghostty.KeyEvent{key: :v, mods: mods} = event),
     do: if_mod(mods, :ctrl, [:paste_image], printable_event(event))
 
+  def from_event(%Ghostty.KeyEvent{key: :w, mods: mods} = event),
+    do: if_mod(mods, :ctrl, [:delete_word_left], printable_event(event))
+
   def from_event(%Ghostty.KeyEvent{key: :o, mods: mods} = event),
     do: if_mod(mods, :ctrl, [:toggle_truncation], printable_event(event))
 
@@ -64,6 +67,7 @@ defmodule Vibe.TUI.Keymap do
   def from_bytes(<<15>>), do: [:toggle_truncation]
   def from_bytes(<<16>>), do: [:cycle_model_forward]
   def from_bytes(<<22>>), do: [:paste_image]
+  def from_bytes(<<23>>), do: [:delete_word_left]
 
   def from_bytes(data) when is_binary(data) do
     case Ghostty.KeyDecoder.decode(data) do

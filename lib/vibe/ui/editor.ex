@@ -21,6 +21,7 @@ defmodule Vibe.UI.Editor do
           | :home
           | :end
           | :backspace
+          | :delete_word_left
           | :delete
           | :enter
           | :submit
@@ -121,6 +122,13 @@ defmodule Vibe.UI.Editor do
       left = left |> String.graphemes() |> Enum.drop(-1) |> Enum.join()
       {%{editor | text: left <> right, cursor: editor.cursor - 1}, []}
     end
+  end
+
+  def handle_key(%__MODULE__{} = editor, :delete_word_left) do
+    start = word_left(editor)
+    {left, right} = String.split_at(editor.text, editor.cursor)
+    {kept, _deleted} = String.split_at(left, start)
+    {%{editor | text: kept <> right, cursor: start}, []}
   end
 
   def handle_key(%__MODULE__{} = editor, :delete) do

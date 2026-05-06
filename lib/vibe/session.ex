@@ -273,9 +273,7 @@ defmodule Vibe.Session do
 
     case Switcher.cycle_model(state.state.model, direction) do
       {:ok, model} ->
-        state
-        |> emit(Event.new(:model_selected, state.state.session_id, %{model: model}))
-        |> notify("Model: #{model}")
+        emit(state, Event.new(:model_selected, state.state.session_id, %{model: model}))
 
       {:error, :one_model} ->
         notify(state, "Only one model available")
@@ -284,24 +282,18 @@ defmodule Vibe.Session do
 
   defp handle_command(%Command{type: :select_model, data: %{model: model}}, state)
        when is_binary(model) do
-    state
-    |> emit(Event.new(:model_selected, state.state.session_id, %{model: model}))
-    |> notify("Model: #{model}")
+    emit(state, Event.new(:model_selected, state.state.session_id, %{model: model}))
   end
 
   defp handle_command(%Command{type: :cycle_effort}, state) do
     effort = Switcher.cycle_effort(state.state.effort, state.state.model)
 
-    state
-    |> emit(Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
-    |> notify("Effort: #{Effort.label(effort)}")
+    emit(state, Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
   end
 
   defp handle_command(%Command{type: :select_effort, data: %{effort: effort}}, state)
        when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
-    state
-    |> emit(Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
-    |> notify("Effort: #{Effort.label(effort)}")
+    emit(state, Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
   end
 
   defp handle_command(
