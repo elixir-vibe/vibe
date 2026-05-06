@@ -30,6 +30,7 @@ defmodule Exy.Web.Components.Shell do
               <.nav_item href={~p"/"} active={@current == :sessions}>Sessions</.nav_item>
               <.nav_item href={~p"/jobs"} active={@current == :jobs}>Jobs</.nav_item>
               <.nav_item href={~p"/memory"} active={@current == :memory}>Memory</.nav_item>
+              <.nav_item href={~p"/gateways"} active={@current == :gateways}>Gateways</.nav_item>
               <.nav_item href={~p"/storage"} active={@current == :storage}>Storage</.nav_item>
               <.nav_item href={~p"/docs"} active={@current == :docs}>Docs</.nav_item>
               <.nav_item href={~p"/runtime"} active={@current == :runtime}>Runtime</.nav_item>
@@ -48,6 +49,7 @@ defmodule Exy.Web.Components.Shell do
           <.nav_item href={~p"/"} active={@current == :sessions}>Sessions</.nav_item>
           <.nav_item href={~p"/jobs"} active={@current == :jobs}>Jobs</.nav_item>
           <.nav_item href={~p"/memory"} active={@current == :memory}>Memory</.nav_item>
+          <.nav_item href={~p"/gateways"} active={@current == :gateways}>Gateways</.nav_item>
           <.nav_item href={~p"/storage"} active={@current == :storage}>Storage</.nav_item>
           <.nav_item href={~p"/docs"} active={@current == :docs}>Docs</.nav_item>
           <.nav_item href={~p"/runtime"} active={@current == :runtime}>Runtime</.nav_item>
