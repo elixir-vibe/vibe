@@ -81,8 +81,20 @@ after
 end
 
 if chat_id do
+  parsed_chat_id = String.to_integer(chat_id)
+
   IO.inspect(
-    ExGram.send_message(chat_id, "Exy Telegram diagnostics outbound smoke", token: token),
+    ExGram.send_message(parsed_chat_id, "Exy Telegram diagnostics outbound smoke", token: token),
     label: "real_outbound_smoke"
+  )
+
+  IO.inspect(
+    ExGram.send_message_draft(
+      parsed_chat_id,
+      System.unique_integer([:positive]),
+      "Exy Telegram diagnostics draft smoke",
+      token: token
+    ),
+    label: "real_draft_smoke"
   )
 end
