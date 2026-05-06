@@ -2,7 +2,7 @@ defmodule Vibe.TUI.PartialRendererTest do
   use ExUnit.Case, async: true
 
   alias Vibe.TUI.{PartialRenderer, RenderState, Theme}
-  alias Vibe.UI.Block.{Footer, ToolCall, UserMessage}
+  alias Vibe.UI.Block.{AssistantMessage, Footer, ToolCall, UserMessage}
   alias Vibe.UI.State
 
   test "reuses unchanged body blocks when picker changes" do
@@ -30,6 +30,24 @@ defmodule Vibe.TUI.PartialRendererTest do
     assert row >= 1
     assert column >= 1
     assert RenderState.stats(frame.state).entries > 0
+  end
+
+  test "loader phase invalidates only streaming assistant block" do
+    body = [assistant_message("stable", "done"), assistant_message("streaming", "")]
+    view = view(body: body)
+
+    %{state: state} =
+      PartialRenderer.render_body(view, 80, Theme.default(), RenderState.new(), loader_phase: 0)
+
+    first_stats = RenderState.stats(state)
+
+    %{state: state} =
+      PartialRenderer.render_body(view, 80, Theme.default(), state, loader_phase: 1)
+
+    second_stats = RenderState.stats(state)
+
+    assert second_stats.hits >= first_stats.hits + 3
+    assert second_stats.misses == first_stats.misses + 1
   end
 
   test "invalidates a changed tool block without invalidating unchanged messages" do
@@ -101,6 +119,10 @@ defmodule Vibe.TUI.PartialRendererTest do
 
   defp message do
     %UserMessage{id: "m1", text: "hello", at: ~U[2026-01-01 00:00:00Z]}
+  end
+
+  defp assistant_message(id, text) do
+    %AssistantMessage{id: id, text: text, at: ~U[2026-01-01 00:00:00Z]}
   end
 
   defp state_message(%UserMessage{} = message),

@@ -25,9 +25,13 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.AssistantMessage do
     |> Vibe.TUI.Widget.render(context.width, context.theme)
   end
 
-  def render_key(message, context) do
+  def render_key(%{id: "streaming"} = message, context) do
     {:assistant_message, message.id, hash(message), Keyword.get(context.opts, :loader_phase, 0),
      context.width, context.theme.name}
+  end
+
+  def render_key(message, context) do
+    {:assistant_message, message.id, hash(message), context.width, context.theme.name}
   end
 
   defp maybe_put_loader_phase(props, context) do
