@@ -12,6 +12,7 @@ defmodule Vibe.TUI.Widgets.Frame do
       border_content(theme, horizontal, content_width, title),
       Theme.fg(theme, :border, Theme.symbol(theme, right_key))
     ]
+    |> Widget.background_line(width, theme, :input_bg)
   end
 
   @spec line(IO.chardata(), pos_integer(), Theme.t()) :: IO.chardata()

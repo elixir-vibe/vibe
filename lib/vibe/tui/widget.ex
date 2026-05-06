@@ -131,6 +131,7 @@ defmodule Vibe.TUI.Widget do
       " ",
       Theme.fg(theme, :border, Theme.symbol(theme, :dialog_vertical))
     ]
+    |> background_line(width, theme, :input_bg)
   end
 
   @spec join_sides(IO.chardata(), IO.chardata(), pos_integer()) :: line()
