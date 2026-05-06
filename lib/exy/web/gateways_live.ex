@@ -7,7 +7,13 @@ defmodule Exy.Web.GatewaysLive do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket), do: :timer.send_interval(2_000, :refresh)
-    {:ok, assign_gateways(socket)}
+
+    socket =
+      socket
+      |> assign(:telegram_info, telegram_info())
+      |> assign_gateways()
+
+    {:ok, socket}
   end
 
   @impl true
@@ -48,6 +54,21 @@ defmodule Exy.Web.GatewaysLive do
       </:sidebar>
 
       <section class="space-y-4">
+        <.panel title="Telegram status">
+          <div class="grid gap-3 text-sm text-zinc-300 sm:grid-cols-2">
+            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Bot</div>
+              <div class="mt-2 font-medium text-zinc-100">{telegram_bot_label(@telegram_info.get_me)}</div>
+              <div class="mt-1 font-mono text-xs text-zinc-500">{telegram_bot_detail(@telegram_info.get_me)}</div>
+            </div>
+            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Webhook</div>
+              <div class="mt-2 font-medium text-zinc-100">{telegram_webhook_label(@telegram_info.webhook)}</div>
+              <div class="mt-1 break-all font-mono text-xs text-zinc-500">{telegram_webhook_detail(@telegram_info.webhook)}</div>
+            </div>
+          </div>
+        </.panel>
+
         <.panel title="Telegram actions">
           <div class="flex flex-wrap gap-2">
             <button phx-click="telegram_get_me" class="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5">getMe</button>
@@ -130,11 +151,21 @@ defmodule Exy.Web.GatewaysLive do
     |> assign_new(:action_result, fn -> nil end)
   end
 
-  defp run_telegram_action(socket, :get_me),
-    do: put_action_result(socket, :get_me, Exy.Gateway.Telegram.get_me())
+  defp run_telegram_action(socket, :get_me) do
+    result = Exy.Gateway.Telegram.get_me()
 
-  defp run_telegram_action(socket, :webhook),
-    do: put_action_result(socket, :webhook, Exy.Gateway.Telegram.webhook_info())
+    socket
+    |> assign(:telegram_info, Map.put(socket.assigns.telegram_info, :get_me, result))
+    |> put_action_result(:get_me, result)
+  end
+
+  defp run_telegram_action(socket, :webhook) do
+    result = Exy.Gateway.Telegram.webhook_info()
+
+    socket
+    |> assign(:telegram_info, Map.put(socket.assigns.telegram_info, :webhook, result))
+    |> put_action_result(:webhook, result)
+  end
 
   defp run_telegram_action(socket, :updates),
     do: put_action_result(socket, :updates, Exy.Gateway.Telegram.get_updates_once())
@@ -142,6 +173,29 @@ defmodule Exy.Web.GatewaysLive do
   defp put_action_result(socket, action, result) do
     assign(socket, :action_result, inspect({action, redact(result)}, pretty: true, limit: 40))
   end
+
+  defp telegram_info do
+    %{get_me: Exy.Gateway.Telegram.get_me(), webhook: Exy.Gateway.Telegram.webhook_info()}
+  end
+
+  defp telegram_bot_label({:ok, %{username: username}}) when is_binary(username),
+    do: "@#{username}"
+
+  defp telegram_bot_label({:ok, %{first_name: name}}) when is_binary(name), do: name
+  defp telegram_bot_label({:error, reason}), do: "Unavailable: #{inspect(reason)}"
+
+  defp telegram_bot_detail({:ok, %{id: id, first_name: name}}), do: "#{id} #{name}"
+  defp telegram_bot_detail({:error, _reason}), do: "Check TELEGRAM_BOT_TOKEN"
+
+  defp telegram_webhook_label({:ok, %{url: ""}}), do: "Not configured"
+  defp telegram_webhook_label({:ok, %{url: nil}}), do: "Not configured"
+  defp telegram_webhook_label({:ok, %{url: url}}) when is_binary(url), do: "Configured"
+  defp telegram_webhook_label({:error, reason}), do: "Unavailable: #{inspect(reason)}"
+
+  defp telegram_webhook_detail({:ok, %{url: ""}}), do: "Polling-ready"
+  defp telegram_webhook_detail({:ok, %{url: nil}}), do: "Polling-ready"
+  defp telegram_webhook_detail({:ok, %{url: url}}), do: url
+  defp telegram_webhook_detail({:error, _reason}), do: "Check TELEGRAM_BOT_TOKEN"
 
   defp redact({:ok, value}), do: {:ok, redact(value)}
   defp redact({:error, value}), do: {:error, redact(value)}
