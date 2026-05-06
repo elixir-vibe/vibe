@@ -3,6 +3,8 @@ defmodule Vibe.TUI.PartialRenderer do
 
   alias Vibe.TUI.{
     ChatTree,
+    Cursor,
+    EditorRenderer,
     Lines,
     Renderable,
     RenderContext,
@@ -11,8 +13,7 @@ defmodule Vibe.TUI.PartialRenderer do
     RenderState,
     RenderTree,
     Theme,
-    Widget,
-    Width
+    Widget
   }
 
   alias Vibe.UI.ViewModel
@@ -26,13 +27,13 @@ defmodule Vibe.TUI.PartialRenderer do
       |> ViewModel.from_state()
       |> Map.put(:picker, Keyword.get(opts, :picker))
 
-    editor = render_editor(snapshot, theme)
+    editor = EditorRenderer.render(snapshot, theme)
     %{body: body, state: render_state} = render_body(view, snapshot.width, theme, state, opts)
 
     lines = frame_lines(body, editor, snapshot.height, Keyword.get(opts, :viewport, :visible))
 
     cursor =
-      editor_cursor_position(
+      Cursor.editor_position(
         snapshot,
         editor_start_row(body, editor, snapshot.height, Keyword.get(opts, :viewport, :visible))
       )
@@ -102,17 +103,6 @@ defmodule Vibe.TUI.PartialRenderer do
   defp render_component(%RenderTree.Node{component: component}, context),
     do: Renderable.render(component, context)
 
-  defp render_editor(snapshot, theme) do
-    Vibe.TUI.textarea(
-      title: "Prompt",
-      value: snapshot.editor.text,
-      cursor: snapshot.editor.cursor,
-      min_rows: min(max(snapshot.height - 8, 3), 8),
-      placeholder: "Ask Vibe anything..."
-    )
-    |> Widget.render(snapshot.width, theme)
-  end
-
   defp frame_lines(body, editor, height, :visible),
     do: body |> fit_body(height, editor) |> Lines.join(editor)
 
@@ -124,34 +114,5 @@ defmodule Vibe.TUI.PartialRenderer do
   defp fit_body(body, height, editor) when is_integer(height) do
     body_lines = max(height - length(editor), 1)
     Enum.take(body, -body_lines)
-  end
-
-  defp editor_cursor_position(snapshot, editor_start_row) do
-    inner_width = max(snapshot.width - 4, 1)
-    text = snapshot.editor.text || ""
-    cursor = snapshot.editor.cursor || 0
-    before_cursor = String.slice(text, 0, cursor)
-    logical_lines = String.split(before_cursor, "\n")
-    {previous_lines, current_line} = split_current_line(logical_lines)
-
-    previous_rows =
-      previous_lines
-      |> Enum.map(&(&1 |> Widget.wrap(inner_width) |> length()))
-      |> Enum.sum()
-
-    current_width = Width.visible_length(current_line)
-
-    row = editor_start_row + 2 + previous_rows + div(current_width, inner_width)
-    column = 3 + rem(current_width, inner_width)
-
-    {max(row, 1), max(column, 1)}
-  end
-
-  defp split_current_line([]), do: {[], ""}
-  defp split_current_line([line]), do: {[], line}
-
-  defp split_current_line([line | lines]) do
-    {previous, current} = split_current_line(lines)
-    {[line | previous], current}
   end
 end
