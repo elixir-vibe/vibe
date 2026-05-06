@@ -24,6 +24,17 @@ defmodule Exy.SystemAlarmsTest do
     end)
   end
 
+  test "new sessions start with currently active runtime alerts" do
+    assert Exy.SystemAlarms.installed?()
+    :alarm_handler.set_alarm({{:disk_almost_full, ~c"/tmp"}, []})
+    assert_active_alert(:disk_almost_full)
+
+    {:ok, session} = Exy.Session.start_link(session_id: "alarm-initial-ui-test", persist?: false)
+    assert_session_alert(session, :disk_almost_full)
+  after
+    :alarm_handler.clear_alarm({:disk_almost_full, ~c"/tmp"})
+  end
+
   test "records SASL disk almost full alarms as telemetry and semantic UI state" do
     assert Exy.SystemAlarms.installed?()
     {:ok, session} = Exy.Session.start_link(session_id: "alarm-ui-test", persist?: false)

@@ -73,7 +73,15 @@ defmodule Exy.UI.State do
       session_id: Keyword.get_lazy(opts, :session_id, &Exy.Session.Store.new_id/0),
       cwd: Keyword.get_lazy(opts, :cwd, fn -> File.cwd!() end),
       model: Keyword.get_lazy(opts, :model, &Exy.Agent.Profile.default_model/0),
-      effort: Keyword.get_lazy(opts, :effort, &Exy.Agent.Profile.default_effort/0)
+      effort: Keyword.get_lazy(opts, :effort, &Exy.Agent.Profile.default_effort/0),
+      runtime_alerts: active_runtime_alerts()
     }
+  end
+
+  defp active_runtime_alerts do
+    Exy.SystemAlarms.active()
+    |> Map.new(&{&1.id, &1})
+  catch
+    :exit, _reason -> %{}
   end
 end

@@ -90,15 +90,17 @@ defmodule Exy.UI.Bus do
   end
 
   def handle_call({:emit_all, type, data, persist?}, _from, state) do
-    Enum.each(state.sessions, fn {session_id, server} ->
-      event = Event.new(type, session_id, data)
+    stale_sessions =
+      Enum.flat_map(state.sessions, fn {session_id, server} ->
+        event = Event.new(type, session_id, data)
 
-      if persist?,
-        do: Session.emit_event(server, event),
-        else: Session.emit_transient_event(server, event)
-    end)
+        case safe_emit(server, event, persist?) do
+          :ok -> []
+          :stale -> [session_id]
+        end
+      end)
 
-    {:reply, :ok, state}
+    {:reply, :ok, Enum.reduce(stale_sessions, state, &delete_session(&2, &1))}
   end
 
   @impl true
@@ -119,6 +121,20 @@ defmodule Exy.UI.Bus do
       {nil, _monitors} ->
         {:noreply, state}
     end
+  end
+
+  defp safe_emit(server, event, persist?) do
+    if Process.alive?(server) do
+      if persist?,
+        do: Session.emit_event(server, event),
+        else: Session.emit_transient_event(server, event)
+
+      :ok
+    else
+      :stale
+    end
+  catch
+    :exit, _reason -> :stale
   end
 
   defp demonitor_session(state, session_id) do
