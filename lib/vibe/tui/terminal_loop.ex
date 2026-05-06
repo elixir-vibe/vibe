@@ -339,6 +339,10 @@ defmodule Vibe.TUI.TerminalLoop do
     %{type: :confirmation, props: Map.from_struct(selector)}
   end
 
+  defp picker(%{ui: %{selector: selector}}) when is_map(selector) do
+    %{type: :select_list, props: selector}
+  end
+
   defp picker(%{autocomplete: nil}), do: nil
 
   defp picker(%{autocomplete: autocomplete}),

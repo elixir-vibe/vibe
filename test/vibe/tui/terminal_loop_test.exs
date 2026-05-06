@@ -17,6 +17,19 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "hello"))
   end
 
+  test "renders model selector after slash command submit" do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 20)
+
+    assert :ok = TerminalLoop.input(loop, "/model")
+    assert :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+
+    plain =
+      wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "Model") end))
+
+    assert Enum.any?(plain, &String.contains?(&1, "Model"))
+    assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
+  end
+
   test "preserves eval inspect highlighting through session view model" do
     session_id = "terminal-color-#{System.unique_integer([:positive])}"
     {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
