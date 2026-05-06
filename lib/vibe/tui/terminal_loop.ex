@@ -9,7 +9,7 @@ defmodule Vibe.TUI.TerminalLoop do
   use GenServer
 
   alias Vibe.TUI
-  alias Vibe.TUI.{App, Keymap, Lines, Renderer, Theme, Widget, Width}
+  alias Vibe.TUI.{App, Keymap, Lines, PartialRenderer, RenderState, Theme, Widget, Width}
   alias Vibe.UI.ViewModel
 
   require Vibe.Debug
@@ -59,7 +59,7 @@ defmodule Vibe.TUI.TerminalLoop do
       event_target: Keyword.get(opts, :event_target),
       loader_phase: 0,
       loader_timer: nil,
-      body_cache: nil,
+      render_state: RenderState.new(),
       theme: Keyword.get_lazy(opts, :theme, &Theme.default/0),
       trace:
         Vibe.Debug.run nil do
@@ -258,40 +258,18 @@ defmodule Vibe.TUI.TerminalLoop do
   end
 
   defp render_body(state, snapshot) do
-    key = body_cache_key(state, snapshot)
+    view =
+      snapshot.ui
+      |> ViewModel.from_state()
+      |> Map.put(:picker, picker(snapshot))
 
-    case state.body_cache do
-      {^key, lines} ->
-        {lines, state}
+    %{body: body, state: render_state} =
+      PartialRenderer.render_body(view, snapshot.width, state.theme, state.render_state,
+        loader_phase: state.loader_phase
+      )
 
-      _cache_miss ->
-        lines = render_body_uncached(state, snapshot)
-        {lines, %{state | body_cache: {key, lines}}}
-    end
+    {body, %{state | render_state: render_state}}
   end
-
-  defp render_body_uncached(state, snapshot) do
-    snapshot.ui
-    |> ViewModel.from_state()
-    |> Map.put(:picker, picker(snapshot))
-    |> apply_loader_phase(state.loader_phase)
-    |> Renderer.render(snapshot.width, state.theme)
-  end
-
-  defp body_cache_key(state, snapshot) do
-    {length(snapshot.ui.events), snapshot.ui.status, snapshot.width, state.loader_phase,
-     state.theme.name, picker_cache_key(snapshot)}
-  end
-
-  defp picker_cache_key(%{ui: %{selector: selector}}) when is_map(selector),
-    do:
-      {:selector, Map.get(selector, :kind), Map.get(selector, :selected),
-       Map.get(selector, :items)}
-
-  defp picker_cache_key(%{autocomplete: %{} = autocomplete}),
-    do: {:autocomplete, autocomplete.selected, autocomplete.items, autocomplete.replace_from}
-
-  defp picker_cache_key(_snapshot), do: nil
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
     if working?(state) do
@@ -304,15 +282,6 @@ defmodule Vibe.TUI.TerminalLoop do
   defp maybe_start_loader_timer(state), do: state
 
   defp working?(state), do: App.snapshot(state.app).ui.status == :working
-
-  defp apply_loader_phase(view, phase) do
-    Map.update!(view, :body, fn blocks ->
-      Enum.map(blocks, fn
-        %{id: "streaming", role: :assistant} = block -> Map.put(block, :loader_phase, phase)
-        block -> block
-      end)
-    end)
-  end
 
   defp fit_body(body, height, editor) when is_integer(height) do
     body_lines = max(height - length(editor), 1)
