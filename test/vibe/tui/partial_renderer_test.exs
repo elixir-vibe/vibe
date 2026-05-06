@@ -3,6 +3,7 @@ defmodule Vibe.TUI.PartialRendererTest do
 
   alias Vibe.TUI.{PartialRenderer, RenderState, Theme}
   alias Vibe.UI.Block.{Footer, ToolCall, UserMessage}
+  alias Vibe.UI.State
 
   test "reuses unchanged body blocks when picker changes" do
     view = view(body: [message(), tool()], picker: nil)
@@ -16,6 +17,19 @@ defmodule Vibe.TUI.PartialRendererTest do
 
     assert second_stats.hits >= first_stats.hits + 3
     assert second_stats.misses == first_stats.misses + 1
+  end
+
+  test "returns visible frame with cursor and updated render state" do
+    snapshot = snapshot(body: [message()], editor_text: "hello", editor_cursor: 5)
+
+    frame =
+      PartialRenderer.render_frame(snapshot, Theme.default(), RenderState.new(), picker: nil)
+
+    assert [_ | _] = frame.lines
+    assert {row, column} = frame.cursor
+    assert row >= 1
+    assert column >= 1
+    assert RenderState.stats(frame.state).entries > 0
   end
 
   test "invalidates a changed tool block without invalidating unchanged messages" do
@@ -45,6 +59,29 @@ defmodule Vibe.TUI.PartialRendererTest do
     assert second_stats.misses == first_stats.misses + 1
   end
 
+  defp snapshot(opts) do
+    ui = %State{
+      session_id: "s1",
+      cwd: "/tmp",
+      model: "model-a",
+      effort: :medium,
+      messages: Enum.map(Keyword.fetch!(opts, :body), &state_message/1),
+      status: :idle,
+      plugin_widgets: %{}
+    }
+
+    %{
+      ui: ui,
+      editor: %{
+        text: Keyword.get(opts, :editor_text, ""),
+        cursor: Keyword.get(opts, :editor_cursor, 0)
+      },
+      autocomplete: nil,
+      width: 80,
+      height: 24
+    }
+  end
+
   defp view(opts) do
     %{
       body: Keyword.fetch!(opts, :body),
@@ -65,6 +102,11 @@ defmodule Vibe.TUI.PartialRendererTest do
   defp message do
     %UserMessage{id: "m1", text: "hello", at: ~U[2026-01-01 00:00:00Z]}
   end
+
+  defp state_message(%UserMessage{} = message),
+    do: %{role: :user, text: message.text, at: message.at}
+
+  defp state_message(%ToolCall{} = tool), do: tool |> Map.from_struct() |> Map.put(:role, :tool)
 
   defp tool(opts \\ []) do
     %ToolCall{

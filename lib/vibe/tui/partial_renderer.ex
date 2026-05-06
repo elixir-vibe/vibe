@@ -2,9 +2,47 @@ defmodule Vibe.TUI.PartialRenderer do
   @moduledoc "Renderer-level partial rendering for semantic TUI view models."
 
   alias Vibe.Support.Lists
-  alias Vibe.TUI.{Renderable, RenderContext, RenderState, Theme, Widget}
+
+  alias Vibe.TUI.{
+    Lines,
+    Renderable,
+    RenderContext,
+    RenderFrame,
+    RenderState,
+    Theme,
+    Widget,
+    Width
+  }
+
+  alias Vibe.UI.ViewModel
 
   @type result :: %{body: [IO.chardata()], state: RenderState.t(), live_keys: [term()]}
+
+  @spec render_frame(map(), Theme.t(), RenderState.t(), keyword()) :: RenderFrame.t()
+  def render_frame(snapshot, theme, %RenderState{} = state, opts \\ []) when is_map(snapshot) do
+    view =
+      snapshot.ui
+      |> ViewModel.from_state()
+      |> Map.put(:picker, Keyword.get(opts, :picker))
+
+    editor = render_editor(snapshot, theme)
+    %{body: body, state: render_state} = render_body(view, snapshot.width, theme, state, opts)
+
+    lines = frame_lines(body, editor, snapshot.height, Keyword.get(opts, :viewport, :visible))
+
+    cursor =
+      editor_cursor_position(
+        snapshot,
+        editor_start_row(body, editor, snapshot.height, Keyword.get(opts, :viewport, :visible))
+      )
+
+    %RenderFrame{
+      lines: lines,
+      cursor: cursor,
+      state: render_state,
+      stats: RenderState.stats(render_state)
+    }
+  end
 
   @spec render_body(map(), pos_integer(), Theme.t(), RenderState.t(), keyword()) :: result()
   def render_body(view, width, theme, %RenderState{} = state, opts \\ []) do
@@ -93,6 +131,59 @@ defmodule Vibe.TUI.PartialRenderer do
   end
 
   defp spacer_component(id), do: {:node, {:spacer, id}, Vibe.TUI.spacer()}
+
+  defp render_editor(snapshot, theme) do
+    Vibe.TUI.textarea(
+      title: "Prompt",
+      value: snapshot.editor.text,
+      cursor: snapshot.editor.cursor,
+      min_rows: min(max(snapshot.height - 8, 3), 8),
+      placeholder: "Ask Vibe anything..."
+    )
+    |> Widget.render(snapshot.width, theme)
+  end
+
+  defp frame_lines(body, editor, height, :visible),
+    do: body |> fit_body(height, editor) |> Lines.join(editor)
+
+  defp frame_lines(body, editor, _height, :full), do: Lines.join(body, editor)
+
+  defp editor_start_row(_body, editor, height, :visible), do: max(height - length(editor), 0)
+  defp editor_start_row(body, _editor, _height, :full), do: length(body)
+
+  defp fit_body(body, height, editor) when is_integer(height) do
+    body_lines = max(height - length(editor), 1)
+    Enum.take(body, -body_lines)
+  end
+
+  defp editor_cursor_position(snapshot, editor_start_row) do
+    inner_width = max(snapshot.width - 4, 1)
+    text = snapshot.editor.text || ""
+    cursor = snapshot.editor.cursor || 0
+    before_cursor = String.slice(text, 0, cursor)
+    logical_lines = String.split(before_cursor, "\n")
+    {previous_lines, current_line} = split_current_line(logical_lines)
+
+    previous_rows =
+      previous_lines
+      |> Enum.map(&(&1 |> Widget.wrap(inner_width) |> length()))
+      |> Enum.sum()
+
+    current_width = Width.visible_length(current_line)
+
+    row = editor_start_row + 2 + previous_rows + div(current_width, inner_width)
+    column = 3 + rem(current_width, inner_width)
+
+    {max(row, 1), max(column, 1)}
+  end
+
+  defp split_current_line([]), do: {[], ""}
+  defp split_current_line([line]), do: {[], line}
+
+  defp split_current_line([line | lines]) do
+    {previous, current} = split_current_line(lines)
+    {[line | previous], current}
+  end
 
   defp notice_margin?(view, plugin_widgets) do
     not is_nil(Map.get(view, :notifications)) and

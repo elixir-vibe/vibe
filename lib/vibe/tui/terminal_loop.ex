@@ -8,9 +8,7 @@ defmodule Vibe.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Vibe.TUI
-  alias Vibe.TUI.{App, Keymap, Lines, PartialRenderer, RenderState, Theme, Widget, Width}
-  alias Vibe.UI.ViewModel
+  alias Vibe.TUI.{App, Keymap, PartialRenderer, RenderState, Theme}
 
   require Vibe.Debug
 
@@ -126,18 +124,18 @@ defmodule Vibe.TUI.TerminalLoop do
   end
 
   def handle_call(:render_snapshot, _from, state) do
-    snapshot = App.snapshot(state.app)
-    {lines, state} = render_full_lines(state, snapshot)
-    cursor = calculate_full_cursor_position(state, snapshot, length(lines))
-    {:reply, {lines, cursor}, state}
+    {frame, state} = render_frame(state, :full)
+    {:reply, {frame.lines, frame.cursor}, state}
   end
 
   def handle_call(:cursor_position, _from, state) do
-    {:reply, calculate_cursor_position(state), state}
+    {frame, state} = render_frame(state, :visible)
+    {:reply, frame.cursor, state}
   end
 
   def handle_call(:full_cursor_position, _from, state) do
-    {:reply, calculate_full_cursor_position(state), state}
+    {frame, state} = render_frame(state, :full)
+    {:reply, frame.cursor, state}
   end
 
   def handle_call(:viewport_height, _from, state) do
@@ -234,41 +232,26 @@ defmodule Vibe.TUI.TerminalLoop do
   defp event_type(event), do: inspect(event)
 
   defp render_lines(state) do
-    snapshot = App.snapshot(state.app)
-    editor = render_editor(snapshot, state.theme)
-    {body, state} = render_body(state, snapshot)
-
-    lines =
-      body
-      |> fit_body(snapshot.height, editor)
-      |> Lines.join(editor)
-
-    {lines, state}
+    {frame, state} = render_frame(state, :visible)
+    {frame.lines, state}
   end
 
   defp render_full_lines(state) do
+    {frame, state} = render_frame(state, :full)
+    {frame.lines, state}
+  end
+
+  defp render_frame(state, viewport) do
     snapshot = App.snapshot(state.app)
-    render_full_lines(state, snapshot)
-  end
 
-  defp render_full_lines(state, snapshot) do
-    editor = render_editor(snapshot, state.theme)
-    {body, state} = render_body(state, snapshot)
-    {Lines.join(body, editor), state}
-  end
-
-  defp render_body(state, snapshot) do
-    view =
-      snapshot.ui
-      |> ViewModel.from_state()
-      |> Map.put(:picker, picker(snapshot))
-
-    %{body: body, state: render_state} =
-      PartialRenderer.render_body(view, snapshot.width, state.theme, state.render_state,
-        loader_phase: state.loader_phase
+    frame =
+      PartialRenderer.render_frame(snapshot, state.theme, state.render_state,
+        loader_phase: state.loader_phase,
+        picker: picker(snapshot),
+        viewport: viewport
       )
 
-    {body, %{state | render_state: render_state}}
+    {frame, %{state | render_state: frame.state}}
   end
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
@@ -283,60 +266,6 @@ defmodule Vibe.TUI.TerminalLoop do
 
   defp working?(state), do: App.snapshot(state.app).ui.status == :working
 
-  defp fit_body(body, height, editor) when is_integer(height) do
-    body_lines = max(height - length(editor), 1)
-    Enum.take(body, -body_lines)
-  end
-
-  defp calculate_cursor_position(state) do
-    snapshot = App.snapshot(state.app)
-    editor = render_editor(snapshot, state.theme)
-    editor_start_row = max(snapshot.height - length(editor), 0)
-    editor_cursor_position(snapshot, editor_start_row)
-  end
-
-  defp calculate_full_cursor_position(state) do
-    snapshot = App.snapshot(state.app)
-    {body, _state} = render_body(state, snapshot)
-    editor_cursor_position(snapshot, length(body))
-  end
-
-  defp calculate_full_cursor_position(state, snapshot, full_line_count) do
-    editor = render_editor(snapshot, state.theme)
-    editor_start_row = max(full_line_count - length(editor), 0)
-    editor_cursor_position(snapshot, editor_start_row)
-  end
-
-  defp editor_cursor_position(snapshot, editor_start_row) do
-    inner_width = max(snapshot.width - 4, 1)
-    text = snapshot.editor.text || ""
-    cursor = snapshot.editor.cursor || 0
-    before_cursor = String.slice(text, 0, cursor)
-    logical_lines = String.split(before_cursor, "\n")
-    {previous_lines, current_line} = split_current_line(logical_lines)
-
-    previous_rows =
-      previous_lines
-      |> Enum.map(&(&1 |> Widget.wrap(inner_width) |> length()))
-      |> Enum.sum()
-
-    current_width = Width.visible_length(current_line)
-
-    row = editor_start_row + 2 + previous_rows + div(current_width, inner_width)
-
-    column = 3 + rem(current_width, inner_width)
-
-    {max(row, 1), max(column, 1)}
-  end
-
-  defp split_current_line([]), do: {[], ""}
-  defp split_current_line([line]), do: {[], line}
-
-  defp split_current_line([line | lines]) do
-    {previous, current} = split_current_line(lines)
-    {[line | previous], current}
-  end
-
   defp picker(%{ui: %{selector: %{overlay_kind: :confirmation} = selector}}) do
     %{type: :confirmation, props: Map.from_struct(selector)}
   end
@@ -349,15 +278,4 @@ defmodule Vibe.TUI.TerminalLoop do
 
   defp picker(%{autocomplete: autocomplete}),
     do: %{type: :autocomplete, props: Map.from_struct(autocomplete)}
-
-  defp render_editor(snapshot, theme) do
-    TUI.textarea(
-      title: "Prompt",
-      value: snapshot.editor.text,
-      cursor: snapshot.editor.cursor,
-      min_rows: min(max(snapshot.height - 8, 3), 8),
-      placeholder: "Ask Vibe anything..."
-    )
-    |> Widget.render(snapshot.width, theme)
-  end
 end
