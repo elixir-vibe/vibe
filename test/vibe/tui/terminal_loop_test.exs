@@ -202,6 +202,23 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert contents =~ "indexing"
   end
 
+  test "output paint uses terminal line diff after first frame" do
+    session_id = "diff-output-#{System.unique_integer([:positive])}"
+    {:ok, output} = StringIO.open("")
+
+    {:ok, _loop} =
+      TerminalLoop.start_link(output: output, width: 60, height: 12, session_id: session_id)
+
+    assert :ok = Vibe.Plugin.UI.set_status(session_id, :indexer, "indexing")
+    assert {:ok, first} = wait_for_output(output, "indexing")
+    assert first =~ IO.ANSI.clear()
+
+    assert :ok = Vibe.Plugin.UI.set_status(session_id, :indexer, "ready")
+    assert {:ok, second} = wait_for_output(output, "ready")
+
+    assert count_occurrences(second, IO.ANSI.clear()) == 1
+  end
+
   test "loader advances from background ticks without input" do
     session_id = "loader-ui-#{System.unique_integer([:positive])}"
 
@@ -383,6 +400,13 @@ defmodule Vibe.TUI.TerminalLoopTest do
     |> String.split("\n")
     |> Enum.reverse()
     |> Enum.find("", &(String.trim(&1) != ""))
+  end
+
+  defp count_occurrences(text, pattern) do
+    text
+    |> String.split(pattern)
+    |> length()
+    |> Kernel.-(1)
   end
 
   defp wait_for_output(output, text) do
