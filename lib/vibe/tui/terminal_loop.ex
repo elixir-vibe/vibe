@@ -8,7 +8,7 @@ defmodule Vibe.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Vibe.TUI.{App, Keymap, PartialRenderer, RenderState, Theme}
+  alias Vibe.TUI.{App, Keymap, Renderer, RenderState, Theme}
 
   require Vibe.Debug
 
@@ -245,7 +245,7 @@ defmodule Vibe.TUI.TerminalLoop do
     snapshot = App.snapshot(state.app)
 
     frame =
-      PartialRenderer.render_frame(snapshot, state.theme, state.render_state,
+      Renderer.render_frame(snapshot, state.theme, state.render_state,
         loader_phase: state.loader_phase,
         picker: picker(snapshot),
         viewport: viewport

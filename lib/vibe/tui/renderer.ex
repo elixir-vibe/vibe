@@ -6,7 +6,7 @@ defmodule Vibe.TUI.Renderer do
   lines. Semantic state lives in `Vibe.UI`.
   """
 
-  alias Vibe.TUI.{Theme, Views.Chat}
+  alias Vibe.TUI.{PartialRenderer, RenderFrame, RenderState, Theme, Views.Chat}
   alias Vibe.UI.ViewModel
 
   @type line :: IO.chardata()
@@ -15,5 +15,10 @@ defmodule Vibe.TUI.Renderer do
   def render(view, width, theme \\ Theme.default())
       when is_map(view) and is_integer(width) and width > 0 do
     Chat.render_lines(view, width, theme)
+  end
+
+  @spec render_frame(map(), Theme.t(), RenderState.t(), keyword()) :: RenderFrame.t()
+  def render_frame(snapshot, theme, %RenderState{} = state, opts \\ []) when is_map(snapshot) do
+    PartialRenderer.render_frame(snapshot, theme, state, opts)
   end
 end
