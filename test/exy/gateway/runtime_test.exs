@@ -40,11 +40,13 @@ defmodule Exy.Gateway.RuntimeTest do
                backend: Backend,
                backend_opts: [allow?: true],
                dispatch_fun: dispatch,
-               dispatch_opts: [session_key_opts: [group_sessions_per_user: false]]
+               dispatch_opts: [bridge?: false, session_key_opts: [group_sessions_per_user: false]]
              )
 
     assert :ok = Runtime.submit(runtime, "hello")
-    assert_receive {:dispatch, "hello", [session_key_opts: [group_sessions_per_user: false]]}
+
+    assert_receive {:dispatch, "hello",
+                    [bridge?: false, session_key_opts: [group_sessions_per_user: false]]}
 
     assert %{accepted: 1, ignored: 0, rejected: 0, failed: 0} = Runtime.stats(runtime)
   end

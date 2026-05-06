@@ -20,12 +20,20 @@ defmodule Exy.Gateway.Dispatcher do
     session_opts = Keyword.get(opts, :session_opts, [])
 
     with {:ok, session} <- find_or_start_session(session_id, message, session_opts),
+         :ok <- maybe_after_session(message, session_id, session, opts),
          :ok <-
            Exy.Session.dispatch(
              session,
              Command.new(:submit_prompt, %{text: prompt_text(message)})
            ) do
       {:ok, session_id}
+    end
+  end
+
+  defp maybe_after_session(message, session_id, session, opts) do
+    case Keyword.get(opts, :after_session) do
+      fun when is_function(fun, 3) -> fun.(message, session_id, session)
+      _missing -> :ok
     end
   end
 

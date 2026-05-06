@@ -87,9 +87,8 @@ defmodule Exy.Gateway.Runtime do
 
   defp maybe_dispatch(message, trigger, state) do
     if state.backend.authorized?(message, trigger, state.config) do
-      case state.dispatch_fun.(message, state.dispatch_opts) do
-        {:ok, session_id} ->
-          start_bridge(message, session_id, state)
+      case state.dispatch_fun.(message, dispatch_opts(state)) do
+        {:ok, _session_id} ->
           %{state | accepted: state.accepted + 1}
 
         {:error, reason} ->
@@ -100,14 +99,24 @@ defmodule Exy.Gateway.Runtime do
     end
   end
 
-  defp start_bridge(message, session_id, state) do
+  defp dispatch_opts(state) do
     if Keyword.get(state.dispatch_opts, :bridge?, true) do
-      _ignored =
-        Exy.Gateway.SessionBridge.start(message, session_id,
-          adapter: state.backend.outbound_adapter(state.config),
-          adapter_opts: [config: state.config],
-          consumer_module: consumer_module(message, state.config)
-        )
+      Keyword.put(state.dispatch_opts, :after_session, fn message, session_id, _session ->
+        start_bridge(message, session_id, state)
+      end)
+    else
+      state.dispatch_opts
+    end
+  end
+
+  defp start_bridge(message, session_id, state) do
+    case Exy.Gateway.SessionBridge.start(message, session_id,
+           adapter: state.backend.outbound_adapter(state.config),
+           adapter_opts: [config: state.config],
+           consumer_module: consumer_module(message, state.config)
+         ) do
+      {:ok, _pid} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
 
