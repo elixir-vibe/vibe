@@ -28,7 +28,13 @@ defmodule Exy.Gateway.Telegram.ConfigTest do
     assert {:ok, config} = Config.load(token: "token", allowed_users: "1,2", stream_mode: "draft")
     assert config.method == :polling
     assert config.stream_mode == :draft
+    assert config.poll_max_consecutive_conflicts == 12
     assert MapSet.equal?(config.allowed_users, MapSet.new(["1", "2"]))
+  end
+
+  test "loads polling conflict limit from overrides" do
+    assert {:ok, config} = Config.load(token: "token", poll_max_consecutive_conflicts: "3")
+    assert config.poll_max_consecutive_conflicts == 3
   end
 
   test "requires webhook secret for webhook mode" do

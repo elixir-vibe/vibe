@@ -34,6 +34,8 @@ defmodule Exy.Gateway.Telegram.Polling do
             last_poll_at: nil,
             last_success_at: nil,
             last_update_count: 0,
+            max_consecutive_conflicts: 12,
+            stopped_reason: nil,
             stopped?: false
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -62,6 +64,12 @@ defmodule Exy.Gateway.Telegram.Polling do
       allowed_updates: Keyword.get(opts, :allowed_updates),
       receive_timeout_ms:
         Keyword.get(opts, :receive_timeout_ms, Map.get(config, :poll_receive_timeout_ms, 10_000)),
+      max_consecutive_conflicts:
+        Keyword.get(
+          opts,
+          :max_consecutive_conflicts,
+          Map.get(config, :poll_max_consecutive_conflicts, 12)
+        ),
       fetch_fun: Keyword.get(opts, :fetch_fun, &ExGram.get_updates!/1),
       delete_webhook_fun: Keyword.get(opts, :delete_webhook_fun, &ExGram.delete_webhook/1),
       delete_webhook?: Keyword.get(opts, :delete_webhook?, true)
@@ -111,10 +119,14 @@ defmodule Exy.Gateway.Telegram.Polling do
         }
 
       {:error, %{kind: :conflict} = error} ->
-        record_error(state, error, started_at,
+        conflicts = state.consecutive_conflicts + 1
+
+        state
+        |> record_error(error, started_at,
           conflict_count: state.conflict_count + 1,
-          consecutive_conflicts: state.consecutive_conflicts + 1
+          consecutive_conflicts: conflicts
         )
+        |> maybe_stop_after_conflicts()
 
       {:error, error} ->
         record_error(state, error, started_at, consecutive_conflicts: 0)
@@ -159,6 +171,18 @@ defmodule Exy.Gateway.Telegram.Polling do
     })
   end
 
+  defp maybe_stop_after_conflicts(state) do
+    if state.consecutive_conflicts >= state.max_consecutive_conflicts do
+      Logger.warning(
+        "Telegram polling stopped after #{state.consecutive_conflicts} consecutive getUpdates conflicts"
+      )
+
+      %{state | stopped?: true, stopped_reason: :too_many_conflicts, poll_ref: nil}
+    else
+      state
+    end
+  end
+
   defp classify_error(message) do
     if String.contains?(message, "terminated by other getUpdates request"),
       do: :conflict,
@@ -177,6 +201,8 @@ defmodule Exy.Gateway.Telegram.Polling do
       last_poll_at: state.last_poll_at,
       last_success_at: state.last_success_at,
       last_update_count: state.last_update_count,
+      max_consecutive_conflicts: state.max_consecutive_conflicts,
+      stopped_reason: state.stopped_reason,
       stopped?: state.stopped?,
       polling?: state.poll_ref != nil
     }

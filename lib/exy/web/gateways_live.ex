@@ -234,6 +234,9 @@ defmodule Exy.Web.GatewaysLive do
   defp telegram_webhook_detail({:ok, %{url: url}}), do: url
   defp telegram_webhook_detail({:error, _reason}), do: "Check TELEGRAM_BOT_TOKEN"
 
+  defp polling_state_label({:ok, %{stopped?: true, stopped_reason: :too_many_conflicts}}),
+    do: "Stopped after conflicts"
+
   defp polling_state_label({:ok, %{polling?: true}}), do: "Running"
   defp polling_state_label({:ok, _status}), do: "Idle"
   defp polling_state_label({:error, :not_running}), do: "Not running"
