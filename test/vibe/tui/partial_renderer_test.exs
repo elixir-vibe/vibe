@@ -1,7 +1,7 @@
 defmodule Vibe.TUI.PartialRendererTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{PartialRenderer, RenderState, Theme}
+  alias Vibe.TUI.{PartialRenderer, Renderer, RenderState, Theme}
   alias Vibe.UI.Block.{AssistantMessage, Footer, ToolCall, UserMessage}
   alias Vibe.UI.State
 
@@ -17,6 +17,15 @@ defmodule Vibe.TUI.PartialRendererTest do
 
     assert second_stats.hits >= first_stats.hits + 3
     assert second_stats.misses == first_stats.misses + 1
+  end
+
+  test "partial body rendering matches pure chat renderer" do
+    view = view(body: [message(), tool()], picker: picker("/model"))
+
+    %{body: partial_lines} =
+      PartialRenderer.render_body(view, 80, Theme.default(), RenderState.new())
+
+    assert partial_lines == Renderer.render(view, 80, Theme.default())
   end
 
   test "returns visible frame with cursor and updated render state" do
