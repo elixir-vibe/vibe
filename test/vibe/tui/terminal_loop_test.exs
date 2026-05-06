@@ -28,6 +28,23 @@ defmodule Vibe.TUI.TerminalLoopTest do
 
     assert Enum.any?(plain, &String.contains?(&1, "Model"))
     assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
+    assert selector_rendered_once?(plain, "Model")
+    refute autocomplete_artifact?(plain)
+  end
+
+  test "renders sessions selector without stale autocomplete overlay" do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
+
+    assert :ok = TerminalLoop.input(loop, "/sessions")
+    assert :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+
+    plain =
+      wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "Sessions") end))
+
+    assert selector_rendered_once?(plain, "Sessions")
+    assert Enum.any?(plain, &String.contains?(&1, "msg"))
+    refute autocomplete_artifact?(plain)
+    refute Enum.any?(plain, &String.contains?(&1, "Commands"))
   end
 
   test "selector confirmation stays responsive with expanded tool output" do
@@ -574,6 +591,15 @@ defmodule Vibe.TUI.TerminalLoopTest do
       true ->
         plain
     end
+  end
+
+  defp selector_rendered_once?(plain, title) do
+    Enum.count(plain, &(String.trim(&1) == title)) == 1
+  end
+
+  defp autocomplete_artifact?(plain) do
+    Enum.any?(plain, &(String.trim(&1) == "Completions")) or
+      Enum.any?(plain, &(String.trim(&1) == "No matches"))
   end
 
   test "tracks editor cursor position inside the prompt" do
