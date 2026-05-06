@@ -35,6 +35,8 @@ Useful environment variables:
 - `TELEGRAM_POLL_TIMEOUT_S` — long-poll timeout, default `5` to keep diagnostics responsive.
 - `TELEGRAM_POLL_RECEIVE_TIMEOUT_MS` — HTTP receive timeout for long-poll requests, default `10000`.
 
+Telegram responses are rendered as safe Telegram HTML. Exy escapes raw HTML, maps a small Markdown-like subset (`**bold**`, `*italic*`, inline code, fenced code) to Telegram tags, splits long final sends below Telegram's 4096-character limit, treats `message is not modified` edits as success, and falls back to plain text when HTML delivery is rejected.
+
 The polling transport clears stale webhooks before long polling so a bot can be moved between webhook and polling mode safely.
 
 ## Telegram topics

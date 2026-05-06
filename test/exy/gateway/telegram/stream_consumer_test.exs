@@ -23,14 +23,18 @@ defmodule Exy.Gateway.Telegram.StreamConsumerTest do
                reply_to: "reply-1"
              )
 
-    StreamConsumer.delta(consumer, "hel")
-    assert_receive {:draft, 123, 77, "hel", [token: "token"]}
+    StreamConsumer.delta(consumer, "**hel**")
+    assert_receive {:draft, 123, 77, "<b>hel</b>", opts}
+    assert opts[:token] == "token"
+    assert opts[:parse_mode] == "HTML"
 
     StreamConsumer.delta(consumer, "lo")
-    assert_receive {:draft, 123, 77, "hello", [token: "token"]}
+    assert_receive {:draft, 123, 77, "<b>hel</b>lo", opts}
+    assert opts[:token] == "token"
+    assert opts[:parse_mode] == "HTML"
 
     StreamConsumer.finish(consumer)
-    assert_receive {:gateway_send, "123", "hello", opts}
+    assert_receive {:gateway_send, "123", "**hel**lo", opts}
     assert opts[:reply_to] == "reply-1"
   end
 end

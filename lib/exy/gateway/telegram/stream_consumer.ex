@@ -69,7 +69,7 @@ defmodule Exy.Gateway.Telegram.StreamConsumer do
     _ignored =
       state.adapter.send(
         state.chat_id,
-        limit_text(state.accumulated, state.max_message_length),
+        state.accumulated,
         send_opts(state)
       )
 
@@ -82,7 +82,10 @@ defmodule Exy.Gateway.Telegram.StreamConsumer do
   defp flush(%__MODULE__{accumulated: ""} = state), do: state
 
   defp flush(state) do
-    text = limit_text(state.accumulated, state.max_message_length)
+    text =
+      state.accumulated
+      |> limit_text(state.max_message_length)
+      |> Exy.Gateway.Telegram.Text.to_html()
 
     if text == state.visible_text do
       state
@@ -91,7 +94,7 @@ defmodule Exy.Gateway.Telegram.StreamConsumer do
              String.to_integer(state.chat_id),
              state.draft_id,
              text,
-             draft_opts(state)
+             Keyword.put(draft_opts(state), :parse_mode, "HTML")
            ) do
         {:ok, true} -> %{state | visible_text: text, last_draft_ms: now_ms()}
         {:ok, _other} -> %{state | visible_text: text, last_draft_ms: now_ms()}

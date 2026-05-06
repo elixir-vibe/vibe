@@ -86,9 +86,17 @@ defmodule Exy.Gateway.Telegram.Adapter do
   defp send_plain(chat_id, text, opts, markdown_error) do
     config = Keyword.fetch!(opts, :config)
 
-    case ExGram.send_message(chat_id, text, common_opts(opts, config)) do
-      {:ok, message} -> {:ok, message_id(message)}
-      {:error, reason} -> {:error, {:telegram_send_failed, markdown_error, reason}}
+    text
+    |> Text.split()
+    |> Enum.reduce_while(nil, fn chunk, first_message_id ->
+      case ExGram.send_message(chat_id, chunk, common_opts(opts, config)) do
+        {:ok, message} -> {:cont, first_message_id || message_id(message)}
+        {:error, reason} -> {:halt, {:error, {:telegram_send_failed, markdown_error, reason}}}
+      end
+    end)
+    |> case do
+      {:error, reason} -> {:error, reason}
+      message_id -> {:ok, message_id}
     end
   end
 
