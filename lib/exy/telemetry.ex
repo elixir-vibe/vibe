@@ -18,7 +18,10 @@ defmodule Exy.Telemetry do
 
   @decode_keys %{
     "action" => :action,
+    "alarm_id" => :alarm_id,
+    "alarm_type" => :alarm_type,
     "command" => :command,
+    "description" => :description,
     "duration" => :duration,
     "error" => :error,
     "event_type" => :event_type,
@@ -47,6 +50,8 @@ defmodule Exy.Telemetry do
     [:exy, :plugin, :dispatch, :start],
     [:exy, :plugin, :dispatch, :stop],
     [:exy, :plugin, :dispatch, :exception],
+    [:exy, :system, :alarm, :set],
+    [:exy, :system, :alarm, :clear],
     [:req_llm, :request, :start],
     [:req_llm, :request, :stop],
     [:req_llm, :request, :exception],

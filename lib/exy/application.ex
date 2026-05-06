@@ -15,6 +15,7 @@ defmodule Exy.Application do
       {Registry, keys: :unique, name: Exy.Registry},
       {Phoenix.PubSub, name: Exy.PubSub},
       Exy.Telemetry,
+      Exy.SystemAlarms,
       {Jido, name: Jido, otp_app: :exy},
       Exy.Jido,
       Exy.Subagents.Supervisor,
