@@ -35,7 +35,7 @@ defmodule Exy.Session.Store.Listing do
       state = session_id |> restore_state(events) |> finalize_restored_state()
       messages = Enum.reject(state.messages, &match?(%{streaming?: true}, &1))
       first_user = Enum.find(messages, &(&1[:role] == :user))
-      last_message = List.last(messages)
+      last_message = last_message(messages)
 
       %{
         status: state.status,
@@ -80,6 +80,10 @@ defmodule Exy.Session.Store.Listing do
   end
 
   defp finalize_restored_state(state), do: state
+
+  defp last_message([]), do: nil
+  defp last_message([message]), do: message
+  defp last_message([_message | messages]), do: last_message(messages)
 
   defp restore_state(session_id, events) do
     events

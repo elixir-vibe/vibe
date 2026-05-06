@@ -50,9 +50,8 @@ defmodule Exy.Gateway.Telegram.Adapter do
   def delete(chat_id, message_id, opts) do
     config = Keyword.fetch!(opts, :config)
 
-    case ExGram.delete_message(chat_id, message_id, token: config.token) do
+    case ExGram.delete_message(chat_id, telegram_message_id(message_id), token: config.token) do
       {:ok, true} -> :ok
-      {:ok, _other} -> :ok
       {:error, reason} -> {:error, reason}
     end
   end
@@ -63,7 +62,6 @@ defmodule Exy.Gateway.Telegram.Adapter do
 
     case ExGram.send_chat_action(chat_id, "typing", token: config.token) do
       {:ok, true} -> :ok
-      {:ok, _other} -> :ok
       {:error, reason} -> {:error, reason}
     end
   end
@@ -103,7 +101,10 @@ defmodule Exy.Gateway.Telegram.Adapter do
   defp edit_plain(chat_id, message_id, text, opts, markdown_error) do
     config = Keyword.fetch!(opts, :config)
 
-    opts = opts |> common_opts(config) |> Keyword.merge(chat_id: chat_id, message_id: message_id)
+    opts =
+      opts
+      |> common_opts(config)
+      |> Keyword.merge(chat_id: chat_id, message_id: telegram_message_id(message_id))
 
     case ExGram.edit_message_text(text, opts) do
       {:ok, message} -> {:ok, message_id(message) || to_string(message_id)}
@@ -128,6 +129,15 @@ defmodule Exy.Gateway.Telegram.Adapter do
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
+
+  defp telegram_message_id(id) when is_integer(id), do: id
+
+  defp telegram_message_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int, ""} -> int
+      _other -> id
+    end
+  end
 
   defp message_id(%{message_id: id}) when not is_nil(id), do: to_string(id)
   defp message_id(_message), do: nil

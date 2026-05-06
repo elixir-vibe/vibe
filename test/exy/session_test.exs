@@ -57,7 +57,9 @@ defmodule Exy.SessionTest do
 
     Exy.Session.Store.append_trajectory(
       :assistant_message,
-      %{result: %{"provider_specific" => "kept"}}, session_id: session_id)
+      %{result: %{"provider_specific" => "kept"}},
+      session_id: session_id
+    )
 
     assert [%{data: %{result: %{"provider_specific" => "kept"}}}] =
              Exy.Session.Store.events(session_id)

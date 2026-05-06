@@ -311,11 +311,10 @@ defmodule Exy.TUI.TerminalLoop do
     cursor = snapshot.editor.cursor || 0
     before_cursor = String.slice(text, 0, cursor)
     logical_lines = String.split(before_cursor, "\n")
-    current_line = List.last(logical_lines) || ""
+    {previous_lines, current_line} = split_current_line(logical_lines)
 
     previous_rows =
-      logical_lines
-      |> Enum.drop(-1)
+      previous_lines
       |> Enum.map(&(&1 |> Widget.wrap(inner_width) |> length()))
       |> Enum.sum()
 
@@ -326,6 +325,14 @@ defmodule Exy.TUI.TerminalLoop do
     column = 3 + rem(current_width, inner_width)
 
     {max(row, 1), max(column, 1)}
+  end
+
+  defp split_current_line([]), do: {[], ""}
+  defp split_current_line([line]), do: {[], line}
+
+  defp split_current_line([line | lines]) do
+    {previous, current} = split_current_line(lines)
+    {[line | previous], current}
   end
 
   defp picker(%{ui: %{selector: %{overlay_kind: :confirmation} = selector}}) do

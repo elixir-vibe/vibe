@@ -195,7 +195,6 @@ defmodule Exy.Web.Session.Components do
 
   defp tool_name(name) when is_atom(name), do: name |> Atom.to_string() |> String.capitalize()
   defp tool_name(name) when is_binary(name), do: String.capitalize(name)
-  defp tool_name(_name), do: "Tool"
 
   defp display_text(nil), do: nil
   defp display_text(text) when is_binary(text), do: text

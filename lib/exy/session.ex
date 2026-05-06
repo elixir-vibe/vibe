@@ -536,7 +536,7 @@ defmodule Exy.Session do
       |> Reducer.apply_events(Enum.map(events, fn {_seq, event} -> event end))
       |> finalize_restored_state(restoring?)
 
-    event_seq = events |> List.last({0, nil}) |> elem(0)
+    event_seq = events |> last_event({0, nil}) |> elem(0)
     {ui_state, event_seq, Enum.take(events, -200)}
   end
 
@@ -572,6 +572,10 @@ defmodule Exy.Session do
 
   defp remember_event(events, seq, event),
     do: events |> Exy.Support.Lists.append({seq, event}) |> Enum.take(-200)
+
+  defp last_event([], default), do: default
+  defp last_event([event], _default), do: event
+  defp last_event([_event | events], default), do: last_event(events, default)
 
   defp maybe_register_ui_bus(session_id) do
     if Process.whereis(Exy.UI.Bus), do: Exy.UI.Bus.register(session_id, self()), else: :ok

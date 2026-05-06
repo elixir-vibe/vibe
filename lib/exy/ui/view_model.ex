@@ -123,7 +123,7 @@ defmodule Exy.UI.ViewModel do
   end
 
   defp loader_blocks(state) do
-    case List.last(state.messages) do
+    case last_message(state.messages) do
       %{role: :assistant, text: text} when is_binary(text) and text != "" -> []
       _message -> [loader_block(state)]
     end
@@ -149,6 +149,10 @@ defmodule Exy.UI.ViewModel do
   defp running_tool?(%{pending_tools: pending_tools}) do
     Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) in [:running, "running"] end)
   end
+
+  defp last_message([]), do: nil
+  defp last_message([message]), do: message
+  defp last_message([_message | messages]), do: last_message(messages)
 
   defp notification_block([]), do: nil
   defp notification_block(items), do: %NotificationList{items: items}

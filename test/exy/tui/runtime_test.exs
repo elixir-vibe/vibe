@@ -38,7 +38,7 @@ defmodule Exy.TUI.RuntimeTest do
 
     assert Enum.at(screen_lines, start_row - 1) |> String.starts_with?("~/")
     assert Enum.at(screen_lines, start_row) |> String.starts_with?("╭")
-    assert List.last(screen_lines) |> String.starts_with?("╰")
+    assert last_item(screen_lines) |> String.starts_with?("╰")
     assert {render_state.cursor.y + 1, render_state.cursor.x + 1} == cursor
     refute Enum.any?(Enum.slice(screen_lines, 0, start_row - 1), &String.contains?(&1, "Prompt"))
   end
@@ -276,4 +276,7 @@ defmodule Exy.TUI.RuntimeTest do
   defp remaining_timeout(deadline) do
     max(deadline - System.monotonic_time(:millisecond), 0)
   end
+
+  defp last_item([item]), do: item
+  defp last_item([_item | items]), do: last_item(items)
 end

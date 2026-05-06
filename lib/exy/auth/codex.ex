@@ -152,7 +152,6 @@ defmodule Exy.Auth.Codex do
     }
   end
 
-  defp format_error(reason) when is_binary(reason), do: reason
   defp format_error(reason), do: inspect(reason, pretty: true)
 
   defp exchange_code(code, verifier) do

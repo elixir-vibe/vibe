@@ -92,7 +92,10 @@ defmodule Exy.Gateway.Source do
     |> String.to_existing_atom()
     |> chat_type!()
   rescue
-    ArgumentError -> raise ArgumentError, "invalid gateway chat_type #{inspect(type)}"
+    _exception in ArgumentError ->
+      reraise ArgumentError,
+              [message: "invalid gateway chat_type #{inspect(type)}"],
+              __STACKTRACE__
   end
 
   defp chat_type!(type), do: raise(ArgumentError, "invalid gateway chat_type #{inspect(type)}")

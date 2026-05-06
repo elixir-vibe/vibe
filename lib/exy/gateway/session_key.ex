@@ -37,22 +37,22 @@ defmodule Exy.Gateway.SessionKey do
       source.chat_id
     ]
 
-    parts = if source.thread_id, do: parts ++ [source.thread_id], else: parts
+    parts = maybe_append(parts, source.thread_id)
 
     isolate_user? =
       group_sessions_per_user and (is_nil(source.thread_id) or thread_sessions_per_user)
 
-    if isolate_user? and source.user_id do
-      compact_join(parts ++ [source.user_id])
-    else
-      compact_join(parts)
-    end
+    if isolate_user?,
+      do: compact_join(maybe_append(parts, source.user_id)),
+      else: compact_join(parts)
   end
+
+  defp maybe_append(parts, nil), do: parts
+  defp maybe_append(parts, value), do: [value | Enum.reverse(parts)] |> Enum.reverse()
 
   defp compact_join(parts) do
     parts
     |> Enum.reject(&is_nil/1)
-    |> Enum.map(&to_string/1)
-    |> Enum.join(":")
+    |> Enum.map_join(":", &to_string/1)
   end
 end

@@ -179,7 +179,8 @@ defmodule Exy.TUI.Markdown do
   defp complex_list_item?([%MDEx.Paragraph{}]), do: false
   defp complex_list_item?(_nodes), do: true
 
-  defp table(rows, _width, _theme, _opts) when length(rows) < 2, do: []
+  defp table([], _width, _theme, _opts), do: []
+  defp table([_row], _width, _theme, _opts), do: []
 
   defp table(rows, width, theme, opts) do
     cells = Enum.map(rows, &table_row(&1, theme))

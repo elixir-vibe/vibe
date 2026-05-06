@@ -74,7 +74,6 @@ defmodule Exy.Image do
       maybe_resize(image, opts)
     else
       nil -> {:error, "unsupported image type: #{path}"}
-      {:error, %File.Error{} = error} -> {:error, Exception.message(error)}
       {:error, reason} -> {:error, to_string(reason)}
     end
   end

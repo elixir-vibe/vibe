@@ -12,7 +12,7 @@ defmodule Exy.Web.ArtifactController do
          {:ok, path} <- Artifacts.resolve_session_artifact(session_id, relative_path),
          true <- File.regular?(path) do
       conn
-      |> Conn.put_resp_content_type(MIME.from_path(path) || "application/octet-stream")
+      |> Conn.put_resp_content_type(MIME.from_path(path))
       |> Conn.send_file(200, path)
     else
       {:error, :invalid_session_id} -> Conn.send_resp(conn, 404, "not found")
@@ -26,4 +26,6 @@ defmodule Exy.Web.ArtifactController do
       do: :ok,
       else: {:error, :invalid_session_id}
   end
+
+  defp validate_session_id(_session_id), do: {:error, :invalid_session_id}
 end

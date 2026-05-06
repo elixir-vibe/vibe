@@ -33,20 +33,12 @@ defmodule Exy.Prompt.ClipboardImage do
       %{exit_status: 0} ->
         :ok
 
-      %{stderr: stderr, stdout: stdout} ->
-        {:error, {:clipboard_image_unavailable, output(stderr, stdout)}}
+      %Command.Result{output: output} ->
+        {:error, {:clipboard_image_unavailable, String.trim(output)}}
 
       {:error, reason} ->
         {:error, reason}
     end
-  end
-
-  defp output(stderr, stdout) do
-    [stderr, stdout]
-    |> Enum.filter(&is_binary/1)
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.join("\n")
   end
 
   defp filename do

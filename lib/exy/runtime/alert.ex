@@ -117,7 +117,7 @@ defmodule Exy.Runtime.Alert do
   defp disk_path({:disk_almost_full, path}), do: path |> to_string() |> normalize_path()
   defp disk_path(_alarm_id), do: nil
 
-  defp normalize_path([]), do: nil
+  defp normalize_path(""), do: nil
   defp normalize_path(path), do: path
 
   defp fetch_value!(map, key) do

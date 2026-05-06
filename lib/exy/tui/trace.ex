@@ -20,7 +20,7 @@ defmodule Exy.TUI.Trace do
       frames: length(frames),
       snapshots: length(snapshots),
       first_entry: List.first(entries),
-      last_entry: List.last(entries)
+      last_entry: last_item(entries)
     }
   end
 
@@ -45,7 +45,7 @@ defmodule Exy.TUI.Trace do
 
     path =
       case index do
-        :last -> List.last(frames)
+        :last -> last_item(frames)
         index when is_integer(index) -> Enum.at(frames, index - 1)
       end
 
@@ -163,6 +163,10 @@ defmodule Exy.TUI.Trace do
     trace
   end
 
+  defp last_item([]), do: nil
+  defp last_item([item]), do: item
+  defp last_item([_item | items]), do: last_item(items)
+
   defp frame_paths(dir), do: Path.wildcard(Path.join([Path.expand(dir), "frames", "*.txt"]))
 
   defp maybe_missing_trace(issues, dir) do
@@ -254,7 +258,7 @@ defmodule Exy.TUI.Trace do
   defp audit_prompt_bottom(issues, _index, _prompt_tops, _prompt_bottoms), do: issues
 
   defp audit_content_below_prompt(issues, index, lines, prompt_bottoms) do
-    case List.last(prompt_bottoms) do
+    case last_item(prompt_bottoms) do
       nil ->
         issues
 

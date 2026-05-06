@@ -119,7 +119,10 @@ defmodule Exy.Agent.StreamingTest do
 
   test "core dispatcher requires ReqLLM stream chunks", %{agent_id: agent_id} do
     assert_raise FunctionClauseError, fn ->
-      apply(Exy.Agent.Streaming, :dispatch, [agent_id, %{chunk_type: :content, delta: "bad"}])
+      Code.eval_string(
+        "Exy.Agent.Streaming.dispatch(agent_id, %{chunk_type: :content, delta: \"bad\"})",
+        agent_id: agent_id
+      )
     end
   end
 

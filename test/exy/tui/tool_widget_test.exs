@@ -88,8 +88,7 @@ defmodule Exy.TUI.ToolWidgetTest do
       }
       |> TUI.tool()
       |> Widget.render(80, Theme.default())
-      |> Enum.map(&Width.visible_text/1)
-      |> Enum.map(&String.trim_trailing/1)
+      |> Enum.map(fn line -> line |> Width.visible_text() |> String.trim_trailing() end)
 
     assert "   hello" in plain
     assert Enum.count(plain, &(&1 == "")) == 2
@@ -793,8 +792,7 @@ defmodule Exy.TUI.ToolWidgetTest do
 
     lines
     |> Enum.map(&Width.visible_text/1)
-    |> Enum.reject(&(String.trim(&1) == ""))
-    |> Enum.reject(&String.contains?(&1, "◆ read"))
+    |> Enum.reject(&(String.trim(&1) == "" or String.contains?(&1, "◆ read")))
     |> Enum.each(fn line ->
       assert String.starts_with?(line, "   ")
       assert Width.visible_length(line) <= 80

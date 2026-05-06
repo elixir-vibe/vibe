@@ -1,8 +1,8 @@
 defmodule Exy.UI.ViewModelTest do
   use ExUnit.Case, async: true
 
-  alias Exy.UI.{Event, Reducer, State, ToolEvent, ViewModel}
   alias Exy.UI.Block.{AssistantMessage, ToolCall, UserMessage}
+  alias Exy.UI.{Event, Reducer, State, ToolEvent, ViewModel}
 
   test "builds semantic blocks from state" do
     state =

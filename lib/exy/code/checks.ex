@@ -242,7 +242,14 @@ defmodule Exy.Code.Checks do
 
   defp run_ex_dna(opts) do
     paths = Keyword.get(opts, :paths, ["lib", "test"])
-    report = eval_optional("ExDNA.analyze(paths: paths, reporters: [])", paths: paths)
+    min_mass = Keyword.get(opts, :ex_dna_min_mass, 80)
+
+    report =
+      eval_optional("ExDNA.analyze(paths: paths, reporters: [], min_mass: min_mass)",
+        paths: paths,
+        min_mass: min_mass
+      )
+
     clones = Map.get(report, :clones, [])
     status = if clones == [], do: :ok, else: :error
     %{name: :ex_dna, status: status, details: %{stats: Map.get(report, :stats), clones: clones}}

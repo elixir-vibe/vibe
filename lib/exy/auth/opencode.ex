@@ -28,7 +28,7 @@ defmodule Exy.Auth.OpenCode do
     base_url = @base_urls[prefix]
 
     model =
-      case LLMDB.model(:opencode, model_id) do
+      case llmdb_model(model_id) do
         {:ok, llmdb_model} ->
           %{llmdb_model | provider: :openai, base_url: base_url}
 
@@ -93,6 +93,15 @@ defmodule Exy.Auth.OpenCode do
 
   @impl true
   def usage(_opts \\ []), do: {:error, :unsupported}
+
+  defp llmdb_model(model_id) do
+    if Code.ensure_loaded?(LLMDB) and function_exported?(LLMDB, :model, 1) do
+      {result, _binding} = Code.eval_string("LLMDB.model(spec)", spec: "#{model_id}@opencode")
+      result
+    else
+      {:error, :llmdb_unavailable}
+    end
+  end
 
   @spec api_key() :: String.t() | nil
   def api_key do

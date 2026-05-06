@@ -50,7 +50,7 @@ defmodule Exy.TUI.Widgets.Tools.FileMutation do
       end)
 
     if truncated? do
-      rendered ++ [TextTruncation.hint(omitted, theme, width)]
+      [TextTruncation.hint(omitted, theme, width) | Enum.reverse(rendered)] |> Enum.reverse()
     else
       rendered
     end

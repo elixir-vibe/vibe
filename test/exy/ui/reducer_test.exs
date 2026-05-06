@@ -94,7 +94,7 @@ defmodule Exy.UI.ReducerTest do
     assert [%{kind: :session_selector}] = state.overlays
     assert state.pending_tools["tool-1"].name == "eval"
     assert state.pending_tools["tool-1"].status == :ok
-    assert %{role: :tool, id: "tool-1", status: :ok} = List.last(state.messages)
+    assert %{role: :tool, id: "tool-1", status: :ok} = last_item(state.messages)
     assert state.status == :idle
   end
 
@@ -169,7 +169,7 @@ defmodule Exy.UI.ReducerTest do
       )
 
     assert state.runtime_alerts == %{}
-    assert List.last(state.notifications).level == :info
+    assert last_item(state.notifications).level == :info
   end
 
   test "turns subagent lifecycle events into transcript blocks and notifications" do
@@ -234,6 +234,9 @@ defmodule Exy.UI.ReducerTest do
 
     assert state.status == :idle
   end
+
+  defp last_item([item]), do: item
+  defp last_item([_item | items]), do: last_item(items)
 
   test "stream finish reconciles final response text" do
     state =

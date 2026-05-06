@@ -98,13 +98,14 @@ defmodule Exy.Gateway.Message do
   defp normalize_media(_media), do: []
 
   defp normalize_media_entry(media) when is_map(media) do
-    path = Map.get(media, :path) || Map.get(media, "path")
+    media = normalize_media_keys(media)
+    path = Map.get(media, :path)
 
     if is_binary(path) do
       %{
         path: path,
-        mime_type: Map.get(media, :mime_type) || Map.get(media, "mime_type"),
-        filename: Map.get(media, :filename) || Map.get(media, "filename")
+        mime_type: Map.get(media, :mime_type),
+        filename: Map.get(media, :filename)
       }
     else
       raise ArgumentError, "gateway media entry requires a path"
@@ -120,10 +121,25 @@ defmodule Exy.Gateway.Message do
     atom = String.to_existing_atom(type)
     type!(atom)
   rescue
-    ArgumentError -> raise ArgumentError, "invalid gateway message type #{inspect(type)}"
+    _exception in ArgumentError ->
+      reraise ArgumentError,
+              [message: "invalid gateway message type #{inspect(type)}"],
+              __STACKTRACE__
   end
 
   defp type!(type), do: raise(ArgumentError, "invalid gateway message type #{inspect(type)}")
+
+  defp normalize_media_keys(media) do
+    media
+    |> Map.take([:path, :mime_type, :filename, "path", "mime_type", "filename"])
+    |> Enum.reduce(%{}, fn
+      {key, value}, acc when is_binary(key) ->
+        Map.put_new(acc, String.to_existing_atom(key), value)
+
+      {key, value}, acc when is_atom(key) ->
+        Map.put(acc, key, value)
+    end)
+  end
 
   defp optional_string(opts, key) do
     case Keyword.get(opts, key) do

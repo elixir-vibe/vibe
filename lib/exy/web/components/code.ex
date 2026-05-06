@@ -11,25 +11,25 @@ defmodule Exy.Web.Components.Code do
 
   @spec source_html(String.t(), String.t()) :: IO.chardata()
   def source_html(text, language) do
-    case Lumis.highlight(text,
-           formatter: {:html_inline, language: language, pre_class: "m-0 !bg-transparent !p-0"}
-         ) do
-      {:ok, html} -> html
-      {:error, _reason} -> ["<pre><code>", html_escape(text), "</code></pre>"]
-    end
+    {:ok, html} =
+      Lumis.highlight(text,
+        formatter: {:html_inline, language: language, pre_class: "m-0 !bg-transparent !p-0"}
+      )
+
+    html
   rescue
     _error -> ["<pre><code>", html_escape(text), "</code></pre>"]
   end
 
   @spec summary_html(String.t()) :: IO.chardata()
   def summary_html(code) do
-    case Lumis.highlight(code,
-           formatter:
-             {:html_inline, language: "elixir", pre_class: "m-0 !bg-transparent !p-0 opacity-70"}
-         ) do
-      {:ok, html} -> html
-      {:error, _reason} -> html_escape(code)
-    end
+    {:ok, html} =
+      Lumis.highlight(code,
+        formatter:
+          {:html_inline, language: "elixir", pre_class: "m-0 !bg-transparent !p-0 opacity-70"}
+      )
+
+    html
   rescue
     _error -> html_escape(code)
   end
