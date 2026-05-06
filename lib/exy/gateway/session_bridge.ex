@@ -79,9 +79,14 @@ defmodule Exy.Gateway.SessionBridge do
     {:stop, :normal, state}
   end
 
-  defp handle_event(%Event{type: :assistant_message_added, data: data}, state) do
-    text = data |> Map.get(:result) |> response_text()
+  defp handle_event(%Event{type: :assistant_message_added, data: %{result: result}}, state) do
+    text = response_text(result)
     state = send_final_message(state, text)
+    {:stop, :normal, state}
+  end
+
+  defp handle_event(%Event{type: :assistant_message_added, data: %{error: error}}, state) do
+    state = send_final_message(state, error)
     {:stop, :normal, state}
   end
 
