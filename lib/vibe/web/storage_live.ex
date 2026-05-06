@@ -17,8 +17,8 @@ defmodule Vibe.Web.StorageLive do
   def render(assigns) do
     ~H"""
     <.app_shell current={:storage} title="Storage" subtitle="Search sessions, memory, and indexed runtime history.">
-      <section class="overflow-hidden rounded-xl border border-white/10 bg-[#141219]/80">
-        <div class="grid gap-px border-b border-white/10 bg-white/10 sm:grid-cols-4">
+      <section class="overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
+        <div class="grid gap-px border-b border-vibe-border/50 bg-vibe-surface-muted sm:grid-cols-4">
           <.storage_metric label="Sessions" value={@session_count} />
           <.storage_metric label="Memory" value={@memory_count} />
           <.storage_metric label="UI events" value={table_count(@storage_status, "ui_events")} />
@@ -27,32 +27,32 @@ defmodule Vibe.Web.StorageLive do
 
         <form phx-submit="search" phx-change="search" class="flex flex-col gap-3 p-3 sm:flex-row sm:p-4">
           <label class="sr-only" for="storage-search">Search sessions and memory</label>
-          <input id="storage-search" name="q" value={@query} autocomplete="off" placeholder="Search sessions, memories, snippets…" class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0d0c11] px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-300/25" />
-          <button class="rounded-lg bg-violet-400 px-5 py-2 text-sm font-semibold text-zinc-950 transition-colors hover:bg-violet-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70 sm:w-auto">Search</button>
+          <input id="storage-search" name="q" value={@query} autocomplete="off" placeholder="Search sessions, memories, snippets…" class="min-w-0 flex-1 rounded-lg border border-vibe-border/50 bg-vibe-bg px-3 py-2 text-sm text-vibe-fg-strong placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-2 focus:ring-vibe-accent/25" />
+          <button class="rounded-lg bg-vibe-accent px-5 py-2 text-sm font-semibold text-vibe-accent-contrast transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70 sm:w-auto">Search</button>
         </form>
       </section>
 
       <section class="mt-6 grid gap-3">
         <%= cond do %>
           <% @query == "" -> %>
-            <div class="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm leading-6 text-zinc-500">
+            <div class="rounded-xl border border-dashed border-vibe-border/60 p-10 text-center text-sm leading-6 text-vibe-dim">
               <p>Search indexed sessions, UI events, and curated memory.</p>
-              <p class="mt-2">Try <span class="font-mono text-zinc-400">markdown</span>, <span class="font-mono text-zinc-400">eval</span>, <span class="font-mono text-zinc-400">storage</span>, or <span class="font-mono text-zinc-400">session</span>.</p>
+              <p class="mt-2">Try <span class="font-mono text-vibe-muted">markdown</span>, <span class="font-mono text-vibe-muted">eval</span>, <span class="font-mono text-vibe-muted">storage</span>, or <span class="font-mono text-vibe-muted">session</span>.</p>
             </div>
           <% @error -> %>
-            <div class="rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100">{inspect(@error)}</div>
+            <div class="rounded-xl border border-vibe-error/30 bg-vibe-error/10 p-4 text-sm text-vibe-error">{inspect(@error)}</div>
           <% @results == [] -> %>
-            <div class="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">No matches.</div>
+            <div class="rounded-xl border border-dashed border-vibe-border/60 p-10 text-center text-sm text-vibe-dim">No matches.</div>
           <% true -> %>
             <%= for result <- @results do %>
-              <article class="rounded-xl border border-white/10 bg-[#17151d]/78 p-4">
+              <article class="rounded-xl border border-vibe-border/50 bg-vibe-surface/78 p-4">
                 <div class="flex items-center justify-between gap-4">
-                  <p class="text-xs uppercase tracking-[0.2em] text-violet-300">{result.source}</p>
-                  <span class="text-xs text-zinc-500">rank {Float.round(result.rank || 0.0, 3)}</span>
+                  <p class="text-xs uppercase tracking-[0.2em] text-vibe-accent">{result.source}</p>
+                  <span class="text-xs text-vibe-dim">rank {Float.round(result.rank || 0.0, 3)}</span>
                 </div>
-                <p class="mt-3 break-words text-sm leading-6 text-zinc-200 [overflow-wrap:anywhere]">{Phoenix.HTML.raw(result.snippet || result.text || "")}</p>
-                <div class="mt-3 flex flex-wrap gap-3 text-xs text-zinc-500">
-                  <.link :if={result.source == :session} navigate={~p"/sessions/#{result.owner_id}"} class="break-words font-mono text-orange-200 hover:text-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70 [overflow-wrap:anywhere]">{result.owner_id}</.link>
+                <p class="mt-3 break-words text-sm leading-6 text-vibe-fg [overflow-wrap:anywhere]">{Phoenix.HTML.raw(result.snippet || result.text || "")}</p>
+                <div class="mt-3 flex flex-wrap gap-3 text-xs text-vibe-dim">
+                  <.link :if={result.source == :session} navigate={~p"/sessions/#{result.owner_id}"} class="break-words font-mono text-vibe-accent-strong hover:text-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70 [overflow-wrap:anywhere]">{result.owner_id}</.link>
                   <span :if={result.source == :memory}>{result.owner_id}</span>
                   <span :if={result.at}>{result.at}</span>
                 </div>
@@ -69,9 +69,9 @@ defmodule Vibe.Web.StorageLive do
 
   def storage_metric(assigns) do
     ~H"""
-    <div class="bg-[#141219] px-4 py-3">
-      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-zinc-600">{@label}</p>
-      <p class="mt-1 font-mono text-xl text-zinc-100 tabular-nums">{@value}</p>
+    <div class="bg-vibe-bg-soft px-4 py-3">
+      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
+      <p class="mt-1 font-mono text-xl text-vibe-fg-strong tabular-nums">{@value}</p>
     </div>
     """
   end

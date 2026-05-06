@@ -18,28 +18,28 @@ defmodule Vibe.Web.SettingsLive do
     <.app_shell current={:settings} title="Settings" subtitle="Local profiles, model defaults, and authentication state.">
       <div class="grid gap-4 lg:grid-cols-2">
         <.panel title="Models">
-          <dl class="space-y-3 text-sm text-zinc-300">
+          <dl class="space-y-3 text-sm text-vibe-fg">
             <div class="flex justify-between gap-4">
-              <dt class="text-zinc-500">Default model</dt>
-              <dd class="min-w-0 truncate font-mono text-zinc-100">{@default_model}</dd>
+              <dt class="text-vibe-dim">Default model</dt>
+              <dd class="min-w-0 truncate font-mono text-vibe-fg-strong">{@default_model}</dd>
             </div>
             <div class="flex justify-between gap-4">
-              <dt class="text-zinc-500">Default effort</dt>
-              <dd class="font-mono text-zinc-100">{Atom.to_string(@default_effort)}</dd>
+              <dt class="text-vibe-dim">Default effort</dt>
+              <dd class="font-mono text-vibe-fg-strong">{Atom.to_string(@default_effort)}</dd>
             </div>
             <div class="flex justify-between gap-4">
-              <dt class="text-zinc-500">Profile file</dt>
-              <dd class="min-w-0 truncate font-mono text-xs text-zinc-400">{@profile_path}</dd>
+              <dt class="text-vibe-dim">Profile file</dt>
+              <dd class="min-w-0 truncate font-mono text-xs text-vibe-muted">{@profile_path}</dd>
             </div>
           </dl>
         </.panel>
 
         <.panel title="Auth">
           <div class="space-y-2">
-            <div :for={provider <- @auth_providers} class="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-[#0d0c11]/55 px-3 py-2 text-sm">
+            <div :for={provider <- @auth_providers} class="flex items-center justify-between gap-3 rounded-lg border border-vibe-border/40 bg-vibe-bg/55 px-3 py-2 text-sm">
               <div class="min-w-0">
-                <p class="truncate font-medium text-zinc-100">{provider.name}</p>
-                <p class="truncate font-mono text-xs text-zinc-600">{provider.module}</p>
+                <p class="truncate font-medium text-vibe-fg-strong">{provider.name}</p>
+                <p class="truncate font-mono text-xs text-vibe-dim">{provider.module}</p>
               </div>
               <.status_badge status={provider.status} />
             </div>
@@ -47,55 +47,55 @@ defmodule Vibe.Web.SettingsLive do
         </.panel>
       </div>
 
-      <section class="mt-4 overflow-hidden rounded-xl border border-white/10 bg-[#141219]/80">
-        <header class="border-b border-white/10 px-4 py-3">
-          <h2 class="text-base font-semibold text-zinc-100">Prompts</h2>
-          <p class="mt-1 text-sm text-zinc-500">Built-in prompt templates compiled into Vibe.</p>
+      <section class="mt-4 overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
+        <header class="border-b border-vibe-border/50 px-4 py-3">
+          <h2 class="text-base font-semibold text-vibe-fg-strong">Prompts</h2>
+          <p class="mt-1 text-sm text-vibe-dim">Built-in prompt templates compiled into Vibe.</p>
         </header>
         <div class="divide-y divide-white/8">
           <details :for={prompt <- @prompts} class="group">
-            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 marker:hidden hover:bg-white/[0.025]">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 marker:hidden hover:bg-vibe-surface-muted/35">
               <div class="min-w-0">
-                <h3 class="truncate text-sm font-semibold text-zinc-100">{prompt.title}</h3>
-                <p class="mt-1 text-xs text-zinc-600">{prompt.lines} lines · {prompt.bytes} bytes</p>
+                <h3 class="truncate text-sm font-semibold text-vibe-fg-strong">{prompt.title}</h3>
+                <p class="mt-1 text-xs text-vibe-dim">{prompt.lines} lines · {prompt.bytes} bytes</p>
               </div>
-              <span class="text-xs text-zinc-600 transition-transform group-open:rotate-90">›</span>
+              <span class="text-xs text-vibe-dim transition-transform group-open:rotate-90">›</span>
             </summary>
-            <div class="border-t border-white/8 bg-[#0d0c11]/55 p-4">
-              <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[#09080c] p-3 font-mono text-xs leading-5 text-zinc-300 [overflow-wrap:anywhere]">{prompt.text}</pre>
+            <div class="border-t border-vibe-border/40 bg-vibe-bg/55 p-4">
+              <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-vibe-code p-3 font-mono text-xs leading-5 text-vibe-fg [overflow-wrap:anywhere]">{prompt.text}</pre>
             </div>
           </details>
         </div>
       </section>
 
-      <section class="mt-4 rounded-xl border border-white/10 bg-[#141219]/80 p-4">
+      <section class="mt-4 rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80 p-4">
         <header class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 class="text-base font-semibold text-zinc-100">Roles</h2>
-            <p class="mt-1 text-sm text-zinc-500">Configured agent roles from the editable TOML profile.</p>
+            <h2 class="text-base font-semibold text-vibe-fg-strong">Roles</h2>
+            <p class="mt-1 text-sm text-vibe-dim">Configured agent roles from the editable TOML profile.</p>
           </div>
-          <span class="font-mono text-xs text-zinc-600">{length(@roles)} roles</span>
+          <span class="font-mono text-xs text-vibe-dim">{length(@roles)} roles</span>
         </header>
 
-        <div :if={@roles == []} class="rounded-lg border border-dashed border-white/15 p-8 text-center text-sm text-zinc-500">No roles configured.</div>
+        <div :if={@roles == []} class="rounded-lg border border-dashed border-vibe-border/60 p-8 text-center text-sm text-vibe-dim">No roles configured.</div>
         <div :if={@roles != []} class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <article :for={role <- @roles} class="flex min-h-44 flex-col rounded-lg border border-white/10 bg-[#0d0c11]/55 p-4 transition-colors hover:border-white/20">
+          <article :for={role <- @roles} class="flex min-h-44 flex-col rounded-lg border border-vibe-border/50 bg-vibe-bg/55 p-4 transition-colors hover:border-vibe-border">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-orange-300/75">Role</p>
-                <h3 class="mt-1 truncate text-lg font-semibold text-zinc-50">{role.name}</h3>
+                <p class="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-vibe-accent/75">Role</p>
+                <h3 class="mt-1 truncate text-lg font-semibold text-vibe-fg-strong">{role.name}</h3>
               </div>
-              <span class="shrink-0 rounded-full border border-white/10 bg-white/[0.035] px-2 py-1 font-mono text-[0.68rem] text-zinc-400">{length(role.tools)} tools</span>
+              <span class="shrink-0 rounded-full border border-vibe-border/50 bg-vibe-surface-muted/35 px-2 py-1 font-mono text-[0.68rem] text-vibe-muted">{length(role.tools)} tools</span>
             </div>
 
-            <p :if={role.system} class="mt-3 line-clamp-3 text-sm leading-6 text-zinc-300">{role.system}</p>
+            <p :if={role.system} class="mt-3 line-clamp-3 text-sm leading-6 text-vibe-fg">{role.system}</p>
 
             <div class="mt-auto pt-4">
-              <p class="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">Model</p>
-              <p :if={role.model} class="mt-1 truncate rounded-md bg-white/[0.035] px-2 py-1 font-mono text-xs text-zinc-400">{role.model}</p>
-              <p :if={!role.model} class="mt-1 text-xs text-zinc-600">Uses default model</p>
-              <p class="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">Effort</p>
-              <p class="mt-1 font-mono text-xs text-zinc-500">{Atom.to_string(role.effort || @default_effort)}</p>
+              <p class="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-vibe-dim">Model</p>
+              <p :if={role.model} class="mt-1 truncate rounded-md bg-vibe-surface-muted/35 px-2 py-1 font-mono text-xs text-vibe-muted">{role.model}</p>
+              <p :if={!role.model} class="mt-1 text-xs text-vibe-dim">Uses default model</p>
+              <p class="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-vibe-dim">Effort</p>
+              <p class="mt-1 font-mono text-xs text-vibe-dim">{Atom.to_string(role.effort || @default_effort)}</p>
             </div>
           </article>
         </div>

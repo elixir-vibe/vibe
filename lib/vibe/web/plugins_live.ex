@@ -18,33 +18,33 @@ defmodule Vibe.Web.PluginsLive do
   def render(%{plugin: plugin} = assigns) when is_map(plugin) do
     ~H"""
     <.app_shell current={:plugins} title={@plugin.short_name} subtitle={@plugin.module}>
-      <.link navigate={~p"/plugins"} class="mb-3 inline-flex text-sm text-zinc-500 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">← Plugins</.link>
+      <.link navigate={~p"/plugins"} class="mb-3 inline-flex text-sm text-vibe-dim hover:text-vibe-fg-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">← Plugins</.link>
 
       <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div class="space-y-4">
           <.panel title="Runtime">
             <div class="grid gap-3 sm:grid-cols-3">
-              <div class="rounded-md bg-white/[0.035] px-3 py-3">
-                <p class="font-mono text-xl text-zinc-100">{length(@plugin.apis)}</p>
-                <p class="mt-1 text-xs text-zinc-600">Eval APIs</p>
+              <div class="rounded-md bg-vibe-surface-muted/35 px-3 py-3">
+                <p class="font-mono text-xl text-vibe-fg-strong">{length(@plugin.apis)}</p>
+                <p class="mt-1 text-xs text-vibe-dim">Eval APIs</p>
               </div>
-              <div class="rounded-md bg-white/[0.035] px-3 py-3">
-                <p class="font-mono text-xl text-zinc-100">{length(@plugin.commands)}</p>
-                <p class="mt-1 text-xs text-zinc-600">Commands</p>
+              <div class="rounded-md bg-vibe-surface-muted/35 px-3 py-3">
+                <p class="font-mono text-xl text-vibe-fg-strong">{length(@plugin.commands)}</p>
+                <p class="mt-1 text-xs text-vibe-dim">Commands</p>
               </div>
-              <div class="rounded-md bg-white/[0.035] px-3 py-3">
-                <p class="font-mono text-xl text-zinc-100">{length(@plugin.actions)}</p>
-                <p class="mt-1 text-xs text-zinc-600">Actions</p>
+              <div class="rounded-md bg-vibe-surface-muted/35 px-3 py-3">
+                <p class="font-mono text-xl text-vibe-fg-strong">{length(@plugin.actions)}</p>
+                <p class="mt-1 text-xs text-vibe-dim">Actions</p>
               </div>
             </div>
           </.panel>
 
           <.panel title="Plugin UI">
-            <div :if={@plugin.ui_document.sections == []} class="text-sm text-zinc-500">No plugin-owned UI document exposed.</div>
+            <div :if={@plugin.ui_document.sections == []} class="text-sm text-vibe-dim">No plugin-owned UI document exposed.</div>
             <div :if={@plugin.ui_document.sections != []} class="space-y-3">
-              <article :for={section <- @plugin.ui_document.sections} class="rounded-lg border border-white/8 bg-[#0d0c11]/55 p-4">
-                <h2 class="text-base font-semibold text-zinc-100">{section.title}</h2>
-                <p :if={section.description} class="mt-1 text-sm leading-6 text-zinc-400">{section.description}</p>
+              <article :for={section <- @plugin.ui_document.sections} class="rounded-lg border border-vibe-border/40 bg-vibe-bg/55 p-4">
+                <h2 class="text-base font-semibold text-vibe-fg-strong">{section.title}</h2>
+                <p :if={section.description} class="mt-1 text-sm leading-6 text-vibe-muted">{section.description}</p>
                 <div class="mt-3 space-y-2">
                   <.plugin_ui_widget :for={widget <- section.widgets} widget={widget} />
                 </div>
@@ -59,13 +59,13 @@ defmodule Vibe.Web.PluginsLive do
 
         <aside class="space-y-4">
           <.panel title="Details">
-            <dl class="space-y-3 text-sm text-zinc-300">
+            <dl class="space-y-3 text-sm text-vibe-fg">
               <div>
-                <dt class="text-zinc-500">Module</dt>
-                <dd class="mt-1 break-words font-mono text-xs text-zinc-400 [overflow-wrap:anywhere]">{@plugin.module}</dd>
+                <dt class="text-vibe-dim">Module</dt>
+                <dd class="mt-1 break-words font-mono text-xs text-vibe-muted [overflow-wrap:anywhere]">{@plugin.module}</dd>
               </div>
               <div class="flex justify-between gap-4">
-                <dt class="text-zinc-500">Status</dt>
+                <dt class="text-vibe-dim">Status</dt>
                 <dd><.status_badge status={if @plugin.loaded?, do: :ok, else: :idle} /></dd>
               </div>
             </dl>
@@ -79,45 +79,45 @@ defmodule Vibe.Web.PluginsLive do
   def render(assigns) do
     ~H"""
     <.app_shell current={:plugins} title="Plugins" subtitle="Supervised extensions, eval APIs, slash commands, and model-facing capabilities.">
-      <section class="overflow-hidden rounded-xl border border-white/10 bg-[#141219]/80">
-        <div class="grid gap-px border-b border-white/10 bg-white/10 sm:grid-cols-4">
+      <section class="overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
+        <div class="grid gap-px border-b border-vibe-border/50 bg-vibe-surface-muted sm:grid-cols-4">
           <.plugin_metric label="Loaded" value={length(@loaded_plugins)} />
           <.plugin_metric label="Discovered" value={length(@discovered_plugins)} />
           <.plugin_metric label="APIs" value={length(@apis)} />
           <.plugin_metric label="Commands" value={length(@commands)} />
         </div>
 
-        <div :if={@plugins == []} class="p-10 text-center text-sm text-zinc-500">No plugins discovered.</div>
+        <div :if={@plugins == []} class="p-10 text-center text-sm text-vibe-dim">No plugins discovered.</div>
         <div :if={@plugins != []} class="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
-          <.link :for={plugin <- @plugins} navigate={~p"/plugins/#{plugin.route_id}"} class="flex min-h-48 flex-col rounded-lg border border-white/10 bg-[#0d0c11]/55 p-4 transition-colors hover:border-white/20 hover:bg-white/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70">
+          <.link :for={plugin <- @plugins} navigate={~p"/plugins/#{plugin.route_id}"} class="flex min-h-48 flex-col rounded-lg border border-vibe-border/50 bg-vibe-bg/55 p-4 transition-colors hover:border-vibe-border hover:bg-vibe-surface-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-violet-300/75">Plugin</p>
-                <h2 class="mt-1 truncate text-base font-semibold text-zinc-50">{plugin.short_name}</h2>
-                <p class="mt-1 truncate font-mono text-xs text-zinc-600">{plugin.module}</p>
+                <p class="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-vibe-accent/75">Plugin</p>
+                <h2 class="mt-1 truncate text-base font-semibold text-vibe-fg-strong">{plugin.short_name}</h2>
+                <p class="mt-1 truncate font-mono text-xs text-vibe-dim">{plugin.module}</p>
               </div>
               <.status_badge status={if plugin.loaded?, do: :ok, else: :idle} />
             </div>
 
             <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-              <div class="rounded-md bg-white/[0.035] px-2 py-2">
-                <p class="font-mono text-base text-zinc-100">{length(plugin.apis)}</p>
-                <p class="mt-0.5 text-zinc-600">APIs</p>
+              <div class="rounded-md bg-vibe-surface-muted/35 px-2 py-2">
+                <p class="font-mono text-base text-vibe-fg-strong">{length(plugin.apis)}</p>
+                <p class="mt-0.5 text-vibe-dim">APIs</p>
               </div>
-              <div class="rounded-md bg-white/[0.035] px-2 py-2">
-                <p class="font-mono text-base text-zinc-100">{length(plugin.commands)}</p>
-                <p class="mt-0.5 text-zinc-600">Commands</p>
+              <div class="rounded-md bg-vibe-surface-muted/35 px-2 py-2">
+                <p class="font-mono text-base text-vibe-fg-strong">{length(plugin.commands)}</p>
+                <p class="mt-0.5 text-vibe-dim">Commands</p>
               </div>
-              <div class="rounded-md bg-white/[0.035] px-2 py-2">
-                <p class="font-mono text-base text-zinc-100">{length(plugin.actions)}</p>
-                <p class="mt-0.5 text-zinc-600">Actions</p>
+              <div class="rounded-md bg-vibe-surface-muted/35 px-2 py-2">
+                <p class="font-mono text-base text-vibe-fg-strong">{length(plugin.actions)}</p>
+                <p class="mt-0.5 text-vibe-dim">Actions</p>
               </div>
             </div>
 
             <div :if={plugin.apis != []} class="mt-4 space-y-2">
-              <p class="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">Eval APIs</p>
+              <p class="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-vibe-dim">Eval APIs</p>
               <div class="flex flex-wrap gap-1.5">
-                <span :for={api <- plugin.apis} class="rounded bg-violet-300/10 px-2 py-1 font-mono text-xs text-violet-100">{api.alias}</span>
+                <span :for={api <- plugin.apis} class="rounded bg-vibe-accent/10 px-2 py-1 font-mono text-xs text-vibe-accent-strong">{api.alias}</span>
               </div>
             </div>
           </.link>
@@ -142,7 +142,7 @@ defmodule Vibe.Web.PluginsLive do
       assign(assigns, :content, assigns.widget.props |> Map.get(:content, []) |> Enum.join("\n"))
 
     ~H"""
-    <p class="whitespace-pre-wrap text-sm leading-6 text-zinc-300">{@content}</p>
+    <p class="whitespace-pre-wrap text-sm leading-6 text-vibe-fg">{@content}</p>
     """
   end
 
@@ -150,12 +150,12 @@ defmodule Vibe.Web.PluginsLive do
     assigns = assign(assigns, :props, assigns.widget.props)
 
     ~H"""
-    <div class="rounded-md bg-white/[0.035] p-3 text-sm text-zinc-300">
+    <div class="rounded-md bg-vibe-surface-muted/35 p-3 text-sm text-vibe-fg">
       <div class="flex justify-between gap-3">
         <span>{Map.get(@props, :title) || "Progress"}</span>
-        <span class="font-mono text-zinc-500">{Map.get(@props, :current, 0)} / {Map.get(@props, :total, "?")}</span>
+        <span class="font-mono text-vibe-dim">{Map.get(@props, :current, 0)} / {Map.get(@props, :total, "?")}</span>
       </div>
-      <p :if={Map.get(@props, :message)} class="mt-1 text-xs text-zinc-500">{Map.get(@props, :message)}</p>
+      <p :if={Map.get(@props, :message)} class="mt-1 text-xs text-vibe-dim">{Map.get(@props, :message)}</p>
     </div>
     """
   end
@@ -164,7 +164,7 @@ defmodule Vibe.Web.PluginsLive do
     assigns = assign(assigns, :text, inspect(assigns.widget.props, pretty: true, limit: 40))
 
     ~H"""
-    <pre class="overflow-auto whitespace-pre-wrap rounded-md bg-[#09080c] p-3 font-mono text-xs leading-5 text-zinc-400">{@text}</pre>
+    <pre class="overflow-auto whitespace-pre-wrap rounded-md bg-vibe-code p-3 font-mono text-xs leading-5 text-vibe-muted">{@text}</pre>
     """
   end
 
@@ -173,9 +173,9 @@ defmodule Vibe.Web.PluginsLive do
 
   def plugin_metric(assigns) do
     ~H"""
-    <div class="bg-[#141219] px-4 py-3">
-      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-zinc-600">{@label}</p>
-      <p class="mt-1 font-mono text-xl text-zinc-100 tabular-nums">{@value}</p>
+    <div class="bg-vibe-bg-soft px-4 py-3">
+      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
+      <p class="mt-1 font-mono text-xl text-vibe-fg-strong tabular-nums">{@value}</p>
     </div>
     """
   end

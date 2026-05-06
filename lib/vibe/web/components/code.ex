@@ -42,9 +42,9 @@ defmodule Vibe.Web.Components.Code do
       |> Enum.map(fn line ->
         class =
           cond do
-            String.starts_with?(line, "+") -> "text-emerald-200 bg-emerald-400/10"
-            String.starts_with?(line, "-") -> "text-red-200 bg-red-400/10"
-            true -> "text-zinc-300"
+            String.starts_with?(line, "+") -> "text-vibe-success bg-vibe-success/10"
+            String.starts_with?(line, "-") -> "text-vibe-error bg-vibe-error/10"
+            true -> "text-vibe-fg"
           end
 
         [

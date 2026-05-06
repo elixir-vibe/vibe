@@ -67,7 +67,7 @@ defmodule Vibe.Web.SessionLive do
   def render(%{error: _error} = assigns) do
     ~H"""
     <.app_shell current={:sessions} title="Session unavailable">
-      <div class="rounded-xl border border-red-400/30 bg-red-400/10 p-6 text-red-100">{@error}</div>
+      <div class="rounded-xl border border-vibe-error/30 bg-vibe-error/10 p-6 text-vibe-error">{@error}</div>
     </.app_shell>
     """
   end
@@ -76,7 +76,7 @@ defmodule Vibe.Web.SessionLive do
     ~H"""
     <.app_shell current={:sessions} title="Session workbench" subtitle={@session_id}>
       <:actions>
-        <button :if={Status.working?(@ui_state)} type="button" phx-click="cancel" class="rounded-lg border border-red-300/30 bg-red-400/10 px-3 py-2 text-sm font-medium text-red-100 transition-colors hover:border-red-300/60 hover:bg-red-400/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60 sm:px-4">Stop</button>
+        <button :if={Status.working?(@ui_state)} type="button" phx-click="cancel" class="rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-3 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60 sm:px-4">Stop</button>
       </:actions>
 
       <:sidebar>
@@ -92,11 +92,11 @@ defmodule Vibe.Web.SessionLive do
         <.tool_timeline state={@ui_state} />
       </:inspector>
 
-      <.link navigate={~p"/"} class="mb-3 inline-flex text-sm text-zinc-500 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">← Sessions</.link>
+      <.link navigate={~p"/"} class="mb-3 inline-flex text-sm text-vibe-dim hover:text-vibe-fg-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">← Sessions</.link>
 
       <.status_strip state={@ui_state} />
 
-      <section class="rounded-xl border border-white/10 bg-[#121016]/80">
+      <section class="rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
         <.transcript state={@ui_state} final_assistant_messages={@final_assistant_messages} />
         <.composer state={@ui_state} prompt={@prompt} />
       </section>

@@ -6,23 +6,23 @@ defmodule Vibe.Web.Components.API do
 
   def api_sections(assigns) do
     ~H"""
-    <div :if={@apis == []} class="text-sm text-zinc-500">No eval APIs exposed.</div>
+    <div :if={@apis == []} class="text-sm text-vibe-dim">No eval APIs exposed.</div>
     <div :if={@apis != []} class="space-y-4">
-      <article :for={api <- @apis} class="rounded-lg border border-white/8 bg-[#0d0c11]/55 p-4">
+      <article :for={api <- @apis} class="rounded-lg border border-vibe-border/40 bg-vibe-bg/55 p-4">
         <div class="flex flex-wrap items-center gap-2">
-          <span class="rounded bg-violet-300/10 px-2 py-1 font-mono text-sm text-violet-100">{api.alias}</span>
-          <span class="break-words font-mono text-xs text-zinc-500 [overflow-wrap:anywhere]">{inspect(api.module)}</span>
+          <span class="rounded bg-vibe-accent/10 px-2 py-1 font-mono text-sm text-vibe-accent-strong">{api.alias}</span>
+          <span class="break-words font-mono text-xs text-vibe-dim [overflow-wrap:anywhere]">{inspect(api.module)}</span>
         </div>
-        <p :if={api.description not in [nil, ""]} class="mt-2 text-sm leading-6 text-zinc-300">{api.description}</p>
-        <pre :if={api.examples != []} class="mt-3 whitespace-pre-wrap rounded-md bg-[#09080c] p-3 font-mono text-xs leading-5 text-zinc-400">{Enum.join(api.examples, "\n")}</pre>
+        <p :if={api.description not in [nil, ""]} class="mt-2 text-sm leading-6 text-vibe-fg">{api.description}</p>
+        <pre :if={api.examples != []} class="mt-3 whitespace-pre-wrap rounded-md bg-vibe-code p-3 font-mono text-xs leading-5 text-vibe-muted">{Enum.join(api.examples, "\n")}</pre>
 
         <section class="mt-4">
-          <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600">Functions</h3>
+          <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-vibe-dim">Functions</h3>
           <div class="mt-2 space-y-2">
-            <div :for={function <- api_functions(api.module)} class="rounded-md border border-white/8 bg-white/[0.02] p-3">
-              <p class="font-mono text-sm text-zinc-100">{function.name}/{function.arity}</p>
-              <p :if={function.doc} class="mt-2 text-sm leading-6 text-zinc-400">{function.doc}</p>
-              <p :if={!function.doc} class="mt-2 text-sm text-zinc-600">No docs.</p>
+            <div :for={function <- api_functions(api.module)} class="rounded-md border border-vibe-border/40 bg-vibe-surface-muted/20 p-3">
+              <p class="font-mono text-sm text-vibe-fg-strong">{function.name}/{function.arity}</p>
+              <p :if={function.doc} class="mt-2 text-sm leading-6 text-vibe-muted">{function.doc}</p>
+              <p :if={!function.doc} class="mt-2 text-sm text-vibe-dim">No docs.</p>
             </div>
           </div>
         </section>

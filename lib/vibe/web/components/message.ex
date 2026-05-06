@@ -22,17 +22,17 @@ defmodule Vibe.Web.Components.Message do
     <article class={[
       "max-w-full px-3 py-2 text-sm leading-6 sm:px-4",
       if(@message.role == :user,
-        do: "rounded-lg border border-orange-300/20 bg-orange-300/[0.07] text-zinc-100 sm:ml-auto sm:max-w-[82%]",
-        else: "border-l-2 border-violet-300/25 text-zinc-100"
+        do: "rounded-lg border border-vibe-accent/20 bg-vibe-accent/[0.07] text-vibe-fg-strong sm:ml-auto sm:max-w-[82%]",
+        else: "border-l-2 border-vibe-accent/25 text-vibe-fg-strong"
       )
     ]}>
       <div :if={@message.role == :user} class="space-y-2">
         <div class="whitespace-pre-wrap break-words font-sans [overflow-wrap:anywhere]">{message_text(@message)}</div>
-        <div :if={image_count(@message) > 0} class="inline-flex items-center rounded-full border border-orange-300/20 bg-orange-300/10 px-2 py-0.5 text-xs text-orange-100/80">
+        <div :if={image_count(@message) > 0} class="inline-flex items-center rounded-full border border-vibe-accent/20 bg-vibe-accent/10 px-2 py-0.5 text-xs text-vibe-accent-strong/80">
           {image_count(@message)} {if image_count(@message) == 1, do: "image", else: "images"} attached
         </div>
       </div>
-      <pre :if={@message.role != :user and preformatted_message?(message_text(@message))} class="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-zinc-100 [overflow-wrap:anywhere]">{message_text(@message)}</pre>
+      <pre :if={@message.role != :user and preformatted_message?(message_text(@message))} class="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-vibe-fg-strong [overflow-wrap:anywhere]">{message_text(@message)}</pre>
       <PhoenixStreamdown.markdown
         :if={@message.role != :user and !preformatted_message?(message_text(@message))}
         id={message_dom_id(@message)}

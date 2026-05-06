@@ -1,15 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-zinc-950 text-zinc-100">
+<html lang="en" class="h-full bg-vibe-bg text-vibe-fg">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <meta name="theme-color" content="#0d0c11" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f7fa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d0c11" />
     <.live_title default="Vibe">Vibe</.live_title>
+    <script>
+      (() => {
+        const storedTheme = localStorage.getItem("vibe-theme");
+        const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+        document.documentElement.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : prefersLight ? "light" : "dark";
+      })();
+    </script>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static src={~p"/assets/app.js"}></script>
   </head>
-  <body class="min-h-full overflow-x-hidden bg-[#0d0c11] text-zinc-100 antialiased">
+  <body class="min-h-full overflow-x-hidden bg-vibe-bg text-vibe-fg antialiased">
     {@inner_content}
   </body>
 </html>

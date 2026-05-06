@@ -22,8 +22,8 @@ defmodule Vibe.Web.DocsLive do
         <.panel title="Topics">
           <nav class="space-y-1" aria-label="Documentation topics">
             <.link :for={topic <- @topics} navigate={~p"/docs/#{topic.name}"} class={[
-              "block rounded-md px-2 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70",
-              if(topic.name == @topic, do: "bg-white/10 text-white", else: "text-zinc-400 hover:bg-white/5 hover:text-zinc-100")
+              "block rounded-md px-2 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70",
+              if(topic.name == @topic, do: "bg-vibe-surface-muted text-vibe-fg-strong", else: "text-vibe-muted hover:bg-vibe-surface-muted/60 hover:text-vibe-fg-strong")
             ]}>
               {topic.title}
             </.link>
@@ -31,7 +31,7 @@ defmodule Vibe.Web.DocsLive do
         </.panel>
       </:sidebar>
 
-      <section class="rounded-xl border border-white/[0.07] bg-[#121016]/60 px-4 py-4 sm:px-6 sm:py-5">
+      <section class="rounded-xl border border-vibe-border/40 bg-vibe-bg-soft/60 px-4 py-4 sm:px-6 sm:py-5">
         <PhoenixStreamdown.markdown
           id={"docs-#{@topic}"}
           content={@markdown}

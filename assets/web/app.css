@@ -3,33 +3,92 @@
 @source "../../lib";
 @source ".";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
+  color-scheme: light;
+  --vibe-bg: #f7f7fa;
+  --vibe-bg-soft: #f4f4f8;
+  --vibe-surface: #fafafc;
+  --vibe-surface-muted: #f4f2f7;
+  --vibe-surface-strong: #efedf3;
+  --vibe-fg: #22242c;
+  --vibe-fg-strong: #151720;
+  --vibe-muted: #5c606c;
+  --vibe-dim: #80848e;
+  --vibe-border: #beb8c6;
+  --vibe-accent: #7e5c91;
+  --vibe-accent-strong: #654978;
+  --vibe-accent-contrast: #ffffff;
+  --vibe-success: #56844e;
+  --vibe-warning: #9c702a;
+  --vibe-error: #b04e4e;
+  --vibe-code: #efedf3;
+  --vibe-code-fg: #22242c;
+}
+
+:root[data-theme="dark"] {
   color-scheme: dark;
-  --vibe-orange: #fb923c;
-  --vibe-purple: #8b5cf6;
-  --vibe-cyan: #22d3ee;
+  --vibe-bg: #0d0c11;
+  --vibe-bg-soft: #141219;
+  --vibe-surface: #1b1d22;
+  --vibe-surface-muted: #25272f;
+  --vibe-surface-strong: #1f2127;
+  --vibe-fg: #dce0e6;
+  --vibe-fg-strong: #e8e8ec;
+  --vibe-muted: #9ca0a8;
+  --vibe-dim: #646870;
+  --vibe-border: #4a4e58;
+  --vibe-accent: #b294bb;
+  --vibe-accent-strong: #c6a7cf;
+  --vibe-accent-contrast: #141219;
+  --vibe-success: #7eaa73;
+  --vibe-warning: #f0c674;
+  --vibe-error: #cc6666;
+  --vibe-code: #101116;
+  --vibe-code-fg: #dce0e6;
+}
+
+@theme inline {
+  --color-vibe-bg: var(--vibe-bg);
+  --color-vibe-bg-soft: var(--vibe-bg-soft);
+  --color-vibe-surface: var(--vibe-surface);
+  --color-vibe-surface-muted: var(--vibe-surface-muted);
+  --color-vibe-surface-strong: var(--vibe-surface-strong);
+  --color-vibe-fg: var(--vibe-fg);
+  --color-vibe-fg-strong: var(--vibe-fg-strong);
+  --color-vibe-muted: var(--vibe-muted);
+  --color-vibe-dim: var(--vibe-dim);
+  --color-vibe-border: var(--vibe-border);
+  --color-vibe-accent: var(--vibe-accent);
+  --color-vibe-accent-strong: var(--vibe-accent-strong);
+  --color-vibe-accent-contrast: var(--vibe-accent-contrast);
+  --color-vibe-success: var(--vibe-success);
+  --color-vibe-warning: var(--vibe-warning);
+  --color-vibe-error: var(--vibe-error);
+  --color-vibe-code: var(--vibe-code);
+  --color-vibe-code-fg: var(--vibe-code-fg);
 }
 
 html {
   min-height: 100%;
-  background: #0d0c11;
-  color-scheme: dark;
+  background: var(--vibe-bg);
 }
 
 body {
   margin: 0;
   min-height: 100%;
   overflow-x: hidden;
-  background: #0d0c11;
-  color: #f4f4f5;
-  -webkit-tap-highlight-color: rgba(251, 146, 60, 0.18);
+  background: var(--vibe-bg);
+  color: var(--vibe-fg);
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--vibe-accent) 18%, transparent);
   touch-action: manipulation;
 }
 
 mark {
   border-radius: 0.25rem;
-  background: rgba(251, 146, 60, 0.25);
-  color: #fed7aa;
+  background: color-mix(in srgb, var(--vibe-accent) 24%, transparent);
+  color: var(--vibe-accent-strong);
 }
 
 .vibe-shell-grid {
@@ -49,12 +108,19 @@ mark {
 }
 
 ::selection {
-  background: rgba(251, 146, 60, 0.35);
+  background: color-mix(in srgb, var(--vibe-accent) 35%, transparent);
+}
+
+.vibe-web-root {
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--vibe-accent) 13%, transparent), transparent 30rem),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--vibe-success) 10%, transparent), transparent 28rem),
+    var(--vibe-bg);
 }
 
 .vibe-markdown {
   overflow-wrap: anywhere;
-  color: #f4f4f5;
+  color: var(--vibe-fg);
   font-size: 0.95rem;
   line-height: 1.65;
 }
@@ -63,6 +129,7 @@ mark {
 .vibe-markdown h2,
 .vibe-markdown h3 {
   margin: 0.2rem 0 0.7rem;
+  color: var(--vibe-fg-strong);
   font-weight: 650;
   line-height: 1.2;
   text-wrap: balance;
@@ -99,21 +166,22 @@ mark {
 }
 
 .vibe-markdown a {
-  color: #fed7aa;
+  color: var(--vibe-accent-strong);
   text-decoration: underline;
 }
 
 .vibe-markdown blockquote {
   margin: 0.8rem 0;
-  border-left: 2px solid rgba(253, 186, 116, 0.3);
+  border-left: 2px solid color-mix(in srgb, var(--vibe-accent) 34%, transparent);
   padding-left: 0.75rem;
-  color: #d4d4d8;
+  color: var(--vibe-muted);
 }
 
 .vibe-markdown :not(pre) > code {
   border-radius: 0.25rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--vibe-surface-strong) 82%, transparent);
   padding: 0.05rem 0.28rem;
+  color: var(--vibe-code-fg);
   font-size: 0.92em;
 }
 
@@ -121,8 +189,8 @@ mark {
   margin: 0.75rem 0 1rem;
   overflow: auto;
   border-radius: 0.45rem;
-  background: #1a1f27 !important;
-  padding: 0.75rem 0.85rem !important;
+  background: var(--vibe-code);
+  padding: 0.75rem 0.85rem;
 }
 
 .vibe-markdown pre code {
@@ -130,9 +198,10 @@ mark {
   min-width: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  background: transparent !important;
-  padding: 0 !important;
+  background: transparent;
+  padding: 0;
   border-radius: 0;
+  color: var(--vibe-code-fg);
   line-height: 1.55;
 }
 
@@ -147,6 +216,6 @@ mark {
 
 .vibe-markdown th,
 .vibe-markdown td {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid color-mix(in srgb, var(--vibe-border) 52%, transparent);
   padding: 0.25rem 0.5rem;
 }

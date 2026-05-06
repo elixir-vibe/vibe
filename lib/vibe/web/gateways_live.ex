@@ -61,78 +61,78 @@ defmodule Vibe.Web.GatewaysLive do
     <.app_shell current={:gateways} title="Gateways" subtitle="External chat gateway runtimes, delivery counters, and topic-backed Vibe sessions.">
       <:sidebar>
         <.panel title="Status">
-          <div class="space-y-3 text-sm text-zinc-300">
-            <div class="flex justify-between"><span class="text-zinc-500">Configured</span><span>{length(@statuses)}</span></div>
-            <div class="flex justify-between"><span class="text-zinc-500">Running</span><span>{Enum.count(@statuses, &(&1.status == :running))}</span></div>
-            <div class="flex justify-between"><span class="text-zinc-500">Gateway sessions</span><span>{length(@sessions)}</span></div>
+          <div class="space-y-3 text-sm text-vibe-fg">
+            <div class="flex justify-between"><span class="text-vibe-dim">Configured</span><span>{length(@statuses)}</span></div>
+            <div class="flex justify-between"><span class="text-vibe-dim">Running</span><span>{Enum.count(@statuses, &(&1.status == :running))}</span></div>
+            <div class="flex justify-between"><span class="text-vibe-dim">Gateway sessions</span><span>{length(@sessions)}</span></div>
           </div>
         </.panel>
       </:sidebar>
 
       <section class="space-y-4">
         <.panel title="Telegram status">
-          <div class="grid gap-3 text-sm text-zinc-300 sm:grid-cols-2">
-            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Bot</div>
-              <div class="mt-2 font-medium text-zinc-100">{telegram_bot_label(@telegram_info.get_me)}</div>
-              <div class="mt-1 font-mono text-xs text-zinc-500">{telegram_bot_detail(@telegram_info.get_me)}</div>
+          <div class="grid gap-3 text-sm text-vibe-fg sm:grid-cols-2">
+            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Bot</div>
+              <div class="mt-2 font-medium text-vibe-fg-strong">{telegram_bot_label(@telegram_info.get_me)}</div>
+              <div class="mt-1 font-mono text-xs text-vibe-dim">{telegram_bot_detail(@telegram_info.get_me)}</div>
             </div>
-            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Webhook</div>
-              <div class="mt-2 font-medium text-zinc-100">{telegram_webhook_label(@telegram_info.webhook)}</div>
-              <div class="mt-1 break-all font-mono text-xs text-zinc-500">{telegram_webhook_detail(@telegram_info.webhook)}</div>
+            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Webhook</div>
+              <div class="mt-2 font-medium text-vibe-fg-strong">{telegram_webhook_label(@telegram_info.webhook)}</div>
+              <div class="mt-1 break-all font-mono text-xs text-vibe-dim">{telegram_webhook_detail(@telegram_info.webhook)}</div>
             </div>
           </div>
         </.panel>
 
         <.panel title="Telegram polling diagnostics">
-          <div class="grid gap-3 text-xs text-zinc-400 sm:grid-cols-3">
-            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">State</div>
-              <div class="mt-2 font-medium text-zinc-100">{polling_state_label(@telegram_polling)}</div>
-              <div class="mt-1 font-mono text-zinc-500">offset {polling_value(@telegram_polling, :offset)}</div>
+          <div class="grid gap-3 text-xs text-vibe-muted sm:grid-cols-3">
+            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">State</div>
+              <div class="mt-2 font-medium text-vibe-fg-strong">{polling_state_label(@telegram_polling)}</div>
+              <div class="mt-1 font-mono text-vibe-dim">offset {polling_value(@telegram_polling, :offset)}</div>
             </div>
-            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Conflicts</div>
-              <div class="mt-2 font-medium text-zinc-100">{polling_value(@telegram_polling, :conflict_count)}</div>
-              <div class="mt-1 font-mono text-zinc-500">consecutive {polling_value(@telegram_polling, :consecutive_conflicts)}</div>
+            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Conflicts</div>
+              <div class="mt-2 font-medium text-vibe-fg-strong">{polling_value(@telegram_polling, :conflict_count)}</div>
+              <div class="mt-1 font-mono text-vibe-dim">consecutive {polling_value(@telegram_polling, :consecutive_conflicts)}</div>
             </div>
-            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Last poll</div>
-              <div class="mt-2 font-medium text-zinc-100">{format_time(polling_value(@telegram_polling, :last_poll_at))}</div>
-              <div class="mt-1 font-mono text-zinc-500">updates {polling_value(@telegram_polling, :last_update_count)}</div>
+            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Last poll</div>
+              <div class="mt-2 font-medium text-vibe-fg-strong">{format_time(polling_value(@telegram_polling, :last_poll_at))}</div>
+              <div class="mt-1 font-mono text-vibe-dim">updates {polling_value(@telegram_polling, :last_update_count)}</div>
             </div>
           </div>
-          <pre :if={polling_value(@telegram_polling, :last_error)} class="mt-3 max-h-40 overflow-auto rounded-xl border border-red-400/20 bg-red-950/20 p-3 text-xs text-red-100">{inspect(polling_value(@telegram_polling, :last_error), pretty: true)}</pre>
+          <pre :if={polling_value(@telegram_polling, :last_error)} class="mt-3 max-h-40 overflow-auto rounded-xl border border-vibe-error/20 bg-vibe-error/10 p-3 text-xs text-vibe-error">{inspect(polling_value(@telegram_polling, :last_error), pretty: true)}</pre>
         </.panel>
 
         <.panel title="Telegram actions">
           <div class="flex flex-wrap gap-2">
-            <button phx-click="telegram_get_me" class="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5">getMe</button>
-            <button phx-click="telegram_webhook" class="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5">Webhook info</button>
-            <button phx-click="telegram_updates" class="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5">One-shot getUpdates</button>
-            <button phx-click="telegram_start" class="rounded-lg border border-emerald-400/30 px-3 py-2 text-sm text-emerald-200 hover:bg-emerald-400/10">Start polling</button>
-            <button phx-click="telegram_stop" class="rounded-lg border border-red-400/30 px-3 py-2 text-sm text-red-200 hover:bg-red-400/10">Stop polling</button>
+            <button phx-click="telegram_get_me" class="rounded-lg border border-vibe-border/50 px-3 py-2 text-sm text-vibe-fg hover:bg-vibe-surface-muted/60">getMe</button>
+            <button phx-click="telegram_webhook" class="rounded-lg border border-vibe-border/50 px-3 py-2 text-sm text-vibe-fg hover:bg-vibe-surface-muted/60">Webhook info</button>
+            <button phx-click="telegram_updates" class="rounded-lg border border-vibe-border/50 px-3 py-2 text-sm text-vibe-fg hover:bg-vibe-surface-muted/60">One-shot getUpdates</button>
+            <button phx-click="telegram_start" class="rounded-lg border border-vibe-success/30 px-3 py-2 text-sm text-vibe-success hover:bg-vibe-success/10">Start polling</button>
+            <button phx-click="telegram_stop" class="rounded-lg border border-vibe-error/30 px-3 py-2 text-sm text-vibe-error hover:bg-vibe-error/10">Stop polling</button>
           </div>
-          <pre :if={@action_result} class="mt-4 max-h-80 overflow-auto rounded-xl border border-white/10 bg-black/30 p-3 text-xs text-zinc-300">{@action_result}</pre>
+          <pre :if={@action_result} class="mt-4 max-h-80 overflow-auto rounded-xl border border-vibe-border/50 bg-black/30 p-3 text-xs text-vibe-fg">{@action_result}</pre>
         </.panel>
 
         <.panel title="Gateway runtimes">
           <div class="overflow-x-auto">
-            <table class="min-w-[42rem] text-left text-xs text-zinc-400">
-              <thead class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+            <table class="min-w-[42rem] text-left text-xs text-vibe-muted">
+              <thead class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">
                 <tr><th class="py-2">Gateway</th><th>Backend</th><th>Status</th><th>Accepted</th><th>Rejected</th><th>Ignored</th><th>Failed</th><th>PID</th></tr>
               </thead>
               <tbody class="divide-y divide-white/5">
                 <tr :for={gateway <- @statuses}>
-                  <td class="py-2 font-mono text-zinc-200">{gateway.id}</td>
+                  <td class="py-2 font-mono text-vibe-fg">{gateway.id}</td>
                   <td class="font-mono">{inspect(gateway.backend)}</td>
                   <td><.gateway_status_badge status={gateway.status} /></td>
                   <td>{gateway.stats.accepted}</td>
                   <td>{gateway.stats.rejected}</td>
                   <td>{gateway.stats.ignored}</td>
                   <td>{gateway.stats.failed}</td>
-                  <td class="font-mono text-zinc-500">{gateway.pid || "-"}</td>
+                  <td class="font-mono text-vibe-dim">{gateway.pid || "-"}</td>
                 </tr>
               </tbody>
             </table>
@@ -141,18 +141,18 @@ defmodule Vibe.Web.GatewaysLive do
 
         <.panel title="Recent gateway sessions">
           <div class="overflow-x-auto">
-            <table class="min-w-[48rem] text-left text-xs text-zinc-400">
-              <thead class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+            <table class="min-w-[48rem] text-left text-xs text-vibe-muted">
+              <thead class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">
                 <tr><th class="py-2">Session</th><th>Platform</th><th>Chat</th><th>Thread / topic</th><th>User</th><th>Messages</th><th>Updated</th></tr>
               </thead>
               <tbody class="divide-y divide-white/5">
                 <tr :for={session <- @sessions}>
-                  <td class="max-w-[18rem] truncate py-2 font-mono text-zinc-200">
-                    <.link navigate={~p"/sessions/#{session.id}"} class="hover:text-orange-300">{session.id}</.link>
+                  <td class="max-w-[18rem] truncate py-2 font-mono text-vibe-fg">
+                    <.link navigate={~p"/sessions/#{session.id}"} class="hover:text-vibe-accent">{session.id}</.link>
                   </td>
                   <td>{session.gateway_source[:platform] || "-"}</td>
                   <td class="font-mono">{session.gateway_source[:chat_id] || "-"}</td>
-                  <td class="font-mono text-orange-200">{session.gateway_source[:thread_id] || "-"}</td>
+                  <td class="font-mono text-vibe-accent-strong">{session.gateway_source[:thread_id] || "-"}</td>
                   <td class="font-mono">{session.gateway_source[:user_id] || "-"}</td>
                   <td>{session.message_count}</td>
                   <td>{format_time(session.updated_at)}</td>
@@ -173,9 +173,9 @@ defmodule Vibe.Web.GatewaysLive do
     <span class={[
       "inline-flex rounded-full px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em]",
       case @status do
-        :running -> "bg-emerald-400/10 text-emerald-300"
-        :stopped -> "bg-yellow-400/10 text-yellow-300"
-        _ -> "bg-zinc-400/10 text-zinc-400"
+        :running -> "bg-vibe-success/10 text-vibe-success"
+        :stopped -> "bg-vibe-warning/10 text-vibe-warning"
+        _ -> "bg-vibe-muted/10 text-vibe-muted"
       end
     ]}>{@status}</span>
     """

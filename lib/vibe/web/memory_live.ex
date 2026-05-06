@@ -60,37 +60,37 @@ defmodule Vibe.Web.MemoryLive do
   def render(assigns) do
     ~H"""
     <.app_shell current={:memory} title="Memory" subtitle="Curated durable facts Vibe can recall across sessions and workspaces.">
-      <section class="mb-4 rounded-xl border border-white/10 bg-[#141219]/80 p-3 sm:p-4">
+      <section class="mb-4 rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80 p-3 sm:p-4">
         <form phx-submit="add" class="space-y-3">
           <label class="sr-only" for="memory-text">Add memory</label>
-          <textarea id="memory-text" name="memory[text]" value={@new_memory_text} rows="3" placeholder="Add a durable memory Vibe should remember…" class="min-h-24 w-full resize-y rounded-lg border border-white/10 bg-[#0d0c11] px-3 py-2 text-sm leading-6 text-zinc-100 placeholder:text-zinc-600 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-300/25"></textarea>
+          <textarea id="memory-text" name="memory[text]" value={@new_memory_text} rows="3" placeholder="Add a durable memory Vibe should remember…" class="min-h-24 w-full resize-y rounded-lg border border-vibe-border/50 bg-vibe-bg px-3 py-2 text-sm leading-6 text-vibe-fg-strong placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-2 focus:ring-vibe-accent/25"></textarea>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <select name="memory[scope]" class="rounded-lg border border-white/10 bg-[#0d0c11] px-3 py-2 text-sm text-zinc-100 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-300/25">
+            <select name="memory[scope]" class="rounded-lg border border-vibe-border/50 bg-vibe-bg px-3 py-2 text-sm text-vibe-fg-strong focus:border-vibe-accent focus:outline-none focus:ring-2 focus:ring-vibe-accent/25">
               <option :for={{label, scope} <- @scope_options} value={scope_param(scope)} selected={@new_memory_scope == scope}>{label}</option>
             </select>
-            <button class="rounded-lg bg-orange-400 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-lg shadow-orange-950/20 transition-colors hover:bg-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70">Save memory</button>
+            <button class="rounded-lg bg-vibe-accent px-4 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">Save memory</button>
           </div>
         </form>
       </section>
 
-      <section class="rounded-xl border border-white/10 bg-[#141219]/80">
-        <form phx-change="search" class="border-b border-white/10 p-3 sm:p-4">
+      <section class="rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
+        <form phx-change="search" class="border-b border-vibe-border/50 p-3 sm:p-4">
           <label class="sr-only" for="memory-search">Search memory</label>
-          <input id="memory-search" name="q" value={@query} autocomplete="off" placeholder="Search memory…" class="w-full rounded-lg border border-white/10 bg-[#0d0c11] px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-300/25" />
+          <input id="memory-search" name="q" value={@query} autocomplete="off" placeholder="Search memory…" class="w-full rounded-lg border border-vibe-border/50 bg-vibe-bg px-3 py-2 text-sm text-vibe-fg-strong placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-2 focus:ring-vibe-accent/25" />
         </form>
 
-        <div :if={@entries == []} class="p-10 text-center text-sm text-zinc-500">No memory entries matched.</div>
+        <div :if={@entries == []} class="p-10 text-center text-sm text-vibe-dim">No memory entries matched.</div>
         <div :if={@entries != []} class="divide-y divide-white/8">
           <article :for={entry <- @entries} class="px-4 py-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-zinc-600">
-                <span class="rounded bg-white/[0.035] px-1.5 py-0.5">{scope_label(entry.scope)}</span>
+              <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-vibe-dim">
+                <span class="rounded bg-vibe-surface-muted/35 px-1.5 py-0.5">{scope_label(entry.scope)}</span>
                 <span class="font-mono">{entry.id}</span>
                 <span :if={entry.at}>{Calendar.strftime(entry.at, "%Y-%m-%d %H:%M")}</span>
               </div>
-              <button type="button" phx-click="delete" phx-value-scope={scope_value(entry.scope)} phx-value-id={entry.id} class="rounded border border-red-300/15 px-2 py-1 text-xs text-red-200/80 hover:border-red-300/40 hover:text-red-100">Delete</button>
+              <button type="button" phx-click="delete" phx-value-scope={scope_value(entry.scope)} phx-value-id={entry.id} class="rounded border border-vibe-error/15 px-2 py-1 text-xs text-vibe-error/80 hover:border-vibe-error/40 hover:text-vibe-error">Delete</button>
             </div>
-            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-100">{entry.text}</p>
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-vibe-fg-strong">{entry.text}</p>
           </article>
         </div>
       </section>

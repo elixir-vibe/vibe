@@ -4,12 +4,12 @@ defmodule Vibe.Web.Components.Core do
 
   attr(:label, :string, required: true)
   attr(:value, :any, required: true)
-  attr(:accent, :string, default: "text-orange-300")
+  attr(:accent, :string, default: "text-vibe-accent")
 
   def stat_card(assigns) do
     ~H"""
-    <div class="rounded-xl border border-white/10 bg-[#17151d]/80 p-4 shadow-sm">
-      <p class="text-[0.68rem] uppercase tracking-[0.18em] text-zinc-500">{@label}</p>
+    <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface/80 p-4 shadow-sm">
+      <p class="text-[0.68rem] uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
       <p class={["mt-2 text-2xl font-semibold tabular-nums", @accent]}>{@value}</p>
     </div>
     """
@@ -22,9 +22,9 @@ defmodule Vibe.Web.Components.Core do
     <span class={[
       "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1",
       case to_string(@status) do
-        "working" -> "bg-orange-400/10 text-orange-200 ring-orange-400/30"
-        "error" -> "bg-red-400/10 text-red-200 ring-red-400/30"
-        _ -> "bg-emerald-400/10 text-emerald-200 ring-emerald-400/30"
+        "working" -> "bg-vibe-accent/10 text-vibe-accent-strong ring-vibe-accent/30"
+        "error" -> "bg-vibe-error/10 text-vibe-error ring-vibe-error/30"
+        _ -> "bg-vibe-success/10 text-vibe-success ring-vibe-success/30"
       end
     ]}>{@status}</span>
     """
@@ -35,8 +35,8 @@ defmodule Vibe.Web.Components.Core do
 
   def panel(assigns) do
     ~H"""
-    <section class="rounded-xl border border-white/10 bg-[#17151d]/78 p-4 shadow-sm">
-      <h2 class="mb-3 text-sm font-semibold text-zinc-100">{@title}</h2>
+    <section class="rounded-xl border border-vibe-border/50 bg-vibe-surface/78 p-4 shadow-sm">
+      <h2 class="mb-3 text-sm font-semibold text-vibe-fg-strong">{@title}</h2>
       {render_slot(@inner_block)}
     </section>
     """

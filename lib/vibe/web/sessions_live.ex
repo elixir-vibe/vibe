@@ -68,7 +68,7 @@ defmodule Vibe.Web.SessionsLive do
     ~H"""
     <.app_shell current={:sessions} title="Agent sessions" subtitle="Attach to running work, reopen durable history, or start a fresh server-owned session.">
       <:actions>
-        <button phx-click="new" class="rounded-lg bg-orange-400 px-3 py-2 text-sm font-semibold text-zinc-950 shadow-lg shadow-orange-950/20 transition-colors hover:bg-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/70 sm:px-4">
+        <button phx-click="new" class="rounded-lg bg-vibe-accent px-3 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70 sm:px-4">
           New session
         </button>
       </:actions>
@@ -86,7 +86,7 @@ defmodule Vibe.Web.SessionsLive do
 
       <form phx-change="select" class="mt-6 space-y-6">
         <%= if @sessions == [] do %>
-          <div class="rounded-xl border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">No sessions matched.</div>
+          <div class="rounded-xl border border-dashed border-vibe-border/60 p-10 text-center text-sm text-vibe-dim">No sessions matched.</div>
         <% else %>
           <.session_group title="Active" sessions={@session_groups.active} selected={@selected_sessions} />
           <.session_group title="Recent" sessions={@session_groups.recent} selected={@selected_sessions} />
