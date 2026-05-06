@@ -37,10 +37,12 @@ defmodule Exy.Gateway.Telegram.Backend do
     [
       %{
         id: :telegram_polling,
-        start: {Polling, :start_link, [[config: config, runtime: runtime]]}
+        start: {Polling, :start_link, [[config: config, runtime: runtime, name: polling_name()]]}
       }
     ]
   end
 
   def child_specs(%Config{}, _runtime), do: []
+
+  defp polling_name, do: {:via, Registry, {Exy.Registry, {:gateway_transport, :telegram_polling}}}
 end

@@ -11,13 +11,19 @@ defmodule Exy.Web.GatewaysLive do
     socket =
       socket
       |> assign(:telegram_info, telegram_info())
+      |> assign(:telegram_polling, Exy.Gateway.Telegram.polling_status())
       |> assign_gateways()
 
     {:ok, socket}
   end
 
   @impl true
-  def handle_info(:refresh, socket), do: {:noreply, assign_gateways(socket)}
+  def handle_info(:refresh, socket) do
+    {:noreply,
+     socket
+     |> assign(:telegram_polling, Exy.Gateway.Telegram.polling_status())
+     |> assign_gateways()}
+  end
 
   @impl true
   def handle_event("telegram_get_me", _params, socket),
@@ -31,12 +37,22 @@ defmodule Exy.Web.GatewaysLive do
 
   def handle_event("telegram_start", _params, socket) do
     result = Exy.Gateway.Telegram.start_polling()
-    {:noreply, socket |> put_action_result(:telegram_start, result) |> assign_gateways()}
+
+    {:noreply,
+     socket
+     |> put_action_result(:telegram_start, result)
+     |> assign(:telegram_polling, Exy.Gateway.Telegram.polling_status())
+     |> assign_gateways()}
   end
 
   def handle_event("telegram_stop", _params, socket) do
     result = Exy.Gateway.Telegram.stop_polling()
-    {:noreply, socket |> put_action_result(:telegram_stop, result) |> assign_gateways()}
+
+    {:noreply,
+     socket
+     |> put_action_result(:telegram_stop, result)
+     |> assign(:telegram_polling, Exy.Gateway.Telegram.polling_status())
+     |> assign_gateways()}
   end
 
   @impl true
@@ -67,6 +83,27 @@ defmodule Exy.Web.GatewaysLive do
               <div class="mt-1 break-all font-mono text-xs text-zinc-500">{telegram_webhook_detail(@telegram_info.webhook)}</div>
             </div>
           </div>
+        </.panel>
+
+        <.panel title="Telegram polling diagnostics">
+          <div class="grid gap-3 text-xs text-zinc-400 sm:grid-cols-3">
+            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">State</div>
+              <div class="mt-2 font-medium text-zinc-100">{polling_state_label(@telegram_polling)}</div>
+              <div class="mt-1 font-mono text-zinc-500">offset {polling_value(@telegram_polling, :offset)}</div>
+            </div>
+            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Conflicts</div>
+              <div class="mt-2 font-medium text-zinc-100">{polling_value(@telegram_polling, :conflict_count)}</div>
+              <div class="mt-1 font-mono text-zinc-500">consecutive {polling_value(@telegram_polling, :consecutive_conflicts)}</div>
+            </div>
+            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">Last poll</div>
+              <div class="mt-2 font-medium text-zinc-100">{format_time(polling_value(@telegram_polling, :last_poll_at))}</div>
+              <div class="mt-1 font-mono text-zinc-500">updates {polling_value(@telegram_polling, :last_update_count)}</div>
+            </div>
+          </div>
+          <pre :if={polling_value(@telegram_polling, :last_error)} class="mt-3 max-h-40 overflow-auto rounded-xl border border-red-400/20 bg-red-950/20 p-3 text-xs text-red-100">{inspect(polling_value(@telegram_polling, :last_error), pretty: true)}</pre>
         </.panel>
 
         <.panel title="Telegram actions">
@@ -197,11 +234,19 @@ defmodule Exy.Web.GatewaysLive do
   defp telegram_webhook_detail({:ok, %{url: url}}), do: url
   defp telegram_webhook_detail({:error, _reason}), do: "Check TELEGRAM_BOT_TOKEN"
 
+  defp polling_state_label({:ok, %{polling?: true}}), do: "Running"
+  defp polling_state_label({:ok, _status}), do: "Idle"
+  defp polling_state_label({:error, :not_running}), do: "Not running"
+
+  defp polling_value({:ok, status}, key), do: Map.get(status, key, "-")
+  defp polling_value({:error, _reason}, _key), do: "-"
+
   defp redact({:ok, value}), do: {:ok, redact(value)}
   defp redact({:error, value}), do: {:error, redact(value)}
   defp redact(%{token: _token} = value), do: %{value | token: "[redacted]"}
   defp redact(value), do: value
 
   defp format_time(nil), do: "-"
+  defp format_time("-"), do: "-"
   defp format_time(%DateTime{} = time), do: Calendar.strftime(time, "%Y-%m-%d %H:%M:%S")
 end

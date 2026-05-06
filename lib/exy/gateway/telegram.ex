@@ -7,7 +7,7 @@ defmodule Exy.Gateway.Telegram do
   surfaces.
   """
 
-  alias Exy.Gateway.Telegram.Backend
+  alias Exy.Gateway.Telegram.{Backend, Polling}
 
   @doc "Starts a foreground Telegram polling gateway under Exy's top-level supervisor."
   @spec start_polling(keyword()) :: Supervisor.on_start_child()
@@ -36,6 +36,15 @@ defmodule Exy.Gateway.Telegram do
   def stop_polling do
     with :ok <- Supervisor.terminate_child(Exy.Supervisor, Exy.Gateway.Telegram.Supervisor) do
       Supervisor.delete_child(Exy.Supervisor, Exy.Gateway.Telegram.Supervisor)
+    end
+  end
+
+  @doc "Returns current Telegram polling diagnostics when the polling transport is running."
+  @spec polling_status() :: {:ok, map()} | {:error, :not_running}
+  def polling_status do
+    case Registry.lookup(Exy.Registry, {:gateway_transport, :telegram_polling}) do
+      [{pid, _value} | _rest] -> {:ok, Polling.status(pid)}
+      [] -> {:error, :not_running}
     end
   end
 

@@ -42,5 +42,40 @@ defmodule Exy.Gateway.Telegram.PollingTest do
     send(polling, :poll)
     assert_receive {:fetch_opts, opts}
     assert opts[:offset] == 11
+
+    status = Polling.status(polling)
+    assert status.offset == 11
+    assert status.last_error == nil
+    assert status.last_update_count == 0
+  end
+
+  test "records getUpdates conflicts and backs off without overlapping polls" do
+    parent = self()
+    config = %Config{token: "token"}
+
+    fetch = fn opts ->
+      send(parent, {:fetch_opts, opts})
+      raise RuntimeError, "Conflict: terminated by other getUpdates request"
+    end
+
+    assert {:ok, polling} =
+             Polling.start_link(
+               config: config,
+               runtime: self(),
+               interval_ms: 60_000,
+               timeout_s: 1,
+               fetch_fun: fetch,
+               delete_webhook?: false
+             )
+
+    assert_receive {:fetch_opts, _opts}
+
+    status = Polling.status(polling)
+    assert status.conflict_count == 1
+    assert status.consecutive_conflicts == 1
+    assert status.last_error.kind == :conflict
+    assert status.polling?
+
+    refute_receive {:fetch_opts, _opts}, 20
   end
 end
