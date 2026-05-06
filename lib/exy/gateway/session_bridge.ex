@@ -146,6 +146,11 @@ defmodule Exy.Gateway.SessionBridge do
   end
 
   defp response_text(text) when is_binary(text), do: text
+
+  defp response_text(%ReqLLM.Response{} = response) do
+    ReqLLM.Response.text(response) || inspect(response)
+  end
+
   defp response_text(%{output: output}) when is_binary(output), do: output
   defp response_text(response), do: inspect(response)
 end

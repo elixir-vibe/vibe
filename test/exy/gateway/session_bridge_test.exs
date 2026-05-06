@@ -42,6 +42,42 @@ defmodule Exy.Gateway.SessionBridgeTest do
     assert opts[:finalize?]
   end
 
+  test "sends ReqLLM response text from non-streaming assistant messages" do
+    parent = self()
+    session_id = "gateway-bridge-#{System.unique_integer([:positive])}"
+
+    assert {:ok, session} =
+             Exy.Session.start(session_id: session_id, ask_fun: fn _, _ -> {:ok, "unused"} end)
+
+    message =
+      Message.new(Source.new(:telegram, chat_id: "chat-1", chat_type: :dm, user_id: "user-1"),
+        id: "reply-1"
+      )
+
+    response = %ReqLLM.Response{
+      id: "response-1",
+      model: "test",
+      context: nil,
+      message: %ReqLLM.Message{
+        role: :assistant,
+        content: [ReqLLM.Message.ContentPart.text("from response")]
+      }
+    }
+
+    assert {:ok, _bridge} =
+             SessionBridge.start(message, session_id,
+               adapter: Exy.Test.GatewayRecordingAdapter,
+               adapter_opts: [owner: parent]
+             )
+
+    Exy.Session.emit_event(
+      session,
+      Event.new(:assistant_message_added, session_id, %{result: response})
+    )
+
+    assert_receive {:gateway_send, "chat-1", "from response", _opts}
+  end
+
   test "sends non-streaming assistant messages" do
     parent = self()
     session_id = "gateway-bridge-#{System.unique_integer([:positive])}"
