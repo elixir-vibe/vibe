@@ -280,8 +280,18 @@ defmodule Vibe.TUI.TerminalLoop do
 
   defp body_cache_key(state, snapshot) do
     {length(snapshot.ui.events), snapshot.ui.status, snapshot.width, state.loader_phase,
-     state.theme.name}
+     state.theme.name, picker_cache_key(snapshot)}
   end
+
+  defp picker_cache_key(%{ui: %{selector: selector}}) when is_map(selector),
+    do:
+      {:selector, Map.get(selector, :kind), Map.get(selector, :selected),
+       Map.get(selector, :items)}
+
+  defp picker_cache_key(%{autocomplete: %{} = autocomplete}),
+    do: {:autocomplete, autocomplete.selected, autocomplete.items, autocomplete.replace_from}
+
+  defp picker_cache_key(_snapshot), do: nil
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
     if working?(state) do

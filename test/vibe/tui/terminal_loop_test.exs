@@ -444,6 +444,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
   test "keeps footer directly above prompt when autocomplete is visible" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 20)
 
+    _initial = TerminalLoop.render(loop)
     :ok = TerminalLoop.input(loop, "/se")
 
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
