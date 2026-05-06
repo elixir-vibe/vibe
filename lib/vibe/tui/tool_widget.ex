@@ -6,7 +6,19 @@ defmodule Vibe.TUI.ToolWidget do
   alias Vibe.Model.Content
   alias Vibe.Tool.Display
   alias Vibe.TUI
-  alias Vibe.TUI.{Lines, Markdown, SourceBlock, Syntax, TextTruncation, Theme, Widget, Width}
+
+  alias Vibe.TUI.{
+    DiffBlock,
+    Lines,
+    Markdown,
+    SourceBlock,
+    Syntax,
+    TextTruncation,
+    Theme,
+    Widget,
+    Width
+  }
+
   alias Vibe.TUI.Widgets.Image
 
   @type tool :: map()
@@ -334,11 +346,7 @@ defmodule Vibe.TUI.ToolWidget do
 
     lines =
       truncation.lines
-      |> Enum.flat_map(fn line ->
-        line
-        |> highlight_diff_line(language, theme)
-        |> output_line(width)
-      end)
+      |> DiffBlock.diff_lines(language, width, theme)
       |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
 
     Lines.join(lines, [""])
@@ -383,46 +391,6 @@ defmodule Vibe.TUI.ToolWidget do
       ])
     else
       lines
-    end
-  end
-
-  defp highlight_diff_line("+" <> rest, language, theme),
-    do: [Theme.fg(theme, :success, "+"), highlight_diff_rest(rest, language, theme)]
-
-  defp highlight_diff_line("-" <> rest, language, theme),
-    do: [Theme.fg(theme, :error, "-"), highlight_diff_rest(rest, language, theme)]
-
-  defp highlight_diff_line(line, _language, theme), do: Theme.fg(theme, :dim, line)
-
-  defp highlight_diff_rest(rest, language, theme) do
-    case split_diff_number_prefix(rest) do
-      {prefix, source} ->
-        [Theme.fg(theme, :dim, prefix), highlight_diff_source_line(source, language, theme)]
-
-      :error ->
-        Theme.fg(theme, :dim, rest)
-    end
-  end
-
-  defp highlight_diff_source_line(line, language, theme) when language in [nil, ""],
-    do: Theme.fg(theme, :tool_output, line)
-
-  defp highlight_diff_source_line(line, language, _theme) when language in [:elixir, "elixir"],
-    do: Syntax.highlight_elixir(line)
-
-  defp highlight_diff_source_line(line, language, theme) do
-    {:ok, highlighted} =
-      Lumis.highlight(line, formatter: {:terminal, language: to_string(language)})
-
-    highlighted
-  rescue
-    _error -> Theme.fg(theme, :tool_output, line)
-  end
-
-  defp split_diff_number_prefix(rest) do
-    case Regex.run(~r/^(\s*\d+\s+\s)(.*)$/, rest, capture: :all_but_first) do
-      [prefix, source] -> {prefix, source}
-      _no_match -> :error
     end
   end
 
