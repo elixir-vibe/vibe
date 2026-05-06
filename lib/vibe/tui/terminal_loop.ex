@@ -37,6 +37,10 @@ defmodule Vibe.TUI.TerminalLoop do
   @spec render_full(GenServer.server()) :: [IO.chardata()]
   def render_full(server), do: GenServer.call(server, :render_full)
 
+  @spec render_frame(GenServer.server(), :visible | :full) :: Vibe.TUI.RenderFrame.t()
+  def render_frame(server, viewport \\ :visible),
+    do: GenServer.call(server, {:render_frame, viewport}, :infinity)
+
   @spec cursor_position(GenServer.server()) :: {pos_integer(), pos_integer()}
   def cursor_position(server), do: GenServer.call(server, :cursor_position)
 
@@ -128,17 +132,22 @@ defmodule Vibe.TUI.TerminalLoop do
   end
 
   def handle_call(:render_snapshot, _from, state) do
-    {frame, state} = render_frame(state, :full)
+    {frame, state} = build_frame(state, :full)
     {:reply, {frame.lines, frame.cursor}, state}
   end
 
+  def handle_call({:render_frame, viewport}, _from, state) when viewport in [:visible, :full] do
+    {frame, state} = build_frame(state, viewport)
+    {:reply, frame, state}
+  end
+
   def handle_call(:cursor_position, _from, state) do
-    {frame, state} = render_frame(state, :visible)
+    {frame, state} = build_frame(state, :visible)
     {:reply, frame.cursor, state}
   end
 
   def handle_call(:full_cursor_position, _from, state) do
-    {frame, state} = render_frame(state, :full)
+    {frame, state} = build_frame(state, :full)
     {:reply, frame.cursor, state}
   end
 
@@ -198,7 +207,7 @@ defmodule Vibe.TUI.TerminalLoop do
     end
 
     defp paint(state, reason) do
-      {frame, state} = render_frame(state, :visible)
+      {frame, state} = build_frame(state, :visible)
       {output, painter} = TerminalPainter.render(state.painter, frame.lines, frame.cursor)
       IO.write(state.output, output)
 
@@ -229,7 +238,7 @@ defmodule Vibe.TUI.TerminalLoop do
     defp paint(%{output: false} = state, _reason), do: state
 
     defp paint(state, _reason) do
-      {frame, state} = render_frame(state, :visible)
+      {frame, state} = build_frame(state, :visible)
       {output, painter} = TerminalPainter.render(state.painter, frame.lines, frame.cursor)
       IO.write(state.output, output)
       %{state | painter: painter}
@@ -241,16 +250,16 @@ defmodule Vibe.TUI.TerminalLoop do
   defp event_type(event), do: inspect(event)
 
   defp render_lines(state) do
-    {frame, state} = render_frame(state, :visible)
+    {frame, state} = build_frame(state, :visible)
     {frame.lines, state}
   end
 
   defp render_full_lines(state) do
-    {frame, state} = render_frame(state, :full)
+    {frame, state} = build_frame(state, :full)
     {frame.lines, state}
   end
 
-  defp render_frame(state, viewport) do
+  defp build_frame(state, viewport) do
     snapshot = App.snapshot(state.app)
 
     frame =

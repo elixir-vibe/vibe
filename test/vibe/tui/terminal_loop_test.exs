@@ -75,6 +75,35 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert elapsed_us < 50_000
   end
 
+  test "editor-only input reuses cached body blocks" do
+    session_id = "editor-cache-#{System.unique_integer([:positive])}"
+    {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
+
+    {:ok, loop} =
+      TerminalLoop.start_link(output: false, width: 100, height: 24, session_server: session)
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        session,
+        Vibe.UI.Event.new(
+          :tool_finished,
+          session_id,
+          Vibe.UI.ToolEvent.finished(
+            id: "read-1",
+            name: :read,
+            args: %{path: "large.ex"},
+            output: {:ok, read_output("large.ex", 300), []}
+          )
+        )
+      )
+
+    first = TerminalLoop.render_frame(loop)
+    :ok = TerminalLoop.input(loop, "x")
+    second = TerminalLoop.render_frame(loop)
+
+    assert second.stats.hits > first.stats.hits
+  end
+
   test "ctrl-w deletes the word before the cursor" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
 
