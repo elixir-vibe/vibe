@@ -24,8 +24,9 @@ defmodule Exy.SystemAlarmsTest do
     end)
   end
 
-  test "records SASL disk almost full alarms as telemetry" do
+  test "records SASL disk almost full alarms as telemetry and semantic UI state" do
     assert Exy.SystemAlarms.installed?()
+    {:ok, session} = Exy.Session.start_link(session_id: "alarm-ui-test", persist?: false)
 
     :alarm_handler.set_alarm({{:disk_almost_full, ~c"/tmp"}, []})
 
@@ -35,11 +36,44 @@ defmodule Exy.SystemAlarmsTest do
         event.metadata.alarm_id =~ "/tmp"
     end)
 
+    assert_active_alert(:disk_almost_full)
+    assert_session_alert(session, :disk_almost_full)
+
     :alarm_handler.clear_alarm({:disk_almost_full, ~c"/tmp"})
 
     assert_event(fn event ->
       event.event == [:exy, :system, :alarm, :clear] and
         event.metadata.alarm_type == "disk_almost_full"
+    end)
+
+    assert_cleared_alert(:disk_almost_full)
+  end
+
+  defp assert_active_alert(type) do
+    deadline = System.monotonic_time(:millisecond) + 500
+
+    wait_until(deadline, "active alert was not set", fn ->
+      Enum.any?(Exy.SystemAlarms.active(), &(&1.type == type))
+    end)
+  end
+
+  defp assert_cleared_alert(type) do
+    deadline = System.monotonic_time(:millisecond) + 500
+
+    wait_until(deadline, "active alert was not cleared", fn ->
+      Enum.all?(Exy.SystemAlarms.active(), &(&1.type != type))
+    end)
+  end
+
+  defp assert_session_alert(session, type) do
+    deadline = System.monotonic_time(:millisecond) + 500
+
+    wait_until(deadline, "session alert was not set", fn ->
+      session
+      |> Exy.Session.state()
+      |> Map.get(:runtime_alerts)
+      |> Map.values()
+      |> Enum.any?(&(&1.type == type))
     end)
   end
 
@@ -49,15 +83,22 @@ defmodule Exy.SystemAlarmsTest do
   end
 
   defp wait_for_event(fun, deadline) do
-    if Enum.any?(Exy.Telemetry.all(), fun) do
-      :ok
-    else
-      if System.monotonic_time(:millisecond) < deadline do
+    wait_until(deadline, "telemetry event was not stored", fn ->
+      Enum.any?(Exy.Telemetry.all(), fun)
+    end)
+  end
+
+  defp wait_until(deadline, failure, fun) do
+    cond do
+      fun.() ->
+        :ok
+
+      System.monotonic_time(:millisecond) < deadline ->
         Process.sleep(10)
-        wait_for_event(fun, deadline)
-      else
-        flunk("telemetry event was not stored")
-      end
+        wait_until(deadline, failure, fun)
+
+      true ->
+        flunk(failure)
     end
   end
 end

@@ -31,10 +31,9 @@ defmodule Exy.TUI.Widgets.Footer do
 
     footer = Theme.fg(theme, :dim, Widget.join_sides(left, right, width))
 
-    case plugin_status_line(Map.get(props, :plugin_statuses, %{}), width, theme) do
-      nil -> [footer]
-      status_line -> [footer, status_line]
-    end
+    [footer]
+    |> append_optional(runtime_alerts_line(Map.get(props, :runtime_alerts, []), width, theme))
+    |> append_optional(plugin_status_line(Map.get(props, :plugin_statuses, %{}), width, theme))
   end
 
   defp short_session_id(session_id, width) do
@@ -52,6 +51,24 @@ defmodule Exy.TUI.Widgets.Footer do
   defp sessions_label(nil), do: "local"
   defp sessions_label(1), do: "1 active"
   defp sessions_label(count), do: "#{count} active"
+
+  defp append_optional(lines, nil), do: lines
+  defp append_optional(lines, line), do: [line | Enum.reverse(lines)] |> Enum.reverse()
+
+  defp runtime_alerts_line([], _width, _theme), do: nil
+
+  defp runtime_alerts_line(alerts, width, theme) do
+    line =
+      Enum.map_join(alerts, " · ", &alert_label/1)
+      |> Widget.fit_line(width)
+
+    Theme.fg(theme, :warning, line)
+  end
+
+  defp alert_label(%{type: :disk_almost_full, message: message}), do: "disk low: #{message}"
+  defp alert_label(%{type: :system_memory_high_watermark}), do: "memory pressure"
+  defp alert_label(%{title: title}), do: title
+  defp alert_label(alert), do: inspect(alert)
 
   defp plugin_status_line(statuses, _width, _theme) when map_size(statuses) == 0, do: nil
 

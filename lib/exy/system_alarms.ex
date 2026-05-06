@@ -10,6 +10,8 @@ defmodule Exy.SystemAlarms do
 
   use GenServer
 
+  alias Exy.Runtime.Alert
+
   require Logger
 
   @handler Exy.SystemAlarms.Handler
@@ -19,6 +21,12 @@ defmodule Exy.SystemAlarms do
 
   @spec installed?() :: boolean()
   def installed?, do: GenServer.call(__MODULE__, :installed?)
+
+  @spec active() :: [Alert.t()]
+  def active, do: GenServer.call(__MODULE__, :active)
+
+  @spec active_notifications() :: [Exy.UI.Notification.t()]
+  def active_notifications, do: Enum.map(active(), &Alert.to_notification/1)
 
   @spec alarms() :: {:ok, [term()]} | {:error, term()}
   def alarms do
@@ -31,15 +39,22 @@ defmodule Exy.SystemAlarms do
 
   @impl true
   def init(_opts) do
-    {:ok, %{installed?: install_handler()}}
+    {:ok, %{installed?: install_handler(), active: %{}}}
   end
 
   @impl true
   def handle_call(:installed?, _from, state), do: {:reply, state.installed?, state}
 
+  def handle_call(:active, _from, state) do
+    {:reply, state.active |> Map.values() |> Enum.sort_by(& &1.id), state}
+  end
+
   @impl true
   def handle_info({:system_alarm, action, alarm_id, description}, state) do
+    alert = Alert.from_alarm(action, alarm_id, description)
+    state = update_active_alerts(state, action, alert)
     record_alarm(action, alarm_id, description)
+    emit_runtime_alert(action, alert)
     {:noreply, state}
   end
 
@@ -79,6 +94,23 @@ defmodule Exy.SystemAlarms do
   defp log_install_failure(reason) do
     Logger.debug("System alarm handler unavailable: #{inspect(reason)}")
     false
+  end
+
+  defp update_active_alerts(state, :set, alert) do
+    %{state | active: Map.put(state.active, alert.id, alert)}
+  end
+
+  defp update_active_alerts(state, :clear, alert) do
+    %{state | active: Map.delete(state.active, alert.id)}
+  end
+
+  defp emit_runtime_alert(action, alert) do
+    type = if action == :set, do: :runtime_alert_set, else: :runtime_alert_clear
+    Exy.UI.Bus.emit_all(type, %{alert: Alert.to_map(alert)})
+  rescue
+    exception -> Logger.debug("Runtime alert UI emission failed: #{Exception.message(exception)}")
+  catch
+    :exit, reason -> Logger.debug("Runtime alert UI emission failed: #{inspect(reason)}")
   end
 
   defp record_alarm(action, alarm_id, description) do

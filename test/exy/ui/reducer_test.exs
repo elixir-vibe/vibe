@@ -143,6 +143,35 @@ defmodule Exy.UI.ReducerTest do
              state.messages
   end
 
+  test "tracks runtime alerts as active UI state and notifications" do
+    alert =
+      Exy.Runtime.Alert.from_alarm(:set, {:disk_almost_full, ~c"/tmp"}, [])
+      |> Exy.Runtime.Alert.to_map()
+
+    state =
+      Exy.UI.State.new(session_id: "ui-test")
+      |> Exy.UI.Reducer.apply_event(
+        Exy.UI.Event.new(:runtime_alert_set, "ui-test", %{alert: alert})
+      )
+
+    assert [%Exy.Runtime.Alert{type: :disk_almost_full}] = Map.values(state.runtime_alerts)
+    assert [%Exy.UI.Notification{level: :error, text: text}] = state.notifications
+    assert text =~ "Disk almost full"
+
+    clear = Exy.Runtime.Alert.from_alarm(:clear, {:disk_almost_full, ~c"/tmp"}, [])
+
+    state =
+      Exy.UI.Reducer.apply_event(
+        state,
+        Exy.UI.Event.new(:runtime_alert_clear, "ui-test", %{
+          alert: Exy.Runtime.Alert.to_map(clear)
+        })
+      )
+
+    assert state.runtime_alerts == %{}
+    assert List.last(state.notifications).level == :info
+  end
+
   test "turns subagent lifecycle events into transcript blocks and notifications" do
     state =
       Exy.UI.State.new(session_id: "ui-test")

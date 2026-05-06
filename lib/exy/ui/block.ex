@@ -53,6 +53,7 @@ defmodule Exy.UI.Block do
       :status,
       :usage,
       :active_sessions,
+      runtime_alerts: [],
       plugin_statuses: %{}
     ]
 

@@ -78,6 +78,8 @@ defmodule Exy.Web.Components.Shell do
             {render_slot(@mobile_meta)}
           </div>
 
+          <.runtime_alerts alerts={active_runtime_alerts()} />
+
           {render_slot(@inner_block)}
         </section>
 
@@ -88,6 +90,41 @@ defmodule Exy.Web.Components.Shell do
     </div>
     """
   end
+
+  defp active_runtime_alerts do
+    Exy.SystemAlarms.active()
+  catch
+    :exit, _reason -> []
+  end
+
+  attr(:alerts, :list, default: [])
+
+  def runtime_alerts(assigns) do
+    ~H"""
+    <div :if={@alerts != []} class="mb-4 space-y-2">
+      <div :for={alert <- @alerts} class={[
+        "rounded-xl border p-3 text-sm shadow-lg",
+        alert_classes(alert.severity)
+      ]}>
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5">{alert_icon(alert.severity)}</span>
+          <div class="min-w-0">
+            <div class="font-semibold">{alert.title}</div>
+            <p class="mt-1 break-words leading-6 opacity-90">{alert.message}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp alert_classes(:error), do: "border-red-400/30 bg-red-950/35 text-red-100"
+  defp alert_classes(:warning), do: "border-yellow-400/25 bg-yellow-950/30 text-yellow-100"
+  defp alert_classes(_severity), do: "border-sky-400/25 bg-sky-950/25 text-sky-100"
+
+  defp alert_icon(:error), do: "✕"
+  defp alert_icon(:warning), do: "⚠"
+  defp alert_icon(_severity), do: "•"
 
   attr(:href, :string, required: true)
   attr(:active, :boolean, default: false)

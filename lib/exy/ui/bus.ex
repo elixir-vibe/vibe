@@ -40,6 +40,17 @@ defmodule Exy.UI.Bus do
     end
   end
 
+  @spec emit_all(atom(), map(), keyword()) :: :ok
+  def emit_all(type, data \\ %{}, opts \\ []) when is_atom(type) and is_map(data) do
+    GenServer.call(__MODULE__, {:emit_all, type, data, Keyword.get(opts, :persist?, false)})
+  end
+
+  @spec notify_all(Exy.UI.Notification.t() | map() | keyword() | String.t(), keyword()) :: :ok
+  def notify_all(notification, opts \\ []) do
+    notification = Exy.UI.Notification.new(notification)
+    emit_all(:notification_added, Map.from_struct(notification), opts)
+  end
+
   @spec set_status(String.t(), String.t() | atom(), String.t() | nil) ::
           :ok | {:error, :not_found}
   def set_status(session_id, key, text), do: Exy.Plugin.UI.set_status(session_id, key, text)
@@ -76,6 +87,18 @@ defmodule Exy.UI.Bus do
       {:ok, server} -> {:reply, {:ok, server}, state}
       :error -> {:reply, {:error, :not_found}, state}
     end
+  end
+
+  def handle_call({:emit_all, type, data, persist?}, _from, state) do
+    Enum.each(state.sessions, fn {session_id, server} ->
+      event = Event.new(type, session_id, data)
+
+      if persist?,
+        do: Session.emit_event(server, event),
+        else: Session.emit_transient_event(server, event)
+    end)
+
+    {:reply, :ok, state}
   end
 
   @impl true

@@ -4,6 +4,7 @@ defmodule Exy.UI.Reducer do
   """
 
   alias Exy.Model.Usage
+  alias Exy.Runtime.Alert
   alias Exy.Support.Lists
   alias Exy.UI.{Event, Notification, Selector, State, ToolEvent}
 
@@ -253,6 +254,26 @@ defmodule Exy.UI.Reducer do
 
   defp reduce(state, %Event{type: :notification_added, data: data}) do
     %{state | notifications: Lists.append(state.notifications, Notification.new(data))}
+  end
+
+  defp reduce(state, %Event{type: :runtime_alert_set, data: %{alert: alert}}) do
+    alert = Alert.normalize(alert)
+
+    %{
+      state
+      | runtime_alerts: Map.put(state.runtime_alerts, alert.id, alert),
+        notifications: Lists.append(state.notifications, Alert.to_notification(alert))
+    }
+  end
+
+  defp reduce(state, %Event{type: :runtime_alert_clear, data: data}) do
+    alert = data |> Map.get(:alert) |> Alert.normalize()
+
+    %{
+      state
+      | runtime_alerts: Map.delete(state.runtime_alerts, alert.id),
+        notifications: Lists.append(state.notifications, Alert.to_notification(alert))
+    }
   end
 
   defp reduce(state, %Event{type: :notification_expired, data: %{id: id}}) do
