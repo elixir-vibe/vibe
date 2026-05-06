@@ -80,9 +80,12 @@ defmodule Vibe.TUI.ChatTree do
 
   defp overlay_components(overlays) do
     overlays
-    |> Enum.reject(&(&1.kind == :confirmation))
+    |> Enum.reject(&picker_overlay?/1)
     |> Enum.map(&RenderTree.node({:overlay, &1.kind, :erlang.phash2(&1)}, Vibe.TUI.overlay(&1)))
   end
+
+  defp picker_overlay?(%{kind: kind}) when kind in [:confirmation, :selector], do: true
+  defp picker_overlay?(_overlay), do: false
 
   defp spacer_component(id), do: RenderTree.node({:spacer, id}, Vibe.TUI.spacer())
 
