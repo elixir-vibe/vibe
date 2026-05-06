@@ -3,12 +3,8 @@ defmodule Vibe.TUI.PartialRenderer do
 
   alias Vibe.TUI.{
     ChatTree,
-    Cursor,
-    EditorRenderer,
-    Lines,
     Renderable,
     RenderContext,
-    RenderFrame,
     RenderKey,
     RenderState,
     RenderTree,
@@ -16,35 +12,7 @@ defmodule Vibe.TUI.PartialRenderer do
     Widget
   }
 
-  alias Vibe.UI.ViewModel
-
   @type result :: %{body: [IO.chardata()], state: RenderState.t(), live_keys: [term()]}
-
-  @spec render_frame(map(), Theme.t(), RenderState.t(), keyword()) :: RenderFrame.t()
-  def render_frame(snapshot, theme, %RenderState{} = state, opts \\ []) when is_map(snapshot) do
-    view =
-      snapshot.ui
-      |> ViewModel.from_state()
-      |> Map.put(:picker, Keyword.get(opts, :picker))
-
-    editor = EditorRenderer.render(snapshot, theme)
-    %{body: body, state: render_state} = render_body(view, snapshot.width, theme, state, opts)
-
-    lines = frame_lines(body, editor, snapshot.height, Keyword.get(opts, :viewport, :visible))
-
-    cursor =
-      Cursor.editor_position(
-        snapshot,
-        editor_start_row(body, editor, snapshot.height, Keyword.get(opts, :viewport, :visible))
-      )
-
-    %RenderFrame{
-      lines: lines,
-      cursor: cursor,
-      state: render_state,
-      stats: RenderState.stats(render_state)
-    }
-  end
 
   @spec render_body(map(), pos_integer(), Theme.t(), RenderState.t(), keyword()) :: result()
   def render_body(view, width, theme, %RenderState{} = state, opts \\ []) do
@@ -102,17 +70,4 @@ defmodule Vibe.TUI.PartialRenderer do
 
   defp render_component(%RenderTree.Node{component: component}, context),
     do: Renderable.render(component, context)
-
-  defp frame_lines(body, editor, height, :visible),
-    do: body |> fit_body(height, editor) |> Lines.join(editor)
-
-  defp frame_lines(body, editor, _height, :full), do: Lines.join(body, editor)
-
-  defp editor_start_row(_body, editor, height, :visible), do: max(height - length(editor), 0)
-  defp editor_start_row(body, _editor, _height, :full), do: length(body)
-
-  defp fit_body(body, height, editor) when is_integer(height) do
-    body_lines = max(height - length(editor), 1)
-    Enum.take(body, -body_lines)
-  end
 end

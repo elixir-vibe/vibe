@@ -6,7 +6,7 @@ defmodule Vibe.TUI.Renderer do
   lines. Semantic state lives in `Vibe.UI`.
   """
 
-  alias Vibe.TUI.{PartialRenderer, RenderFrame, RenderState, Theme, Views.Chat}
+  alias Vibe.TUI.{FrameRenderer, RenderFrame, RenderState, Theme, Views.Chat}
   alias Vibe.UI.ViewModel
 
   @type line :: IO.chardata()
@@ -19,6 +19,6 @@ defmodule Vibe.TUI.Renderer do
 
   @spec render_frame(map(), Theme.t(), RenderState.t(), keyword()) :: RenderFrame.t()
   def render_frame(snapshot, theme, %RenderState{} = state, opts \\ []) when is_map(snapshot) do
-    PartialRenderer.render_frame(snapshot, theme, state, opts)
+    FrameRenderer.render(snapshot, theme, state, opts)
   end
 end

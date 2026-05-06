@@ -31,8 +31,7 @@ defmodule Vibe.TUI.PartialRendererTest do
   test "returns visible frame with cursor and updated render state" do
     snapshot = snapshot(body: [message()], editor_text: "hello", editor_cursor: 5)
 
-    frame =
-      PartialRenderer.render_frame(snapshot, Theme.default(), RenderState.new(), picker: nil)
+    frame = Renderer.render_frame(snapshot, Theme.default(), RenderState.new(), picker: nil)
 
     assert [_ | _] = frame.lines
     assert {row, column} = frame.cursor
