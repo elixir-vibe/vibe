@@ -111,13 +111,24 @@ defmodule Exy.Gateway.Runtime do
 
   defp start_bridge(message, session_id, state) do
     case Exy.Gateway.SessionBridge.start(message, session_id,
-           adapter: state.backend.outbound_adapter(state.config),
-           adapter_opts: [config: state.config],
+           adapter: bridge_adapter(state),
+           adapter_opts: bridge_adapter_opts(state),
            consumer_module: consumer_module(message, state.config)
          ) do
       {:ok, _pid} -> :ok
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp bridge_adapter(state) do
+    Keyword.get_lazy(state.dispatch_opts, :bridge_adapter, fn ->
+      state.backend.outbound_adapter(state.config)
+    end)
+  end
+
+  defp bridge_adapter_opts(state) do
+    [config: state.config]
+    |> Keyword.merge(Keyword.get(state.dispatch_opts, :bridge_adapter_opts, []))
   end
 
   defp consumer_module(message, %{stream_mode: :draft}) do

@@ -51,6 +51,35 @@ defmodule Exy.Gateway.RuntimeTest do
     assert %{accepted: 1, ignored: 0, rejected: 0, failed: 0} = Runtime.stats(runtime)
   end
 
+  test "allows diagnostics to override bridge adapter" do
+    parent = self()
+
+    dispatch = fn message, opts ->
+      session_id = "diagnostic-session-#{System.unique_integer([:positive])}"
+
+      {:ok, session} =
+        Exy.Session.start(session_id: session_id, ask_fun: fn _, _ -> {:ok, "unused"} end)
+
+      after_session = Keyword.fetch!(opts, :after_session)
+      assert :ok = after_session.(message, session_id, session)
+      {:ok, session_id}
+    end
+
+    assert {:ok, runtime} =
+             Runtime.start_link(
+               backend: Backend,
+               backend_opts: [allow?: true],
+               dispatch_fun: dispatch,
+               dispatch_opts: [
+                 bridge_adapter: Exy.Test.GatewayRecordingAdapter,
+                 bridge_adapter_opts: [owner: parent]
+               ]
+             )
+
+    assert :ok = Runtime.submit(runtime, "hello")
+    assert %{accepted: 1} = eventually(fn -> Runtime.stats(runtime) end)
+  end
+
   test "tracks ignored, rejected, and failed updates" do
     assert {:ok, runtime} = Runtime.start_link(backend: Backend, backend_opts: [allow?: false])
 

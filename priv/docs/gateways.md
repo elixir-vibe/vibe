@@ -32,6 +32,7 @@ Useful environment variables:
 - `TELEGRAM_FREE_RESPONSE_CHATS` — group chats where every message is accepted after auth.
 - `TELEGRAM_IGNORED_THREADS` — comma-separated forum topic ids to ignore.
 - `TELEGRAM_STREAM_MODE=edit|draft|auto` — response streaming policy; edit mode is the stable fallback.
-- `TELEGRAM_POLL_TIMEOUT_S` — long-poll timeout, default `5` to stay below common HTTP receive timeouts.
+- `TELEGRAM_POLL_TIMEOUT_S` — long-poll timeout, default `5` to keep diagnostics responsive.
+- `TELEGRAM_POLL_RECEIVE_TIMEOUT_MS` — HTTP receive timeout for long-poll requests, default `10000`.
 
 The polling transport clears stale webhooks before long polling so a bot can be moved between webhook and polling mode safely.

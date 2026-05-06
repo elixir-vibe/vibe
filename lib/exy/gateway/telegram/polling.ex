@@ -23,6 +23,7 @@ defmodule Exy.Gateway.Telegram.Polling do
             interval_ms: @default_interval_ms,
             timeout_s: @default_timeout_s,
             allowed_updates: nil,
+            receive_timeout_ms: 10_000,
             fetch_fun: nil,
             delete_webhook_fun: nil,
             delete_webhook?: true
@@ -45,6 +46,8 @@ defmodule Exy.Gateway.Telegram.Polling do
       timeout_s:
         Keyword.get(opts, :timeout_s, Map.get(config, :poll_timeout_s, @default_timeout_s)),
       allowed_updates: Keyword.get(opts, :allowed_updates),
+      receive_timeout_ms:
+        Keyword.get(opts, :receive_timeout_ms, Map.get(config, :poll_receive_timeout_ms, 10_000)),
       fetch_fun: Keyword.get(opts, :fetch_fun, &ExGram.get_updates!/1),
       delete_webhook_fun: Keyword.get(opts, :delete_webhook_fun, &ExGram.delete_webhook/1),
       delete_webhook?: Keyword.get(opts, :delete_webhook?, true)
@@ -80,7 +83,12 @@ defmodule Exy.Gateway.Telegram.Polling do
   end
 
   defp request_opts(state) do
-    [token: state.token, offset: state.offset, timeout: state.timeout_s]
+    [
+      token: state.token,
+      offset: state.offset,
+      timeout: state.timeout_s,
+      receive_timeout: state.receive_timeout_ms
+    ]
     |> maybe_put_allowed_updates(state.allowed_updates)
   end
 
