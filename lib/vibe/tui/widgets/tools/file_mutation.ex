@@ -43,11 +43,7 @@ defmodule Vibe.TUI.Widgets.Tools.FileMutation do
          width,
          theme
        ) do
-    rendered =
-      lines
-      |> Enum.flat_map(fn line ->
-        Widget.wrap([Widget.spaces(2), highlight(line, language, theme)], width)
-      end)
+    rendered = ToolWidget.source_lines(lines, language, width, theme)
 
     if truncated? do
       [TextTruncation.hint(omitted, theme, width) | Enum.reverse(rendered)] |> Enum.reverse()

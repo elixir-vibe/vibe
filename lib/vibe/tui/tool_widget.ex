@@ -248,6 +248,24 @@ defmodule Vibe.TUI.ToolWidget do
 
   def output_line(line, width), do: wrap_output_line(line, width)
 
+  def source_lines(lines, language, width, theme) when language in [nil, ""] do
+    Enum.flat_map(lines, fn line ->
+      output_line(Theme.fg(theme, :tool_output, line), width)
+    end)
+  end
+
+  def source_lines(lines, language, width, theme) do
+    source = Enum.join(lines, "\n")
+
+    source
+    |> highlight_source(language, theme)
+    |> IO.iodata_to_binary()
+    |> String.split("\n")
+    |> Enum.flat_map(&output_line(&1, width))
+  rescue
+    _error -> source_lines(lines, nil, width, theme)
+  end
+
   defp display_body_lines(%Display{body: body, truncate?: truncate?}, width, theme) do
     body
     |> Enum.flat_map(&display_block_lines(&1, width, theme, truncate?))
@@ -318,11 +336,7 @@ defmodule Vibe.TUI.ToolWidget do
 
     lines =
       truncation.lines
-      |> Enum.flat_map(fn line ->
-        line
-        |> highlight_source_line(language, theme)
-        |> output_line(width)
-      end)
+      |> source_lines(language, width, theme)
       |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
       |> maybe_append_read_limit_footer(truncation, opts, theme)
 
@@ -387,19 +401,14 @@ defmodule Vibe.TUI.ToolWidget do
     end
   end
 
-  defp highlight_source_line(line, language, theme) when language in [nil, ""],
-    do: Theme.fg(theme, :tool_output, line)
+  defp highlight_source(source, language, _theme) when language in [:elixir, "elixir"],
+    do: Syntax.highlight_elixir(source)
 
-  defp highlight_source_line(line, language, _theme) when language in [:elixir, "elixir"],
-    do: Syntax.highlight_elixir(line)
-
-  defp highlight_source_line(line, language, theme) do
+  defp highlight_source(source, language, _theme) do
     {:ok, highlighted} =
-      Lumis.highlight(line, formatter: {:terminal, language: to_string(language)})
+      Lumis.highlight(source, formatter: {:terminal, language: to_string(language)})
 
     highlighted
-  rescue
-    _error -> Theme.fg(theme, :tool_output, line)
   end
 
   defp highlight_diff_line("+" <> rest, language, theme),
@@ -413,11 +422,26 @@ defmodule Vibe.TUI.ToolWidget do
   defp highlight_diff_rest(rest, language, theme) do
     case split_diff_number_prefix(rest) do
       {prefix, source} ->
-        [Theme.fg(theme, :dim, prefix), highlight_source_line(source, language, theme)]
+        [Theme.fg(theme, :dim, prefix), highlight_diff_source_line(source, language, theme)]
 
       :error ->
         Theme.fg(theme, :dim, rest)
     end
+  end
+
+  defp highlight_diff_source_line(line, language, theme) when language in [nil, ""],
+    do: Theme.fg(theme, :tool_output, line)
+
+  defp highlight_diff_source_line(line, language, _theme) when language in [:elixir, "elixir"],
+    do: Syntax.highlight_elixir(line)
+
+  defp highlight_diff_source_line(line, language, theme) do
+    {:ok, highlighted} =
+      Lumis.highlight(line, formatter: {:terminal, language: to_string(language)})
+
+    highlighted
+  rescue
+    _error -> Theme.fg(theme, :tool_output, line)
   end
 
   defp split_diff_number_prefix(rest) do

@@ -118,9 +118,11 @@ defmodule Vibe.TUI.Markdown do
     body =
       literal
       |> String.trim_trailing("\n")
+      |> highlight_code_block(language, theme)
+      |> IO.iodata_to_binary()
       |> String.split("\n")
       |> Enum.flat_map(fn line ->
-        Widget.wrap(["  ", highlight_code(line, language, theme)], width)
+        Widget.wrap(["  ", line], width)
       end)
 
     header |> join_lines(body) |> join_lines([border]) |> append_blank()
@@ -240,9 +242,9 @@ defmodule Vibe.TUI.Markdown do
     |> Enum.map(fn index -> base + if(index < extra, do: 1, else: 0) end)
   end
 
-  defp highlight_code(code, nil, theme), do: Theme.fg(theme, :tool_output, code)
+  defp highlight_code_block(code, nil, theme), do: Theme.fg(theme, :tool_output, code)
 
-  defp highlight_code(code, language, theme) do
+  defp highlight_code_block(code, language, theme) do
     {:ok, highlighted} = Lumis.highlight(code, formatter: {:terminal, language: language})
     highlighted
   rescue
