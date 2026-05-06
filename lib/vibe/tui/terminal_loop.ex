@@ -8,7 +8,7 @@ defmodule Vibe.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Vibe.TUI.{App, Keymap, Renderer, RenderState, TerminalPainter, Theme}
+  alias Vibe.TUI.{App, Keymap, PickerPresenter, Renderer, RenderState, TerminalPainter, Theme}
 
   require Vibe.Debug
 
@@ -265,7 +265,7 @@ defmodule Vibe.TUI.TerminalLoop do
     frame =
       Renderer.render_frame(snapshot, state.theme, state.render_state,
         loader_phase: state.loader_phase,
-        picker: picker(snapshot),
+        picker: PickerPresenter.from_snapshot(snapshot),
         viewport: viewport
       )
 
@@ -283,17 +283,4 @@ defmodule Vibe.TUI.TerminalLoop do
   defp maybe_start_loader_timer(state), do: state
 
   defp working?(state), do: App.snapshot(state.app).ui.status == :working
-
-  defp picker(%{ui: %{selector: %{overlay_kind: :confirmation} = selector}}) do
-    %{type: :confirmation, props: Map.from_struct(selector)}
-  end
-
-  defp picker(%{ui: %{selector: selector}}) when is_map(selector) do
-    %{type: :select_list, props: selector}
-  end
-
-  defp picker(%{autocomplete: nil}), do: nil
-
-  defp picker(%{autocomplete: autocomplete}),
-    do: %{type: :autocomplete, props: Map.from_struct(autocomplete)}
 end
