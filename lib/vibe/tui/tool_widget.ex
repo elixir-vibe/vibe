@@ -6,7 +6,7 @@ defmodule Vibe.TUI.ToolWidget do
   alias Vibe.Model.Content
   alias Vibe.Tool.Display
   alias Vibe.TUI
-  alias Vibe.TUI.{Lines, Markdown, Syntax, TextTruncation, Theme, Widget, Width}
+  alias Vibe.TUI.{Lines, Markdown, SourceBlock, Syntax, TextTruncation, Theme, Widget, Width}
   alias Vibe.TUI.Widgets.Image
 
   @type tool :: map()
@@ -248,23 +248,8 @@ defmodule Vibe.TUI.ToolWidget do
 
   def output_line(line, width), do: wrap_output_line(line, width)
 
-  def source_lines(lines, language, width, theme) when language in [nil, ""] do
-    Enum.flat_map(lines, fn line ->
-      output_line(Theme.fg(theme, :tool_output, line), width)
-    end)
-  end
-
-  def source_lines(lines, language, width, theme) do
-    source = Enum.join(lines, "\n")
-
-    source
-    |> highlight_source(language, theme)
-    |> IO.iodata_to_binary()
-    |> String.split("\n")
-    |> Enum.flat_map(&output_line(&1, width))
-  rescue
-    _error -> source_lines(lines, nil, width, theme)
-  end
+  def source_lines(lines, language, width, theme),
+    do: SourceBlock.source_lines(lines, language, width, theme)
 
   defp display_body_lines(%Display{body: body, truncate?: truncate?}, width, theme) do
     body
@@ -399,16 +384,6 @@ defmodule Vibe.TUI.ToolWidget do
     else
       lines
     end
-  end
-
-  defp highlight_source(source, language, _theme) when language in [:elixir, "elixir"],
-    do: Syntax.highlight_elixir(source)
-
-  defp highlight_source(source, language, _theme) do
-    {:ok, highlighted} =
-      Lumis.highlight(source, formatter: {:terminal, language: to_string(language)})
-
-    highlighted
   end
 
   defp highlight_diff_line("+" <> rest, language, theme),
