@@ -234,7 +234,15 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp dispatch_async(session, command) do
-    _task = Task.start(fn -> Session.dispatch(session, command) end)
+    _task =
+      Task.start(fn ->
+        try do
+          Session.dispatch(session, command)
+        catch
+          :exit, _reason -> :ok
+        end
+      end)
+
     :ok
   end
 end

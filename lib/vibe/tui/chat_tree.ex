@@ -92,8 +92,7 @@ defmodule Vibe.TUI.ChatTree do
 
   defp footer_margin?(view, plugin_widgets) do
     Map.fetch!(view, :body) != [] or plugin_widgets != [] or
-      not is_nil(Map.get(view, :notifications)) or
-      not is_nil(Map.get(view, :picker))
+      not is_nil(Map.get(view, :notifications))
   end
 
   defp component_node(%RenderTree.Node{component: %ToolCall{} = tool}), do: Vibe.TUI.tool(tool)
