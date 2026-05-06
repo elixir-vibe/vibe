@@ -1,15 +1,15 @@
 defmodule Vibe.TUI.PartialRenderer do
   @moduledoc "Renderer-level partial rendering for semantic TUI view models."
 
-  alias Vibe.Support.Lists
-
   alias Vibe.TUI.{
+    ChatTree,
     Lines,
     Renderable,
     RenderContext,
     RenderFrame,
     RenderKey,
     RenderState,
+    RenderTree,
     Theme,
     Widget,
     Width
@@ -49,20 +49,11 @@ defmodule Vibe.TUI.PartialRenderer do
   def render_body(view, width, theme, %RenderState{} = state, opts \\ []) do
     context = RenderContext.new(width, theme, state, opts)
 
-    plugin_widgets =
-      Lists.join(plugin_widgets(view, :above_editor), plugin_widgets(view, :sidebar))
-
     {sections, context, live_keys} =
-      {[], context, []}
-      |> append_many(interspersed_body(view))
-      |> append_many(plugin_widgets)
-      |> append_if(notice_margin?(view, plugin_widgets), spacer_component(:notice_margin))
-      |> append_one(Map.get(view, :notifications))
-      |> append_one(picker_component(Map.get(view, :picker)))
-      |> append_if(footer_margin?(view, plugin_widgets), spacer_component(:footer_margin))
-      |> append_one(Map.fetch!(view, :footer))
-      |> append_many(plugin_widgets(view, :below_editor))
-      |> append_many(overlay_components(Map.fetch!(view, :overlays)))
+      view
+      |> ChatTree.build()
+      |> Map.fetch!(:nodes)
+      |> append_tree_nodes({[], context, []})
 
     live_keys = Enum.reverse(live_keys)
 
@@ -73,17 +64,12 @@ defmodule Vibe.TUI.PartialRenderer do
     }
   end
 
-  defp append_many(acc, components), do: Enum.reduce(components, acc, &append_one(&2, &1))
+  defp append_tree_nodes(nodes, acc), do: Enum.reduce(nodes, acc, &append_tree_node(&2, &1))
 
-  defp append_one(acc, nil), do: acc
-
-  defp append_one({sections, context, live_keys}, component) do
-    {lines, context, key} = render_cached(component, context)
+  defp append_tree_node({sections, context, live_keys}, %RenderTree.Node{} = node) do
+    {lines, context, key} = render_cached(node, context)
     {[lines | sections], context, [key | live_keys]}
   end
-
-  defp append_if(acc, true, component), do: append_one(acc, component)
-  defp append_if(acc, false, _component), do: acc
 
   defp render_cached(component, context) do
     key = render_key(component, context)
@@ -98,40 +84,23 @@ defmodule Vibe.TUI.PartialRenderer do
     end
   end
 
-  defp render_key({:node, id, node}, context),
-    do: RenderKey.component(:node, id, RenderKey.fingerprint({node.type, node.props}), context)
+  defp render_key(%RenderTree.Node{component: %Vibe.TUI.Node{} = component} = node, context),
+    do:
+      RenderKey.component(
+        :node,
+        node.id,
+        RenderKey.fingerprint({component.type, component.props}),
+        context
+      )
 
-  defp render_key(component, context), do: Renderable.render_key(component, context)
+  defp render_key(%RenderTree.Node{id: id, component: component}, context),
+    do: RenderKey.component(:tree, id, Renderable.render_key(component, context), context)
 
-  defp render_component({:node, _id, node}, context),
+  defp render_component(%RenderTree.Node{component: %Vibe.TUI.Node{} = node}, context),
     do: Widget.render(node, context.width, context.theme)
 
-  defp render_component(component, context), do: Renderable.render(component, context)
-
-  defp interspersed_body(view) do
-    view
-    |> Map.fetch!(:body)
-    |> Enum.intersperse(spacer_component(:body))
-  end
-
-  defp plugin_widgets(view, placement) do
-    view
-    |> Map.fetch!(:plugin_widgets)
-    |> Map.get(placement, [])
-  end
-
-  defp picker_component(%{type: type, props: props}),
-    do: {:node, {:picker, type, props}, Vibe.TUI.node(type, props)}
-
-  defp picker_component(_picker), do: nil
-
-  defp overlay_components(overlays) do
-    overlays
-    |> Enum.reject(&(&1.kind == :confirmation))
-    |> Enum.map(&{:node, {:overlay, &1}, Vibe.TUI.overlay(&1)})
-  end
-
-  defp spacer_component(id), do: {:node, {:spacer, id}, Vibe.TUI.spacer()}
+  defp render_component(%RenderTree.Node{component: component}, context),
+    do: Renderable.render(component, context)
 
   defp render_editor(snapshot, theme) do
     Vibe.TUI.textarea(
@@ -184,16 +153,5 @@ defmodule Vibe.TUI.PartialRenderer do
   defp split_current_line([line | lines]) do
     {previous, current} = split_current_line(lines)
     {[line | previous], current}
-  end
-
-  defp notice_margin?(view, plugin_widgets) do
-    not is_nil(Map.get(view, :notifications)) and
-      (Map.fetch!(view, :body) != [] or plugin_widgets != [])
-  end
-
-  defp footer_margin?(view, plugin_widgets) do
-    Map.fetch!(view, :body) != [] or plugin_widgets != [] or
-      not is_nil(Map.get(view, :notifications)) or
-      not is_nil(Map.get(view, :picker))
   end
 end
