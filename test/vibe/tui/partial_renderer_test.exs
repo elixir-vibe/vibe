@@ -41,6 +41,25 @@ defmodule Vibe.TUI.PartialRendererTest do
     assert RenderState.stats(frame.state).entries > 0
   end
 
+  test "width and theme changes invalidate cached components" do
+    view = view(body: [message(), tool()], picker: picker("/model"))
+
+    %{state: state} = PartialRenderer.render_body(view, 80, Theme.dark(), RenderState.new())
+    first_stats = RenderState.stats(state)
+
+    %{state: state} = PartialRenderer.render_body(view, 100, Theme.dark(), state)
+    width_stats = RenderState.stats(state)
+
+    assert width_stats.hits == first_stats.hits
+    assert width_stats.misses > first_stats.misses
+
+    %{state: state} = PartialRenderer.render_body(view, 100, Theme.light(), state)
+    theme_stats = RenderState.stats(state)
+
+    assert theme_stats.hits == width_stats.hits
+    assert theme_stats.misses > width_stats.misses
+  end
+
   test "loader phase invalidates only streaming assistant block" do
     body = [assistant_message("stable", "done"), assistant_message("streaming", "")]
     view = view(body: body)
