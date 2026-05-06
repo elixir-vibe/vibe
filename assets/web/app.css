@@ -5,9 +5,9 @@
 
 :root {
   color-scheme: dark;
-  --exy-orange: #fb923c;
-  --exy-purple: #8b5cf6;
-  --exy-cyan: #22d3ee;
+  --vibe-orange: #fb923c;
+  --vibe-purple: #8b5cf6;
+  --vibe-cyan: #22d3ee;
 }
 
 html {
@@ -32,18 +32,18 @@ mark {
   color: #fed7aa;
 }
 
-.exy-shell-grid {
+.vibe-shell-grid {
   grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 1024px) {
-  .exy-shell-grid {
+  .vibe-shell-grid {
     grid-template-columns: 16rem minmax(0, 1fr);
   }
 }
 
 @media (min-width: 1280px) {
-  .exy-shell-grid {
+  .vibe-shell-grid {
     grid-template-columns: 16rem minmax(44rem, 1fr) 20rem;
   }
 }
@@ -52,72 +52,72 @@ mark {
   background: rgba(251, 146, 60, 0.35);
 }
 
-.exy-markdown {
+.vibe-markdown {
   overflow-wrap: anywhere;
   color: #f4f4f5;
   font-size: 0.95rem;
   line-height: 1.65;
 }
 
-.exy-markdown h1,
-.exy-markdown h2,
-.exy-markdown h3 {
+.vibe-markdown h1,
+.vibe-markdown h2,
+.vibe-markdown h3 {
   margin: 0.2rem 0 0.7rem;
   font-weight: 650;
   line-height: 1.2;
   text-wrap: balance;
 }
 
-.exy-markdown h1 { font-size: 1.35rem; }
-.exy-markdown h2 { font-size: 1.25rem; }
-.exy-markdown h3 { font-size: 1.05rem; }
+.vibe-markdown h1 { font-size: 1.35rem; }
+.vibe-markdown h2 { font-size: 1.25rem; }
+.vibe-markdown h3 { font-size: 1.05rem; }
 
-.exy-markdown p {
+.vibe-markdown p {
   margin: 0.35rem 0;
 }
 
-.exy-markdown p + p {
+.vibe-markdown p + p {
   margin-top: 0.75rem;
 }
 
-.exy-markdown ol,
-.exy-markdown ul {
+.vibe-markdown ol,
+.vibe-markdown ul {
   margin: 0.45rem 0 0.65rem 1.35rem;
   padding: 0;
 }
 
-.exy-markdown ol { list-style: decimal; }
-.exy-markdown ul { list-style: disc; }
+.vibe-markdown ol { list-style: decimal; }
+.vibe-markdown ul { list-style: disc; }
 
-.exy-markdown li {
+.vibe-markdown li {
   margin: 0.35rem 0;
   padding-left: 0.15rem;
 }
 
-.exy-markdown li > p {
+.vibe-markdown li > p {
   margin: 0.2rem 0;
 }
 
-.exy-markdown a {
+.vibe-markdown a {
   color: #fed7aa;
   text-decoration: underline;
 }
 
-.exy-markdown blockquote {
+.vibe-markdown blockquote {
   margin: 0.8rem 0;
   border-left: 2px solid rgba(253, 186, 116, 0.3);
   padding-left: 0.75rem;
   color: #d4d4d8;
 }
 
-.exy-markdown :not(pre) > code {
+.vibe-markdown :not(pre) > code {
   border-radius: 0.25rem;
   background: rgba(255, 255, 255, 0.06);
   padding: 0.05rem 0.28rem;
   font-size: 0.92em;
 }
 
-.exy-markdown pre {
+.vibe-markdown pre {
   margin: 0.75rem 0 1rem;
   overflow: auto;
   border-radius: 0.45rem;
@@ -125,7 +125,7 @@ mark {
   padding: 0.75rem 0.85rem !important;
 }
 
-.exy-markdown pre code {
+.vibe-markdown pre code {
   display: block;
   min-width: 0;
   white-space: pre-wrap;
@@ -136,17 +136,17 @@ mark {
   line-height: 1.55;
 }
 
-.exy-markdown pre code > .line {
+.vibe-markdown pre code > .line {
   min-height: 1.45em;
 }
 
-.exy-markdown table {
+.vibe-markdown table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.exy-markdown th,
-.exy-markdown td {
+.vibe-markdown th,
+.vibe-markdown td {
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0.25rem 0.5rem;
 }

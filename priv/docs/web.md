@@ -1,6 +1,6 @@
 # Web
 
-Exy exposes provider-neutral web search and fetch APIs to eval through the `Web` alias.
+Vibe exposes provider-neutral web search and fetch APIs to eval through the `Web` alias.
 
 Search defaults to the Exa provider when `EXA_API_KEY` is set:
 
@@ -31,7 +31,7 @@ Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", format: :html)
 |> MD.doc()
 ```
 
-Markdown rendering belongs to the `Exy.Markdown` protocol. Use `MD.doc/1` or `MD.to_markdown/1`; do not add renderer-specific `Web.markdown/1` helpers.
+Markdown rendering belongs to the `Vibe.Markdown` protocol. Use `MD.doc/1` or `MD.to_markdown/1`; do not add renderer-specific `Web.markdown/1` helpers.
 
 Supported fetch formats:
 
@@ -45,8 +45,8 @@ Supported fetch formats:
 Search and fetch providers are behaviours, so future backends can share the same eval-facing API:
 
 ```elixir
-Exy.WebTools.SearchProvider
-Exy.WebTools.FetchProvider
+Vibe.WebTools.SearchProvider
+Vibe.WebTools.FetchProvider
 ```
 
 Per-call provider override:
@@ -56,7 +56,7 @@ Web.search!("query", provider: :exa)
 Web.fetch!("https://example.com", provider: :req)
 ```
 
-Provider-specific details are normalized into `Exy.WebTools.SearchResult`, `Exy.WebTools.SearchItem`, and `Exy.WebTools.FetchResult` structs with Markdown protocol rendering.
+Provider-specific details are normalized into `Vibe.WebTools.SearchResult`, `Vibe.WebTools.SearchItem`, and `Vibe.WebTools.FetchResult` structs with Markdown protocol rendering.
 
 Use `Web.parse_html!/1` when you need direct Floki traversal:
 
@@ -88,7 +88,7 @@ Image references are converted into semantic prompt content before dispatch. The
 Orphan artifact directories can be cleaned with:
 
 ```bash
-exy sessions prune --artifacts
+vibe sessions prune --artifacts
 ```
 
 Do not put secrets or authorization headers into telemetry metadata. Pass custom fetch headers only when required.

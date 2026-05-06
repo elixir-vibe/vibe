@@ -2,15 +2,15 @@
 
 ## Done
 
-- Split Exy documentation by reader intent:
+- Split Vibe documentation by reader intent:
   - `README.md` now focuses on first-time orientation, positioning, install, first run, core workflows, built-in help pointers, runtime files, slash-command summary, and development gate.
-  - `priv/docs/*.md` now contains task-focused built-in docs for users already inside Exy.
+  - `priv/docs/*.md` now contains task-focused built-in docs for users already inside Vibe.
   - Key module docs now carry API/runtime contracts instead of product overview text.
 - Added built-in docs runtime:
-  - `Exy.Docs`
-  - `exy help`
-  - `exy help <topic>`
-  - `exy docs <topic>`
+  - `Vibe.Docs`
+  - `vibe help`
+  - `vibe help <topic>`
+  - `vibe docs <topic>`
   - `/help`
   - `/help <topic>`
 - Added built-in doc topics:
@@ -25,21 +25,21 @@
   - `troubleshooting`
 - Added built-in `web` docs after introducing provider-neutral `Web.search/2` and `Web.fetch/2`.
 - Added or strengthened module docs for:
-  - `Exy.Eval`
-  - `Exy.Command`
-  - `Exy.Session`
-  - `Exy.Subagents`
-  - `Exy.Plugin`
-  - `Exy.UI.State`
-  - `Exy.Storage.Search`
+  - `Vibe.Eval`
+  - `Vibe.Command`
+  - `Vibe.Session`
+  - `Vibe.Subagents`
+  - `Vibe.Plugin`
+  - `Vibe.UI.State`
+  - `Vibe.Storage.Search`
 - Added coverage for docs/help behavior:
-  - `test/exy/docs_test.exs`
-  - `test/exy/cli/help_test.exs`
-  - `test/exy/ui/slash_commands/help_test.exs`
+  - `test/vibe/docs_test.exs`
+  - `test/vibe/cli/help_test.exs`
+  - `test/vibe/ui/slash_commands/help_test.exs`
 - Validation completed:
-  - `mix test test/exy/docs_test.exs test/exy/cli/help_test.exs test/exy/ui/slash_commands/help_test.exs test/exy/ui/autocomplete_test.exs test/exy/ui/reducer_test.exs test/exy/cli/sessions_test.exs`
+  - `mix test test/vibe/docs_test.exs test/vibe/cli/help_test.exs test/vibe/ui/slash_commands/help_test.exs test/vibe/ui/autocomplete_test.exs test/vibe/ui/reducer_test.exs test/vibe/cli/sessions_test.exs`
   - `MIX_ENV=prod mix compile --warnings-as-errors`
-- Committed as `b41712e Add built-in Exy docs`.
+- Committed as `b41712e Add built-in Vibe docs`.
 
 ## Follow-up
 

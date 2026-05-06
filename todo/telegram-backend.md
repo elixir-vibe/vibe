@@ -21,7 +21,7 @@ Hermes uses `python-telegram-bot[webhooks]>=22.6,<23`, not a custom Telegram wir
 
 Prefer `ex_gram` unless implementation research finds a blocker.
 
-- `ex_gram` is the best fit for Exy:
+- `ex_gram` is the best fit for Vibe:
   - Bot API 9.6 support as of v0.65.0.
   - Polling and webhook update delivery.
   - Req adapter.
@@ -31,7 +31,7 @@ Prefer `ex_gram` unless implementation research finds a blocker.
 - `telegram_bot_api` is a recent Erlang alternative with Bot API 9.5 support, but has much lower adoption and is lower-level.
 - `nadia` is historically popular but stale for modern Bot API features.
 - ExGram v0.65 exposes Bot API 9.6, including `send_message_draft/4` (`sendMessageDraft`), Telegram's newer partial-message/draft API for private chats.
-- Hermes-style streaming is implemented by sending a first message and periodically editing it while agent/model deltas arrive. Exy should support that universal fallback, and then add a Telegram-specific `sendMessageDraft` mode for private chats where the client supports it.
+- Hermes-style streaming is implemented by sending a first message and periodically editing it while agent/model deltas arrive. Vibe should support that universal fallback, and then add a Telegram-specific `sendMessageDraft` mode for private chats where the client supports it.
 
 ## Hermes architecture to port conceptually
 
@@ -42,28 +42,28 @@ Hermes has a platform adapter interface:
 - gateway/session runner owns agent work
 - outbound text/media/tool progress -> adapter `send`, `edit_message`, `delete_message`, media senders
 
-Exy equivalent should be:
+Vibe equivalent should be:
 
-- `Exy.Gateway.Telegram.Update` or `Exy.Gateway.Update` for normalized inbound messages.
-- `Exy.Gateway.Source` for platform/chat/user/thread identity.
-- `Exy.Gateway.Telegram.Adapter` for Bot API calls.
-- `Exy.Gateway.Telegram.StreamConsumer` or generic `Exy.Gateway.StreamConsumer` for stream-to-edit rendering.
-- Telegram talks to `Exy.Session` semantic commands/events; agent APIs do not know Telegram exists.
+- `Vibe.Gateway.Telegram.Update` or `Vibe.Gateway.Update` for normalized inbound messages.
+- `Vibe.Gateway.Source` for platform/chat/user/thread identity.
+- `Vibe.Gateway.Telegram.Adapter` for Bot API calls.
+- `Vibe.Gateway.Telegram.StreamConsumer` or generic `Vibe.Gateway.StreamConsumer` for stream-to-edit rendering.
+- Telegram talks to `Vibe.Session` semantic commands/events; agent APIs do not know Telegram exists.
 
 Recommended namespace:
 
 ```elixir
-Exy.Gateway.Telegram
-Exy.Gateway.Telegram.Supervisor
-Exy.Gateway.Telegram.Config
-Exy.Gateway.Telegram.Bot
-Exy.Gateway.Telegram.Update
-Exy.Gateway.Telegram.Source
-Exy.Gateway.Telegram.SessionKey
-Exy.Gateway.Telegram.StreamConsumer
-Exy.Gateway.Telegram.Markdown
-Exy.Gateway.Telegram.Attachments
-Exy.Gateway.Telegram.Callbacks
+Vibe.Gateway.Telegram
+Vibe.Gateway.Telegram.Supervisor
+Vibe.Gateway.Telegram.Config
+Vibe.Gateway.Telegram.Bot
+Vibe.Gateway.Telegram.Update
+Vibe.Gateway.Telegram.Source
+Vibe.Gateway.Telegram.SessionKey
+Vibe.Gateway.Telegram.StreamConsumer
+Vibe.Gateway.Telegram.Markdown
+Vibe.Gateway.Telegram.Attachments
+Vibe.Gateway.Telegram.Callbacks
 ```
 
 Consider making `Source`, `MessageEvent`, `StreamConsumer`, and session key generation generic if other chat backends are likely.
@@ -75,14 +75,14 @@ Hermes supports both:
 - polling by default
 - webhook when `TELEGRAM_WEBHOOK_URL` is configured
 
-Exy should support:
+Vibe should support:
 
 - polling for local/dev
 - Phoenix webhook endpoint for production/server mode
 
-Webhook security is mandatory. Hermes refuses to start webhook mode without `TELEGRAM_WEBHOOK_SECRET`; Exy should similarly require a secret token/path and validate Telegram's secret-token header.
+Webhook security is mandatory. Hermes refuses to start webhook mode without `TELEGRAM_WEBHOOK_SECRET`; Vibe should similarly require a secret token/path and validate Telegram's secret-token header.
 
-Hermes also clears stale webhooks before polling. Exy should do the same to avoid polling silently receiving no updates.
+Hermes also clears stale webhooks before polling. Vibe should do the same to avoid polling silently receiving no updates.
 
 ## Connection/reliability lessons from Hermes
 
@@ -96,7 +96,7 @@ Hermes contains significant hardening we should not ignore:
 - network reconnect with getUpdates probe after restart.
 - clean disconnect cancels pending album/text batching tasks and stops polling/webhook.
 
-For Exy first implementation, do the safe subset:
+For Vibe first implementation, do the safe subset:
 
 - single supervised bot process per token.
 - explicit polling conflict error.
@@ -120,14 +120,14 @@ Hermes `MessageEvent` fields worth mirroring:
 - optional auto skill / channel prompt
 - timestamp
 
-Exy should probably define structs:
+Vibe should probably define structs:
 
 ```elixir
-%Exy.Gateway.Source{}
-%Exy.Gateway.Message{}
+%Vibe.Gateway.Source{}
+%Vibe.Gateway.Message{}
 ```
 
-and Telegram-specific decoding under `Exy.Gateway.Telegram.Update`.
+and Telegram-specific decoding under `Vibe.Gateway.Telegram.Update`.
 
 ## Session key behavior
 
@@ -138,9 +138,9 @@ Hermes session keys:
 - Group sessions default to per-user isolation unless configured otherwise.
 - Threaded sessions default to shared by all participants unless `thread_sessions_per_user` is enabled.
 
-Exy should explicitly choose and test:
+Vibe should explicitly choose and test:
 
-- DM: one Exy session per Telegram DM chat.
+- DM: one Vibe session per Telegram DM chat.
 - Group without topic: probably one session per group or per user depending config.
 - Group/forum topic: default one session per topic shared by participants.
 - Include Telegram `message_thread_id`; map General topic (`1`) carefully.
@@ -161,10 +161,10 @@ Hermes separates two concerns:
    - `TELEGRAM_ALLOW_ALL_USERS`
    - global allowlist / allow-all
 
-Exy should implement both layers:
+Vibe should implement both layers:
 
 - mention/reply/wake-word gate to reduce accidental group activations.
-- allowlist enforcement before creating/submitting Exy sessions.
+- allowlist enforcement before creating/submitting Vibe sessions.
 - callback authorization for inline buttons, not just incoming messages.
 
 Use BotFather privacy-mode docs in setup help; privacy mode changes what group messages the bot receives at all.
@@ -187,9 +187,9 @@ Hermes upstream topic support:
 - Supports configured `extra.group_topics` metadata/skill binding by `chat_id + thread_id`.
 - Has open/draft upstream work for topic profile routing; do not assume that profile routing is settled.
 
-Exy status:
+Vibe status:
 
-- Preserve `message_thread_id` in private chats so Telegram bot topics map to distinct Exy sessions.
+- Preserve `message_thread_id` in private chats so Telegram bot topics map to distinct Vibe sessions.
 - Keep General forum topic handling compatible with Hermes (`"1"` internally, no wire thread id outbound).
 - Follow-up: add optional configured topic metadata (`dm_topics`/`group_topics`) and maybe `editForumTopic` topic title updates.
 
@@ -197,7 +197,7 @@ Exy status:
 
 Telegram Bot API 9.5+ includes `sendMessageDraft`, described by ExGram as: "Use this method to stream a partial message to a user while the message is being generated. Returns True on success."
 
-Implications for Exy:
+Implications for Vibe:
 
 - Keep edit-based streaming as the baseline because it works in groups, topics, and across older client behavior.
 - Add a Telegram-specific stream mode after the generic consumer exists:
@@ -210,11 +210,11 @@ Implications for Exy:
 
 ## Streaming consumer behavior to port
 
-Hermes `GatewayStreamConsumer` is generic across platforms and should inspire Exy's implementation.
+Hermes `GatewayStreamConsumer` is generic across platforms and should inspire Vibe's implementation.
 
 Important details:
 
-- Agent callback is sync/thread-safe; consumer drains into async loop. In Exy this becomes BEAM message/event ingestion.
+- Agent callback is sync/thread-safe; consumer drains into async loop. In Vibe this becomes BEAM message/event ingestion.
 - Config:
   - `edit_interval`: default 1.0s
   - `buffer_threshold`: default 40 chars
@@ -234,7 +234,7 @@ Important details:
 - On edit failure, final fallback sends only the missing continuation, not the whole response.
 - On long-running Telegram streams, sends a fresh final message and best-effort deletes stale preview so visible timestamp reflects completion.
 
-Exy should build a generic BEAM-native stream consumer with similar rules before Telegram-specific polish.
+Vibe should build a generic BEAM-native stream consumer with similar rules before Telegram-specific polish.
 
 ## Telegram formatting lessons
 
@@ -248,7 +248,7 @@ Hermes uses MarkdownV2 but has a lot of custom escaping and fallbacks:
 - Falls back to plain text when Telegram rejects Markdown parsing.
 - Uses UTF-16 length helpers for Telegram limits.
 
-For Exy, prefer `ExGram` MessageEntity builder / MDEx integration if reliable, but still test:
+For Vibe, prefer `ExGram` MessageEntity builder / MDEx integration if reliable, but still test:
 
 - code fences
 - inline code
@@ -274,7 +274,7 @@ Hermes caches Telegram media locally before handing to the agent:
   - static sticker downloaded and analyzed with vision, cached by `file_unique_id`
   - animated/video stickers become textual placeholders
 
-Exy first pass:
+Vibe first pass:
 
 - photos/images -> session artifact file + semantic image content
 - documents -> session artifact file; text files may be inserted as file content block
@@ -293,7 +293,7 @@ Hermes platform base supports native media senders and Telegram specializes:
   - other audio falls back to document
 - `send_video`, `send_animation`
 
-Exy should initially support sending artifact images/documents back to Telegram and leave generated audio/video as follow-up.
+Vibe should initially support sending artifact images/documents back to Telegram and leave generated audio/video as follow-up.
 
 ## Commands and controls
 
@@ -304,7 +304,7 @@ Hermes registers Telegram bot commands from a central command registry and suppo
 - slash-command confirmation buttons
 - model picker provider/model selection
 
-Exy Telegram controls should start smaller:
+Vibe Telegram controls should start smaller:
 
 - `/start`, `/help`
 - `/new`
@@ -324,13 +324,13 @@ Hermes can set Telegram reactions when processing starts/completes:
 - 👀 on start
 - 👍 or 👎 on completion/failure
 
-Exy can use this as optional polish after core streaming is stable.
+Vibe can use this as optional polish after core streaming is stable.
 
 ## Implementation phases
 
 ### Phase 1: Generic gateway contracts
 
-- Add `Exy.Gateway.Source` and `Exy.Gateway.Message` structs.
+- Add `Vibe.Gateway.Source` and `Vibe.Gateway.Message` structs.
 - Add deterministic session key module for platform/chat/user/thread.
 - Add tests for DM, group, topic, per-user/per-thread isolation.
 
@@ -342,7 +342,7 @@ Exy can use this as optional polish after core streaming is stable.
   - `delete/3`
   - `send_typing/2`
 - Port Hermes rules for interval, threshold, cursor, finalization, flood fallback, long-message split, no-op edit.
-- Use Exy semantic UI/session events as input, not agent transport details.
+- Use Vibe semantic UI/session events as input, not agent transport details.
 
 ### Phase 3: Telegram adapter with ExGram
 
@@ -394,7 +394,7 @@ Mirror Hermes test coverage themes:
 
 ## Open questions
 
-- Should Exy implement a generic `Exy.Gateway` now, or keep Telegram-specific modules until a second backend appears?
-- Should Exy use MarkdownV2 strings or Telegram MessageEntity lists as the primary formatting output?
-- How much of Hermes' advanced reliability (fallback IPs, network reconnect probes, DM topics) belongs in Exy v1?
-- Where should Telegram session mapping live: existing `Exy.Session.Store`, new gateway tables, or derived deterministic IDs only?
+- Should Vibe implement a generic `Vibe.Gateway` now, or keep Telegram-specific modules until a second backend appears?
+- Should Vibe use MarkdownV2 strings or Telegram MessageEntity lists as the primary formatting output?
+- How much of Hermes' advanced reliability (fallback IPs, network reconnect probes, DM topics) belongs in Vibe v1?
+- Where should Telegram session mapping live: existing `Vibe.Session.Store`, new gateway tables, or derived deterministic IDs only?

@@ -1,5 +1,5 @@
-defmodule Exy.TelegramDiagnosticsAdapter do
-  @behaviour Exy.Gateway.Adapter
+defmodule Vibe.TelegramDiagnosticsAdapter do
+  @behaviour Vibe.Gateway.Adapter
 
   @impl true
   def send(chat_id, text, opts) do
@@ -25,7 +25,7 @@ end
 
 Mix.Task.run("app.start")
 
-alias Exy.Gateway.Runtime
+alias Vibe.Gateway.Runtime
 
 token = System.fetch_env!("TELEGRAM_BOT_TOKEN")
 chat_id = System.get_env("TELEGRAM_DIAGNOSTIC_CHAT_ID")
@@ -41,7 +41,7 @@ IO.inspect(ExGram.get_updates(limit: 1, timeout: 1, receive_timeout: 5_000, toke
   label: "single_get_updates"
 )
 
-config = %Exy.Gateway.Telegram.Config{
+config = %Vibe.Gateway.Telegram.Config{
   token: token,
   bot_id: bot_id,
   bot_username: bot_username,
@@ -51,11 +51,11 @@ config = %Exy.Gateway.Telegram.Config{
 
 {:ok, runtime} =
   Runtime.start_link(
-    backend: Exy.Gateway.Telegram.Backend,
+    backend: Vibe.Gateway.Telegram.Backend,
     config: config,
     dispatch_opts: [
       session_opts: [ask_fun: fn prompt, _opts -> {:ok, "diagnostic response: #{prompt}"} end],
-      bridge_adapter: Exy.TelegramDiagnosticsAdapter,
+      bridge_adapter: Vibe.TelegramDiagnosticsAdapter,
       bridge_adapter_opts: [owner: self()]
     ]
   )
@@ -84,7 +84,7 @@ if chat_id do
   parsed_chat_id = String.to_integer(chat_id)
 
   IO.inspect(
-    ExGram.send_message(parsed_chat_id, "Exy Telegram diagnostics outbound smoke", token: token),
+    ExGram.send_message(parsed_chat_id, "Vibe Telegram diagnostics outbound smoke", token: token),
     label: "real_outbound_smoke"
   )
 
@@ -92,7 +92,7 @@ if chat_id do
     ExGram.send_message_draft(
       parsed_chat_id,
       System.unique_integer([:positive]),
-      "Exy Telegram diagnostics draft smoke",
+      "Vibe Telegram diagnostics draft smoke",
       token: token
     ),
     label: "real_draft_smoke"

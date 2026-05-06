@@ -4,24 +4,24 @@ config :opentelemetry, processors: []
 
 config :ex_gram, adapter: ExGram.Adapter.Req
 
-config :exy, ecto_repos: [Exy.Repo]
-config :exy, env: config_env()
-config :exy, compile_time_debug: config_env() != :prod
+config :vibe, ecto_repos: [Vibe.Repo]
+config :vibe, env: config_env()
+config :vibe, compile_time_debug: config_env() != :prod
 
 sqlite_busy_timeout_ms = 5_000
 
-config :exy, Exy.Repo,
+config :vibe, Vibe.Repo,
   journal_mode: :wal,
   busy_timeout: sqlite_busy_timeout_ms,
   pool_size: 1,
   log: false
 
-config :exy, Exy.Web.Endpoint,
+config :vibe, Vibe.Web.Endpoint,
   url: [host: "localhost"],
-  render_errors: [formats: [html: Exy.Web.ErrorHTML], layout: false],
-  pubsub_server: Exy.PubSub,
+  render_errors: [formats: [html: Vibe.Web.ErrorHTML], layout: false],
+  pubsub_server: Vibe.PubSub,
   secret_key_base: String.duplicate("0", 64),
-  live_view: [signing_salt: "exy-web-signing-salt-2026"]
+  live_view: [signing_salt: "vibe-web-signing-salt-2026"]
 
 config :volt,
   entry: "web/app.ts",

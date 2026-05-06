@@ -34,4 +34,4 @@
   Cancelled.                            
                                         
 
-~/Development/exy • story-stress  openai
+~/Development/vibe • story-stress  opena

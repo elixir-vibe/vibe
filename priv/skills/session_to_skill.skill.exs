@@ -1,10 +1,10 @@
-defmodule ExySkill.SessionToSkill do
-  use Exy.Skill.Script
+defmodule VibeSkill.SessionToSkill do
+  use Vibe.Skill.Script
 
   skill do
     name "session-to-skill"
     version "0.1.0"
-    description "Turn a useful Exy session into an executable skill draft"
+    description "Turn a useful Vibe session into an executable skill draft"
     triggers ["save skill", "create skill", "session to skill", "reusable workflow"]
     alias_as __MODULE__
     examples [
@@ -30,7 +30,7 @@ defmodule ExySkill.SessionToSkill do
 
   ## CLI
 
-      exy skill from-session <session-id> <skill-name>
+      vibe skill from-session <session-id> <skill-name>
 
   ## Eval helpers
 

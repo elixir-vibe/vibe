@@ -32,4 +32,4 @@
   Cancelled.                                                                    
                                                                                 
 
-~/Development/exy • story-stress  openai_codex:gpt-5.5 • medium • idle • local •
+~/Development/vibe • story-stress  openai_codex:gpt-5.5 • medium • idle • local 

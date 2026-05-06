@@ -1,6 +1,6 @@
 Mix.Task.run("app.start")
 
-alias Exy.TUI.{DSL, Lines, Storybook, Theme, Widget}
+alias Vibe.TUI.{DSL, Lines, Storybook, Theme, Widget}
 
 width =
   System.argv()
@@ -85,9 +85,9 @@ crush_ish_light =
   )
 
 candidates = [
-  {"current-dark", "Current Exy dark palette, useful as the baseline to beat.", base_dark},
+  {"current-dark", "Current Vibe dark palette, useful as the baseline to beat.", base_dark},
   {"current-light",
-   "Current Exy light palette; included because it currently feels good even on dark terminals.",
+   "Current Vibe light palette; included because it currently feels good even on dark terminals.",
    base_light},
   {"neutral-dark",
    "Neutral-first dark: assistant reading surface is calm, color reserved for prompt/status.",
@@ -229,7 +229,7 @@ sample_lines = fn theme ->
   |> Enum.reduce([], &Lines.join(&2, &1))
 end
 
-IO.puts("Exy theme candidates")
+IO.puts("Vibe theme candidates")
 IO.puts("Run with: mix run scripts/theme_preview.exs -- --width 120")
 
 IO.puts(

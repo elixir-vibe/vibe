@@ -24,10 +24,10 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-exy-*.tar
+vibe-*.tar
 
 # Ignore local escript builds.
-/exy
+/vibe
 
 
 # Generated web assets.

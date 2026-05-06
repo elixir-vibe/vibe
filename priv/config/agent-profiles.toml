@@ -2,7 +2,7 @@ default_model = "openai_codex:gpt-5.5"
 default_effort = "medium"
 
 [providers.openrouter]
-app_title = "Exy"
+app_title = "Vibe"
 
 # Optional for OpenAI/OpenAI Codex Responses streaming after upstream reuse paths are enabled:
 # [providers.openai_codex]

@@ -1,7 +1,7 @@
-defmodule Exy.Repo.Migrations.CreateStorageTables do
+defmodule Vibe.Repo.Migrations.CreateStorageTables do
   use Ecto.Migration
 
   def change do
-    Exy.Storage.Migrations.CreateStorageTables.change()
+    Vibe.Storage.Migrations.CreateStorageTables.change()
   end
 end

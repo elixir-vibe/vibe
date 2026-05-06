@@ -1,7 +1,7 @@
-defmodule Exy.Test.GatewayRecordingAdapter do
+defmodule Vibe.Test.GatewayRecordingAdapter do
   @moduledoc false
 
-  @behaviour Exy.Gateway.Adapter
+  @behaviour Vibe.Gateway.Adapter
 
   @impl true
   def send(chat_id, text, opts) do

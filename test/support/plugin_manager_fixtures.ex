@@ -1,4 +1,4 @@
-defmodule Exy.Test.PluginManagerFixtures.StatusWorker do
+defmodule Vibe.Test.PluginManagerFixtures.StatusWorker do
   @moduledoc false
 
   use GenServer
@@ -7,12 +7,12 @@ defmodule Exy.Test.PluginManagerFixtures.StatusWorker do
 
   @impl true
   def init(opts) do
-    Exy.Plugin.UI.set_status(opts[:session_id], :worker, "worker ready")
+    Vibe.Plugin.UI.set_status(opts[:session_id], :worker, "worker ready")
     {:ok, opts}
   end
 end
 
-defmodule Exy.Test.PluginManagerFixtures.PlainWorker do
+defmodule Vibe.Test.PluginManagerFixtures.PlainWorker do
   @moduledoc false
 
   use GenServer
@@ -23,12 +23,12 @@ defmodule Exy.Test.PluginManagerFixtures.PlainWorker do
   def init(opts), do: {:ok, opts}
 end
 
-defmodule Exy.Test.PluginManagerFixtures.BackgroundPlugin do
+defmodule Vibe.Test.PluginManagerFixtures.BackgroundPlugin do
   @moduledoc false
 
-  use Exy.Plugin
+  use Vibe.Plugin
 
-  alias Exy.Test.PluginManagerFixtures.StatusWorker
+  alias Vibe.Test.PluginManagerFixtures.StatusWorker
 
   @impl true
   def init(opts), do: {:ok, %{session_id: Keyword.fetch!(opts, :session_id)}}
@@ -37,12 +37,12 @@ defmodule Exy.Test.PluginManagerFixtures.BackgroundPlugin do
   def children(_state, context), do: [{StatusWorker, [session_id: context.session_id]}]
 end
 
-defmodule Exy.Test.PluginManagerFixtures.PartialFailurePlugin do
+defmodule Vibe.Test.PluginManagerFixtures.PartialFailurePlugin do
   @moduledoc false
 
-  use Exy.Plugin
+  use Vibe.Plugin
 
-  alias Exy.Test.PluginManagerFixtures.PlainWorker
+  alias Vibe.Test.PluginManagerFixtures.PlainWorker
 
   @impl true
   def children(_state, _context) do
@@ -53,22 +53,22 @@ defmodule Exy.Test.PluginManagerFixtures.PartialFailurePlugin do
   end
 end
 
-defmodule Exy.Test.PluginManagerFixtures.EventPlugin do
+defmodule Vibe.Test.PluginManagerFixtures.EventPlugin do
   @moduledoc false
 
-  use Exy.Plugin
+  use Vibe.Plugin
 
   @impl true
   def handle_event(%{type: :prompt_submitted, text: text}, context, state) do
-    Exy.Plugin.UI.set_status(context.session_id, :prompt, "prompt: #{text}")
+    Vibe.Plugin.UI.set_status(context.session_id, :prompt, "prompt: #{text}")
     {:ok, state}
   end
 end
 
-defmodule Exy.Test.PluginManagerFixtures.PluginCommand do
+defmodule Vibe.Test.PluginManagerFixtures.PluginCommand do
   @moduledoc false
 
-  @behaviour Exy.UI.SlashCommands.Command
+  @behaviour Vibe.UI.SlashCommands.Command
 
   @impl true
   def spec, do: %{name: "fixture", description: "Fixture plugin command"}
@@ -77,7 +77,7 @@ defmodule Exy.Test.PluginManagerFixtures.PluginCommand do
   def run(_args, ui_state) do
     {:events,
      [
-       Exy.UI.Event.new(:notification_added, ui_state.session_id, %{
+       Vibe.UI.Event.new(:notification_added, ui_state.session_id, %{
          level: :info,
          text: "fixture command"
        })
@@ -85,31 +85,31 @@ defmodule Exy.Test.PluginManagerFixtures.PluginCommand do
   end
 end
 
-defmodule Exy.Test.PluginManagerFixtures.CommandPlugin do
+defmodule Vibe.Test.PluginManagerFixtures.CommandPlugin do
   @moduledoc false
 
-  use Exy.Plugin
+  use Vibe.Plugin
 
-  alias Exy.Test.PluginManagerFixtures.PluginCommand
+  alias Vibe.Test.PluginManagerFixtures.PluginCommand
 
   @impl true
   def commands(_state), do: [PluginCommand]
 end
 
-defmodule Exy.Test.PluginManagerFixtures.SearchAPI do
+defmodule Vibe.Test.PluginManagerFixtures.SearchAPI do
   @moduledoc false
 
   def remember(value), do: {:remembered, value}
 end
 
-defmodule Exy.Test.PluginManagerFixtures.APIPlugin do
+defmodule Vibe.Test.PluginManagerFixtures.APIPlugin do
   @moduledoc false
 
-  use Exy.Plugin
+  use Vibe.Plugin
 
   api(
     name: :fixture_search,
-    module: Exy.Test.PluginManagerFixtures.SearchAPI,
+    module: Vibe.Test.PluginManagerFixtures.SearchAPI,
     alias: Search,
     description: "Fixture search API",
     examples: ["Search.remember(query)"]

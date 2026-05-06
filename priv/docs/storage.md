@@ -1,9 +1,9 @@
 # Storage
 
-Exy stores durable local state in SQLite through Ecto. The default database path is:
+Vibe stores durable local state in SQLite through Ecto. The default database path is:
 
 ```text
-~/.exy/exy.db
+~/.vibe/vibe.db
 ```
 
 Stored state includes:
@@ -19,27 +19,27 @@ Stored state includes:
 Commands:
 
 ```bash
-exy storage migrate
-exy storage status
-exy storage fts status
-exy storage fts rebuild
-exy storage fts optimize
-exy storage checkpoint
-exy storage vacuum
-exy storage search "sqlite migration" --cwd exy
-exy storage import pi /path/to/pi-session-or-dir --batch-size 25
+vibe storage migrate
+vibe storage status
+vibe storage fts status
+vibe storage fts rebuild
+vibe storage fts optimize
+vibe storage checkpoint
+vibe storage vacuum
+vibe storage search "sqlite migration" --cwd vibe
+vibe storage import pi /path/to/pi-session-or-dir --batch-size 25
 ```
 
 Eval APIs:
 
 ```elixir
-Exy.Paths.database()
-Exy.Storage.status()
-Exy.Storage.migrate!()
-Exy.Storage.FTS.status()
-Exy.Storage.FTS.rebuild()
-Exy.Storage.Search.query("sqlite migration", scopes: [:sessions, :memory], cwd: "exy")
-Exy.Context.recall("sqlite migration", cwd: "exy", limit: 3)
+Vibe.Paths.database()
+Vibe.Storage.status()
+Vibe.Storage.migrate!()
+Vibe.Storage.FTS.status()
+Vibe.Storage.FTS.rebuild()
+Vibe.Storage.Search.query("sqlite migration", scopes: [:sessions, :memory], cwd: "vibe")
+Vibe.Context.recall("sqlite migration", cwd: "vibe", limit: 3)
 ```
 
-Use `EXY_HOME` or `EXY_DB_PATH` to isolate a dev/test instance.
+Use `VIBE_HOME` or `VIBE_DB_PATH` to isolate a dev/test instance.

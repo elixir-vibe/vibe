@@ -1,7 +1,7 @@
 Markdown renderer
 ────────────────────────────────────────────────────────────────────────────────
 
-Exy renders bold, italic, inline code, links like MDEx (https://mdelixir.dev),
+Vibe renders bold, italic, inline code, links like MDEx (https://mdelixir.dev),
 quotes, lists, code blocks, and tables.
 
 │ Streaming Markdown is parsed with MDEx, so partial LLM chunks stay renderable.
@@ -11,7 +11,7 @@ quotes, lists, code blocks, and tables.
 • future LiveView renderer
 
 elixir ─────────────────────────────────────────────────────────────────────────
-  Exy.Model.Direct.stream("hello", on_result: &IO.write/1)
+  Vibe.Model.Direct.stream("hello", on_result: &IO.write/1)
 ────────────────────────────────────────────────────────────────────────────────
 
 ╭─────────┬─────────────╮

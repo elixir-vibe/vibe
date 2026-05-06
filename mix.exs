@@ -1,12 +1,12 @@
-defmodule Exy.MixProject do
+defmodule Vibe.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
-  @source_url "https://github.com/elixir-vibe/exy"
+  @version "0.2.0"
+  @source_url "https://github.com/elixir-vibe/vibe"
 
   def project do
     [
-      app: :exy,
+      app: :vibe,
       version: @version,
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
@@ -28,7 +28,7 @@ defmodule Exy.MixProject do
   def application do
     [
       extra_applications: [:logger, :tools, :mix],
-      mod: {Exy.Application, []}
+      mod: {Vibe.Application, []}
     ]
   end
 
@@ -37,18 +37,17 @@ defmodule Exy.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files:
-        ~w(assets config lib priv test mix.exs mix.lock README.md AGENTS.md .formatter.exs .gitignore)
+      files: ~w(assets config lib priv mix.exs mix.lock README.md LICENSE)
     ]
   end
 
   defp escript do
     [
-      main_module: Exy.CLI.Escript,
-      name: "exy",
+      main_module: Vibe.CLI.Escript,
+      name: "vibe",
       app: nil,
       include_priv_for: [
-        :exy,
+        :vibe,
         :tzdata,
         :llm_db,
         :mdex,
@@ -71,9 +70,8 @@ defmodule Exy.MixProject do
 
   defp deps do
     [
-      {:abnf_parsec, "~> 2.1", override: true},
+      {:abnf_parsec, "~> 2.1"},
       {:boxart, "~> 0.3.3"},
-      {:dg, "~> 0.4.1"},
       {:ex_ast, "~> 0.10"},
       {:floki, "~> 0.38"},
       {:jason, "~> 1.4"},
@@ -99,7 +97,7 @@ defmodule Exy.MixProject do
       {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:reach, "~> 2.2", runtime: false, override: true},
+      {:reach, "~> 2.2", runtime: false},
       {:pythonx, "~> 0.4.9", optional: true},
       {:quickbeam, "~> 0.10.4", optional: true},
       {:jido, "~> 2.2"},

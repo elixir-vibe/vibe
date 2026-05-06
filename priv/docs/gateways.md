@@ -1,6 +1,6 @@
 # Gateways
 
-Gateways connect external chat platforms to Exy semantic sessions. Platform code normalizes incoming updates into `Exy.Gateway.Message`, the generic runtime authorizes and dispatches them, and a session bridge streams assistant responses back through the platform adapter.
+Gateways connect external chat platforms to Vibe semantic sessions. Platform code normalizes incoming updates into `Vibe.Gateway.Message`, the generic runtime authorizes and dispatches them, and a session bridge streams assistant responses back through the platform adapter.
 
 ## Telegram polling
 
@@ -9,7 +9,7 @@ Set at least a bot token and one authorization rule:
 ```bash
 TELEGRAM_BOT_TOKEN=123:abc \
 TELEGRAM_ALLOWED_USERS=123456 \
-exy gateway telegram --foreground --bot-username exy_bot
+vibe gateway telegram --foreground --bot-username vibe_bot
 ```
 
 For groups, prefer explicit chat allowlists and mention/reply gating:
@@ -17,7 +17,7 @@ For groups, prefer explicit chat allowlists and mention/reply gating:
 ```bash
 TELEGRAM_BOT_TOKEN=123:abc \
 TELEGRAM_GROUP_ALLOWED_CHATS=-100123456 \
-exy gateway telegram --foreground --bot-username exy_bot --require-mention
+vibe gateway telegram --foreground --bot-username vibe_bot --require-mention
 ```
 
 Useful environment variables:
@@ -36,19 +36,19 @@ Useful environment variables:
 - `TELEGRAM_POLL_RECEIVE_TIMEOUT_MS` — HTTP receive timeout for long-poll requests, default `10000`.
 - `TELEGRAM_POLL_MAX_CONSECUTIVE_CONFLICTS` — stop scheduling polls after repeated `getUpdates` conflicts, default `12`.
 
-Telegram responses are rendered as safe Telegram HTML. Exy escapes raw HTML, maps a small Markdown-like subset (`**bold**`, `*italic*`, inline code, fenced code) to Telegram tags, splits long final sends below Telegram's 4096-character limit, treats `message is not modified` edits as success, and falls back to plain text when HTML delivery is rejected.
+Telegram responses are rendered as safe Telegram HTML. Vibe escapes raw HTML, maps a small Markdown-like subset (`**bold**`, `*italic*`, inline code, fenced code) to Telegram tags, splits long final sends below Telegram's 4096-character limit, treats `message is not modified` edits as success, and falls back to plain text when HTML delivery is rejected.
 
 The polling transport clears stale webhooks before long polling so a bot can be moved between webhook and polling mode safely. It records polling diagnostics for `/gateways`, backs off after `getUpdates` conflicts, and stops scheduling polls after the configured consecutive conflict limit so an external bot instance is not hammered indefinitely.
 
 ## Telegram topics
 
-Exy preserves Telegram `message_thread_id` as `Exy.Gateway.Source.thread_id` for both forum-enabled groups and private chats with bot topics enabled. This matches Telegram Bot API 9.4+ private-chat topics and keeps independent Exy sessions per visible bot topic:
+Vibe preserves Telegram `message_thread_id` as `Vibe.Gateway.Source.thread_id` for both forum-enabled groups and private chats with bot topics enabled. This matches Telegram Bot API 9.4+ private-chat topics and keeps independent Vibe sessions per visible bot topic:
 
 ```text
 gateway:telegram:dm:<chat-id>:<message-thread-id>
 gateway:telegram:group:<chat-id>:<message-thread-id>[:<user-id>]
 ```
 
-For forum groups, Telegram omits `message_thread_id` for the General topic. Exy represents that internal source thread as `"1"`, but outbound adapters omit `message_thread_id: 1` because Telegram expects General-topic sends without the wire thread id.
+For forum groups, Telegram omits `message_thread_id` for the General topic. Vibe represents that internal source thread as `"1"`, but outbound adapters omit `message_thread_id: 1` because Telegram expects General-topic sends without the wire thread id.
 
-Hermes currently supports Telegram topics in the same broad shape: it preserves `message.message_thread_id`, maps forum General to thread id `"1"`, sends/edit/photos/actions with `message_thread_id`, and has configured DM topic setup/mapping plus configured group topic metadata. Hermes topic-profile routing is still under active work in upstream PRs/issues, so Exy should treat per-topic profile/skill routing as a follow-up rather than relying on it as a settled upstream contract.
+Hermes currently supports Telegram topics in the same broad shape: it preserves `message.message_thread_id`, maps forum General to thread id `"1"`, sends/edit/photos/actions with `message_thread_id`, and has configured DM topic setup/mapping plus configured group topic metadata. Hermes topic-profile routing is still under active work in upstream PRs/issues, so Vibe should treat per-topic profile/skill routing as a follow-up rather than relying on it as a settled upstream contract.

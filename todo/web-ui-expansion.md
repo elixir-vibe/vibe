@@ -2,12 +2,12 @@
 
 ## Principle
 
-Expose Exy by workflow, not as dashboard soup:
+Expose Vibe by workflow, not as dashboard soup:
 
 - Sessions: conversation work
 - Tools: what happened in a session
 - Jobs: background/subagent work
-- Memory: what Exy knows
+- Memory: what Vibe knows
 - Settings: models/auth/plugins/skills/configuration
 - Runtime: developer/operator health
 - Storage: search, imports, FTS, database maintenance
@@ -46,7 +46,7 @@ Add session-level inspectors/tabs:
 First pass:
 
 - Keep transcript as default.
-- Add a tool timeline panel/section using semantic `Exy.Tool.Display.from_tool/1`.
+- Add a tool timeline panel/section using semantic `Vibe.Tool.Display.from_tool/1`.
 - Show tool name, status, summary, duration when available, and expandable structured output.
 - Add context inspector later: system prompt, workspace instructions, skills, memory/recall summary.
 
