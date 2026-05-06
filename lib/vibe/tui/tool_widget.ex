@@ -15,6 +15,7 @@ defmodule Vibe.TUI.ToolWidget do
     Syntax,
     TextTruncation,
     Theme,
+    ValueFormat,
     Widget,
     Width
   }
@@ -180,21 +181,8 @@ defmodule Vibe.TUI.ToolWidget do
     end
   end
 
-  def summarize_value(value, :infinity) when is_binary(value), do: single_line(value)
-
-  def summarize_value(value, :infinity) do
-    value |> inspect(limit: :infinity) |> single_line()
-  end
-
-  def summarize_value(value, limit) when is_binary(value) do
-    value |> single_line() |> String.slice(0, limit)
-  end
-
-  def summarize_value(value, limit) do
-    value |> inspect(limit: 8) |> single_line() |> String.slice(0, limit)
-  end
-
-  def single_line(value) when is_binary(value), do: String.replace(value, "\n", " ")
+  def summarize_value(value, limit), do: ValueFormat.summarize(value, limit)
+  def single_line(value), do: ValueFormat.single_line(value)
 
   def status_bg(text, status, theme) when status in [:ok, "ok", :success, "success"],
     do: Theme.bg(theme, :tool_success_bg, text)
@@ -222,43 +210,18 @@ defmodule Vibe.TUI.ToolWidget do
     |> unwrap_output()
   end
 
-  def format_value(value) when is_binary(value), do: value
-  def format_value(value), do: inspect(value, pretty: true, limit: 20)
+  def format_value(value), do: ValueFormat.format(value)
+  def error_lines(error, width, theme), do: ValueFormat.error_lines(error, width, theme)
 
-  def error_lines(error, width, theme) do
-    error
-    |> format_error()
-    |> plain_lines(width, theme, fg: :error)
-  end
+  def plain_lines(value, width, theme, opts \\ []),
+    do: ValueFormat.plain_lines(value, width, theme, opts)
 
-  def plain_lines(value, width, theme, opts \\ []) do
-    fg = Keyword.get(opts, :fg, :tool_output)
+  def plain_line(line, width, theme, opts \\ []),
+    do: ValueFormat.plain_line(line, width, theme, opts)
 
-    value
-    |> format_value()
-    |> String.split("\n")
-    |> Enum.flat_map(&plain_line(&1, width, theme, fg: fg))
-  end
-
-  def plain_line(line, width, theme, opts \\ []) do
-    fg = Keyword.get(opts, :fg, :tool_output)
-    wrap_output_line(Theme.fg(theme, fg, line), width)
-  end
-
-  def inspect_lines(value, width, theme) do
-    value
-    |> format_value()
-    |> String.split("\n")
-    |> Enum.flat_map(&inspect_line(&1, width, theme))
-  end
-
-  def inspect_line(line, width, _theme) do
-    line
-    |> Syntax.highlight_elixir()
-    |> output_line(width)
-  end
-
-  def output_line(line, width), do: wrap_output_line(line, width)
+  def inspect_lines(value, width, theme), do: ValueFormat.inspect_lines(value, width, theme)
+  def inspect_line(line, width, theme), do: ValueFormat.inspect_line(line, width, theme)
+  def output_line(line, width), do: ValueFormat.output_line(line, width)
 
   def source_lines(lines, language, width, theme),
     do: SourceBlock.source_lines(lines, language, width, theme)
@@ -397,12 +360,6 @@ defmodule Vibe.TUI.ToolWidget do
   defp trim_trailing_blank(lines),
     do: Enum.reverse(lines) |> Enum.drop_while(&(&1 == "")) |> Enum.reverse()
 
-  defp wrap_output_line(line, width) do
-    line
-    |> Widget.wrap(max(width - 2, 1))
-    |> Enum.map(&[Widget.spaces(2), &1])
-  end
-
   defp raw_output(tool), do: Map.get(tool, :output) || Map.get(tool, :result)
 
   defp unwrap_output(%{output: output}), do: output
@@ -509,9 +466,7 @@ defmodule Vibe.TUI.ToolWidget do
     )
   end
 
-  defp format_error(error) when is_binary(error), do: error
-  defp format_error(error), do: inspect(error, pretty: true, limit: 20)
-
+  def format_error(error), do: ValueFormat.format_error(error)
   defp maybe_truncate(lines, :params, _tool, _width, _theme, _opts), do: lines
 
   defp maybe_truncate(lines, _label, tool, width, theme, opts) do
