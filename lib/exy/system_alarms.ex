@@ -90,18 +90,26 @@ defmodule Exy.SystemAlarms do
       description: inspect(description, limit: 20)
     })
 
-    maybe_log_pressure(action, type, alarm_id, description)
+    maybe_log_alarm(action, type, alarm_id, description)
   end
 
-  defp maybe_log_pressure(:set, :system_memory_high_watermark, alarm_id, description) do
+  defp maybe_log_alarm(:set, :system_memory_high_watermark, alarm_id, description) do
     Logger.warning("System memory high watermark alarm set: #{inspect({alarm_id, description})}")
   end
 
-  defp maybe_log_pressure(:clear, :system_memory_high_watermark, _alarm_id, _description) do
+  defp maybe_log_alarm(:clear, :system_memory_high_watermark, _alarm_id, _description) do
     Logger.info("System memory high watermark alarm cleared")
   end
 
-  defp maybe_log_pressure(_action, _type, _alarm_id, _description), do: :ok
+  defp maybe_log_alarm(:set, :disk_almost_full, alarm_id, description) do
+    Logger.warning("Disk almost full alarm set: #{inspect({alarm_id, description})}")
+  end
+
+  defp maybe_log_alarm(:clear, :disk_almost_full, alarm_id, _description) do
+    Logger.info("Disk almost full alarm cleared: #{inspect(alarm_id)}")
+  end
+
+  defp maybe_log_alarm(_action, _type, _alarm_id, _description), do: :ok
 
   defp alarm_type({type, _details}) when is_atom(type), do: type
   defp alarm_type(type) when is_atom(type), do: type

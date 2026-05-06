@@ -24,6 +24,25 @@ defmodule Exy.SystemAlarmsTest do
     end)
   end
 
+  test "records SASL disk almost full alarms as telemetry" do
+    assert Exy.SystemAlarms.installed?()
+
+    :alarm_handler.set_alarm({{:disk_almost_full, ~c"/tmp"}, []})
+
+    assert_event(fn event ->
+      event.event == [:exy, :system, :alarm, :set] and
+        event.metadata.alarm_type == "disk_almost_full" and
+        event.metadata.alarm_id =~ "/tmp"
+    end)
+
+    :alarm_handler.clear_alarm({:disk_almost_full, ~c"/tmp"})
+
+    assert_event(fn event ->
+      event.event == [:exy, :system, :alarm, :clear] and
+        event.metadata.alarm_type == "disk_almost_full"
+    end)
+  end
+
   defp assert_event(fun) do
     deadline = System.monotonic_time(:millisecond) + 500
     wait_for_event(fun, deadline)
