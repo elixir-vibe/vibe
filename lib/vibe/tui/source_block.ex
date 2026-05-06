@@ -9,7 +9,7 @@ defmodule Vibe.TUI.SourceBlock do
   def source_lines(lines, language, width, theme) when language in [nil, ""] do
     Enum.flat_map(lines, fn line ->
       line
-      |> Theme.fg(theme, :tool_output)
+      |> then(&Theme.fg(theme, :tool_output, &1))
       |> output_line(width)
     end)
   end
