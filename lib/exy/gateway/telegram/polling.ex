@@ -15,7 +15,7 @@ defmodule Exy.Gateway.Telegram.Polling do
   require Logger
 
   @default_interval_ms 100
-  @default_timeout_s 50
+  @default_timeout_s 5
 
   defstruct token: nil,
             runtime: nil,
