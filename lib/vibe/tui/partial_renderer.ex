@@ -8,6 +8,7 @@ defmodule Vibe.TUI.PartialRenderer do
     Renderable,
     RenderContext,
     RenderFrame,
+    RenderKey,
     RenderState,
     Theme,
     Widget,
@@ -98,7 +99,7 @@ defmodule Vibe.TUI.PartialRenderer do
   end
 
   defp render_key({:node, id, node}, context),
-    do: {:node, id, node.type, node.props, context.width, context.theme.name}
+    do: RenderKey.component(:node, id, RenderKey.fingerprint({node.type, node.props}), context)
 
   defp render_key(component, context), do: Renderable.render_key(component, context)
 

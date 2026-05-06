@@ -1,4 +1,6 @@
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.UserMessage do
+  alias Vibe.TUI.RenderKey
+
   def render(message, context) do
     message
     |> Map.from_struct()
@@ -8,14 +10,18 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.UserMessage do
   end
 
   def render_key(message, context) do
-    {:user_message, message.id, hash({message.text, message.at}), context.width,
-     context.theme.name}
+    RenderKey.component(
+      :user_message,
+      message.id,
+      RenderKey.fingerprint({message.text, message.at}),
+      context
+    )
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
 
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.AssistantMessage do
+  alias Vibe.TUI.RenderKey
+
   def render(message, context) do
     message
     |> Map.from_struct()
@@ -26,12 +32,17 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.AssistantMessage do
   end
 
   def render_key(%{id: "streaming"} = message, context) do
-    {:assistant_message, message.id, hash(message), Keyword.get(context.opts, :loader_phase, 0),
-     context.width, context.theme.name}
+    RenderKey.component(
+      :assistant_message,
+      message.id,
+      RenderKey.fingerprint(message),
+      [Keyword.get(context.opts, :loader_phase, 0)],
+      context
+    )
   end
 
   def render_key(message, context) do
-    {:assistant_message, message.id, hash(message), context.width, context.theme.name}
+    RenderKey.component(:assistant_message, message.id, RenderKey.fingerprint(message), context)
   end
 
   defp maybe_put_loader_phase(props, context) do
@@ -41,11 +52,11 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.AssistantMessage do
       props
     end
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
 
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.SystemMessage do
+  alias Vibe.TUI.RenderKey
+
   def render(message, context) do
     message
     |> Map.from_struct()
@@ -55,13 +66,13 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.SystemMessage do
   end
 
   def render_key(message, context) do
-    {:system_message, message.id, hash(message), context.width, context.theme.name}
+    RenderKey.component(:system_message, message.id, RenderKey.fingerprint(message), context)
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
 
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.ToolCall do
+  alias Vibe.TUI.RenderKey
+
   def render(tool, context) do
     tool
     |> Map.from_struct()
@@ -70,15 +81,19 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.ToolCall do
   end
 
   def render_key(tool, context) do
-    {:tool_call, tool.id, tool.name, tool.status, tool.expanded?, tool.truncate?, hash(tool.args),
-     hash(tool.output), hash(tool.output_parts), tool.output_format, context.width,
-     context.theme.name}
+    RenderKey.component(
+      :tool_call,
+      tool.id,
+      RenderKey.fingerprint({tool.args, tool.output, tool.output_parts}),
+      [tool.name, tool.status, tool.expanded?, tool.truncate?, tool.output_format],
+      context
+    )
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
 
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.SubagentLifecycle do
+  alias Vibe.TUI.RenderKey
+
   def render(event, context) do
     event
     |> Map.from_struct()
@@ -88,13 +103,13 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.SubagentLifecycle do
   end
 
   def render_key(event, context) do
-    {:subagent_lifecycle, event.id, hash(event), context.width, context.theme.name}
+    RenderKey.component(:subagent_lifecycle, event.id, RenderKey.fingerprint(event), context)
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
 
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.PluginWidget do
+  alias Vibe.TUI.RenderKey
+
   def render(widget, context) do
     widget
     |> Vibe.TUI.plugin_widget()
@@ -102,14 +117,19 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.PluginWidget do
   end
 
   def render_key(widget, context) do
-    {:plugin_widget, widget.id, widget.type, widget.version, hash(widget.props), widget.placement,
-     context.width, context.theme.name}
+    RenderKey.component(
+      :plugin_widget,
+      widget.id,
+      RenderKey.fingerprint(widget.props),
+      [widget.type, widget.version, widget.placement],
+      context
+    )
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
 
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.NotificationList do
+  alias Vibe.TUI.RenderKey
+
   def render(notifications, context) do
     notifications
     |> Vibe.TUI.notifications()
@@ -117,13 +137,18 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.NotificationList do
   end
 
   def render_key(notifications, context) do
-    {:notifications, hash(notifications.items), context.width, context.theme.name}
+    RenderKey.component(
+      :notifications,
+      :main,
+      RenderKey.fingerprint(notifications.items),
+      context
+    )
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
 
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.Footer do
+  alias Vibe.TUI.RenderKey
+
   def render(footer, context) do
     footer
     |> Vibe.TUI.footer()
@@ -131,8 +156,6 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.Footer do
   end
 
   def render_key(footer, context) do
-    {:footer, hash(footer), context.width, context.theme.name}
+    RenderKey.component(:footer, :main, RenderKey.fingerprint(footer), context)
   end
-
-  defp hash(value), do: :erlang.phash2(value)
 end
