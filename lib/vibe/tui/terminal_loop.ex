@@ -8,7 +8,7 @@ defmodule Vibe.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Vibe.TUI.{App, Keymap, Renderer, RenderState, Theme}
+  alias Vibe.TUI.{App, Keymap, Renderer, RenderState, TerminalPainter, Theme}
 
   require Vibe.Debug
 
@@ -51,12 +51,15 @@ defmodule Vibe.TUI.TerminalLoop do
     {:ok, app} = app(opts)
     :ok = App.subscribe(app, self())
 
+    snapshot = App.snapshot(app)
+
     state = %{
       app: app,
       output: Keyword.get(opts, :output, :stdio),
       event_target: Keyword.get(opts, :event_target),
       loader_phase: 0,
       loader_timer: nil,
+      painter: TerminalPainter.new(snapshot.width, snapshot.height),
       render_state: RenderState.new(),
       theme: Keyword.get_lazy(opts, :theme, &Theme.default/0),
       trace:
@@ -109,6 +112,7 @@ defmodule Vibe.TUI.TerminalLoop do
       end
 
     :ok = App.resize(state.app, columns, rows)
+    state = %{state | painter: TerminalPainter.resize(state.painter, columns, rows)}
     state = paint(state, {:resize, columns, rows})
     {:reply, :ok, state}
   end
@@ -194,9 +198,13 @@ defmodule Vibe.TUI.TerminalLoop do
     end
 
     defp paint(state, reason) do
-      {lines, state} = render_lines(state)
-      IO.write(state.output, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
-      trace_frame(state, lines, reason)
+      {frame, state} = render_frame(state, :visible)
+      {output, painter} = TerminalPainter.render(state.painter, frame.lines, frame.cursor)
+      IO.write(state.output, output)
+
+      state
+      |> Map.put(:painter, painter)
+      |> trace_frame(frame.lines, reason)
     end
 
     defp trace_record(state, type, payload) do
@@ -221,9 +229,10 @@ defmodule Vibe.TUI.TerminalLoop do
     defp paint(%{output: false} = state, _reason), do: state
 
     defp paint(state, _reason) do
-      {lines, state} = render_lines(state)
-      IO.write(state.output, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
-      state
+      {frame, state} = render_frame(state, :visible)
+      {output, painter} = TerminalPainter.render(state.painter, frame.lines, frame.cursor)
+      IO.write(state.output, output)
+      %{state | painter: painter}
     end
   end
 
