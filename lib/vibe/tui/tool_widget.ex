@@ -3,23 +3,19 @@ defmodule Vibe.TUI.ToolWidget do
   Behaviour and dispatcher for built-in tool widgets.
   """
 
-  alias Vibe.Model.Content
   alias Vibe.Tool.Display
   alias Vibe.TUI
 
   alias Vibe.TUI.{
-    DiffBlock,
     Lines,
-    Markdown,
     SourceBlock,
     TextTruncation,
     Theme,
     ToolCard,
+    ToolOutputBlock,
     ValueFormat,
     Widget
   }
-
-  alias Vibe.TUI.Widgets.Image
 
   @type tool :: map()
   @callback render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
@@ -40,7 +36,7 @@ defmodule Vibe.TUI.ToolWidget do
       summary: display.summary,
       meta: display.meta,
       summary_style: display.summary_style,
-      output_lines: display_body_lines(display, max(width - 2, 1), theme),
+      output_lines: ToolOutputBlock.display_body_lines(display, max(width - 2, 1), theme),
       params?: false,
       truncation: :tail
     )
@@ -106,140 +102,6 @@ defmodule Vibe.TUI.ToolWidget do
 
   def source_lines(lines, language, width, theme),
     do: SourceBlock.source_lines(lines, language, width, theme)
-
-  defp display_body_lines(%Display{body: body, truncate?: truncate?}, width, theme) do
-    body
-    |> Enum.flat_map(&display_block_lines(&1, width, theme, truncate?))
-    |> trim_trailing_blank()
-    |> case do
-      [] -> nil
-      lines -> lines
-    end
-  end
-
-  defp display_block_lines({:text, text, opts}, width, theme, truncate?),
-    do: text_block_lines(text, width, theme, :text, truncate?, opts)
-
-  defp display_block_lines({:inspect, text, opts}, width, theme, truncate?),
-    do: text_block_lines(text, width, theme, :inspect, truncate?, opts)
-
-  defp display_block_lines({:error, text, opts}, width, theme, truncate?),
-    do: text_block_lines(text, width, theme, :error, truncate?, opts)
-
-  defp display_block_lines({:source, source, opts}, width, theme, truncate?),
-    do: source_block_lines(source, width, theme, truncate?, opts)
-
-  defp display_block_lines({:diff, diff, opts}, width, theme, truncate?),
-    do: diff_block_lines(diff, width, theme, truncate?, opts)
-
-  defp display_block_lines({:image, %Content.Image{} = image, _opts}, width, theme, _truncate?) do
-    image
-    |> Image.new(max_width_cells: 80)
-    |> Image.render(width, theme)
-  end
-
-  defp display_block_lines({:markdown, markdown, opts}, width, theme, truncate?) do
-    truncation = line_window(markdown, truncate?, opts)
-
-    lines =
-      truncation.lines
-      |> Enum.join("\n")
-      |> Markdown.render(max(width - 2, 1), theme)
-      |> Enum.map(&[Widget.spaces(2), &1])
-      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
-      |> maybe_append_read_limit_footer(truncation, opts, theme)
-
-    Lines.join(lines, [""])
-  end
-
-  defp display_block_lines({:lines, lines, _opts}, _width, _theme, _truncate?),
-    do: Lines.join(lines || [], [""])
-
-  defp display_block_lines({:render, renderer, _opts}, width, theme, _truncate?)
-       when is_function(renderer, 2) do
-    renderer.(width, theme) || []
-  end
-
-  defp text_block_lines(text, width, theme, kind, truncate?, opts) do
-    truncation = line_window(text, truncate?, opts)
-
-    lines =
-      truncation.lines
-      |> Enum.flat_map(&render_text_line(&1, kind, width, theme))
-      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
-
-    Lines.join(lines, [""])
-  end
-
-  defp source_block_lines(source, width, theme, truncate?, opts) do
-    truncation = line_window(source, truncate?, opts)
-    language = Keyword.get(opts, :language)
-
-    lines =
-      truncation.lines
-      |> source_lines(language, width, theme)
-      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
-      |> maybe_append_read_limit_footer(truncation, opts, theme)
-
-    Lines.join(lines, [""])
-  end
-
-  defp diff_block_lines(diff, width, theme, truncate?, opts) do
-    truncation = line_window(diff, truncate?, opts)
-    language = Keyword.get(opts, :language)
-
-    lines =
-      truncation.lines
-      |> DiffBlock.diff_lines(language, width, theme)
-      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
-
-    Lines.join(lines, [""])
-  end
-
-  defp line_window(text, truncate?, opts) do
-    text
-    |> format_value()
-    |> String.split("\n")
-    |> TextTruncation.lines(
-      enabled?: truncate?,
-      limit: 8,
-      mode: Keyword.get(opts, :truncation, :head)
-    )
-  end
-
-  defp render_text_line(line, :inspect, width, theme), do: inspect_line(line, width, theme)
-
-  defp render_text_line(line, :error, width, theme),
-    do: plain_line(line, width, theme, fg: :error)
-
-  defp render_text_line(line, _kind, width, theme), do: plain_line(line, width, theme)
-
-  defp maybe_append_hint(lines, %{truncated?: false}, _theme, _width, _mode), do: lines
-
-  defp maybe_append_hint(lines, %{omitted: omitted}, theme, width, :tail) do
-    [TextTruncation.hint(omitted, theme, width), ""] |> Lines.join(lines)
-  end
-
-  defp maybe_append_hint(lines, %{omitted: omitted}, theme, width, _mode) do
-    lines |> Lines.join([""]) |> Lines.join([TextTruncation.hint(omitted, theme, width)])
-  end
-
-  defp maybe_append_read_limit_footer(lines, %{truncated?: true}, _opts, _theme), do: lines
-
-  defp maybe_append_read_limit_footer(lines, _truncation, opts, theme) do
-    if Keyword.get(opts, :read_limit_truncated?, false) do
-      lines
-      |> Lines.join([""])
-      |> Lines.join([
-        [Widget.spaces(2), Theme.fg(theme, :muted, "… file truncated by read limit")]
-      ])
-    else
-      lines
-    end
-  end
-
-  defp trim_trailing_blank(lines),
-    do: Enum.reverse(lines) |> Enum.drop_while(&(&1 == "")) |> Enum.reverse()
 
   defp raw_output(tool), do: Map.get(tool, :output) || Map.get(tool, :result)
 
