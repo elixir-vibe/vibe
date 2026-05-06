@@ -32,4 +32,4 @@
 [48;2;27;29;34m  [38;2;220;224;230mCancelled.[0m[48;2;27;29;34m[0m[48;2;27;29;34m                                                                                                            [0m
 [48;2;27;29;34m  [38;2;220;224;230m[0m[48;2;27;29;34m[0m[48;2;27;29;34m                                                                                                                      [0m
 
-[38;2;100;104;112m~/Development/vibe • story-stress                               openai_codex:gpt-5.5 • medium • idle • local • 15500 tok[0m[0m
+[38;2;100;104;112m~/Development/vibe • story-stress                               openai_codex:gpt-5.5 • [38;2;178;148;187mmedium[0m[0m • idle • local • 15500 tok[0m[0m

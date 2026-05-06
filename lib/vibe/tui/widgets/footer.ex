@@ -16,10 +16,12 @@ defmodule Vibe.TUI.Widgets.Footer do
       short_session_id(Map.get(props, :session_id), width)
     ]
 
+    effort = Map.get(props, :effort)
+
     right = [
       to_string(Map.get(props, :model)),
       separator,
-      effort_label(Map.get(props, :effort)),
+      effort_label(effort, theme),
       separator,
       to_string(Map.get(props, :status)),
       separator,
@@ -42,11 +44,20 @@ defmodule Vibe.TUI.Widgets.Footer do
     |> Widget.fit_line(max(div(width, 4), 12))
   end
 
-  defp effort_label(effort) when effort in [:off, :minimal, :low, :medium, :high, :xhigh],
-    do: Atom.to_string(effort)
+  defp effort_label(effort, theme)
+       when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
+    Theme.fg(theme, effort_color(effort), Atom.to_string(effort))
+  end
 
-  defp effort_label(nil), do: "off"
-  defp effort_label(effort), do: to_string(effort)
+  defp effort_label(nil, theme), do: Theme.fg(theme, :dim, "off")
+  defp effort_label(effort, theme), do: Theme.fg(theme, :muted, to_string(effort))
+
+  defp effort_color(:off), do: :dim
+  defp effort_color(:minimal), do: :muted
+  defp effort_color(:low), do: :success
+  defp effort_color(:medium), do: :accent
+  defp effort_color(:high), do: :warning
+  defp effort_color(:xhigh), do: :error
 
   defp sessions_label(nil), do: "local"
   defp sessions_label(1), do: "1 active"

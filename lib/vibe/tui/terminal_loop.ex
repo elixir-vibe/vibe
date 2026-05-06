@@ -9,7 +9,7 @@ defmodule Vibe.TUI.TerminalLoop do
   use GenServer
 
   alias Vibe.TUI
-  alias Vibe.TUI.{App, KeyDecoder, Lines, Renderer, Theme, Widget, Width}
+  alias Vibe.TUI.{App, Keymap, Lines, Renderer, Theme, Widget, Width}
   alias Vibe.UI.ViewModel
 
   require Vibe.Debug
@@ -82,7 +82,7 @@ defmodule Vibe.TUI.TerminalLoop do
       end
 
     data
-    |> KeyDecoder.decode()
+    |> Keymap.from_bytes()
     |> Enum.each(&App.key(state.app, &1))
 
     state = paint(state, {:input, byte_size(data)})
@@ -96,7 +96,7 @@ defmodule Vibe.TUI.TerminalLoop do
       end
 
     event
-    |> KeyDecoder.decode_event()
+    |> Keymap.from_event()
     |> Enum.each(&App.key(state.app, &1))
 
     state = paint(state, {:input_key, event.key})
