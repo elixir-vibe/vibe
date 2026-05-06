@@ -202,11 +202,7 @@ defmodule Exy.Gateway.Telegram.Update do
     end
   end
 
-  defp thread_id(message, :dm) do
-    message
-    |> field(:direct_messages_topic)
-    |> optional_field(:topic_id)
-  end
+  defp thread_id(message, :dm), do: optional_field(message, :message_thread_id)
 
   defp thread_id(_message, _chat_type), do: nil
 

@@ -36,3 +36,16 @@ Useful environment variables:
 - `TELEGRAM_POLL_RECEIVE_TIMEOUT_MS` — HTTP receive timeout for long-poll requests, default `10000`.
 
 The polling transport clears stale webhooks before long polling so a bot can be moved between webhook and polling mode safely.
+
+## Telegram topics
+
+Exy preserves Telegram `message_thread_id` as `Exy.Gateway.Source.thread_id` for both forum-enabled groups and private chats with bot topics enabled. This matches Telegram Bot API 9.4+ private-chat topics and keeps independent Exy sessions per visible bot topic:
+
+```text
+gateway:telegram:dm:<chat-id>:<message-thread-id>
+gateway:telegram:group:<chat-id>:<message-thread-id>[:<user-id>]
+```
+
+For forum groups, Telegram omits `message_thread_id` for the General topic. Exy represents that internal source thread as `"1"`, but outbound adapters omit `message_thread_id: 1` because Telegram expects General-topic sends without the wire thread id.
+
+Hermes currently supports Telegram topics in the same broad shape: it preserves `message.message_thread_id`, maps forum General to thread id `"1"`, sends/edit/photos/actions with `message_thread_id`, and has configured DM topic setup/mapping plus configured group topic metadata. Hermes topic-profile routing is still under active work in upstream PRs/issues, so Exy should treat per-topic profile/skill routing as a follow-up rather than relying on it as a settled upstream contract.

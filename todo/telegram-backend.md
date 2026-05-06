@@ -169,6 +169,30 @@ Exy should implement both layers:
 
 Use BotFather privacy-mode docs in setup help; privacy mode changes what group messages the bot receives at all.
 
+## Telegram topic support
+
+Findings from `../dannote-bot`:
+
+- It treats `message.message_thread_id` as `threadId` for every incoming message, including private chats.
+- Conversations and pending requests are keyed by `(userId, threadId)` so Telegram bot topics become separate conversations.
+- All outbound message operations include `message_thread_id: threadId`.
+- For forum threads, after the first response it calls `editForumTopic` to set a generated title and emoji icon.
+- It streams with `sendMessageDraft` using the same `message_thread_id`, then flushes final text with `sendMessage`.
+
+Hermes upstream topic support:
+
+- Preserves `message.message_thread_id` as `SessionSource.thread_id`.
+- Maps forum General-topic messages without `message_thread_id` to internal thread id `"1"`, but omits `message_thread_id` on outbound sends/typing for that General topic.
+- Supports configured `extra.dm_topics` for private-chat bot topics, including `createForumTopic`, caching/persisting created thread ids, seed messages, topic rename, and topic-name lookup.
+- Supports configured `extra.group_topics` metadata/skill binding by `chat_id + thread_id`.
+- Has open/draft upstream work for topic profile routing; do not assume that profile routing is settled.
+
+Exy status:
+
+- Preserve `message_thread_id` in private chats so Telegram bot topics map to distinct Exy sessions.
+- Keep General forum topic handling compatible with Hermes (`"1"` internally, no wire thread id outbound).
+- Follow-up: add optional configured topic metadata (`dm_topics`/`group_topics`) and maybe `editForumTopic` topic title updates.
+
 ## Native Telegram draft streaming
 
 Telegram Bot API 9.5+ includes `sendMessageDraft`, described by ExGram as: "Use this method to stream a partial message to a user while the message is being generated. Returns True on success."
