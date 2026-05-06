@@ -30,6 +30,51 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
   end
 
+  test "selector confirmation stays responsive with expanded tool output" do
+    session_id = "selector-expanded-#{System.unique_integer([:positive])}"
+    {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
+
+    {:ok, loop} =
+      TerminalLoop.start_link(output: false, width: 100, height: 24, session_server: session)
+
+    content = Enum.map_join(1..800, "\n", &"def item_#{&1}, do: #{&1}")
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        session,
+        Vibe.UI.Event.new(
+          :tool_started,
+          session_id,
+          Vibe.UI.ToolEvent.started(id: "read-1", name: :read, args: %{path: "large.ex"})
+        )
+      )
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        session,
+        Vibe.UI.Event.new(
+          :tool_finished,
+          session_id,
+          Vibe.UI.ToolEvent.finished(
+            id: "read-1",
+            name: :read,
+            args: %{path: "large.ex"},
+            output: {:ok, %{path: "large.ex", content: content, language: "elixir"}, []}
+          )
+        )
+      )
+
+    Process.sleep(50)
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :o, mods: [:ctrl]})
+    _expanded = TerminalLoop.render(loop)
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :l, mods: [:ctrl]})
+
+    {elapsed_us, :ok} =
+      :timer.tc(fn -> TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter}) end)
+
+    assert elapsed_us < 50_000
+  end
+
   test "ctrl-w deletes the word before the cursor" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 20)
 

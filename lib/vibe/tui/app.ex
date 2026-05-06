@@ -344,18 +344,23 @@ defmodule Vibe.TUI.App do
   defp handle_selector_key(:submit, state) do
     selector = state.ui_snapshot.selector
     item = selector |> Map.get(:items, []) |> Enum.at(Map.get(selector, :selected, 0))
+    data = %{selector: Map.get(selector, :kind), item: item}
 
-    Session.dispatch(
-      state.ui,
-      Command.new(:selector_confirmed, %{selector: Map.get(selector, :kind), item: item})
+    dispatch_async(state.ui, Command.new(:selector_confirmed, data))
+
+    apply_local_event(
+      state,
+      Vibe.UI.Event.new(:selector_confirmed, state.ui_snapshot.session_id, data)
     )
-
-    state
   end
 
   defp handle_selector_key(:cancel, state) do
-    Session.dispatch(state.ui, Command.new(:selector_closed))
-    state
+    dispatch_async(state.ui, Command.new(:selector_closed))
+
+    apply_local_event(
+      state,
+      Vibe.UI.Event.new(:selector_closed, state.ui_snapshot.session_id, %{})
+    )
   end
 
   defp handle_selector_key(_key, state), do: state
@@ -447,6 +452,10 @@ defmodule Vibe.TUI.App do
       | ui_snapshot: Reducer.apply_event(state.ui_snapshot, event),
         events: [event | state.events]
     }
+  end
+
+  defp apply_local_event(state, event) do
+    %{state | ui_snapshot: Reducer.apply_event(state.ui_snapshot, event)}
   end
 
   defp handle_editor_command({:submit, text}, state) do
