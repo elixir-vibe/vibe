@@ -25,6 +25,21 @@ defmodule Exy.Gateway.Telegram.UpdateTest do
     refute trigger.mentions_bot?
   end
 
+  test "ignores private chat message_thread_id for stable DM sessions" do
+    update = %{
+      message: %{
+        message_id: 20,
+        message_thread_id: 20,
+        text: "hello",
+        chat: %{id: 1, type: "private"},
+        from: %{id: 2}
+      }
+    }
+
+    assert {:ok, %{message: message}} = Update.normalize(update)
+    assert message.source.thread_id == nil
+  end
+
   test "detects group mentions from Telegram entities" do
     update = %{
       message: %{
