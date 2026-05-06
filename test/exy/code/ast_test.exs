@@ -24,6 +24,17 @@ defmodule Exy.Code.ASTTest do
     assert Enum.any?(matches, &(&1.pattern == :ast_calls))
   end
 
+  test "public search_many helper returns matches" do
+    matches =
+      Exy.Code.AST.search_many(
+        "lib/exy/code/ast.ex",
+        %{ast_calls: "ExAST.search_many(_, _, _)"},
+        allow_broad: true
+      )
+
+    assert Enum.any?(matches, &(&1.pattern == :ast_calls))
+  end
+
   test "diff reports semantic edits" do
     assert {:ok, diff} =
              Exy.Code.AST.run(%{

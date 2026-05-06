@@ -8,7 +8,7 @@ defmodule Exy.Code.AST do
 
   alias Exy.Code.AST.Result
 
-  @type action :: :search | :replace | :diff
+  @type action :: :search | :search_many | :replace | :diff
 
   @spec run(map() | keyword()) :: {:ok, term()} | {:error, String.t()}
   def run(params) when is_map(params) or is_list(params) do
@@ -40,6 +40,18 @@ defmodule Exy.Code.AST do
     end
   end
 
+  @doc """
+  Searches for multiple named ExAST patterns in one traversal.
+
+  This is a compact public helper for checks/analyzers that need to scan the
+  same files for several structural patterns without repeatedly reparsing and
+  walking the tree.
+  """
+  @spec search_many(Path.t() | [Path.t()], map() | keyword(), keyword()) :: [map()]
+  def search_many(path, patterns, opts \\ []) do
+    ExAST.search_many(path, patterns, opts)
+  end
+
   defp search_many(params) do
     with {:ok, path} <- fetch(params, :path),
          {:ok, patterns} <- fetch(params, :patterns) do
@@ -50,7 +62,7 @@ defmodule Exy.Code.AST do
          action: :search_many,
          path: path,
          pattern: patterns,
-         result: ExAST.search_many(path, patterns, opts)
+         result: search_many(path, patterns, opts)
        }}
     end
   end

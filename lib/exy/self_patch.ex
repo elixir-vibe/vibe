@@ -71,7 +71,8 @@ defmodule Exy.SelfPatch do
     kind, reason -> {:error, {kind, reason}}
   end
 
-  defp full_checks, do: [:format, :compile, :test, :credo, :ex_slop, :ex_dna, :reach]
+  defp full_checks,
+    do: [:format, :compile, :test, :ast_patterns, :credo, :ex_slop, :ex_dna, :reach]
 
   defp compile_project(opts) do
     Mix.Task.clear()

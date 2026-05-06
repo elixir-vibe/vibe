@@ -99,7 +99,7 @@ defmodule Exy.MixProject do
       {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:reach, "~> 1.8", runtime: false, override: true},
+      {:reach, "~> 2.2", runtime: false, override: true},
       {:pythonx, "~> 0.4.9", optional: true},
       {:quickbeam, "~> 0.10.4", optional: true},
       {:jido, "~> 2.2"},

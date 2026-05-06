@@ -42,6 +42,7 @@ defmodule Exy.Code.Checks do
   def run(:compile, opts), do: mix_check(:compile, "compile", ["--warnings-as-errors"], opts)
   def run(:test, opts), do: mix_check(:test, "test", Keyword.get(opts, :test_args, []), opts)
   def run(:credo, opts), do: credo_check(opts)
+  def run(:ast_patterns, opts), do: ast_patterns_check(opts)
   def run(:ex_slop, opts), do: ex_slop_check(opts)
 
   def run(:dialyzer, opts),
@@ -91,6 +92,25 @@ defmodule Exy.Code.Checks do
     end
   end
 
+  defp ast_patterns_check(opts) do
+    paths = Keyword.get(opts, :ast_paths, ["lib/**/*.ex", "test/**/*.exs"])
+
+    patterns =
+      Keyword.get(opts, :ast_patterns, %{
+        dbg: "dbg(_)",
+        pry: "IEx.pry()"
+      })
+
+    matches =
+      Exy.Code.AST.search_many(paths, patterns,
+        allow_broad: true,
+        limit: Keyword.get(opts, :ast_pattern_limit, 50)
+      )
+
+    status = if matches == [], do: :ok, else: :error
+    %{name: :ast_patterns, status: status, details: %{matches: matches}}
+  end
+
   defp reach_check(opts) do
     paths = Keyword.get(opts, :paths, ["lib/**/*.ex"])
     files = paths |> Enum.flat_map(&Path.wildcard/1) |> Enum.sort()
@@ -107,7 +127,12 @@ defmodule Exy.Code.Checks do
       end)
 
     status = if errors == [], do: :ok, else: :error
-    %{name: :reach, status: status, details: %{files: length(files), errors: errors}}
+
+    details =
+      %{files: length(files), errors: errors}
+      |> maybe_put_reach_project_details(files, opts, errors)
+
+    %{name: :reach, status: status, details: details}
   end
 
   defp run_credo(opts) do
@@ -122,6 +147,63 @@ defmodule Exy.Code.Checks do
       details: %{issues: Enum.map(issues, &issue_to_map/1), output: output}
     }
   end
+
+  defp maybe_put_reach_project_details(details, _files, _opts, [_error | _rest]), do: details
+
+  defp maybe_put_reach_project_details(details, files, opts, []) do
+    if Keyword.get(opts, :reach_project?, true) do
+      Map.put(details, :project, reach_project_details(files, opts))
+    else
+      details
+    end
+  end
+
+  defp reach_project_details(files, opts) do
+    project = eval_optional("Reach.Project.from_sources(files)", files: files)
+    otp = eval_optional("Reach.OTP.Analysis.run(project, nil)", project: project)
+    concurrency = eval_optional("Reach.OTP.Concurrency.analyze(project)", project: project)
+    smells = eval_optional("Reach.Check.Smells.analyze(project)", project: project)
+
+    %{
+      modules: map_size(project.modules),
+      nodes: map_size(project.nodes),
+      otp: reach_otp_summary(otp),
+      concurrency: reach_concurrency_summary(concurrency),
+      smells: Enum.take(List.wrap(smells), Keyword.get(opts, :reach_smell_limit, 10))
+    }
+  rescue
+    exception -> %{error: Exception.format(:error, exception, __STACKTRACE__)}
+  end
+
+  defp reach_otp_summary(otp) do
+    %{
+      behaviours: count_detail(Map.get(otp, :behaviours, [])),
+      state_machines: count_detail(Map.get(otp, :state_machines, [])),
+      missing_handlers: count_detail(Map.get(otp, :missing_handlers, [])),
+      hidden_coupling: count_detail(Map.get(otp, :hidden_coupling, [])),
+      dead_replies: count_detail(Map.get(otp, :dead_replies, [])),
+      cross_process: count_detail(Map.get(otp, :cross_process, []))
+    }
+  end
+
+  defp reach_concurrency_summary(concurrency) do
+    tasks = Map.get(concurrency, :tasks, %{})
+    monitors = Map.get(concurrency, :monitors, %{})
+
+    %{
+      tasks: count_detail(Map.get(tasks, :async, [])),
+      unpaired_tasks: Map.get(tasks, :unpaired, 0),
+      monitors: count_detail(Map.get(monitors, :monitors, [])),
+      spawns: count_detail(Map.get(concurrency, :spawns, [])),
+      supervisors: count_detail(Map.get(concurrency, :supervisors, [])),
+      edges: Map.get(concurrency, :concurrency_edges, %{})
+    }
+  end
+
+  defp count_detail(value) when is_list(value), do: length(value)
+  defp count_detail(value) when is_map(value), do: map_size(value)
+  defp count_detail(nil), do: 0
+  defp count_detail(_value), do: 1
 
   defp graph_node_count(graph), do: graph |> reach_nodes() |> length()
 
@@ -215,6 +297,7 @@ defmodule Exy.Code.Checks do
     %{name: name, details: compact_details(details)}
   end
 
+  defp detail_count(%{matches: matches}) when is_list(matches), do: length(matches)
   defp detail_count(%{issues: issues}) when is_list(issues), do: length(issues)
   defp detail_count(%{clones: clones}) when is_list(clones), do: length(clones)
   defp detail_count(%{stale: stale}) when is_list(stale), do: length(stale)
@@ -224,6 +307,9 @@ defmodule Exy.Code.Checks do
   defp compact_details(%{output: output} = details) when is_binary(output) do
     %{details | output: String.slice(output, 0, @max_failure_output_chars)}
   end
+
+  defp compact_details(%{matches: matches} = details) when is_list(matches),
+    do: %{details | matches: Enum.take(matches, @max_issue_details)}
 
   defp compact_details(%{issues: issues} = details) when is_list(issues),
     do: %{details | issues: Enum.take(issues, @max_issue_details)}
