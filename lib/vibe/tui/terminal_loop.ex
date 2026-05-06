@@ -350,7 +350,7 @@ defmodule Vibe.TUI.TerminalLoop do
       value: snapshot.editor.text,
       cursor: snapshot.editor.cursor,
       min_rows: min(max(snapshot.height - 8, 3), 8),
-      placeholder: "Ask Vibe to change this project..."
+      placeholder: "Ask Vibe anything..."
     )
     |> Widget.render(snapshot.width, theme)
   end

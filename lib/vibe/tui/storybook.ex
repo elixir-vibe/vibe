@@ -535,7 +535,7 @@ end|,
       value: "Use eval to inspect runtime info\nThen summarize the important findings.",
       cursor: 24,
       min_rows: 4,
-      placeholder: "Ask Vibe to change this project..."
+      placeholder: "Ask Vibe anything..."
     )
   end
 

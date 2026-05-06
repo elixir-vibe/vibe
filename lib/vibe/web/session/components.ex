@@ -166,7 +166,7 @@ defmodule Vibe.Web.Session.Components do
     ~H"""
     <form id="session-composer" phx-submit="submit" phx-hook="SubmitShortcut" class="border-t border-vibe-border/50 bg-vibe-surface/90 p-3 sm:p-4">
       <label class="sr-only" for="session-prompt">Message Vibe</label>
-      <textarea id="session-prompt" name="prompt" value={@prompt} rows="2" autocomplete="off" placeholder="Ask Vibe. Use /help, /model, /sessions, or plain language…" class="min-h-16 w-full resize-y rounded-lg border border-vibe-border/50 bg-vibe-bg/85 px-3 py-2 text-sm leading-6 text-vibe-fg-strong ring-vibe-accent/20 placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-4 sm:min-h-20"></textarea>
+      <textarea id="session-prompt" name="prompt" value={@prompt} rows="2" autocomplete="off" placeholder="Ask Vibe anything. Use /help, /model, /sessions, or plain language…" class="min-h-16 w-full resize-y rounded-lg border border-vibe-border/50 bg-vibe-bg/85 px-3 py-2 text-sm leading-6 text-vibe-fg-strong ring-vibe-accent/20 placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-4 sm:min-h-20"></textarea>
       <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs leading-5 text-vibe-dim">{if Status.working?(@state), do: Status.activity_label(@state) || "Working…", else: "Ready · Cmd+Enter to send"}</p>
         <div class="flex justify-end gap-2">
