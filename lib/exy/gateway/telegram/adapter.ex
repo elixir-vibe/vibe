@@ -9,19 +9,14 @@ defmodule Exy.Gateway.Telegram.Adapter do
 
   @behaviour Exy.Gateway.Adapter
 
-  alias Exy.Gateway.Telegram.Config
+  alias Exy.Gateway.Telegram.{Config, Text}
 
   @impl Exy.Gateway.Adapter
   def send(chat_id, text, opts) do
     config = Keyword.fetch!(opts, :config)
 
-    telegram_opts =
-      opts
-      |> common_opts(config)
-      |> Keyword.merge(parse_mode: "MarkdownV2")
-
-    case ExGram.send_message(chat_id, text, telegram_opts) do
-      {:ok, message} -> {:ok, message_id(message)}
+    case send_html_chunks(chat_id, text, common_opts(opts, config)) do
+      {:ok, message_id} -> {:ok, message_id}
       {:error, reason} -> send_plain(chat_id, text, opts, reason)
     end
   end
@@ -33,11 +28,21 @@ defmodule Exy.Gateway.Telegram.Adapter do
     telegram_opts =
       opts
       |> common_opts(config)
-      |> Keyword.merge(chat_id: chat_id, message_id: message_id, parse_mode: "MarkdownV2")
+      |> Keyword.merge(chat_id: chat_id, message_id: message_id, parse_mode: "HTML")
+
+    text = text |> Text.limit(4_096) |> Text.to_html()
 
     case ExGram.edit_message_text(text, telegram_opts) do
-      {:ok, message} -> {:ok, message_id(message) || to_string(message_id)}
-      {:error, reason} -> edit_plain(chat_id, message_id, text, opts, reason)
+      {:ok, message} ->
+        {:ok, message_id(message) || to_string(message_id)}
+
+      {:error, %ExGram.Error{message: message}} when is_binary(message) ->
+        if String.contains?(String.downcase(message), "message is not modified"),
+          do: {:ok, to_string(message_id)},
+          else: edit_plain(chat_id, message_id, text, opts, message)
+
+      {:error, reason} ->
+        edit_plain(chat_id, message_id, text, opts, reason)
     end
   end
 
@@ -60,6 +65,21 @@ defmodule Exy.Gateway.Telegram.Adapter do
       {:ok, true} -> :ok
       {:ok, _other} -> :ok
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp send_html_chunks(chat_id, text, opts) do
+    text
+    |> Text.html_chunks()
+    |> Enum.reduce_while(nil, fn chunk, first_message_id ->
+      case ExGram.send_message(chat_id, chunk, Keyword.put(opts, :parse_mode, "HTML")) do
+        {:ok, message} -> {:cont, first_message_id || message_id(message)}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:error, reason} -> {:error, reason}
+      message_id -> {:ok, message_id}
     end
   end
 
