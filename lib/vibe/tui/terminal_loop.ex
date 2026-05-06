@@ -59,6 +59,7 @@ defmodule Vibe.TUI.TerminalLoop do
       event_target: Keyword.get(opts, :event_target),
       loader_phase: 0,
       loader_timer: nil,
+      body_cache: nil,
       theme: Keyword.get_lazy(opts, :theme, &Theme.default/0),
       trace:
         Vibe.Debug.run nil do
@@ -115,16 +116,18 @@ defmodule Vibe.TUI.TerminalLoop do
   end
 
   def handle_call(:render, _from, state) do
-    {:reply, render_lines(state), state}
+    {lines, state} = render_lines(state)
+    {:reply, lines, state}
   end
 
   def handle_call(:render_full, _from, state) do
-    {:reply, render_full_lines(state), state}
+    {lines, state} = render_full_lines(state)
+    {:reply, lines, state}
   end
 
   def handle_call(:render_snapshot, _from, state) do
     snapshot = App.snapshot(state.app)
-    lines = render_full_lines(state, snapshot)
+    {lines, state} = render_full_lines(state, snapshot)
     cursor = calculate_full_cursor_position(state, snapshot, length(lines))
     {:reply, {lines, cursor}, state}
   end
@@ -193,7 +196,7 @@ defmodule Vibe.TUI.TerminalLoop do
     end
 
     defp paint(state, reason) do
-      lines = render_lines(state)
+      {lines, state} = render_lines(state)
       IO.write(state.output, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
       trace_frame(state, lines, reason)
     end
@@ -203,7 +206,8 @@ defmodule Vibe.TUI.TerminalLoop do
     end
 
     defp trace_frame(state, reason) do
-      trace_frame(state, render_lines(state), reason)
+      {lines, state} = render_lines(state)
+      trace_frame(state, lines, reason)
     end
 
     defp trace_frame(state, lines, reason) do
@@ -219,7 +223,7 @@ defmodule Vibe.TUI.TerminalLoop do
     defp paint(%{output: false} = state, _reason), do: state
 
     defp paint(state, _reason) do
-      lines = render_lines(state)
+      {lines, state} = render_lines(state)
       IO.write(state.output, [IO.ANSI.home(), IO.ANSI.clear(), Enum.intersperse(lines, "\n")])
       state
     end
@@ -232,11 +236,14 @@ defmodule Vibe.TUI.TerminalLoop do
   defp render_lines(state) do
     snapshot = App.snapshot(state.app)
     editor = render_editor(snapshot, state.theme)
+    {body, state} = render_body(state, snapshot)
 
-    state
-    |> render_body(snapshot)
-    |> fit_body(snapshot.height, editor)
-    |> Lines.join(editor)
+    lines =
+      body
+      |> fit_body(snapshot.height, editor)
+      |> Lines.join(editor)
+
+    {lines, state}
   end
 
   defp render_full_lines(state) do
@@ -246,18 +253,34 @@ defmodule Vibe.TUI.TerminalLoop do
 
   defp render_full_lines(state, snapshot) do
     editor = render_editor(snapshot, state.theme)
-
-    state
-    |> render_body(snapshot)
-    |> Lines.join(editor)
+    {body, state} = render_body(state, snapshot)
+    {Lines.join(body, editor), state}
   end
 
   defp render_body(state, snapshot) do
+    key = body_cache_key(state, snapshot)
+
+    case state.body_cache do
+      {^key, lines} ->
+        {lines, state}
+
+      _cache_miss ->
+        lines = render_body_uncached(state, snapshot)
+        {lines, %{state | body_cache: {key, lines}}}
+    end
+  end
+
+  defp render_body_uncached(state, snapshot) do
     snapshot.ui
     |> ViewModel.from_state()
     |> Map.put(:picker, picker(snapshot))
     |> apply_loader_phase(state.loader_phase)
     |> Renderer.render(snapshot.width, state.theme)
+  end
+
+  defp body_cache_key(state, snapshot) do
+    {length(snapshot.ui.events), snapshot.ui.status, snapshot.width, state.loader_phase,
+     state.theme.name}
   end
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
@@ -295,8 +318,8 @@ defmodule Vibe.TUI.TerminalLoop do
 
   defp calculate_full_cursor_position(state) do
     snapshot = App.snapshot(state.app)
-    editor_start_row = state |> render_body(snapshot) |> length()
-    editor_cursor_position(snapshot, editor_start_row)
+    {body, _state} = render_body(state, snapshot)
+    editor_cursor_position(snapshot, length(body))
   end
 
   defp calculate_full_cursor_position(state, snapshot, full_line_count) do

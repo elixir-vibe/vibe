@@ -55,10 +55,7 @@ defmodule Vibe.TUI.Widgets.Tools.Read do
         |> maybe_append_render_hint(truncation, theme, width)
       else
         truncation.lines
-        |> Enum.flat_map(fn line ->
-          line = display_line(line, width)
-          ToolWidget.output_line(highlight(line, Map.get(result, :language), theme), width)
-        end)
+        |> highlighted_source_lines(Map.get(result, :language), width, theme)
         |> maybe_append_render_hint(truncation, theme, width)
       end
 
@@ -114,13 +111,27 @@ defmodule Vibe.TUI.Widgets.Tools.Read do
     if byte_size(shortened) < byte_size(line), do: shortened <> "…", else: line
   end
 
-  defp highlight(line, language, theme) when language in [nil, ""],
-    do: Theme.fg(theme, :tool_output, line)
+  defp highlighted_source_lines(lines, language, width, theme) when language in [nil, ""] do
+    Enum.flat_map(lines, fn line ->
+      line = display_line(line, width)
+      ToolWidget.output_line(Theme.fg(theme, :tool_output, line), width)
+    end)
+  end
 
-  defp highlight(line, language, theme) do
-    {:ok, highlighted} = Lumis.highlight(line, formatter: {:terminal, language: language})
-    highlighted
+  defp highlighted_source_lines(lines, language, width, theme) do
+    source = Enum.map_join(lines, "\n", &display_line(&1, width))
+
+    source
+    |> highlight_source(language, theme)
+    |> IO.iodata_to_binary()
+    |> String.split("\n")
+    |> Enum.flat_map(&ToolWidget.output_line(&1, width))
   rescue
-    _error -> Theme.fg(theme, :tool_output, line)
+    _error -> highlighted_source_lines(lines, nil, width, theme)
+  end
+
+  defp highlight_source(source, language, _theme) do
+    {:ok, highlighted} = Lumis.highlight(source, formatter: {:terminal, language: language})
+    highlighted
   end
 end
