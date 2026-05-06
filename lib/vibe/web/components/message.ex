@@ -9,6 +9,8 @@ defmodule Vibe.Web.Components.Message do
 
   import Vibe.Web.Components.Tool, only: [tool_card: 1]
 
+  alias Vibe.UI.Error
+
   attr(:message, :map, required: true)
 
   def message_card(%{message: %{role: role}} = assigns) when role in [:tool, "tool"] do
@@ -70,6 +72,6 @@ defmodule Vibe.Web.Components.Message do
   defp message_text(%{result: %{output: output}}) when is_binary(output), do: output
   defp message_text(%{result: %{"output" => output}}) when is_binary(output), do: output
   defp message_text(%{result: result}), do: inspect(result, pretty: true, limit: 40)
-  defp message_text(%{error: error}), do: error
+  defp message_text(%{error: error}), do: Error.text(error)
   defp message_text(message), do: inspect(message, pretty: true, limit: 40)
 end

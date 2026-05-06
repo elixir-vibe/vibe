@@ -280,8 +280,9 @@ defmodule Vibe.SessionProcessTest do
     state = Vibe.Session.state(server)
     assert [%{role: :user}, %{role: :assistant, error: error}] = state.messages
     assert state.notifications == []
-    assert error =~ "ArgumentError"
-    assert error =~ "boom"
+    assert error.message == "ArgumentError: boom"
+    assert error.detail =~ "ArgumentError"
+    assert error.detail =~ "boom"
   end
 
   test "non-streaming ask functions still replace loader with final response" do

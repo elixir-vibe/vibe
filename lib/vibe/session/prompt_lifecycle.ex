@@ -1,6 +1,6 @@
 defmodule Vibe.Session.PromptLifecycle do
   @moduledoc "Prompt submission, cancellation, memory injection, and result recording."
-  alias Vibe.Model.{Content, Usage}
+  alias Vibe.Model.{Content, Error, Usage}
   alias Vibe.UI.{Event, PromptRunner}
 
   require Vibe.Debug
@@ -64,18 +64,22 @@ defmodule Vibe.Session.PromptLifecycle do
   end
 
   def record_result(state, {:error, reason}, emit) do
-    reason = inspect(reason)
+    error = Error.normalize(reason)
     state = %{state | last_user_prompt: nil}
 
     state =
       emit.(
         state,
-        Event.new(:assistant_aborted, state.state.session_id, %{reason: reason, notify?: false})
+        Event.new(:assistant_aborted, state.state.session_id, %{
+          reason: error.message,
+          error: error,
+          notify?: false
+        })
       )
 
     emit.(
       state,
-      Event.new(:assistant_message_added, state.state.session_id, %{error: reason})
+      Event.new(:assistant_message_added, state.state.session_id, %{error: error})
     )
   end
 

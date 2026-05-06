@@ -22,4 +22,15 @@ defmodule Vibe.Session.PreviewTest do
              error: "{:failed, :error, %ReqLLM.Error.API.Request{reason: \"missing token\"}}"
            }) == "ERROR missing token"
   end
+
+  test "summarizes Codex auth failures with an actionable message" do
+    reason =
+      "Failed to build OpenAI Codex streaming request: Invalid parameter: OAuth mode requires :access_token or an oauth file. Looked for oauth.json and auth.json"
+
+    error = %Request{reason: reason, class: :api}
+
+    assert Vibe.Session.Preview.message(%{
+             error: {:failed, :error, {:http_streaming_failed, {:provider_build_failed, error}}}
+           }) == "ERROR Codex sign-in required."
+  end
 end

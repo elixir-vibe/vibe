@@ -27,9 +27,9 @@ defmodule Vibe.UI.PromptRunner do
   def safe_ask(ask_fun, text, opts) do
     ask_fun.(text, opts)
   rescue
-    exception -> {:error, Exception.format(:error, exception, __STACKTRACE__)}
+    exception -> {:error, {:exception, :error, exception, __STACKTRACE__}}
   catch
-    kind, reason -> {:error, Exception.format(kind, reason, __STACKTRACE__)}
+    kind, reason -> {:error, {:exception, kind, reason, __STACKTRACE__}}
   end
 
   @spec default_ask(String.t(), keyword()) :: {:ok, term()} | {:error, term()}

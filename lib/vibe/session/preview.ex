@@ -2,6 +2,7 @@ defmodule Vibe.Session.Preview do
   @moduledoc "Lightweight session preview extraction for dashboards."
 
   alias ReqLLM.Error.API.Request
+  alias Vibe.UI.Error
   @spec message(map() | nil) :: String.t()
   def message(nil), do: ""
 
@@ -27,7 +28,13 @@ defmodule Vibe.Session.Preview do
   defp preview_text(%{"content" => content}), do: content_text(content)
   defp preview_text(value), do: inspect(value, limit: 6, printable_limit: 180)
 
-  defp preview_error(%Request{reason: reason}), do: "ERROR #{reason}"
+  defp preview_error(%Error{} = error), do: "ERROR #{Error.message(error)}"
+  defp preview_error(%{message: message}) when is_binary(message), do: "ERROR #{message}"
+  defp preview_error(%{"message" => message}) when is_binary(message), do: "ERROR #{message}"
+
+  defp preview_error(%Request{} = reason),
+    do: "ERROR #{Vibe.Model.Error.normalize(reason).message}"
+
   defp preview_error({:provider_build_failed, reason}), do: preview_error(reason)
   defp preview_error({:http_streaming_failed, reason}), do: preview_error(reason)
   defp preview_error(reason) when is_binary(reason), do: preview_binary(reason)
@@ -35,7 +42,7 @@ defmodule Vibe.Session.Preview do
 
   defp preview_binary("{:failed" <> _rest = text) do
     case Regex.run(~r/reason: "([^"]+)"/, text) do
-      [_match, reason] -> "ERROR #{reason}"
+      [_match, reason] -> "ERROR #{Vibe.Model.Error.normalize(reason).message}"
       _no_reason -> "ERROR #{text}"
     end
   end

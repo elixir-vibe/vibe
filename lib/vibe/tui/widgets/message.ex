@@ -4,16 +4,17 @@ defmodule Vibe.TUI.Widgets.Message do
 
   alias Vibe.TUI.{Markdown, Theme, Widget}
   alias Vibe.TUI.Widgets.Loader
+  alias Vibe.UI.Error
 
   @impl true
   def render(%{props: %{role: :user, text: text} = props}, width, theme) do
     safe_render(width, theme, fn -> render_user(text, props, width, theme) end)
   end
 
-  def render(%{props: %{error: error}}, width, theme) when is_binary(error) do
+  def render(%{props: %{error: error}}, width, theme) when not is_nil(error) do
     safe_render(width, theme, fn ->
       error
-      |> to_string()
+      |> Error.text()
       |> Markdown.render(max(width - 4, 1), theme)
       |> prefix_first_line(Theme.fg(theme, :error, "ERROR "))
       |> render_block_lines(width, theme, :tool_error_bg, :error)
