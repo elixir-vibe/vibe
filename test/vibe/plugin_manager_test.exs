@@ -23,7 +23,6 @@ defmodule Vibe.PluginManagerTest do
     assert :ok = Vibe.UI.Bus.register(session_id, server)
 
     assert :ok = Vibe.Plugin.Manager.load(BackgroundPlugin, session_id: session_id)
-    Process.sleep(50)
 
     state = Vibe.Session.state(server)
     assert state.plugin_statuses == %{"worker" => "worker ready"}
@@ -141,7 +140,6 @@ defmodule Vibe.PluginManagerTest do
     assert :ok = Vibe.UI.Bus.register(session_id, server)
     assert :ok = Vibe.Plugin.Manager.load(EventPlugin, session_id: session_id)
     assert :ok = Vibe.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
-    Process.sleep(50)
 
     assert Vibe.Session.state(server).plugin_statuses["prompt"] == "prompt: hello"
     assert :ok = Vibe.Plugin.Manager.unload(EventPlugin)

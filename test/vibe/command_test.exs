@@ -29,7 +29,7 @@ defmodule Vibe.CommandTest do
 
   test "start exposes status, output, and cancel" do
     assert {:ok, job} = Command.start(["sh", "-c", "echo ready; sleep 5"])
-    Process.sleep(100)
+    assert_output(job, "ready")
 
     assert Command.output(job) =~ "ready"
     assert %Result{status: :running} = Command.status(job)
@@ -82,4 +82,17 @@ defmodule Vibe.CommandTest do
     assert result.format == :text
     assert result.value_type == Vibe.Command.Result
   end
+
+  defp assert_output(job, expected, attempts \\ 20)
+
+  defp assert_output(job, expected, attempts) when attempts > 0 do
+    if Command.output(job) =~ expected do
+      :ok
+    else
+      Process.sleep(5)
+      assert_output(job, expected, attempts - 1)
+    end
+  end
+
+  defp assert_output(job, expected, 0), do: assert(Command.output(job) =~ expected)
 end

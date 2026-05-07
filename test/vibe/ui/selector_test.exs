@@ -28,15 +28,20 @@ defmodule Vibe.UI.SelectorTest do
   test "sessions slash command opens rich session selector rows" do
     session_id = "selector-row-#{System.unique_integer([:positive])}"
 
+    parent = self()
+
     {:ok, server} =
       Vibe.Session.start_link(
         session_id: session_id,
         name: Vibe.Session.Listing.via(session_id),
-        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+        ask_fun: fn _text, _opts ->
+          send(parent, :session_selector_prompt_finished)
+          {:ok, "ok"}
+        end
       )
 
     :ok = Vibe.Session.dispatch(server, Command.new(:submit_prompt, %{text: "hello sessions"}))
-    Process.sleep(50)
+    assert_receive :session_selector_prompt_finished
 
     :ok =
       Vibe.Session.dispatch(
@@ -88,14 +93,19 @@ defmodule Vibe.UI.SelectorTest do
   end
 
   test "clear slash command asks before clearing visible messages" do
+    parent = self()
+
     {:ok, server} =
       Vibe.Session.start_link(
         session_id: "selector-clear-session",
-        ask_fun: fn _text, _opts -> {:ok, "ok"} end
+        ask_fun: fn _text, _opts ->
+          send(parent, :clear_prompt_finished)
+          {:ok, "ok"}
+        end
       )
 
     :ok = Vibe.Session.dispatch(server, Command.new(:submit_prompt, %{text: "hello"}))
-    Process.sleep(50)
+    assert_receive :clear_prompt_finished
     assert Vibe.Session.state(server).messages != []
 
     :ok =
