@@ -311,7 +311,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert count_occurrences(second, IO.ANSI.clear()) == 1
   end
 
-  test "runtime repaint does not clone UI into terminal scrollback" do
+  test "runtime repaint preserves native scrollback without cloning full frames" do
     session_id = "scrollback-repaint-#{System.unique_integer([:positive])}"
     {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
 
@@ -339,7 +339,15 @@ defmodule Vibe.TUI.TerminalLoopTest do
       end)
 
     {_screen, _painter} = paint_screen(loop, terminal, painter)
-    assert Ghostty.Terminal.scrollbar(terminal) == %{offset: 0, total: 10, len: 10}
+    assert %{total: total, len: 10} = Ghostty.Terminal.scrollbar(terminal)
+    assert total > 10
+
+    :ok = Ghostty.Terminal.scroll(terminal, -1_000)
+    {:ok, scrollback} = Ghostty.Terminal.snapshot(terminal, :plain)
+
+    assert scrollback =~ "message 1"
+    assert scrollback =~ "message 30"
+    assert count_occurrences(scrollback, "message 30") == 1
   end
 
   test "loader advances from background ticks without input" do

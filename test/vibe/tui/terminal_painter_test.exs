@@ -61,39 +61,37 @@ defmodule Vibe.TUI.TerminalPainterTest do
     assert painter.lines == ["", "", "", "one", "TWO"]
   end
 
-  test "appended content repaints viewport without native terminal scrolling" do
+  test "appended content scrolls native terminal history like Pi" do
     painter = TerminalPainter.new(20, 3)
     {_frame, painter} = TerminalPainter.render(painter, ["one", "two", "three"], {3, 6})
     {frame, painter} = TerminalPainter.render(painter, ["one", "two", "three", "four"], {4, 5})
     frame = IO.iodata_to_binary(frame)
 
-    assert frame =~ IO.ANSI.clear()
+    assert frame =~ "\r\n"
+    refute frame =~ IO.ANSI.clear()
     assert frame =~ "four"
     assert painter.viewport_top == 2
   end
 
-  test "width resize invalidates lines and clears scrollback on next render" do
+  test "width resize invalidates lines without clearing terminal scrollback" do
     painter = TerminalPainter.new(20, 5)
     {_frame, painter} = TerminalPainter.render(painter, ["hello"], {1, 6})
     painter = TerminalPainter.resize(painter, 30, 5)
 
     assert painter.lines == []
-    assert painter.clear_scrollback?
 
-    {frame, painter} = TerminalPainter.render(painter, ["hello reflowed"], {1, 15})
+    {frame, _painter} = TerminalPainter.render(painter, ["hello reflowed"], {1, 15})
     frame = IO.iodata_to_binary(frame)
 
-    assert frame =~ "\e[3J"
+    refute frame =~ "\e[3J"
     assert frame =~ "hello reflowed"
-    refute painter.clear_scrollback?
   end
 
-  test "height-only resize keeps previous lines and avoids scrollback clear" do
+  test "height-only resize keeps previous lines" do
     painter = TerminalPainter.new(20, 5)
     {_frame, painter} = TerminalPainter.render(painter, ["hello"], {1, 6})
     painter = TerminalPainter.resize(painter, 20, 8)
 
     assert painter.lines != []
-    refute painter.clear_scrollback?
   end
 end

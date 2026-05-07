@@ -14,8 +14,7 @@ defmodule Vibe.TUI.TerminalPainter do
             width: 80,
             height: 24,
             hardware_row: 1,
-            viewport_top: 1,
-            clear_scrollback?: false
+            viewport_top: 1
 
   @type t :: %__MODULE__{
           lines: [IO.chardata()],
@@ -23,8 +22,7 @@ defmodule Vibe.TUI.TerminalPainter do
           width: pos_integer(),
           height: pos_integer(),
           hardware_row: pos_integer(),
-          viewport_top: pos_integer(),
-          clear_scrollback?: boolean()
+          viewport_top: pos_integer()
         }
 
   @spec new(pos_integer(), pos_integer()) :: t()
@@ -43,8 +41,7 @@ defmodule Vibe.TUI.TerminalPainter do
         width: width,
         height: height,
         hardware_row: 1,
-        viewport_top: 1,
-        clear_scrollback?: true
+        viewport_top: 1
     }
   end
 
@@ -63,7 +60,6 @@ defmodule Vibe.TUI.TerminalPainter do
   defp render_native(lines, cursor, %{lines: []} = painter) do
     viewport_top = viewport_top(lines, painter.height)
     screen_cursor = screen_cursor(cursor, viewport_top)
-    visible_lines = viewport_lines(lines, viewport_top, painter.height)
 
     frame = [
       begin_synchronized_update(),
@@ -71,8 +67,7 @@ defmodule Vibe.TUI.TerminalPainter do
       disable_autowrap(),
       ANSI.clear(),
       ANSI.home(),
-      maybe_clear_scrollback(painter),
-      intersperse_lines(visible_lines),
+      intersperse_lines(full_render_lines(lines, viewport_top, painter)),
       end_synchronized_update(),
       ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
       enable_autowrap(),
@@ -91,14 +86,15 @@ defmodule Vibe.TUI.TerminalPainter do
         frame = [ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1))]
         {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
 
-      _range when desired_viewport_top != painter.viewport_top ->
-        render_native(lines, cursor, %{painter | lines: []})
+      {first, last} when desired_viewport_top != painter.viewport_top ->
+        if append_start?(painter.lines, first) do
+          patch_lines(lines, cursor, painter, first, last)
+        else
+          render_native(lines, cursor, full_redraw(painter))
+        end
 
       {first, _last} when first + 1 < painter.viewport_top ->
-        render_native(lines, cursor, %{painter | lines: []})
-
-      {_first, last} when last + 1 > painter.viewport_top + painter.height - 1 ->
-        render_native(lines, cursor, %{painter | lines: []})
+        render_native(lines, cursor, full_redraw(painter))
 
       {first, last} ->
         patch_lines(lines, cursor, painter, first, last)
@@ -142,14 +138,15 @@ defmodule Vibe.TUI.TerminalPainter do
     Vibe.TUI.Lines.join(replacement, List.duplicate("", count - length(replacement)))
   end
 
+  defp append_start?(old_lines, first_changed), do: first_changed == length(old_lines)
+
   defp put_render_state(painter, lines, cursor, viewport_top) do
     %{
       painter
       | lines: lines,
         cursor: cursor,
         hardware_row: elem(cursor, 0),
-        viewport_top: viewport_top,
-        clear_scrollback?: false
+        viewport_top: viewport_top
     }
   end
 
@@ -198,24 +195,33 @@ defmodule Vibe.TUI.TerminalPainter do
   defp pad_cursor({row, column}, padding), do: {row + padding, column}
   defp viewport_top(lines, height), do: max(length(lines) - height + 1, 1)
 
-  defp viewport_lines(lines, viewport_top, height),
-    do: Enum.slice(lines, (viewport_top - 1)..(viewport_top + height - 2)//1)
-
   defp screen_cursor({row, column}, viewport_top), do: {max(row - viewport_top + 1, 1), column}
   defp intersperse_lines(lines), do: Enum.intersperse(lines, "\r\n")
 
   defp move_to_row(painter, target_row) do
-    current_screen_row = painter.hardware_row - painter.viewport_top + 1
-    target_screen_row = target_row - painter.viewport_top + 1
-    {move_from_to(current_screen_row, target_screen_row), painter.viewport_top}
+    bottom = painter.viewport_top + painter.height - 1
+
+    if target_row > bottom do
+      current_screen_row =
+        (painter.hardware_row - painter.viewport_top + 1) |> max(1) |> min(painter.height)
+
+      move_to_bottom = painter.height - current_screen_row
+      scroll = target_row - bottom
+
+      {[move_from_to(1, move_to_bottom + 1), String.duplicate("\r\n", scroll)],
+       painter.viewport_top + scroll}
+    else
+      current_screen_row = painter.hardware_row - painter.viewport_top + 1
+      target_screen_row = target_row - painter.viewport_top + 1
+      {move_from_to(current_screen_row, target_screen_row), painter.viewport_top}
+    end
   end
+
+  defp full_redraw(painter), do: %{painter | lines: []}
 
   defp move_from_to(from, to) when to > from, do: ANSI.cursor_down(to - from)
   defp move_from_to(from, to) when to < from, do: ANSI.cursor_up(from - to)
   defp move_from_to(_from, _to), do: []
-
-  defp maybe_clear_scrollback(%{clear_scrollback?: true}), do: clear_scrollback()
-  defp maybe_clear_scrollback(_painter), do: []
 
   defp hide_cursor, do: "\e[?25l"
   defp show_cursor, do: "\e[?25h"
@@ -224,6 +230,8 @@ defmodule Vibe.TUI.TerminalPainter do
   defp begin_synchronized_update, do: "\e[?2026h"
   defp end_synchronized_update, do: "\e[?2026l"
 
-  # IO.ANSI does not expose ED 3. CSI 3 J is the terminal control for clearing scrollback.
-  defp clear_scrollback, do: "\e[3J"
+  defp full_render_lines(lines, _viewport_top, %{viewport_top: 1}), do: lines
+
+  defp full_render_lines(lines, viewport_top, painter),
+    do: Enum.slice(lines, (viewport_top - 1)..(viewport_top + painter.height - 2)//1)
 end

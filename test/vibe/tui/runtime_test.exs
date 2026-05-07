@@ -76,7 +76,6 @@ defmodule Vibe.TUI.RuntimeTest do
     assert resized.width == 60
     assert resized.height == 20
     assert resized.lines == []
-    assert resized.clear_scrollback?
 
     lines = TerminalLoop.render_full(loop)
     assert Enum.max(Enum.map(lines, &Vibe.TUI.Width.visible_length/1)) <= 60
