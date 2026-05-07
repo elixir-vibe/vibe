@@ -94,7 +94,7 @@ defmodule Vibe.TUI.ChatTree do
       (Map.fetch!(view, :body) != [] or plugin_widgets != [])
   end
 
-  defp picker_margin?(%{picker: %{type: :autocomplete}}), do: true
+  defp picker_margin?(%{picker: picker}), do: not is_nil(picker)
   defp picker_margin?(_view), do: false
 
   defp footer_margin?(view, plugin_widgets) do

@@ -25,7 +25,7 @@ defmodule Vibe.UI.SlashCommands.Sessions do
       title: "Sessions",
       items: session_items(),
       selected: 0,
-      limit: 10
+      limit: 7
     }
 
     {:events, [Event.new(:selector_opened, ui_state.session_id, selector)]}

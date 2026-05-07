@@ -29,6 +29,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "Model"))
     assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
     assert selector_rendered_once?(plain, "Model")
+    assert picker_has_margin_before_footer?(plain)
     refute autocomplete_artifact?(plain)
   end
 
@@ -45,30 +46,34 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "msg"))
     assert picker_panel_shape(plain, "Sessions") == {:blank, :title, :blank, :selected_row}
     assert selected_row_prefix(plain, "Sessions") == "  › "
+    assert picker_has_margin_before_footer?(plain)
     refute autocomplete_artifact?(plain)
     refute Enum.any?(plain, &String.contains?(&1, "Commands"))
   end
 
-  test "command autocomplete and sessions selector share panel chrome" do
-    {:ok, commands_loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
-    assert :ok = TerminalLoop.input(commands_loop, "/")
-    commands_plain = commands_loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+  test "command autocomplete, model selector, and sessions selector share panel chrome" do
+    commands_plain = picker_plain("/")
+    model_plain = picker_plain("/model")
+    sessions_plain = picker_plain("/sessions")
 
-    {:ok, sessions_loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
-    assert :ok = TerminalLoop.input(sessions_loop, "/sessions")
-    assert :ok = TerminalLoop.input_key(sessions_loop, %Ghostty.KeyEvent{key: :enter})
-
-    sessions_plain =
-      wait_until_render(
-        sessions_loop,
-        &Enum.any?(&1, fn line -> String.contains?(line, "Sessions") end)
-      )
+    assert picker_panel_shape(commands_plain, "Commands") ==
+             picker_panel_shape(model_plain, "Model")
 
     assert picker_panel_shape(commands_plain, "Commands") ==
              picker_panel_shape(sessions_plain, "Sessions")
 
     assert selected_row_prefix(commands_plain, "Commands") ==
+             selected_row_prefix(model_plain, "Model")
+
+    assert selected_row_prefix(commands_plain, "Commands") ==
              selected_row_prefix(sessions_plain, "Sessions")
+
+    assert picker_has_margin_before_footer?(commands_plain)
+    assert picker_has_margin_before_footer?(model_plain)
+    assert picker_has_margin_before_footer?(sessions_plain)
+    assert picker_top_margin_visible?(commands_plain, "Commands")
+    assert picker_top_margin_visible?(model_plain, "Model")
+    assert picker_top_margin_visible?(sessions_plain, "Sessions")
   end
 
   test "command autocomplete keeps the selected row visible while cycling" do
@@ -625,6 +630,23 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert autocomplete_index < footer_index
   end
 
+  defp picker_plain(input) do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
+    :ok = TerminalLoop.input(loop, input)
+
+    if input != "/" do
+      :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+    end
+
+    title = picker_title(input)
+    wait_until_render(loop, &Enum.any?(&1, fn line -> String.trim(line) == title end))
+  end
+
+  defp picker_title("/"), do: "Commands"
+
+  defp picker_title("/" <> command),
+    do: command |> String.capitalize() |> String.replace("_", " ")
+
   defp wait_until_render(
          loop,
          fun,
@@ -668,6 +690,16 @@ defmodule Vibe.TUI.TerminalLoopTest do
 
   defp selected_picker_row(plain) do
     Enum.find(plain, &String.starts_with?(&1, "  › ")) || flunk("no selected picker row")
+  end
+
+  defp picker_has_margin_before_footer?(plain) do
+    footer_index = Enum.find_index(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
+    footer_index && footer_index > 0 && blank_line?(Enum.at(plain, footer_index - 1))
+  end
+
+  defp picker_top_margin_visible?(plain, title) do
+    title_index = Enum.find_index(plain, &(String.trim(&1) == title))
+    title_index && title_index > 0 && blank_line?(Enum.at(plain, title_index - 1))
   end
 
   defp blank_line?(line), do: String.trim(line || "") == ""
