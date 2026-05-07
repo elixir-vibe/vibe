@@ -54,6 +54,6 @@ defmodule Vibe.CLI.FileArgsTest do
       end)
 
     assert output =~ "File not found"
-    refute_receive :should_not_reach
+    refute_received :should_not_reach
   end
 end

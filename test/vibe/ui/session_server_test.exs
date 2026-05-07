@@ -195,15 +195,23 @@ defmodule Vibe.SessionProcessTest do
   end
 
   test "updates token preview from streaming callbacks before final usage" do
+    parent = self()
+
     ask_fun = fn _text, opts ->
       opts[:on_result].("streaming text")
-      Process.sleep(100)
+      send(parent, {:streaming_preview_sent, self()})
 
-      {:ok,
-       %{
-         output: "streaming text",
-         usage: %{input_tokens: 10, output_tokens: 20, total_tokens: 30}
-       }}
+      receive do
+        :finish_streaming_preview ->
+          {:ok,
+           %{
+             output: "streaming text",
+             usage: %{input_tokens: 10, output_tokens: 20, total_tokens: 30}
+           }}
+      after
+        1_000 ->
+          {:error, :streaming_preview_timeout}
+      end
     end
 
     {:ok, server} =
@@ -218,12 +226,14 @@ defmodule Vibe.SessionProcessTest do
     :ok = Vibe.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 
     assert_receive {Vibe.Session, :event, %{type: :assistant_delta}}, 500
+    assert_receive {:streaming_preview_sent, ask_pid}, 500
 
     preview_state = Vibe.Session.state(server)
     assert preview_state.usage.total_tokens == 0
     assert preview_state.usage_preview.total_tokens > 0
     assert Vibe.UI.ViewModel.from_state(preview_state).footer.usage.total_tokens > 0
 
+    send(ask_pid, :finish_streaming_preview)
     assert_receive {Vibe.Session, :event, %{type: :usage_updated}}, 500
 
     final_state = Vibe.Session.state(server)
