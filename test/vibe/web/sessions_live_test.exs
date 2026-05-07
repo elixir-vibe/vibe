@@ -7,8 +7,9 @@ defmodule Vibe.Web.SessionsLiveTest do
   end
 
   test "renders stored sessions" do
-    Vibe.Session.Store.ensure_session("web-list-session", ~U[2026-01-01 00:00:00Z],
-      cwd: "/tmp/web"
+    Vibe.Session.Store.append_ui_event(
+      Vibe.UI.Event.new(:user_message_added, "web-list-session", %{text: "hello web"}),
+      1
     )
 
     conn = build_conn() |> get("/")

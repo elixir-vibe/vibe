@@ -77,7 +77,7 @@ defmodule Vibe.SessionProcessTest do
       :ok =
         Vibe.Session.emit_event(
           server,
-          Vibe.UI.Event.new(:notification_added, session_id, %{id: index, text: "n#{index}"})
+          Vibe.UI.Event.new(:overlay_opened, session_id, %{id: index, kind: :test_overlay})
         )
     end
 

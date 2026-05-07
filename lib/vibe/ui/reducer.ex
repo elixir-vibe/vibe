@@ -272,8 +272,12 @@ defmodule Vibe.UI.Reducer do
     %{state | overlays: Enum.drop(state.overlays, -1)}
   end
 
-  defp reduce(state, %Event{type: :notification_added, data: data}) do
-    %{state | notifications: Lists.append(state.notifications, Notification.new(data))}
+  defp reduce(state, %Event{type: :notification_added, id: event_id, data: data}) do
+    %{
+      state
+      | notifications:
+          Lists.append(state.notifications, Notification.new(Map.put_new(data, :id, event_id)))
+    }
   end
 
   defp reduce(state, %Event{type: :runtime_alert_set, data: %{alert: alert}}) do

@@ -22,6 +22,8 @@ defmodule Vibe.Session do
 
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})
 
+  @notification_ttl_ms 8_000
+
   @spec start(keyword()) :: {:ok, pid()} | {:error, term()}
   def start(opts \\ []) do
     id = Keyword.get_lazy(opts, :session_id, &Vibe.Session.Store.new_id/0)
@@ -192,6 +194,11 @@ defmodule Vibe.Session do
     {:noreply, %{state | subscribers: Map.delete(state.subscribers, ref)}}
   end
 
+  def handle_info({:notification_expired, id}, state) do
+    event = Event.new(:notification_expired, state.state.session_id, %{id: id})
+    {:noreply, emit(state, event, persist?: false)}
+  end
+
   def handle_info({:prompt_result, ref, result}, %{prompt_ref: ref} = state) do
     state = %{state | prompt_task: nil, prompt_ref: nil, active_agent: nil}
     state = PromptLifecycle.record_result(state, result, &emit/2)
@@ -335,11 +342,14 @@ defmodule Vibe.Session do
   end
 
   defp emit(state, event, opts \\ []) do
+    event = prepare_transient_event(event)
     event_seq = state.event_seq + 1
-    persist? = Keyword.get(opts, :persist?, state.persist?)
+    persist? = Keyword.get(opts, :persist?, persist_event?(state, event))
 
     {events, persistence_failed?} =
       events_with_persistence_status(state, event, event_seq, persist?)
+
+    schedule_notification_expiry(event)
 
     Enum.each(events, fn {_seq, event} ->
       Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
@@ -363,6 +373,31 @@ defmodule Vibe.Session do
         persistence_failed?: persistence_failed?
     }
   end
+
+  defp prepare_transient_event(%Event{type: :notification_added} = event) do
+    data = Map.put_new(event.data, :id, event.id)
+    %{event | data: data}
+  end
+
+  defp prepare_transient_event(event), do: event
+
+  defp persist_event?(_state, %Event{type: type})
+       when type in [:notification_added, :notification_expired],
+       do: false
+
+  defp persist_event?(state, _event), do: state.persist?
+
+  defp schedule_notification_expiry(%Event{type: :notification_added, data: data}) do
+    ttl_ms = Map.get(data, :ttl_ms, @notification_ttl_ms)
+
+    if is_integer(ttl_ms) and ttl_ms > 0 do
+      Process.send_after(self(), {:notification_expired, Map.fetch!(data, :id)}, ttl_ms)
+    end
+
+    :ok
+  end
+
+  defp schedule_notification_expiry(_event), do: :ok
 
   defp events_with_persistence_status(state, event, event_seq, false) do
     {[{event_seq, event}], state.persistence_failed?}

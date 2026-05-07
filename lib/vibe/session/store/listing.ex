@@ -20,6 +20,7 @@ defmodule Vibe.Session.Store.Listing do
     Vibe.Storage.ensure!()
 
     Session
+    |> where([session], session.message_count > 0)
     |> order_by([session], desc: session.updated_at)
     |> Vibe.Repo.all()
     |> Enum.map(&session_info/1)
