@@ -161,7 +161,8 @@ defmodule Vibe.TUI.AppTest do
     assert snapshot.ui.session_id == "busy-local-session"
 
     send(app, :server_migration_tick)
-    refute_receive {:migration_attempted, "busy-local-session"}, 50
+    App.snapshot(app)
+    refute_received {:migration_attempted, "busy-local-session"}
   end
 
   test "offers generic slash command autocomplete" do

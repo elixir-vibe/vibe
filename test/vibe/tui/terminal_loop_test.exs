@@ -937,7 +937,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
     assert Enum.any?(plain, &String.contains?(&1, "hello"))
     assert Enum.any?(plain, &String.contains?(&1, "world"))
-    refute_receive {:submitted, _text}, 50
+    refute_received {:submitted, _text}
   end
 
   test "tracks resize" do
