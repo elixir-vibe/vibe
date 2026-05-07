@@ -8,7 +8,6 @@ defmodule Vibe.WebTools.Providers.ReqFetch do
   alias Vibe.WebTools.{FetchResult, HTML}
 
   @max_response_size 5 * 1024 * 1024
-  @max_output_chars 20_000
   @default_timeout_ms 30_000
   @max_timeout_ms 120_000
 
@@ -21,7 +20,7 @@ defmodule Vibe.WebTools.Providers.ReqFetch do
       redirects: true,
       pdf: false,
       max_response_size: @max_response_size,
-      max_output_chars: @max_output_chars
+      max_output_bytes: Vibe.ToolOutput.default_max_bytes()
     }
   end
 
@@ -178,14 +177,8 @@ defmodule Vibe.WebTools.Providers.ReqFetch do
   defp convert(body, _content_type, :html), do: {:ok, body, :html}
 
   defp truncate(text) do
-    total_chars = String.length(text)
-
-    if total_chars <= @max_output_chars do
-      {text, false, total_chars}
-    else
-      {String.slice(text, 0, @max_output_chars) <>
-         "\n\n[Truncated: #{total_chars - @max_output_chars} chars omitted]", true, total_chars}
-    end
+    limited = Vibe.ToolOutput.limit_text(text)
+    {limited, byte_size(limited) != byte_size(text), String.length(text)}
   end
 
   defp validate_url(url) do

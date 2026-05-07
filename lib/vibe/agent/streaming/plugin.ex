@@ -70,44 +70,43 @@ defmodule Vibe.Agent.Streaming.Plugin do
     {:ok, :continue}
   end
 
-  def handle_signal(
-        %{type: "ai.tool.params", data: %{call_id: call_id, tool_name: tool_name} = data},
-        %{agent: %{id: agent_id}}
-      ) do
+  def handle_signal(%{type: "ai.tool.params", data: data}, %{agent: %{id: agent_id}})
+      when is_map(data) do
     Vibe.Agent.Streaming.dispatch_tool_preparing(
       agent_id,
-      ToolEvent.preparing(id: call_id, name: tool_name, args: Map.get(data, :arguments))
+      ToolEvent.preparing(
+        id: tool_call_id(data),
+        name: tool_name(data),
+        args: tool_arguments(data)
+      )
     )
 
     {:ok, :continue}
   end
 
-  def handle_signal(
-        %{type: "ai.tool.started", data: %{call_id: call_id, tool_name: tool_name} = data},
-        %{agent: %{id: agent_id}}
-      ) do
+  def handle_signal(%{type: "ai.tool.started", data: data}, %{agent: %{id: agent_id}})
+      when is_map(data) do
     Vibe.Agent.Streaming.dispatch_tool_started(
       agent_id,
-      ToolEvent.started(id: call_id, name: tool_name, args: Map.get(data, :arguments))
+      ToolEvent.started(
+        id: tool_call_id(data),
+        name: tool_name(data),
+        args: tool_arguments(data)
+      )
     )
 
     {:ok, :continue}
   end
 
-  def handle_signal(
-        %{
-          type: "ai.tool.result",
-          data: %{call_id: call_id, tool_name: tool_name, result: result} = data
-        },
-        %{agent: %{id: agent_id}}
-      ) do
+  def handle_signal(%{type: "ai.tool.result", data: data}, %{agent: %{id: agent_id}})
+      when is_map(data) do
     Vibe.Agent.Streaming.dispatch_tool_finished(
       agent_id,
       ToolEvent.finished(
-        id: call_id,
-        name: tool_name,
-        args: Map.get(data, :arguments),
-        output: result
+        id: tool_call_id(data),
+        name: tool_name(data),
+        args: tool_arguments(data),
+        output: event_field(data, :result)
       )
     )
 
@@ -146,6 +145,15 @@ defmodule Vibe.Agent.Streaming.Plugin do
       "thinking" -> StreamChunk.thinking(text, metadata)
       _type -> StreamChunk.text(text, metadata)
     end
+  end
+
+  defp tool_call_id(data),
+    do: event_field(data, :call_id) || event_field(data, :tool_call_id) || event_field(data, :id)
+
+  defp tool_name(data), do: event_field(data, :tool_name) || event_field(data, :name)
+
+  defp tool_arguments(data) do
+    event_field(data, :arguments) || event_field(data, :args)
   end
 
   defp event_field(map, key, default \\ nil) when is_map(map) do

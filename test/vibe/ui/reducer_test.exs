@@ -145,6 +145,33 @@ defmodule Vibe.UI.ReducerTest do
              state.messages
   end
 
+  test "tool finish without args preserves started args" do
+    state = Vibe.UI.State.new(session_id: "s1")
+
+    state =
+      Vibe.UI.Reducer.apply_event(
+        state,
+        Vibe.UI.Event.new(
+          :tool_started,
+          "s1",
+          Vibe.UI.ToolEvent.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
+        )
+      )
+
+    state =
+      Vibe.UI.Reducer.apply_event(
+        state,
+        Vibe.UI.Event.new(
+          :tool_finished,
+          "s1",
+          Vibe.UI.ToolEvent.finished(id: "call-1", name: :eval, output: "ok")
+        )
+      )
+
+    assert [%{role: :tool, id: "call-1", status: :ok, args: %{code: "IO.puts(:ok)"}}] =
+             state.messages
+  end
+
   test "tracks runtime alerts as active UI state and notifications" do
     alert =
       Vibe.Runtime.Alert.from_alarm(:set, {:disk_almost_full, ~c"/tmp"}, [])

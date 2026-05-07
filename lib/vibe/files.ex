@@ -5,7 +5,6 @@ defmodule Vibe.Files do
   alias Vibe.Image
   alias Vibe.Model.Content
   @read_limit_lines 2_000
-  @read_limit_bytes 50_000
 
   @type edit :: %{old_text: String.t(), new_text: String.t()}
 
@@ -18,19 +17,21 @@ defmodule Vibe.Files do
       if Image.supported?(absolute) do
         image_result(path, absolute, content, stat, opts)
       else
-        limit_lines = Keyword.get(opts, :limit_lines, @read_limit_lines)
-        limit_bytes = Keyword.get(opts, :limit_bytes, @read_limit_bytes)
-        {visible, omitted_lines, omitted_bytes} = limit_content(content, limit_lines, limit_bytes)
+        limit =
+          Vibe.ToolOutput.limit_content(content,
+            limit_lines: Keyword.get(opts, :limit_lines, @read_limit_lines),
+            limit_bytes: Keyword.get(opts, :limit_bytes, Vibe.ToolOutput.default_max_bytes())
+          )
 
         {:ok,
          %ReadResult{
            path: path,
            content_type: :text,
-           content: visible,
+           content: limit.content,
            language: language(path),
            lines: line_count(content),
-           omitted_lines: omitted_lines,
-           omitted_bytes: omitted_bytes
+           omitted_lines: limit.omitted_lines,
+           omitted_bytes: limit.omitted_bytes
          }}
       end
     end
@@ -329,18 +330,6 @@ defmodule Vibe.Files do
 
   defp write_message(path, ""), do: "Created #{path}."
   defp write_message(path, _old), do: "Wrote #{path}."
-
-  defp limit_content(content, limit_lines, limit_bytes) do
-    byte_limited = Vibe.ToolOutput.limit_text(content, limit_bytes)
-    lines = String.split(byte_limited, "\n")
-
-    if length(lines) > limit_lines do
-      visible = lines |> Enum.take(limit_lines) |> Enum.join("\n")
-      {visible, length(lines) - limit_lines, byte_size(content) - byte_size(byte_limited)}
-    else
-      {byte_limited, 0, byte_size(content) - byte_size(byte_limited)}
-    end
-  end
 
   defp line_count(content), do: content |> split_lines() |> length()
 

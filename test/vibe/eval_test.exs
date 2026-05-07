@@ -46,6 +46,13 @@ defmodule Vibe.EvalTest do
     assert error =~ "boom"
   end
 
+  test "eval preloads Web helper alias" do
+    assert {:ok, result} = Vibe.Eval.once(~S|Web.truncate("abcdef", 3)|)
+
+    assert result.output =~ "abc"
+    assert result.output =~ "tool output truncated"
+  end
+
   test "cancel interrupts a command running inside eval" do
     session_id = "eval-command-cancel-#{System.unique_integer([:positive])}"
     parent = self()

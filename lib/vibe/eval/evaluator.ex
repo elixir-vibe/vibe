@@ -236,7 +236,8 @@ defmodule Vibe.Eval.Evaluator do
       [
         {Module.concat([:Cmd]), Command},
         {Module.concat([:Image]), Image},
-        {Module.concat([:MD]), MD}
+        {Module.concat([:MD]), MD},
+        {Module.concat([:Web]), Vibe.WebTools}
       ] ++
         Enum.map(
           Vibe.Plugin.Manager.apis() ++ Vibe.Skill.apis(),

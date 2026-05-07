@@ -30,4 +30,13 @@ defmodule Vibe.ToolOutputTest do
     assert byte_size(text) > @structured_limit_bytes
     assert text =~ "tool output truncated"
   end
+
+  test "limits content by bytes and lines with accurate omitted metadata" do
+    result = Vibe.ToolOutput.limit_content("one\ntwo\nthree", limit_lines: 2, limit_bytes: 7)
+
+    assert result.content == "one\ntwo"
+    assert result.omitted_lines > 0
+    assert result.omitted_bytes == 6
+    assert result.truncated?
+  end
 end

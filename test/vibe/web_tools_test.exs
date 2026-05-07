@@ -130,15 +130,20 @@ defmodule Vibe.WebToolsTest do
     assert text =~ "web"
   end
 
-  test "pipe helper truncates fetched content" do
+  test "pipe helper truncates fetched content with shared tool-output limit" do
     result = %FetchResult{text: "abcdef", total_chars: 6}
 
-    truncated = Vibe.WebTools.truncate(result, chars: 3)
+    truncated = Vibe.WebTools.truncate(result, bytes: 3)
 
     assert truncated.truncated?
     assert truncated.total_chars == 6
     assert truncated.text =~ "abc"
-    assert truncated.text =~ "3 chars omitted"
+    assert truncated.text =~ "tool output truncated"
+  end
+
+  test "pipe helper truncates plain text with shorthand limit" do
+    assert Vibe.WebTools.truncate("abcdef", 3) =~ "tool output truncated"
+    assert Vibe.WebTools.truncate("abc", 3) == "abc"
   end
 
   test "fetch validates URLs" do

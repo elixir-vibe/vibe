@@ -69,25 +69,24 @@ defmodule Vibe.WebTools do
     end
   end
 
-  @doc "Truncates fetched content to a character limit while preserving metadata."
-  @spec truncate(FetchResult.t(), keyword()) :: FetchResult.t()
-  def truncate(%FetchResult{} = result, opts \\ []) do
-    limit = opts |> Keyword.get(:chars, 20_000) |> normalize_limit()
+  @doc "Truncates fetched content or plain text using the shared tool-output byte limit."
+  @spec truncate(FetchResult.t(), keyword() | pos_integer()) :: FetchResult.t()
+  @spec truncate(String.t(), keyword() | pos_integer()) :: String.t()
+  def truncate(value, opts \\ [])
+
+  def truncate(%FetchResult{} = result, opts) do
+    limit = truncate_limit(opts)
     text = result.text || ""
-    total_chars = String.length(text)
+    limited = Vibe.ToolOutput.limit_text(text, limit)
 
-    if total_chars <= limit do
-      %{result | total_chars: total_chars, truncated?: false}
-    else
-      omitted = total_chars - limit
+    update_fetch_text(result, limited,
+      truncated?: byte_size(limited) != byte_size(text),
+      total_chars: String.length(text)
+    )
+  end
 
-      update_fetch_text(
-        result,
-        String.slice(text, 0, limit) <> "\n\n[Truncated: #{omitted} chars omitted]",
-        truncated?: true,
-        total_chars: total_chars
-      )
-    end
+  def truncate(text, opts) when is_binary(text) do
+    Vibe.ToolOutput.limit_text(text, truncate_limit(opts))
   end
 
   @doc "Filters search results to URLs containing a domain substring."
@@ -123,8 +122,18 @@ defmodule Vibe.WebTools do
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
-  defp normalize_limit(limit) when is_integer(limit) and limit >= 0, do: limit
-  defp normalize_limit(_limit), do: 20_000
+  defp truncate_limit(opts) when is_integer(opts), do: normalize_limit(opts)
+
+  defp truncate_limit(opts) when is_list(opts) do
+    opts
+    |> Keyword.get(:bytes, Keyword.get(opts, :chars, Vibe.ToolOutput.default_max_bytes()))
+    |> normalize_limit()
+  end
+
+  defp truncate_limit(_opts), do: Vibe.ToolOutput.default_max_bytes()
+
+  defp normalize_limit(limit) when is_integer(limit) and limit > 0, do: limit
+  defp normalize_limit(_limit), do: Vibe.ToolOutput.default_max_bytes()
 
   defp provider(opts, opt_key, config_key, default) do
     opts

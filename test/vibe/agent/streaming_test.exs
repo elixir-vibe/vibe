@@ -216,6 +216,47 @@ defmodule Vibe.Agent.StreamingTest do
     Vibe.Agent.Streaming.unregister(agent)
   end
 
+  test "plugin accepts Jido runtime tool field names", %{agent: agent, agent_id: agent_id} do
+    test_pid = self()
+
+    Vibe.Agent.Streaming.register(agent,
+      on_tool_started: &send(test_pid, {:tool_started, &1}),
+      on_tool_finished: &send(test_pid, {:tool_finished, &1})
+    )
+
+    context = %{agent: %{id: agent_id}}
+
+    started = %{
+      type: "ai.tool.started",
+      data: %{tool_call_id: "call-1", tool_name: "eval", arguments: %{code: "1 + 1"}}
+    }
+
+    finished = %{
+      type: "ai.tool.result",
+      data: %{
+        tool_call_id: "call-1",
+        tool_name: "eval",
+        arguments: %{code: "1 + 1"},
+        result: {:ok, %{output: "2", output_format: :inspect}, []}
+      }
+    }
+
+    assert {:ok, :continue} = Vibe.Agent.Streaming.Plugin.handle_signal(started, context)
+    assert {:ok, :continue} = Vibe.Agent.Streaming.Plugin.handle_signal(finished, context)
+
+    assert_receive {:tool_started, %ToolEvent{id: "call-1", name: "eval", args: %{code: "1 + 1"}}}
+
+    assert_receive {:tool_finished,
+                    %ToolEvent{
+                      id: "call-1",
+                      name: "eval",
+                      args: %{code: "1 + 1"},
+                      output: "2"
+                    }}
+  after
+    Vibe.Agent.Streaming.unregister(agent)
+  end
+
   test "plugin forwards failed tool results", %{agent: agent, agent_id: agent_id} do
     test_pid = self()
     Vibe.Agent.Streaming.register(agent, on_tool_finished: &send(test_pid, {:tool_finished, &1}))
