@@ -159,6 +159,7 @@ defmodule Vibe.Session.PromptLifecycle do
     |> Enum.join("\n\n")
   end
 
+  defp active_skill_context("<skill " <> _text), do: ""
   defp active_skill_context(text), do: Vibe.Skill.context(text, limit: 3)
 
   defp recalled_history(text, context) do

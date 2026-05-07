@@ -431,7 +431,8 @@ defmodule Vibe.Session do
   defp run_selector_action(data, state) do
     case SlashCommands.selector_action(data, state.state) do
       {:events, events} -> Enum.reduce(events, state, &emit(&2, &1))
-      {:command, command} -> run_slash_command(command, "", state)
+      {:command, command} when is_binary(command) -> run_slash_command(command, "", state)
+      {:command, command} -> handle_command(normalize_command(command), state)
       :ignore -> state
     end
   end

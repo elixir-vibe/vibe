@@ -8,14 +8,16 @@ defmodule Vibe.UI.SlashCommands do
   def autocomplete("/" <> text) do
     query = text |> String.split(~r/\s+/, parts: 2) |> hd()
 
-    Registry.specs()
-    |> Enum.map(&autocomplete_item/1)
-    |> Autocomplete.filter(query, title: "Commands", limit: 7)
+    items = (Registry.specs() |> Enum.map(&autocomplete_item/1)) ++ skill_autocomplete_items()
+    Autocomplete.filter(items, query, title: "Commands", limit: 7)
   end
 
   def autocomplete(_text), do: nil
 
   @spec handle(String.t(), String.t(), map()) :: Vibe.UI.SlashCommands.Command.result()
+  def handle("skill:" <> skill, args, ui_state),
+    do: Vibe.UI.SlashCommands.Skill.run(Enum.join([skill, args], " "), ui_state)
+
   def handle(command, args, ui_state) do
     case Registry.find(command) do
       nil -> unknown_command(command, ui_state)
@@ -44,6 +46,18 @@ defmodule Vibe.UI.SlashCommands do
       detail: Map.get(spec, :description),
       group: :slash_command
     }
+  end
+
+  defp skill_autocomplete_items do
+    Vibe.Skill.list()
+    |> Enum.map(fn skill ->
+      %{
+        value: "/skill:" <> skill.name,
+        label: "/skill:" <> skill.name,
+        detail: Map.get(skill, :title),
+        group: :skill
+      }
+    end)
   end
 
   defp unknown_command(command, ui_state) do

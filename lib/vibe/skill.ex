@@ -114,6 +114,29 @@ defmodule Vibe.Skill do
     |> Enum.take(limit)
   end
 
+  @spec invocation(String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def invocation(name, args \\ "") when is_binary(name) and is_binary(args) do
+    with {:ok, skill} <- get(name) do
+      block =
+        [
+          ~s(<skill name="),
+          escape_xml(skill.name),
+          ~s(" location="),
+          escape_xml(skill.path),
+          ~s(">\n),
+          "References are relative to ",
+          escape_xml(Path.dirname(skill.path)),
+          ".\n\n",
+          skill_body(skill),
+          "\n</skill>"
+        ]
+        |> IO.iodata_to_binary()
+
+      args = String.trim(args)
+      {:ok, if(args == "", do: block, else: block <> "\n\n" <> args)}
+    end
+  end
+
   @spec context(String.t(), keyword()) :: String.t()
   def context(text, opts \\ []) when is_binary(text) do
     case match(text, opts) do
@@ -250,6 +273,16 @@ defmodule Vibe.Skill do
   end
 
   defp skill_body(skill), do: Map.get(skill, :markdown, "")
+
+  defp escape_xml(text) do
+    text
+    |> to_string()
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("'", "&apos;")
+  end
 
   defp truncate_markdown(text, max_bytes) when byte_size(text) <= max_bytes, do: text
 
