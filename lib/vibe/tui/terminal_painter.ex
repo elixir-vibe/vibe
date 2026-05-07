@@ -63,6 +63,7 @@ defmodule Vibe.TUI.TerminalPainter do
   defp render_native(lines, cursor, %{lines: []} = painter) do
     viewport_top = viewport_top(lines, painter.height)
     screen_cursor = screen_cursor(cursor, viewport_top)
+    visible_lines = viewport_lines(lines, viewport_top, painter.height)
 
     frame = [
       begin_synchronized_update(),
@@ -71,7 +72,7 @@ defmodule Vibe.TUI.TerminalPainter do
       ANSI.clear(),
       ANSI.home(),
       maybe_clear_scrollback(painter),
-      intersperse_lines(lines),
+      intersperse_lines(visible_lines),
       end_synchronized_update(),
       ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
       enable_autowrap(),
@@ -196,6 +197,10 @@ defmodule Vibe.TUI.TerminalPainter do
 
   defp pad_cursor({row, column}, padding), do: {row + padding, column}
   defp viewport_top(lines, height), do: max(length(lines) - height + 1, 1)
+
+  defp viewport_lines(lines, viewport_top, height),
+    do: Enum.slice(lines, (viewport_top - 1)..(viewport_top + height - 2)//1)
+
   defp screen_cursor({row, column}, viewport_top), do: {max(row - viewport_top + 1, 1), column}
   defp intersperse_lines(lines), do: Enum.intersperse(lines, "\r\n")
 

@@ -311,6 +311,37 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert count_occurrences(second, IO.ANSI.clear()) == 1
   end
 
+  test "runtime repaint does not clone UI into terminal scrollback" do
+    session_id = "scrollback-repaint-#{System.unique_integer([:positive])}"
+    {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
+
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 80,
+        height: 10,
+        session_server: session,
+        event_target: self()
+      )
+
+    {:ok, terminal} = Ghostty.Terminal.start_link(cols: 80, rows: 10, max_scrollback: 1_000)
+
+    painter =
+      Enum.reduce(1..30, Vibe.TUI.TerminalPainter.new(80, 10), fn index, painter ->
+        :ok =
+          Vibe.Session.emit_transient_event(
+            session,
+            Vibe.UI.Event.new(:assistant_message_added, session_id, %{text: "message #{index}"})
+          )
+
+        {_screen, painter} = paint_screen(loop, terminal, painter)
+        painter
+      end)
+
+    {_screen, _painter} = paint_screen(loop, terminal, painter)
+    assert Ghostty.Terminal.scrollbar(terminal) == %{offset: 0, total: 10, len: 10}
+  end
+
   test "loader advances from background ticks without input" do
     session_id = "loader-ui-#{System.unique_integer([:positive])}"
 
@@ -714,6 +745,24 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok = TerminalLoop.input(loop, "world")
 
     assert TerminalLoop.cursor_position(loop) == {9, 8}
+  end
+
+  test "multiline paste inserts into prompt without submitting" do
+    parent = self()
+
+    ask = fn text, _opts ->
+      send(parent, {:submitted, text})
+      {:ok, "submitted"}
+    end
+
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 60, height: 12, ask_fun: ask)
+
+    :ok = TerminalLoop.input(loop, "hello\nworld")
+
+    plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+    assert Enum.any?(plain, &String.contains?(&1, "hello"))
+    assert Enum.any?(plain, &String.contains?(&1, "world"))
+    refute_receive {:submitted, _text}, 50
   end
 
   test "tracks resize" do

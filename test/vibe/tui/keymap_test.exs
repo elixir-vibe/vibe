@@ -65,8 +65,15 @@ defmodule Vibe.TUI.KeymapTest do
     assert Keymap.from_bytes("hello") == [{:paste, "hello"}]
   end
 
-  test "decodes pasted prompt followed by carriage return as submit" do
-    assert Keymap.from_bytes("hello\r") == [{:paste, "hello"}, :submit]
-    assert Keymap.from_bytes("hello\n") == [{:paste, "hello"}, :submit]
+  test "decodes standalone carriage return as submit" do
+    assert Keymap.from_bytes("\r") == [:submit]
+    assert Keymap.from_bytes("\n") == [:submit]
+  end
+
+  test "decodes pasted newline chunks as paste, not submit" do
+    assert Keymap.from_bytes("hello\r") == [{:paste, "hello\r"}]
+    assert Keymap.from_bytes("hello\n") == [{:paste, "hello\n"}]
+    assert Keymap.from_bytes("hello\nworld") == [{:paste, "hello\nworld"}]
+    assert Keymap.from_bytes("\e[200~hello\nworld\e[201~") == [{:paste, "hello\nworld"}]
   end
 end

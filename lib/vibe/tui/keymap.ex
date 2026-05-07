@@ -60,6 +60,15 @@ defmodule Vibe.TUI.Keymap do
 
   @spec from_bytes(binary()) :: [key()]
   def from_bytes(""), do: []
+
+  def from_bytes("\e[200~" <> rest) do
+    case String.split(rest, "\e[201~", parts: 2) do
+      [paste, ""] -> [{:paste, paste}]
+      [paste, tail] -> [{:paste, paste} | from_bytes(tail)]
+      [_unterminated] -> [{:paste, rest}]
+    end
+  end
+
   def from_bytes("\e\r"), do: [:enter]
   def from_bytes("\e\n"), do: [:enter]
   def from_bytes("\e[Z"), do: [:cycle_effort]
@@ -88,7 +97,11 @@ defmodule Vibe.TUI.Keymap do
   defp has_any_mod?(mods, candidates), do: Enum.any?(candidates, &has_mod?(mods, &1))
   defp has_mod?(mods, mod), do: mod in List.wrap(mods)
 
-  defp decode_data(data), do: data |> decode_data([], "") |> Enum.reverse()
+  defp decode_data(data) when is_binary(data) do
+    if multiline_paste?(data),
+      do: [{:paste, data}],
+      else: data |> decode_data([], "") |> Enum.reverse()
+  end
 
   defp decode_data("", keys, pending), do: flush_pending(keys, pending)
 
@@ -117,5 +130,18 @@ defmodule Vibe.TUI.Keymap do
     end
   end
 
+  defp multiline_paste?(data) do
+    byte_size(data) > 1 and String.contains?(data, ["\n", "\r"]) and printable_paste?(data)
+  end
+
+  defp printable_paste?(data) do
+    data
+    |> String.replace("\r\n", "\n")
+    |> String.replace("\r", "\n")
+    |> String.replace("\n", "")
+    |> printable?()
+  end
+
+  defp printable?(""), do: true
   defp printable?(data), do: String.printable?(data) and not String.match?(data, ~r/[\p{C}]/u)
 end
