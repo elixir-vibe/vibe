@@ -11,10 +11,10 @@ defmodule Vibe.Eval.EvaluatorTest do
   end
 
   test "keeps Elixir variables and aliases in a per-session evaluator", %{session_id: session_id} do
-    assert {:ok, %{output: ~s("weather in washington")}} =
+    assert {:ok, %{output: "weather in washington"}} =
              Vibe.Eval.run(~s(query = "weather in washington"), session_id: session_id)
 
-    assert {:ok, %{output: ~s("weather in washington today")}} =
+    assert {:ok, %{output: "weather in washington today"}} =
              Vibe.Eval.run(~s(query <> " today"), session_id: session_id)
 
     other_session_id = session_id <> "-other"
@@ -42,13 +42,13 @@ defmodule Vibe.Eval.EvaluatorTest do
 
     stop_evaluator(session_id)
 
-    assert {:ok, %{output: ~s("weather in washington tomorrow")}} =
+    assert {:ok, %{output: "weather in washington tomorrow"}} =
              Vibe.Eval.run(~s(query <> " tomorrow"), session_id: session_id)
 
-    assert {:ok, %{output: ~s("RAIN")}} =
+    assert {:ok, %{output: "RAIN"}} =
              Vibe.Eval.run("S.upcase(\"rain\")", session_id: session_id)
 
-    assert {:ok, %{output: ~s("WIND")}} =
+    assert {:ok, %{output: "WIND"}} =
              Vibe.Eval.run("upcase(\"wind\")", session_id: session_id)
   end
 
@@ -80,6 +80,15 @@ defmodule Vibe.Eval.EvaluatorTest do
     assert {:ok, []} = Vibe.Eval.bindings(session_id)
     assert {:error, error} = Vibe.Eval.run(~s(count), session_id: session_id)
     assert error =~ "cannot compile file"
+  end
+
+  test "string return values display as plain text", %{session_id: session_id} do
+    assert {:ok, result} = Vibe.Eval.run(~S|"line 1\nline 2"|, session_id: session_id)
+
+    assert result.output == "line 1\nline 2"
+    assert result.format == :text
+    refute result.output =~ ~s("line)
+    refute result.output =~ ~s(\\n)
   end
 
   test "captured IO with boring return displays plain IO only", %{session_id: session_id} do

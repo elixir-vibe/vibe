@@ -19,18 +19,20 @@ defmodule Vibe.Eval.Result do
           format: format(),
           parts: [part()],
           io: String.t(),
-          value_type: atom() | module()
+          value_type: atom() | module(),
+          truncation: :head | :tail | nil
         }
 
   @enforce_keys [:output, :format]
-  defstruct [:output, :format, :value_type, parts: [], io: ""]
+  defstruct [:output, :format, :value_type, :truncation, parts: [], io: ""]
 
   @spec to_tool_output(t()) :: map()
   def to_tool_output(%__MODULE__{} = result) do
     %{
       output: result.output,
       output_format: result.format,
-      output_parts: result.parts
+      output_parts: result.parts,
+      output_truncation: result.truncation
     }
   end
 end

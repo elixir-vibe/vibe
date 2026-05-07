@@ -201,6 +201,7 @@ defmodule Vibe.UI.ViewModel do
       output: Map.get(tool, :output),
       output_format: Map.get(tool, :output_format),
       output_parts: Map.get(tool, :output_parts),
+      output_truncation: Map.get(tool, :output_truncation),
       expanded?: Map.get(tool, :expanded?, false),
       truncate?: state.truncate?
     }

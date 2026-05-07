@@ -271,6 +271,32 @@ defmodule Vibe.TUI.ToolWidgetTest do
     assert IO.iodata_to_binary(output_line) =~ "\e[38;2;"
   end
 
+  test "eval string return values render as plain multiline output" do
+    code = ~S|"line 1\nline 2\nline 3"|
+
+    assert {:ok, action_result} =
+             Vibe.Actions.Eval.run(%{code: code}, %{session_id: "tui-string-eval"})
+
+    lines =
+      Vibe.UI.ToolEvent.finished(
+        id: "eval-1",
+        name: :eval,
+        args: %{code: code},
+        output: {:ok, action_result, []}
+      )
+      |> Map.from_struct()
+      |> TUI.tool()
+      |> Widget.render(100, Theme.default())
+
+    plain = Enum.map_join(lines, "\n", &Width.visible_text/1)
+    body = lines |> tl() |> Enum.map_join("\n", &Width.visible_text/1)
+
+    assert plain =~ "line 1"
+    assert plain =~ "line 2"
+    refute body =~ ~s(\\n)
+    refute body =~ "<>"
+  end
+
   test "eval map and struct return values stay syntax highlighted through tool event path" do
     code =
       ~S|%{answer: 42, elixir: System.version(), example_struct: %URI{scheme: "https", host: "example.com"}}|

@@ -303,12 +303,123 @@ defmodule Vibe.TUI.TerminalLoopTest do
 
     assert :ok = Vibe.Plugin.UI.set_status(session_id, :indexer, "indexing")
     assert {:ok, first} = wait_for_output(output, "indexing")
-    assert first =~ IO.ANSI.clear()
+    refute first =~ IO.ANSI.clear()
 
     assert :ok = Vibe.Plugin.UI.set_status(session_id, :indexer, "ready")
     assert {:ok, second} = wait_for_output(output, "ready")
 
-    assert count_occurrences(second, IO.ANSI.clear()) == 1
+    assert count_occurrences(second, IO.ANSI.clear()) == 0
+  end
+
+  test "expanded eval output remains reachable through native scrollback" do
+    session_id = "eval-scrollback-#{System.unique_integer([:positive])}"
+    {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
+
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 80,
+        height: 12,
+        session_server: session,
+        event_target: self()
+      )
+
+    {:ok, terminal} = Ghostty.Terminal.start_link(cols: 80, rows: 12, max_scrollback: 1_000)
+
+    output = Enum.map_join(1..80, "\n", &"line #{&1}")
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        session,
+        tool_started(session_id, "eval-scroll", :eval, %{code: "many()"})
+      )
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        session,
+        Vibe.UI.Event.new(
+          :tool_finished,
+          session_id,
+          Vibe.UI.ToolEvent.finished(
+            id: "eval-scroll",
+            name: :eval,
+            args: %{code: "many()"},
+            output:
+              {:ok,
+               %{
+                 output: output,
+                 output_format: :text,
+                 output_parts: [],
+                 output_truncation: :head
+               }, []}
+          )
+        )
+      )
+
+    Process.sleep(50)
+    painter = Vibe.TUI.TerminalPainter.new(80, 12)
+    {collapsed, painter} = paint_screen(loop, terminal, painter)
+
+    assert collapsed =~ "line 1"
+    refute collapsed =~ "line 80"
+
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :o, mods: [:ctrl]})
+    Process.sleep(50)
+    {expanded, _painter} = paint_screen(loop, terminal, painter)
+
+    assert expanded =~ "line 80"
+    assert %{total: total, len: 12} = Ghostty.Terminal.scrollbar(terminal)
+    assert total >= 80
+
+    :ok = Ghostty.Terminal.scroll(terminal, -1_000)
+    {:ok, scrollback} = Ghostty.Terminal.snapshot(terminal, :plain)
+
+    assert scrollback =~ "line 1"
+    assert scrollback =~ "line 80"
+  end
+
+  test "streaming updates do not append repeated live footers into scrollback" do
+    session_id = "stream-scrollback-#{System.unique_integer([:positive])}"
+    {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
+
+    {:ok, loop} =
+      TerminalLoop.start_link(
+        output: false,
+        width: 80,
+        height: 12,
+        session_server: session,
+        event_target: self()
+      )
+
+    {:ok, terminal} = Ghostty.Terminal.start_link(cols: 80, rows: 12, max_scrollback: 1_000)
+    painter = Vibe.TUI.TerminalPainter.new(80, 12)
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        session,
+        Vibe.UI.Event.new(:assistant_stream_started, session_id, %{})
+      )
+
+    {_, painter} = paint_screen(loop, terminal, painter)
+
+    painter =
+      Enum.reduce(1..20, painter, fn index, painter ->
+        :ok =
+          Vibe.Session.emit_transient_event(
+            session,
+            Vibe.UI.Event.new(:assistant_delta, session_id, %{text: "stream line #{index}\n"})
+          )
+
+        {_screen, painter} = paint_screen(loop, terminal, painter)
+        painter
+      end)
+
+    {_screen, _painter} = paint_screen(loop, terminal, painter)
+    :ok = Ghostty.Terminal.scroll(terminal, -1_000)
+    {:ok, scrollback} = Ghostty.Terminal.snapshot(terminal, :plain)
+
+    assert scrollback =~ "stream line 20"
+    assert count_occurrences(scrollback, "openai_codex:gpt-5.5") <= 2
   end
 
   test "runtime repaint preserves native scrollback without cloning full frames" do

@@ -85,7 +85,14 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.ToolCall do
       :tool_call,
       tool.id,
       RenderKey.fingerprint({tool.args, tool.output, tool.output_parts}),
-      [tool.name, tool.status, tool.expanded?, tool.truncate?, tool.output_format],
+      [
+        tool.name,
+        tool.status,
+        tool.expanded?,
+        tool.truncate?,
+        tool.output_format,
+        tool.output_truncation
+      ],
       context
     )
   end

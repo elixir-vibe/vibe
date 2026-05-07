@@ -15,10 +15,10 @@ defmodule Vibe.Actions.EvalTest do
     File.rm(Vibe.Session.Store.path(session_id))
     on_exit(fn -> File.rm(Vibe.Session.Store.path(session_id)) end)
 
-    assert {:ok, %{output: ~s("query")}} =
+    assert {:ok, %{output: "query"}} =
              Vibe.Actions.Eval.run(%{"code" => ~s(query = "query")}, %{session_id: session_id})
 
-    assert {:ok, %{output: ~s("query docs")}} =
+    assert {:ok, %{output: "query docs"}} =
              Vibe.Actions.Eval.run(%{"code" => ~s(query <> " docs")}, %{session_id: session_id})
   end
 

@@ -159,6 +159,15 @@ defmodule Vibe.Eval.Evaluator do
     }
   end
 
+  defp display_result(result) when is_binary(result) do
+    %Result{
+      output: ToolOutput.limit_text(result),
+      format: :text,
+      truncation: :head,
+      value_type: String
+    }
+  end
+
   defp display_result(result) do
     %Result{
       output: result |> inspect(@inspect_opts) |> ToolOutput.limit_text(),

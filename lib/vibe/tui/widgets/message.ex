@@ -48,7 +48,7 @@ defmodule Vibe.TUI.Widgets.Message do
   defp render_user(text, props, width, theme) do
     text
     |> user_text_with_attachments(props)
-    |> render_block(width, theme, :user_message_bg, :user_message_text)
+    |> render_plain_block(width, theme, :user_message_bg, :user_message_text)
   end
 
   defp system_color(:success), do: :success
@@ -136,10 +136,11 @@ defmodule Vibe.TUI.Widgets.Message do
     end
   end
 
-  defp render_block(text, width, theme, bg_key, fg_key) do
+  defp render_plain_block(text, width, theme, bg_key, fg_key) do
     text
     |> to_string()
-    |> Markdown.render(max(width - 4, 1), theme)
+    |> String.split("\n")
+    |> Enum.flat_map(&Widget.wrap(&1, max(width - 4, 1)))
     |> render_block_lines(width, theme, bg_key, fg_key)
   end
 

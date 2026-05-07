@@ -28,6 +28,7 @@ defmodule Vibe.UI.Block do
       :output,
       :output_format,
       :output_parts,
+      :output_truncation,
       :expanded?,
       :truncate?
     ]

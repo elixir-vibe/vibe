@@ -48,7 +48,7 @@ defmodule Vibe.CommandTest do
     code = "Cmd.run([\"sh\", \"-c\", \"printf ok\"], timeout: #{@command_timeout_ms}).output"
     assert {:ok, result} = Vibe.Eval.run(code, session_id: "cmd-alias-test")
 
-    assert result.output =~ ~s("ok")
+    assert result.output =~ "ok"
   end
 
   test "Cmd.run streams output into the running eval tool" do

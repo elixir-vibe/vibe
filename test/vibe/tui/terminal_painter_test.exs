@@ -21,15 +21,26 @@ defmodule Vibe.TUI.TerminalPainterTest do
     assert us < @patch_budget_us
   end
 
-  test "first render paints a synchronized full frame" do
+  test "first render appends without clearing existing terminal history" do
+    {:ok, terminal} = Ghostty.Terminal.start_link(cols: 20, rows: 5, max_scrollback: 100)
+    :ok = Ghostty.Terminal.write(terminal, "before 1\r\nbefore 2\r\nbefore 3\r\n")
+
     painter = TerminalPainter.new(20, 5)
     {frame, painter} = TerminalPainter.render(painter, ["hello"], {1, 6})
     frame = IO.iodata_to_binary(frame)
 
     assert frame =~ "\e[?2026h"
-    assert frame =~ "\e[2J"
+    refute frame =~ "\e[2J"
     refute frame =~ "\e[3J"
     assert frame =~ "hello"
+
+    :ok = Ghostty.Terminal.write(terminal, frame)
+    :ok = Ghostty.Terminal.scroll(terminal, -100)
+    assert {:ok, scrollback} = Ghostty.Terminal.snapshot(terminal, :plain)
+    assert scrollback =~ "before 1"
+    assert scrollback =~ "before 2"
+    assert scrollback =~ "before 3"
+    assert scrollback =~ "hello"
     assert painter.lines == ["", "", "", "", "hello"]
     assert painter.viewport_top == 1
   end

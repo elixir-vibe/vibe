@@ -94,6 +94,14 @@ defmodule Vibe.TUI.WidgetsTest do
 
     assert Enum.any?(user_with_image, &String.contains?(&1, "[1 image attached]"))
 
+    user_with_url =
+      TUI.message(%{role: :user, text: "https://example.com/path"})
+      |> Widget.render(60, Theme.default())
+      |> Enum.map_join("\n", &Width.visible_text/1)
+
+    assert user_with_url =~ "https://example.com/path"
+    refute user_with_url =~ "(https://example.com/path)"
+
     assert assistant == [
              String.duplicate(" ", 40),
              "  hi" <> String.duplicate(" ", 36),

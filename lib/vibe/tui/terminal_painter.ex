@@ -14,7 +14,8 @@ defmodule Vibe.TUI.TerminalPainter do
             width: 80,
             height: 24,
             hardware_row: 1,
-            viewport_top: 1
+            viewport_top: 1,
+            initialized?: false
 
   @type t :: %__MODULE__{
           lines: [IO.chardata()],
@@ -22,7 +23,8 @@ defmodule Vibe.TUI.TerminalPainter do
           width: pos_integer(),
           height: pos_integer(),
           hardware_row: pos_integer(),
-          viewport_top: pos_integer()
+          viewport_top: pos_integer(),
+          initialized?: boolean()
         }
 
   @spec new(pos_integer(), pos_integer()) :: t()
@@ -61,18 +63,32 @@ defmodule Vibe.TUI.TerminalPainter do
     viewport_top = viewport_top(lines, painter.height)
     screen_cursor = screen_cursor(cursor, viewport_top)
 
-    frame = [
-      begin_synchronized_update(),
-      hide_cursor(),
-      disable_autowrap(),
-      ANSI.clear(),
-      ANSI.home(),
-      intersperse_lines(full_render_lines(lines, viewport_top, painter)),
-      end_synchronized_update(),
-      ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
-      enable_autowrap(),
-      show_cursor()
-    ]
+    frame =
+      if initial_paint?(painter) do
+        [
+          begin_synchronized_update(),
+          hide_cursor(),
+          disable_autowrap(),
+          intersperse_lines(full_render_lines(lines, viewport_top, painter)),
+          end_synchronized_update(),
+          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
+          enable_autowrap(),
+          show_cursor()
+        ]
+      else
+        [
+          begin_synchronized_update(),
+          hide_cursor(),
+          disable_autowrap(),
+          ANSI.clear(),
+          ANSI.home(),
+          intersperse_lines(full_render_lines(lines, viewport_top, painter)),
+          end_synchronized_update(),
+          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
+          enable_autowrap(),
+          show_cursor()
+        ]
+      end
 
     {frame, put_render_state(painter, lines, cursor, viewport_top)}
   end
@@ -87,10 +103,15 @@ defmodule Vibe.TUI.TerminalPainter do
         {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
 
       {first, last} when desired_viewport_top != painter.viewport_top ->
-        if append_start?(painter.lines, first) do
-          patch_lines(lines, cursor, painter, first, last)
-        else
-          render_native(lines, cursor, full_redraw(painter))
+        cond do
+          append_start?(painter.lines, first) ->
+            patch_lines(lines, cursor, painter, first, last)
+
+          native_scroll_growth?(painter, lines, desired_viewport_top) ->
+            append_changed_growth(lines, cursor, painter, first, last, desired_viewport_top)
+
+          true ->
+            render_native(lines, cursor, full_redraw(painter))
         end
 
       {first, _last} when first + 1 < painter.viewport_top ->
@@ -133,6 +154,30 @@ defmodule Vibe.TUI.TerminalPainter do
     {frame, put_render_state(painter, lines, cursor, viewport_top)}
   end
 
+  defp append_changed_growth(lines, cursor, painter, first, last, desired_viewport_top) do
+    count = last - first + 1
+    current_screen_row = painter.hardware_row - painter.viewport_top + 1
+    move_to_bottom = move_from_to(current_screen_row, painter.height)
+    screen_cursor = screen_cursor(cursor, desired_viewport_top)
+
+    frame = [
+      begin_synchronized_update(),
+      hide_cursor(),
+      disable_autowrap(),
+      move_to_bottom,
+      "\r\n",
+      lines
+      |> replacement_lines(first, count)
+      |> Enum.map_intersperse("\r\n", &[ANSI.clear_line(), &1]),
+      end_synchronized_update(),
+      ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
+      enable_autowrap(),
+      show_cursor()
+    ]
+
+    {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
+  end
+
   defp replacement_lines(lines, first, count) do
     replacement = Enum.slice(lines, first, count)
     Vibe.TUI.Lines.join(replacement, List.duplicate("", count - length(replacement)))
@@ -140,13 +185,22 @@ defmodule Vibe.TUI.TerminalPainter do
 
   defp append_start?(old_lines, first_changed), do: first_changed == length(old_lines)
 
+  defp native_scroll_growth?(painter, lines, desired_viewport_top) do
+    length(lines) - length(painter.lines) >= painter.height and
+      desired_viewport_top > painter.viewport_top
+  end
+
+  defp initial_paint?(%{initialized?: false}), do: true
+  defp initial_paint?(_painter), do: false
+
   defp put_render_state(painter, lines, cursor, viewport_top) do
     %{
       painter
       | lines: lines,
         cursor: cursor,
         hardware_row: elem(cursor, 0),
-        viewport_top: viewport_top
+        viewport_top: viewport_top,
+        initialized?: true
     }
   end
 

@@ -44,8 +44,8 @@ defmodule Vibe.Tool.Display.Eval do
   defp output_blocks(%{output_format: :inspect}, output) when not is_nil(output),
     do: [{:inspect, format_value(output), truncation: :tail}]
 
-  defp output_blocks(_tool, output) when is_binary(output),
-    do: [{:text, trim_final_newline(output), truncation: :tail}]
+  defp output_blocks(tool, output) when is_binary(output),
+    do: [{:text, trim_final_newline(output), truncation: output_truncation(tool)}]
 
   defp output_blocks(_tool, nil), do: []
 
@@ -129,6 +129,11 @@ defmodule Vibe.Tool.Display.Eval do
     do: "#{div(milliseconds, 1_000)}s"
 
   defp format_milliseconds(milliseconds), do: "#{Float.round(milliseconds / 1_000, 1)}s"
+
+  defp output_truncation(%{output_truncation: truncation}) when truncation in [:head, :tail],
+    do: truncation
+
+  defp output_truncation(_tool), do: :tail
 
   defp expanded?(tool), do: Util.expanded?(tool)
 end

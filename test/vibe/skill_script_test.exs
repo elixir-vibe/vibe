@@ -47,7 +47,7 @@ defmodule Vibe.SkillScriptTest do
     )
 
     assert {:ok, result} = Vibe.Eval.once(~S|EvalSkill.slug("Hello Eval")|)
-    assert result.output =~ ~S|"hello-eval"|
+    assert result.output =~ "hello-eval"
   end
 
   test "formats matching skills as markdown context", %{dir: dir} do
