@@ -61,13 +61,13 @@ defmodule Vibe.TUI.TerminalPainterTest do
     assert painter.lines == ["", "", "", "one", "TWO"]
   end
 
-  test "appended content scrolls native terminal history with newlines" do
+  test "appended content repaints viewport without native terminal scrolling" do
     painter = TerminalPainter.new(20, 3)
     {_frame, painter} = TerminalPainter.render(painter, ["one", "two", "three"], {3, 6})
     {frame, painter} = TerminalPainter.render(painter, ["one", "two", "three", "four"], {4, 5})
     frame = IO.iodata_to_binary(frame)
 
-    assert frame =~ "\r\n"
+    assert frame =~ IO.ANSI.clear()
     assert frame =~ "four"
     assert painter.viewport_top == 2
   end

@@ -96,6 +96,9 @@ defmodule Vibe.TUI.TerminalPainter do
       {first, _last} when first + 1 < painter.viewport_top ->
         render_native(lines, cursor, %{painter | lines: []})
 
+      {_first, last} when last + 1 > painter.viewport_top + painter.height - 1 ->
+        render_native(lines, cursor, %{painter | lines: []})
+
       {first, last} ->
         patch_lines(lines, cursor, painter, first, last)
     end
@@ -197,22 +200,9 @@ defmodule Vibe.TUI.TerminalPainter do
   defp intersperse_lines(lines), do: Enum.intersperse(lines, "\r\n")
 
   defp move_to_row(painter, target_row) do
-    bottom = painter.viewport_top + painter.height - 1
-
-    if target_row > bottom do
-      current_screen_row =
-        (painter.hardware_row - painter.viewport_top + 1) |> max(1) |> min(painter.height)
-
-      move_to_bottom = painter.height - current_screen_row
-      scroll = target_row - bottom
-
-      {[move_from_to(1, move_to_bottom + 1), String.duplicate("\r\n", scroll)],
-       painter.viewport_top + scroll}
-    else
-      current_screen_row = painter.hardware_row - painter.viewport_top + 1
-      target_screen_row = target_row - painter.viewport_top + 1
-      {move_from_to(current_screen_row, target_screen_row), painter.viewport_top}
-    end
+    current_screen_row = painter.hardware_row - painter.viewport_top + 1
+    target_screen_row = target_row - painter.viewport_top + 1
+    {move_from_to(current_screen_row, target_screen_row), painter.viewport_top}
   end
 
   defp move_from_to(from, to) when to > from, do: ANSI.cursor_down(to - from)
