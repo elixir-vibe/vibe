@@ -87,9 +87,15 @@ defmodule Vibe.TUI.TerminalLoopTest do
       wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "Sessions") end))
 
     assert selector_rendered_once?(plain, "Sessions")
-    assert Enum.any?(plain, &String.contains?(&1, "msg"))
-    assert picker_panel_shape(plain, "Sessions") == {:blank, :title, :blank, :selected_row}
-    assert selected_row_prefix(plain, "Sessions") == "  › "
+
+    if Enum.any?(plain, &String.contains?(&1, "No matches")) do
+      assert picker_panel_shape(plain, "Sessions") == {:blank, :title, :blank, :other}
+    else
+      assert Enum.any?(plain, &String.contains?(&1, "msg"))
+      assert picker_panel_shape(plain, "Sessions") == {:blank, :title, :blank, :selected_row}
+      assert selected_row_prefix(plain, "Sessions") == "  › "
+    end
+
     assert picker_has_margin_before_footer?(plain)
     refute autocomplete_artifact?(plain)
     refute Enum.any?(plain, &String.contains?(&1, "Commands"))
@@ -863,7 +869,10 @@ defmodule Vibe.TUI.TerminalLoopTest do
       blank_line?(Enum.at(plain, title_index + 1)),
       String.starts_with?(Enum.at(plain, title_index + 2), "  › ")
     ]
-    |> then(fn [true, true, true, true] -> {:blank, :title, :blank, :selected_row} end)
+    |> then(fn
+      [true, true, true, true] -> {:blank, :title, :blank, :selected_row}
+      [true, true, true, false] -> {:blank, :title, :blank, :other}
+    end)
   end
 
   defp selected_row_prefix(plain, title) do

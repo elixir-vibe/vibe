@@ -218,6 +218,16 @@ defmodule Vibe.TUI.WidgetsTest do
     assert line =~ "unknown command: /"
   end
 
+  test "autocomplete widget renders empty selectors with nil limits" do
+    lines =
+      TUI.autocomplete(title: "Sessions", items: [], selected: 0, limit: nil)
+      |> Widget.render(50, Theme.default())
+      |> Enum.map(&Width.visible_text/1)
+
+    assert Enum.any?(lines, &String.contains?(&1, "Sessions"))
+    assert Enum.any?(lines, &String.contains?(&1, "No matches"))
+  end
+
   test "autocomplete widget renders reusable suggestions" do
     lines =
       TUI.autocomplete(

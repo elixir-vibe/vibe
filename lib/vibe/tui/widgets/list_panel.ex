@@ -8,7 +8,7 @@ defmodule Vibe.TUI.Widgets.ListPanel do
     inner_width = max(width - 4, 1)
     items = Map.get(props, :items, [])
     selected = Map.get(props, :selected, 0)
-    limit = Map.get(props, :limit, 8)
+    limit = normalize_limit(Map.get(props, :limit, 8))
     offset = Map.get(props, :offset, viewport_offset(length(items), selected, limit))
 
     rows =
@@ -71,6 +71,9 @@ defmodule Vibe.TUI.Widgets.ListPanel do
     message = message || "No matches"
     theme |> Theme.fg(:dim, message) |> Widget.pad_line(width)
   end
+
+  defp normalize_limit(limit) when is_integer(limit) and limit > 0, do: limit
+  defp normalize_limit(_limit), do: 8
 
   defp viewport_offset(count, selected, limit) do
     cond do
