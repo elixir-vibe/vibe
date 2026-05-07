@@ -23,7 +23,7 @@ defmodule Vibe.UI.SlashCommands.Sessions do
     selector = %{
       kind: :session_selector,
       title: "Sessions",
-      items: session_items(),
+      items: session_items(ui_state),
       selected: 0,
       limit: 7
     }
@@ -40,8 +40,8 @@ defmodule Vibe.UI.SlashCommands.Sessions do
 
   def selector_action(_item, _ui_state), do: :ignore
 
-  defp session_items do
-    Vibe.Session.list()
+  defp session_items(ui_state) do
+    Vibe.Session.list(current_state: ui_state)
     |> Enum.map(fn session ->
       %{
         value: session.id,

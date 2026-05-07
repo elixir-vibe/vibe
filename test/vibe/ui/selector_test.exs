@@ -31,6 +31,7 @@ defmodule Vibe.UI.SelectorTest do
     {:ok, server} =
       Vibe.Session.start_link(
         session_id: session_id,
+        name: Vibe.Session.Listing.via(session_id),
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
 

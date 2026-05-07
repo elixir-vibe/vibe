@@ -33,6 +33,50 @@ defmodule Vibe.TUI.TerminalLoopTest do
     refute autocomplete_artifact?(plain)
   end
 
+  test "slash commands still render after switching sessions" do
+    source_id = "switch-source-#{System.unique_integer([:positive])}"
+    target_id = "switch-target-#{System.unique_integer([:positive])}"
+
+    {:ok, source} =
+      Vibe.Session.start_link(
+        session_id: source_id,
+        persist?: false,
+        name: Vibe.Session.Listing.via(source_id)
+      )
+
+    {:ok, target} =
+      Vibe.Session.start_link(
+        session_id: target_id,
+        persist?: false,
+        name: Vibe.Session.Listing.via(target_id)
+      )
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        target,
+        Vibe.UI.Event.new(:assistant_message_added, target_id, %{text: "target session"})
+      )
+
+    {:ok, loop} =
+      TerminalLoop.start_link(output: false, width: 100, height: 24, session_server: source)
+
+    :ok =
+      Vibe.Session.emit_transient_event(
+        source,
+        Vibe.UI.Event.new(:session_selected, source_id, %{session_id: target_id})
+      )
+
+    Process.sleep(50)
+    :ok = TerminalLoop.input(loop, "/model")
+    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+
+    plain = wait_until_render(loop, &selector_rendered_once?(&1, "Model"))
+
+    assert Enum.any?(plain, &String.contains?(&1, "target session"))
+    assert selector_rendered_once?(plain, "Model")
+    assert Enum.any?(plain, &String.contains?(&1, "openai_codex:gpt-5.5"))
+  end
+
   test "renders sessions selector without stale autocomplete overlay" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
 

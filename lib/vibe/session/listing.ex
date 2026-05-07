@@ -8,13 +8,15 @@ defmodule Vibe.Session.Listing do
     |> length()
   end
 
-  @spec list() :: [map()]
-  def list do
+  @spec list(keyword()) :: [map()]
+  def list(opts \\ []) do
+    current_state = Keyword.get(opts, :current_state)
+
     live =
       Registry.select(Vibe.Registry, [
         {{{:session, :"$1"}, :"$2", :"$3"}, [], [{{:"$1", :"$2"}}]}
       ])
-      |> Enum.map(&live_info/1)
+      |> Enum.map(&live_info(&1, current_state))
 
     stored = Store.list() |> Enum.map(&Map.put(&1, :live?, false))
     live_ids = MapSet.new(Enum.map(live, & &1.id))
@@ -39,8 +41,8 @@ defmodule Vibe.Session.Listing do
 
   defp updated_at_sort_key(_session), do: 0
 
-  defp live_info({id, pid}) do
-    state = Vibe.Session.state(pid)
+  defp live_info({id, pid}, current_state) do
+    state = live_state(id, pid, current_state)
     stored = Store.info(id) || %{id: id}
 
     stored
@@ -55,6 +57,9 @@ defmodule Vibe.Session.Listing do
       usage: state.usage
     })
   end
+
+  defp live_state(id, pid, %{session_id: id} = state) when pid == self(), do: state
+  defp live_state(_id, pid, _current_state), do: Vibe.Session.state(pid)
 
   defp conversation_messages(messages) do
     Enum.reject(messages, fn message ->

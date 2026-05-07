@@ -164,7 +164,7 @@ defmodule Vibe.TUI.TerminalLoop do
         trace_record(state, :app_event, event)
       end
 
-    state = paint(state, {:app_event, event_type(event)})
+    state = state |> maybe_reset_render_state(event) |> paint({:app_event, event_type(event)})
     {:noreply, maybe_start_loader_timer(state)}
   end
 
@@ -244,6 +244,11 @@ defmodule Vibe.TUI.TerminalLoop do
       %{state | painter: painter}
     end
   end
+
+  defp maybe_reset_render_state(state, %{type: :session_selected}),
+    do: %{state | render_state: RenderState.new()}
+
+  defp maybe_reset_render_state(state, _event), do: state
 
   defp event_type(%{type: type}), do: type
   defp event_type(type) when is_atom(type), do: type

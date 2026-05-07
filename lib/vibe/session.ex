@@ -51,8 +51,8 @@ defmodule Vibe.Session do
   @spec active_count() :: non_neg_integer()
   def active_count, do: Vibe.Session.Listing.active_count()
 
-  @spec list() :: [map()]
-  def list, do: Vibe.Session.Listing.list()
+  @spec list(keyword()) :: [map()]
+  def list(opts \\ []), do: Vibe.Session.Listing.list(opts)
 
   @spec search(String.t(), keyword()) :: [Search.Result.t()]
   def search(query, opts \\ []), do: Search.sessions(query, opts)
