@@ -71,6 +71,34 @@ defmodule Vibe.TUI.TerminalLoopTest do
              selected_row_prefix(sessions_plain, "Sessions")
   end
 
+  test "command autocomplete keeps the selected row visible while cycling" do
+    {:ok, loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
+    assert :ok = TerminalLoop.input(loop, "/")
+
+    expected = [
+      "/sessions",
+      "/new",
+      "/attach",
+      "/model",
+      "/effort",
+      "/skill",
+      "/clear",
+      "/compact",
+      "/commands",
+      "/help",
+      "/sessions"
+    ]
+
+    for {command, step} <- Enum.with_index(expected) do
+      if step > 0 do
+        assert :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :arrow_down})
+      end
+
+      plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+      assert selected_picker_row(plain) =~ command
+    end
+  end
+
   test "selector confirmation stays responsive with expanded tool output" do
     session_id = "selector-expanded-#{System.unique_integer([:positive])}"
     {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
@@ -636,6 +664,10 @@ defmodule Vibe.TUI.TerminalLoopTest do
   defp selected_row_prefix(plain, title) do
     title_index = Enum.find_index(plain, &(String.trim(&1) == title))
     plain |> Enum.at(title_index + 2) |> String.slice(0, 4)
+  end
+
+  defp selected_picker_row(plain) do
+    Enum.find(plain, &String.starts_with?(&1, "  › ")) || flunk("no selected picker row")
   end
 
   defp blank_line?(line), do: String.trim(line || "") == ""

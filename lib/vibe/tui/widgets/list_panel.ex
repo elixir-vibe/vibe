@@ -9,7 +9,7 @@ defmodule Vibe.TUI.Widgets.ListPanel do
     items = Map.get(props, :items, [])
     selected = Map.get(props, :selected, 0)
     limit = Map.get(props, :limit, 8)
-    offset = Map.get(props, :offset, 0)
+    offset = Map.get(props, :offset, viewport_offset(length(items), selected, limit))
 
     rows =
       items
@@ -70,6 +70,14 @@ defmodule Vibe.TUI.Widgets.ListPanel do
   defp empty_row(message, width, theme) do
     message = message || "No matches"
     theme |> Theme.fg(:dim, message) |> Widget.pad_line(width)
+  end
+
+  defp viewport_offset(count, selected, limit) do
+    cond do
+      count <= limit -> 0
+      selected < limit -> 0
+      true -> min(selected - limit + 1, count - limit)
+    end
   end
 
   defp blank_line(width, theme), do: Widget.background_line("", width, theme, :input_bg)
