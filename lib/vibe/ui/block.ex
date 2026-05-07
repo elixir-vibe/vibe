@@ -15,7 +15,7 @@ defmodule Vibe.UI.Block do
 
   defmodule SystemMessage do
     @moduledoc "Session history marker for local UI state changes."
-    defstruct [:id, :text, :level, :at]
+    defstruct [:id, :text, :level, :marker, :at]
   end
 
   defmodule ToolCall do

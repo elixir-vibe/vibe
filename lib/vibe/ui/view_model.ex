@@ -96,6 +96,7 @@ defmodule Vibe.UI.ViewModel do
       id: id,
       text: Map.get(message, :text),
       level: Map.get(message, :level, :info),
+      marker: Map.get(message, :marker),
       at: message.at
     }
   end

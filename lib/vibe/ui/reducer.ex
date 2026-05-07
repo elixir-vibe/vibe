@@ -176,8 +176,11 @@ defmodule Vibe.UI.Reducer do
       state
       | model: model,
         messages:
-          Lists.append(state.messages, %{
+          state.messages
+          |> drop_trailing_session_marker(:model_selected)
+          |> Lists.append(%{
             role: :system,
+            marker: :model_selected,
             text: "Model: #{model}",
             level: :info,
             at: at
@@ -479,6 +482,13 @@ defmodule Vibe.UI.Reducer do
 
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp drop_trailing_session_marker(messages, marker) do
+    case List.pop_at(messages, -1) do
+      {%{role: :system, marker: ^marker}, rest} -> rest
+      {_message, _rest} -> messages
+    end
+  end
 
   defp tool_event_map(%ToolEvent{} = event) do
     event

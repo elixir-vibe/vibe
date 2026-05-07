@@ -40,6 +40,39 @@ defmodule Vibe.UI.ReducerTest do
     assert Enum.map(state.messages, & &1.text) == ["Model: model-b", "Effort: high"]
   end
 
+  test "coalesces consecutive model history markers semantically" do
+    state =
+      Vibe.UI.State.new(session_id: "ui-test", model: "model-a")
+      |> Vibe.UI.Reducer.apply_event(
+        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-b"})
+      )
+      |> Vibe.UI.Reducer.apply_event(
+        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-c"})
+      )
+
+    assert state.model == "model-c"
+
+    assert Enum.map(state.messages, &Map.take(&1, [:role, :marker, :text])) == [
+             %{role: :system, marker: :model_selected, text: "Model: model-c"}
+           ]
+  end
+
+  test "keeps earlier model markers once conversation continues" do
+    state =
+      Vibe.UI.State.new(session_id: "ui-test", model: "model-a")
+      |> Vibe.UI.Reducer.apply_event(
+        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-b"})
+      )
+      |> Vibe.UI.Reducer.apply_event(
+        Vibe.UI.Event.new(:user_message_added, "ui-test", %{text: "hello"})
+      )
+      |> Vibe.UI.Reducer.apply_event(
+        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-c"})
+      )
+
+    assert Enum.map(state.messages, & &1.text) == ["Model: model-b", "hello", "Model: model-c"]
+  end
+
   test "previews token usage while assistant response streams" do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
