@@ -63,6 +63,7 @@ defmodule Mix.Tasks.Vibe do
     * `--failed` - With `vibe sessions`, show sessions whose preview looks failed.
     * `--limit <n>` - With `vibe sessions`, limit displayed sessions. Defaults to `20`.
     * `--timeout <ms>` - Request/eval timeout.
+    * `--cast <path>` - Record the TUI byte stream as a native gzip cast for debugging.
     * `--login codex` - Sign in with ChatGPT/Codex OAuth.
     * `--help`, `-h` - Show this help.
     * `--version`, `-v` - Show version.

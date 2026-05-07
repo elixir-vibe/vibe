@@ -35,6 +35,7 @@ defmodule Vibe.CLI.Parser do
     web: :boolean,
     port: :integer,
     trace_tui: :string,
+    cast: :string,
     frame: :integer,
     token: :string,
     bot_id: :string,

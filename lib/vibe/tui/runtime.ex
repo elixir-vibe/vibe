@@ -4,7 +4,8 @@ defmodule Vibe.TUI.Runtime do
   """
 
   alias IO.ANSI
-  alias Vibe.TUI.{RuntimeSupervisor, TerminalLoop, TerminalPainter}
+  alias Vibe.TUI.{Cast, RuntimeSupervisor, TerminalLoop, TerminalPainter}
+  alias Vibe.TUI.Cast.Writer
 
   @interrupt_repeat_window_ms 1_500
 
@@ -24,20 +25,22 @@ defmodule Vibe.TUI.Runtime do
 
     with :ok <- ensure_interactive_terminal(),
          {:ok, supervisor} <- RuntimeSupervisor.start_link(opts) do
-      run_with_tty(supervisor, runtime_id, columns, rows)
+      run_with_tty(supervisor, runtime_id, columns, rows, opts)
     end
   end
 
-  defp run_with_tty(supervisor, runtime_id, columns, rows) do
+  defp run_with_tty(supervisor, runtime_id, columns, rows, opts) do
     case Ghostty.TTY.start_link(owner: self(), takeover: true) do
       {:ok, tty} ->
         loop = RuntimeSupervisor.name(runtime_id, TerminalLoop)
+        cast = start_cast(opts, columns, rows)
 
         try do
-          painter = render(loop, TerminalPainter.new(columns, rows))
-          receive_events(tty, loop, nil, painter)
+          painter = render(loop, TerminalPainter.new(columns, rows), cast)
+          receive_events(tty, loop, nil, painter, cast)
         after
-          write_output(TerminalPainter.cleanup())
+          write_output(TerminalPainter.cleanup(), cast)
+          Writer.close(cast)
           GenServer.stop(tty)
           Supervisor.stop(supervisor)
         end
@@ -48,54 +51,60 @@ defmodule Vibe.TUI.Runtime do
     end
   end
 
-  defp receive_events(tty, loop, last_interrupt_at, painter) do
+  defp receive_events(tty, loop, last_interrupt_at, painter, cast) do
     receive do
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]} = event}} ->
-        handle_interrupt(tty, loop, event, last_interrupt_at, painter)
+        handle_interrupt(tty, loop, event, last_interrupt_at, painter, cast)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}} ->
+        Writer.key(cast, event)
         TerminalLoop.input_key(loop, event)
-        repaint_or_stop(tty, loop, last_interrupt_at, painter)
+        repaint_or_stop(tty, loop, last_interrupt_at, painter, cast)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{} = event}} ->
+        Writer.key(cast, event)
         TerminalLoop.input_key(loop, event)
-        repaint_or_stop(tty, loop, nil, painter)
+        repaint_or_stop(tty, loop, nil, painter, cast)
 
       {Ghostty.TTY, ^tty, {:data, data}} when is_binary(data) ->
+        record_input(cast, data)
         TerminalLoop.input(loop, data)
-        repaint_or_stop(tty, loop, nil, painter)
+        repaint_or_stop(tty, loop, nil, painter, cast)
 
       {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
+        Writer.resize(cast, columns, rows)
         {painter, _changed?} = resize_painter(loop, painter, {columns, rows})
-        repaint_or_stop(tty, loop, nil, painter)
+        repaint_or_stop(tty, loop, nil, painter, cast)
 
-      {TerminalLoop, :event, _event} ->
-        repaint_or_stop(tty, loop, last_interrupt_at, painter)
+      {TerminalLoop, :event, event} ->
+        Writer.app_event(cast, event)
+        repaint_or_stop(tty, loop, last_interrupt_at, painter, cast)
 
       {Ghostty.TTY, ^tty, :eof} ->
         :ok
     end
   end
 
-  defp repaint_or_stop(tty, loop, last_interrupt_at, painter) do
-    case drain_pending_events(tty, loop, last_interrupt_at, painter) do
+  defp repaint_or_stop(tty, loop, last_interrupt_at, painter, cast) do
+    case drain_pending_events(tty, loop, last_interrupt_at, painter, cast) do
       {:continue, painter} ->
-        painter = render(loop, painter)
-        receive_events(tty, loop, last_interrupt_at, painter)
+        painter = render(loop, painter, cast)
+        receive_events(tty, loop, last_interrupt_at, painter, cast)
 
       :stop ->
         :ok
     end
   end
 
-  defp handle_interrupt(tty, loop, event, last_interrupt_at, painter) do
+  defp handle_interrupt(tty, loop, event, last_interrupt_at, painter, cast) do
     now = System.monotonic_time(:millisecond)
 
     if recent_interrupt?(last_interrupt_at, now) do
       :ok
     else
+      Writer.key(cast, event)
       TerminalLoop.input_key(loop, event)
-      repaint_or_stop(tty, loop, now, painter)
+      repaint_or_stop(tty, loop, now, painter, cast)
     end
   end
 
@@ -105,12 +114,12 @@ defmodule Vibe.TUI.Runtime do
   defp recent_interrupt?(last_interrupt_at, now),
     do: now - last_interrupt_at <= @interrupt_repeat_window_ms
 
-  defp drain_pending_events(tty, loop, last_interrupt_at, painter) do
+  defp drain_pending_events(tty, loop, last_interrupt_at, painter, cast) do
     deadline = System.monotonic_time(:millisecond) + 8
-    drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, 0)
+    drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, 0)
   end
 
-  defp drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained) do
+  defp drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, drained) do
     if drained >= 25 or System.monotonic_time(:millisecond) >= deadline do
       {:continue, painter}
     else
@@ -119,6 +128,7 @@ defmodule Vibe.TUI.Runtime do
           if recent_interrupt?(last_interrupt_at) do
             :stop
           else
+            Writer.key(cast, event)
             TerminalLoop.input_key(loop, event)
 
             drain_pending_events(
@@ -126,29 +136,35 @@ defmodule Vibe.TUI.Runtime do
               loop,
               System.monotonic_time(:millisecond),
               painter,
+              cast,
               deadline,
               drained + 1
             )
           end
 
         {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}} ->
+          Writer.key(cast, event)
           TerminalLoop.input_key(loop, event)
-          drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained + 1)
+          drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, drained + 1)
 
         {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{} = event}} ->
+          Writer.key(cast, event)
           TerminalLoop.input_key(loop, event)
-          drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
+          drain_pending_events(tty, loop, nil, painter, cast, deadline, drained + 1)
 
         {Ghostty.TTY, ^tty, {:data, data}} when is_binary(data) ->
+          record_input(cast, data)
           TerminalLoop.input(loop, data)
-          drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
+          drain_pending_events(tty, loop, nil, painter, cast, deadline, drained + 1)
 
         {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
+          Writer.resize(cast, columns, rows)
           {painter, _changed?} = resize_painter(loop, painter, {columns, rows})
-          drain_pending_events(tty, loop, nil, painter, deadline, drained + 1)
+          drain_pending_events(tty, loop, nil, painter, cast, deadline, drained + 1)
 
-        {TerminalLoop, :event, _event} ->
-          drain_pending_events(tty, loop, last_interrupt_at, painter, deadline, drained + 1)
+        {TerminalLoop, :event, event} ->
+          Writer.app_event(cast, event)
+          drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, drained + 1)
 
         {Ghostty.TTY, ^tty, :eof} ->
           :stop
@@ -173,10 +189,10 @@ defmodule Vibe.TUI.Runtime do
     {TerminalPainter.resize(painter, columns, rows), true}
   end
 
-  defp render(loop, painter) do
+  defp render(loop, painter, cast) do
     {lines, cursor} = TerminalLoop.render_snapshot(loop)
     {frame, painter} = TerminalPainter.render(painter, lines, cursor)
-    write_output(frame)
+    write_output(frame, cast)
     painter
   end
 
@@ -215,6 +231,28 @@ defmodule Vibe.TUI.Runtime do
     [start | rows] |> Vibe.TUI.Lines.append(finish)
   end
 
+  defp start_cast(opts, columns, rows) do
+    opts =
+      opts
+      |> Keyword.put(:width, columns)
+      |> Keyword.put(:height, rows)
+
+    case Cast.start_writer(opts) do
+      {:ok, cast} -> cast
+      {:error, _reason} -> nil
+    end
+  end
+
+  defp record_input(nil, _data), do: :ok
+
+  defp record_input(cast, data) do
+    if System.get_env("VIBE_TUI_CAST_INPUT") == "1" do
+      Writer.input(cast, data)
+    else
+      Writer.input_redacted(cast, byte_size(data))
+    end
+  end
+
   defp hide_cursor, do: "\e[?25l"
   defp show_cursor, do: "\e[?25h"
   defp disable_autowrap, do: "\e[?7l"
@@ -222,7 +260,10 @@ defmodule Vibe.TUI.Runtime do
   defp begin_synchronized_update, do: "\e[?2026h"
   defp end_synchronized_update, do: "\e[?2026l"
 
-  defp write_output(data), do: IO.write(:stdio, data)
+  defp write_output(data, cast) do
+    Writer.output(cast, data)
+    IO.write(:stdio, data)
+  end
 
   defp ensure_interactive_terminal do
     if :prim_tty.isatty(:stdin) do

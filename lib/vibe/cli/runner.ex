@@ -106,6 +106,7 @@ defmodule Vibe.CLI.Runner do
     runtime_opts =
       [session_id: session_id(opts), model: Vibe.Model.Config.resolve(opts)]
       |> maybe_put(:trace_dir, trace_dir(opts))
+      |> maybe_put(:cast, cast_path(opts))
       |> maybe_put(:remote_node, opts[:remote_node])
       |> Keyword.merge(runtime_extra)
       |> maybe_put_system_prompt(opts[:system_prompt])
@@ -156,6 +157,8 @@ defmodule Vibe.CLI.Runner do
   else
     defp trace_dir(_opts), do: nil
   end
+
+  defp cast_path(opts), do: opts[:cast] || System.get_env("VIBE_TUI_CAST")
 
   defp maybe_put_system_prompt(opts, nil), do: opts
   defp maybe_put_system_prompt(opts, system_prompt), do: Keyword.put(opts, :system, system_prompt)
