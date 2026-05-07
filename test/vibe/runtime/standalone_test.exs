@@ -1,5 +1,5 @@
 defmodule Vibe.Runtime.StandaloneTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   @blocking_sleep_ms 5_000
   @blocking_eval_code "Process.sleep(#{@blocking_sleep_ms})"
