@@ -31,7 +31,7 @@ defmodule Vibe.Agent.StreamingTest do
     Vibe.Agent.Streaming.unregister(agent)
     Vibe.Agent.Streaming.dispatch(agent_id, StreamChunk.text("ignored"))
 
-    refute_receive {:content, "ignored"}, 50
+    refute_receive {:content, "ignored"}, 10
   end
 
   test "plugin traces and prefers ordered ReAct runtime deltas over derived LLM delta signals", %{
@@ -65,7 +65,7 @@ defmodule Vibe.Agent.StreamingTest do
              Vibe.Agent.Streaming.Plugin.handle_signal(duplicate_signal, %{agent: %{id: agent_id}})
 
     assert_receive {:content, "program"}
-    refute_receive {:content, "program"}, 50
+    refute_receive {:content, "program"}, 10
 
     assert %{
              runtime_text: "program",
@@ -109,7 +109,7 @@ defmodule Vibe.Agent.StreamingTest do
     assert_receive {:content, "a"}
 
     assert {:ok, :continue} = Vibe.Agent.Streaming.Plugin.handle_signal(signal.(3, "c"), context)
-    refute_receive {:content, "c"}, 50
+    refute_receive {:content, "c"}, 10
 
     assert {:ok, :continue} = Vibe.Agent.Streaming.Plugin.handle_signal(signal.(2, "b"), context)
     assert_receive {:content, "b"}
