@@ -32,7 +32,7 @@ defmodule Vibe.EvalTest do
 
   test "command result exposes exit_status" do
     assert {:ok, result} =
-             Vibe.Eval.once(~S|Cmd.run(["bash", "-lc", "exit 0"]).exit_status|,
+             Vibe.Eval.once(~S|Cmd.run(["sh", "-c", "exit 0"]).exit_status|,
                timeout: 5_000
              )
 
@@ -61,7 +61,7 @@ defmodule Vibe.EvalTest do
       Task.async(fn ->
         send(parent, :eval_started)
 
-        Vibe.Eval.run(~S|Cmd.run(["bash", "-lc", "sleep 5"], timeout: 10_000)|,
+        Vibe.Eval.run(~S|Cmd.run(["sh", "-c", "sleep 5"], timeout: 10_000)|,
           session_id: session_id,
           timeout: 10_000
         )
