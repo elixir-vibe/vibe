@@ -2,20 +2,28 @@ defmodule Vibe.Code.ChecksTest do
   use ExUnit.Case, async: false
 
   test "analysis gives agent-friendly summary without reruns" do
-    report = Vibe.Code.Checks.analyze(checks: [:reach])
+    path =
+      Path.join(System.tmp_dir!(), "vibe-reach-good-#{System.unique_integer([:positive])}.ex")
 
-    assert report.ok?
-    assert report.failed == []
-    assert [%{name: :reach, status: :ok}] = report.summary
+    File.write!(path, "defmodule Good do\n  def ok, do: :ok\nend\n")
 
-    assert [%{name: :reach, status: :ok, details: %{files: files, errors: [], project: project}}] =
-             report.results
+    try do
+      report = Vibe.Code.Checks.analyze(checks: [:reach], paths: [path])
 
-    assert files > 0
-    assert project.modules > 0
-    assert is_map(project.otp)
-    assert is_map(project.concurrency)
-    assert is_list(project.smells)
+      assert report.ok?
+      assert report.failed == []
+      assert [%{name: :reach, status: :ok}] = report.summary
+
+      assert [%{name: :reach, status: :ok, details: %{files: 1, errors: [], project: project}}] =
+               report.results
+
+      assert project.modules > 0
+      assert is_map(project.otp)
+      assert is_map(project.concurrency)
+      assert is_list(project.smells)
+    after
+      File.rm(path)
+    end
   end
 
   test "ast pattern check scans multiple patterns in one traversal" do

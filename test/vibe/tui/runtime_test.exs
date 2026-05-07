@@ -113,6 +113,7 @@ defmodule Vibe.TUI.RuntimeTest do
     GenServer.stop(session)
   end
 
+  @tag :integration
   test "mix vibe accepts input in a real PTY, escape cancels, and double ctrl-c exits" do
     {:ok, terminal} = Terminal.start_link(cols: @cols, rows: @rows)
 

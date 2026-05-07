@@ -151,7 +151,12 @@ defmodule Vibe.TUI.App do
 
   defp maybe_schedule_server_migration(opts) do
     if Keyword.get(opts, :start_server_async, false),
-      do: Process.send_after(self(), :server_migration_tick, 500),
+      do:
+        Process.send_after(
+          self(),
+          :server_migration_tick,
+          Keyword.get(opts, :server_migration_delay_ms, 500)
+        ),
       else: nil
   end
 

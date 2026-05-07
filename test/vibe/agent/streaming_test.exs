@@ -5,6 +5,7 @@ defmodule Vibe.Agent.StreamingTest do
   alias Vibe.UI.ToolEvent
 
   setup do
+    System.delete_env("VIBE_STREAM_TRACE_DIR")
     {:ok, agent} = Vibe.start_link(session_id: "streaming-test")
     {:ok, status} = Jido.AgentServer.status(agent)
     {:ok, agent: agent, agent_id: status.agent_id}

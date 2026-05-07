@@ -111,11 +111,20 @@ defmodule Vibe.CLI.Sessions do
   attach-oriented CLI flows and tests that need to inspect server listings.
   """
   def latest_live_remote_session_id do
-    case server_call(&Vibe.Remote.Session.list/0) do
-      {:ok, sessions} -> latest_live_session_id(sessions)
-      sessions when is_list(sessions) -> latest_live_session_id(sessions)
-      {:error, _reason} -> nil
-      {:badrpc, _reason} -> nil
+    case Vibe.Remote.connect() do
+      {:ok, _node} ->
+        case Vibe.Remote.Session.list() do
+          {:ok, sessions} -> latest_live_session_id(sessions)
+          sessions when is_list(sessions) -> latest_live_session_id(sessions)
+          {:error, _reason} -> nil
+          {:badrpc, _reason} -> nil
+        end
+
+      {:error, _reason} ->
+        nil
+
+      {:badrpc, _reason} ->
+        nil
     end
   end
 

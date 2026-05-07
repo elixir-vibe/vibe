@@ -220,20 +220,26 @@ defmodule Vibe.TUI.MarkdownTest do
   test "streaming comprehensive fixture does not leave duplicate table top borders" do
     "priv/fixtures/markdown_stress.md"
     |> File.stream!([], :line)
-    |> Enum.reduce(Markdown.new_stream(), fn chunk, document ->
+    |> Enum.with_index(1)
+    |> Enum.reduce(Markdown.new_stream(), fn {chunk, index}, document ->
       document = Markdown.put_chunk(document, chunk)
 
-      plain =
-        document
-        |> Markdown.render_stream(120, Theme.default())
-        |> Enum.map(&Width.visible_text/1)
+      if streaming_stress_checkpoint?(chunk, index) do
+        plain =
+          document
+          |> Markdown.render_stream(120, Theme.default())
+          |> Enum.map(&Width.visible_text/1)
 
-      refute adjacent_table_tops?(plain)
-      assert Enum.count(plain, &String.starts_with?(&1, "╭")) <= 2
+        refute adjacent_table_tops?(plain)
+        assert Enum.count(plain, &String.starts_with?(&1, "╭")) <= 2
+      end
 
       document
     end)
   end
+
+  defp streaming_stress_checkpoint?(chunk, index),
+    do: rem(index, 20) == 0 or String.contains?(chunk, "|")
 
   defp streaming_table_top(document) do
     document

@@ -44,7 +44,8 @@ defmodule Vibe.Auth.CodexTest do
   test "login prints failure reason" do
     output =
       capture_io(:stderr, fn ->
-        assert {:error, _reason} = Vibe.Auth.Codex.login(open_browser: false, timeout: 1)
+        assert {:error, _reason} =
+                 Vibe.Auth.Codex.login(open_browser: false, timeout: 1, prompt_code: false)
       end)
 
     assert output =~ "ChatGPT/Codex sign-in failed"

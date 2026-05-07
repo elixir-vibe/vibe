@@ -2,10 +2,19 @@ defmodule Vibe.Code.ASTTest do
   use ExUnit.Case, async: true
 
   test "search finds Elixir structure" do
-    assert {:ok, %{action: :search, result: matches}} =
-             Vibe.Code.AST.run(action: :search, path: "lib/", pattern: "def run(_, _) do _ end")
+    path =
+      Path.join(System.tmp_dir!(), "vibe-ast-search-#{System.unique_integer([:positive])}.ex")
 
-    assert is_list(matches)
+    File.write!(path, "defmodule Fixture do\n  def run(_, _) do\n    :ok\n  end\nend\n")
+
+    try do
+      assert {:ok, %{action: :search, result: matches}} =
+               Vibe.Code.AST.run(action: :search, path: path, pattern: "def run(_, _) do _ end")
+
+      assert [_match] = matches
+    after
+      File.rm(path)
+    end
   end
 
   test "search_many finds multiple named patterns in one traversal" do

@@ -520,7 +520,8 @@ defmodule Vibe.TUI.TerminalLoopTest do
         width: 60,
         height: 12,
         session_id: session_id,
-        event_target: self()
+        event_target: self(),
+        loader_tick_ms: 1
       )
 
     assert :ok = Vibe.UI.Bus.emit(session_id, :assistant_stream_started, %{})
@@ -543,7 +544,8 @@ defmodule Vibe.TUI.TerminalLoopTest do
         width: 60,
         height: 12,
         session_id: session_id,
-        event_target: self()
+        event_target: self(),
+        loader_tick_ms: 1
       )
 
     assert :ok = Vibe.UI.Bus.emit(session_id, :assistant_stream_started, %{})
@@ -581,7 +583,8 @@ defmodule Vibe.TUI.TerminalLoopTest do
         width: 60,
         height: 12,
         session_server: session,
-        event_target: self()
+        event_target: self(),
+        loader_tick_ms: 1
       )
 
     assert_receive {TerminalLoop, :event, :loader_tick}, 300

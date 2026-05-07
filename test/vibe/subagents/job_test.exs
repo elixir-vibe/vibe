@@ -49,17 +49,22 @@ defmodule Vibe.Subagents.JobTest do
   end
 
   test "running subagent child session is read-only for other callers" do
+    parent = self()
+
     assert {:ok, job} =
              Vibe.Subagents.start("locked task",
                role: :scout,
                ask_fun: fn _text, _opts ->
-                 Process.sleep(500)
-                 {:ok, "done"}
+                 send(parent, {:subagent_started, self()})
+
+                 receive do
+                   :finish_subagent -> {:ok, "done"}
+                 end
                end
              )
 
+    assert_receive {:subagent_started, ask_pid}, 500
     assert {:ok, child_session} = wait_for_child_session(job.child_session_id)
-    Process.sleep(50)
     :ok = Vibe.Session.dispatch(child_session, {:submit_prompt, %{text: "interrupt"}})
     state = Vibe.Session.state(child_session)
 
@@ -67,6 +72,7 @@ defmodule Vibe.Subagents.JobTest do
              String.contains?(notification.text, "read-only")
            end)
 
+    send(ask_pid, :finish_subagent)
     assert {:ok, _finished} = Vibe.Subagents.await(job.id, @await_timeout_ms)
   end
 

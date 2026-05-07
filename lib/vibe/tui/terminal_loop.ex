@@ -63,6 +63,7 @@ defmodule Vibe.TUI.TerminalLoop do
       event_target: Keyword.get(opts, :event_target),
       loader_phase: 0,
       loader_timer: nil,
+      loader_tick_ms: Keyword.get(opts, :loader_tick_ms, 120),
       painter: TerminalPainter.new(snapshot.width, snapshot.height),
       render_state: RenderState.new(),
       theme: Keyword.get_lazy(opts, :theme, &Theme.default/0),
@@ -279,7 +280,7 @@ defmodule Vibe.TUI.TerminalLoop do
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
     if working?(state) do
-      %{state | loader_timer: Process.send_after(self(), :loader_tick, 120)}
+      %{state | loader_timer: Process.send_after(self(), :loader_tick, state.loader_tick_ms)}
     else
       state
     end

@@ -60,11 +60,12 @@ defmodule Vibe.Auth.Codex do
           server,
           Keyword.get(opts, :timeout, @oauth_callback_timeout_ms)
         ) ||
-          prompt_code(state)
+          maybe_prompt_code(state, opts)
 
       CallbackServer.stop(server)
 
-      with {:ok, credentials} <- exchange_code(code, verifier),
+      with {:ok, code} <- authorization_code(code),
+           {:ok, credentials} <- exchange_code(code, verifier),
            {:ok, credentials} <- attach_account_id(credentials) do
         credentials = Map.put(credentials, :type, "oauth")
         Store.save(id(), credentials)
@@ -154,6 +155,9 @@ defmodule Vibe.Auth.Codex do
 
   defp format_error(reason), do: inspect(reason, pretty: true)
 
+  defp authorization_code(code) when is_binary(code) and code != "", do: {:ok, code}
+  defp authorization_code(_code), do: {:error, :authorization_code_missing}
+
   defp exchange_code(code, verifier) do
     %{
       grant_type: "authorization_code",
@@ -217,6 +221,10 @@ defmodule Vibe.Auth.Codex do
       })
 
     @authorize_url <> "?" <> query
+  end
+
+  defp maybe_prompt_code(state, opts) do
+    if Keyword.get(opts, :prompt_code, true), do: prompt_code(state)
   end
 
   defp prompt_code(state) do

@@ -70,18 +70,17 @@ defmodule Vibe.SessionProcessTest do
     path = Vibe.Session.Store.path(session_id)
     on_exit(fn -> File.rm(path) end)
 
+    events =
+      for index <- 1..201 do
+        {index, Vibe.UI.Event.new(:overlay_opened, session_id, %{id: index, kind: :test_overlay})}
+      end
+
+    :ok = Vibe.Session.Store.append_ui_events(events)
+
     {:ok, server} =
       Vibe.Session.start_link(session_id: session_id, ask_fun: fn _text, _opts -> {:ok, "ok"} end)
 
-    for index <- 1..205 do
-      :ok =
-        Vibe.Session.emit_event(
-          server,
-          Vibe.UI.Event.new(:overlay_opened, session_id, %{id: index, kind: :test_overlay})
-        )
-    end
-
-    {:ok, _snapshot, 205} = Vibe.Session.attach(server, self(), after: 1)
+    {:ok, _snapshot, 201} = Vibe.Session.attach(server, self(), after: 1)
     assert_receive {Vibe.Session, :event, %{data: %{id: 2}}}
     assert_receive {Vibe.Session, :event, %{data: %{id: 3}}}
     GenServer.stop(server)

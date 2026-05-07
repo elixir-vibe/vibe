@@ -122,6 +122,7 @@ defmodule Vibe.TUI.AppTest do
       App.start_link(
         session_id: "async-migration-session",
         start_server_async: true,
+        server_migration_delay_ms: 0,
         server_migration_fun: migration_fun,
         persist?: false
       )
@@ -145,7 +146,6 @@ defmodule Vibe.TUI.AppTest do
     {:ok, app} =
       App.start_link(
         session_id: "busy-local-session",
-        start_server_async: true,
         server_migration_fun: migration_fun,
         persist?: false,
         ask_fun: fn _text, _opts ->
@@ -159,7 +159,9 @@ defmodule Vibe.TUI.AppTest do
 
     snapshot = wait_until(app, &(&1.ui.status == :working))
     assert snapshot.ui.session_id == "busy-local-session"
-    refute_receive {:migration_attempted, "busy-local-session"}, @migration_assert_timeout_ms
+
+    send(app, :server_migration_tick)
+    refute_receive {:migration_attempted, "busy-local-session"}, 50
   end
 
   test "offers generic slash command autocomplete" do
