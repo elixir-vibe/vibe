@@ -54,12 +54,21 @@ defmodule Vibe.UI.SlashCommands.Sessions do
 
   defp session_label(session) do
     preview =
-      Map.get(session, :first_message) || Map.get(session, :last_message_preview) ||
-        "empty session"
+      session
+      |> session_preview()
+      |> blank_to_empty_session()
 
-    marker = if Map.get(session, :live?), do: "● ", else: "  "
-    marker <> preview
+    if Map.get(session, :live?), do: "● #{preview}", else: preview
   end
+
+  defp session_preview(session),
+    do: Map.get(session, :first_message) || Map.get(session, :last_message_preview)
+
+  defp blank_to_empty_session(text) when is_binary(text) do
+    if String.trim(text) == "", do: "empty session", else: text
+  end
+
+  defp blank_to_empty_session(_text), do: "empty session"
 
   defp session_detail(session) do
     [

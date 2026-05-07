@@ -43,8 +43,32 @@ defmodule Vibe.TUI.TerminalLoopTest do
 
     assert selector_rendered_once?(plain, "Sessions")
     assert Enum.any?(plain, &String.contains?(&1, "msg"))
+    assert picker_panel_shape(plain, "Sessions") == {:blank, :title, :blank, :selected_row}
+    assert selected_row_prefix(plain, "Sessions") == "  › "
     refute autocomplete_artifact?(plain)
     refute Enum.any?(plain, &String.contains?(&1, "Commands"))
+  end
+
+  test "command autocomplete and sessions selector share panel chrome" do
+    {:ok, commands_loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
+    assert :ok = TerminalLoop.input(commands_loop, "/")
+    commands_plain = commands_loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
+
+    {:ok, sessions_loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
+    assert :ok = TerminalLoop.input(sessions_loop, "/sessions")
+    assert :ok = TerminalLoop.input_key(sessions_loop, %Ghostty.KeyEvent{key: :enter})
+
+    sessions_plain =
+      wait_until_render(
+        sessions_loop,
+        &Enum.any?(&1, fn line -> String.contains?(line, "Sessions") end)
+      )
+
+    assert picker_panel_shape(commands_plain, "Commands") ==
+             picker_panel_shape(sessions_plain, "Sessions")
+
+    assert selected_row_prefix(commands_plain, "Commands") ==
+             selected_row_prefix(sessions_plain, "Sessions")
   end
 
   test "selector confirmation stays responsive with expanded tool output" do
@@ -596,6 +620,25 @@ defmodule Vibe.TUI.TerminalLoopTest do
   defp selector_rendered_once?(plain, title) do
     Enum.count(plain, &(String.trim(&1) == title)) == 1
   end
+
+  defp picker_panel_shape(plain, title) do
+    title_index = Enum.find_index(plain, &(String.trim(&1) == title))
+
+    [
+      blank_line?(Enum.at(plain, title_index - 1)),
+      String.trim(Enum.at(plain, title_index)) == title,
+      blank_line?(Enum.at(plain, title_index + 1)),
+      String.starts_with?(Enum.at(plain, title_index + 2), "  › ")
+    ]
+    |> then(fn [true, true, true, true] -> {:blank, :title, :blank, :selected_row} end)
+  end
+
+  defp selected_row_prefix(plain, title) do
+    title_index = Enum.find_index(plain, &(String.trim(&1) == title))
+    plain |> Enum.at(title_index + 2) |> String.slice(0, 4)
+  end
+
+  defp blank_line?(line), do: String.trim(line || "") == ""
 
   defp autocomplete_artifact?(plain) do
     Enum.any?(plain, &(String.trim(&1) == "Completions")) or

@@ -18,8 +18,7 @@ defmodule Vibe.TUI.Widgets.SelectList do
         selected: selected,
         limit: limit,
         offset: viewport_offset(length(items), selected, limit),
-        empty_message: Map.get(props, :empty_message),
-        chrome: :compact
+        empty_message: Map.get(props, :empty_message)
       },
       width,
       theme
