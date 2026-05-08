@@ -49,3 +49,7 @@ This repository is part of the Elixir Vibe organization.
 - Avoid recording raw prompts, file contents, tool outputs, secrets, or OAuth tokens in telemetry metadata; prefer IDs, counts, durations, statuses, and byte/token sizes.
 - For storage imports, add an `Vibe.Storage.Importer` implementation and register it in `Vibe.Storage.Import`; keep provider-specific parsing (such as Pi JSONL) out of the dispatcher. Preserve source metadata such as cwd and distinguish conversation text from imported tool output for search quality.
 - For Livebook-style execution and `Mix.install/2`, isolate work in a child BEAM/runtime; do not pollute Vibe's long-running VM.
+- Keep the default test suite fast without weakening coverage: prefer deterministic process handshakes, monitor/receive synchronization, and `refute_received` after synchronous calls over fixed `Process.sleep/1` or long `refute_receive` delays.
+- Never use uncapped `receive` loops as timeout-test fixtures; they can hang full-suite/autoresearch runs. Use bounded sleeps/timeouts or explicit messages with a safe `after` clause.
+- Put expensive real-environment tests (real PTY `mix vibe`, image backend binaries, and similar external integrations) behind `@tag :integration`; default tests should still cover behavior with deterministic local fakes or semantic renderers.
+- When optimizing tests, run the full default suite with a hard external timeout and avoid keeping changes that only reduce ExUnit-reported time while worsening wall-clock time or reducing meaningful default coverage.
