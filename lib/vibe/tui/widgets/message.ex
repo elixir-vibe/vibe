@@ -16,7 +16,7 @@ defmodule Vibe.TUI.Widgets.Message do
       error
       |> Error.text()
       |> Markdown.render(max(width - 4, 1), theme)
-      |> prefix_first_line(Theme.fg(theme, :error, "ERROR "))
+      |> prefix_first_line(Theme.fg(theme, :error, Theme.symbol(theme, :error_icon) <> " "))
       |> render_block_lines(width, theme, :tool_error_bg, :error)
     end)
   end

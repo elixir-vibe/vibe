@@ -173,7 +173,7 @@ defmodule Vibe.TUI.WidgetsTest do
 
     assert lines == [
              String.duplicate(" ", 40),
-             "  ERROR boom" <> String.duplicate(" ", 28),
+             "  × boom" <> String.duplicate(" ", 32),
              String.duplicate(" ", 40)
            ]
   end
