@@ -17,9 +17,8 @@ defmodule Vibe.Actions.Write do
 
   @impl true
   def run(params, _context) do
-    params = JSONSpec.atomize(@schema, params)
-
     Vibe.Actions.ToolResult.run(fn ->
+      params = JSONSpec.atomize(@schema, params)
       Vibe.Files.write_file(params.path, params.content)
     end)
   end

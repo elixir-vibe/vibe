@@ -21,13 +21,14 @@ defmodule Vibe.Tool.Display.LSP do
 
   defp summary(tool, output) do
     args = Map.get(tool, :args) || %{}
+    result = unwrap_result(output)
 
     cond do
       is_binary(Util.arg(args, :file)) -> Util.arg(args, :file)
       is_binary(Util.arg(args, :cwd)) -> Util.arg(args, :cwd)
       is_binary(Util.arg(args, :query)) -> Util.arg(args, :query)
-      is_list(output) -> "#{length(output)} diagnostics"
-      true -> Util.summarize_value(output, 72)
+      is_list(result) -> "#{length(result)} #{result_label(args)}"
+      true -> Util.summarize_value(result, 72)
     end
   end
 
@@ -54,4 +55,15 @@ defmodule Vibe.Tool.Display.LSP do
 
   defp body(%{error: error}), do: [{:error, to_string(error), truncation: :tail}]
   defp body(_output), do: []
+
+  defp result_label(args) do
+    case Util.arg(args, :action) do
+      action when action in [:diagnostics, "diagnostics"] -> "diagnostics"
+      _action -> "results"
+    end
+  end
+
+  defp unwrap_result(%{result: result}), do: result
+  defp unwrap_result(%{"result" => result}), do: result
+  defp unwrap_result(output), do: output
 end

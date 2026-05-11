@@ -33,9 +33,9 @@ defmodule Vibe.Actions.Read do
 
   @impl true
   def run(params, _context) do
-    params = JSONSpec.atomize(@schema, params)
-
     Vibe.Actions.ToolResult.run(fn ->
+      params = JSONSpec.atomize(@schema, params)
+
       Vibe.Files.read_file(params.path,
         limit_lines: Map.get(params, :limit_lines, @default_limit_lines),
         limit_bytes: Map.get(params, :limit_bytes, Vibe.ToolOutput.default_max_bytes()),

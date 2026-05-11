@@ -246,8 +246,13 @@ defmodule Vibe.TUI.TerminalLoop do
     end
   end
 
-  defp maybe_reset_render_state(state, %{type: :session_selected}),
-    do: %{state | render_state: RenderState.new()}
+  defp maybe_reset_render_state(state, %{type: :session_selected}) do
+    %{
+      state
+      | render_state: RenderState.new(),
+        painter: TerminalPainter.force_full_redraw(state.painter)
+    }
+  end
 
   defp maybe_reset_render_state(state, _event), do: state
 

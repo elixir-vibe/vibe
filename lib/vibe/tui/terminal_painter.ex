@@ -47,6 +47,11 @@ defmodule Vibe.TUI.TerminalPainter do
     }
   end
 
+  @spec force_full_redraw(t()) :: t()
+  def force_full_redraw(%__MODULE__{} = painter) do
+    %{painter | lines: [], cursor: {1, 1}, hardware_row: 1, viewport_top: 1, initialized?: true}
+  end
+
   @spec render(t(), [IO.chardata()], {pos_integer(), pos_integer()}) :: {IO.chardata(), t()}
   def render(%__MODULE__{} = painter, lines, cursor) do
     padded_lines = pad_to_viewport(lines, painter.height)

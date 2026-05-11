@@ -1,5 +1,11 @@
 defmodule Vibe.Model.Switcher do
-  @moduledoc "Model and effort switching helpers."
+  @moduledoc """
+  Model and effort switching helpers.
+
+  The model selector shows profile models from `agent-profiles.toml` plus the
+  current model. Users can also type any `provider:model_id` string directly
+  via `/model` — ReqLLM supports 50+ providers out of the box.
+  """
 
   alias Vibe.Model.Effort
 

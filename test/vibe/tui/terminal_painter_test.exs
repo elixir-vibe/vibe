@@ -72,6 +72,28 @@ defmodule Vibe.TUI.TerminalPainterTest do
     assert painter.lines == ["", "", "", "one", "TWO"]
   end
 
+  test "forced full redraw clears stale visible rows without clearing scrollback" do
+    {:ok, terminal} = Ghostty.Terminal.start_link(cols: 40, rows: 5, max_scrollback: 100)
+    painter = TerminalPainter.new(40, 5)
+    {frame, painter} = TerminalPainter.render(painter, ["old top", "old bottom"], {2, 1})
+    :ok = Ghostty.Terminal.write(terminal, frame)
+
+    {frame, _painter} =
+      painter
+      |> TerminalPainter.force_full_redraw()
+      |> TerminalPainter.render(["new session"], {1, 1})
+
+    frame = IO.iodata_to_binary(frame)
+    assert frame =~ IO.ANSI.clear()
+    refute frame =~ "\e[3J"
+
+    :ok = Ghostty.Terminal.write(terminal, frame)
+    assert {:ok, screen} = Ghostty.Terminal.snapshot(terminal, :plain)
+    assert screen =~ "new session"
+    refute screen =~ "old top"
+    refute screen =~ "old bottom"
+  end
+
   test "appended content scrolls native terminal history like Pi" do
     painter = TerminalPainter.new(20, 3)
     {_frame, painter} = TerminalPainter.render(painter, ["one", "two", "three"], {3, 6})

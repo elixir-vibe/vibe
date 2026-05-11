@@ -1,6 +1,12 @@
 defmodule Vibe.Auth do
   @moduledoc """
   Auth provider registry and dispatch.
+
+  Most LLM providers authenticate via env vars (`ANTHROPIC_API_KEY`,
+  `DEEPSEEK_API_KEY`, etc.) and need no Vibe wrapper — ReqLLM resolves
+  credentials automatically. Wrappers here handle providers that need
+  OAuth flows, interactive login prompts, or persisted credential storage
+  beyond what a single env var provides.
   """
 
   @builtin %{

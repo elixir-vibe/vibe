@@ -37,11 +37,11 @@ defmodule Vibe.Actions.LSP do
 
   @impl true
   def run(params, _context) do
-    params = JSONSpec.atomize(@schema, params)
-
     Vibe.Actions.ToolResult.run(fn ->
+      params = JSONSpec.atomize(@schema, params)
+
       case Vibe.Code.LSP.run(params) do
-        {:ok, result} -> {:ok, Vibe.ToolOutput.limit_value(result)}
+        {:ok, result} -> {:ok, %{result: Vibe.ToolOutput.limit_value(result)}}
         other -> other
       end
     end)

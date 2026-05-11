@@ -24,8 +24,9 @@ defmodule Vibe.Actions.Edit do
 
   @impl true
   def run(params, _context) do
-    params = JSONSpec.atomize(@schema, params)
-
-    Vibe.Actions.ToolResult.run(fn -> Vibe.Files.edit_file(params.path, params.edits) end)
+    Vibe.Actions.ToolResult.run(fn ->
+      params = JSONSpec.atomize(@schema, params)
+      Vibe.Files.edit_file(params.path, params.edits)
+    end)
   end
 end

@@ -38,9 +38,9 @@ defmodule Vibe.Actions.AST do
 
   @impl true
   def run(params, _context) do
-    params = JSONSpec.atomize(@schema, params)
-
     Vibe.Actions.ToolResult.run(fn ->
+      params = JSONSpec.atomize(@schema, params)
+
       case Vibe.Code.AST.run(params) do
         {:ok, result} -> {:ok, Vibe.ToolOutput.limit_value(result)}
         other -> other

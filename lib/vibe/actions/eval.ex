@@ -27,9 +27,8 @@ defmodule Vibe.Actions.Eval do
 
   @impl true
   def run(params, context) do
-    params = JSONSpec.atomize(@schema, params)
-
     ToolResult.run(fn ->
+      params = JSONSpec.atomize(@schema, params)
       opts = [timeout: Map.get(params, :timeout, @default_timeout_ms)]
 
       params.code

@@ -17,4 +17,19 @@ defmodule Vibe.Actions.ResultTest do
     assert error =~ "boom"
     assert Jason.encode!(%{ok: true, result: %{error: error}})
   end
+
+  test "model-facing actions normalize invalid argument shapes into serializable tool results" do
+    for action <- [
+          Vibe.Actions.AST,
+          Vibe.Actions.Edit,
+          Vibe.Actions.Eval,
+          Vibe.Actions.LSP,
+          Vibe.Actions.Read,
+          Vibe.Actions.Write
+        ] do
+      assert {:ok, %{error: error}} = action.run([], %{})
+      assert is_binary(error)
+      assert Jason.encode!(%{ok: true, result: %{error: error}})
+    end
+  end
 end

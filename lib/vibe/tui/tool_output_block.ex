@@ -80,6 +80,17 @@ defmodule Vibe.TUI.ToolOutputBlock do
           boolean(),
           keyword()
         ) :: [IO.chardata()]
+  def text_block_lines(text, width, theme, :inspect, truncate?, opts) do
+    truncation = line_window(text, truncate?, opts)
+
+    lines =
+      truncation.lines
+      |> SourceBlock.source_lines(:elixir, width, theme)
+      |> maybe_append_hint(truncation, theme, width, Keyword.get(opts, :truncation, :head))
+
+    Lines.join(lines, [""])
+  end
+
   def text_block_lines(text, width, theme, kind, truncate?, opts) do
     truncation = line_window(text, truncate?, opts)
 
