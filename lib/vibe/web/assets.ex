@@ -1,47 +1,52 @@
 defmodule Vibe.Web.Assets do
-  @moduledoc "Volt-based web asset compilation and serving."
+  @moduledoc "Builds web assets using Volt's configured JS bundler and Tailwind compiler."
+
   @spec ensure_built!() :: :ok
   def ensure_built! do
-    build_tailwind!()
-    build_javascript!()
+    if Code.ensure_loaded?(Volt.Builder) do
+      build_tailwind!()
+      build_javascript!()
+    end
+
     :ok
   end
 
   defp build_javascript! do
-    if Code.ensure_loaded?(Volt.Builder) do
-      outdir = Application.app_dir(:vibe, "priv/static/assets")
-      File.mkdir_p!(outdir)
+    config = Volt.Config.build()
 
-      case Volt.Builder.build(
-             entry: "assets/web/app.ts",
-             outdir: outdir,
-             name: "app",
-             hash: false,
-             sourcemap: false,
-             format: :iife,
-             resolve_dirs: ["deps"]
-           ) do
-        {:ok, _result} -> :ok
-        {:error, reason} -> raise "failed to build web JavaScript with Volt: #{inspect(reason)}"
-      end
+    case Volt.Builder.build(
+           entry: config.entry,
+           outdir: to_string(config.outdir),
+           target: config.target,
+           hash: config.hash,
+           sourcemap: false,
+           format: config.format,
+           external: config.external,
+           resolve_dirs: config.resolve_dirs,
+           aliases: config.aliases,
+           plugins: config.plugins,
+           minify: false
+         ) do
+      {:ok, _result} -> :ok
+      {:error, reason} -> raise "Volt JS build failed: #{inspect(reason)}"
     end
   end
 
   defp build_tailwind! do
-    if Code.ensure_loaded?(Volt.Tailwind) do
-      outdir = Application.app_dir(:vibe, "priv/static/assets")
+    tw = Volt.Config.tailwind()
+    css_path = Keyword.get(tw, :css)
+
+    if css_path do
+      outdir = Volt.Config.build().outdir |> to_string()
       File.mkdir_p!(outdir)
 
       case Volt.Tailwind.build(
-             css: File.read!("assets/web/app.css"),
-             css_base: Path.expand("assets/web"),
-             sources: [
-               %{base: "lib/", pattern: "**/*.{ex,heex}"},
-               %{base: "assets/", pattern: "**/*.{ts,css}"}
-             ]
+             css: File.read!(css_path),
+             css_base: Path.dirname(css_path),
+             sources: Keyword.get(tw, :sources, [])
            ) do
         {:ok, css} -> File.write!(Path.join(outdir, "app.css"), css)
-        {:error, reason} -> raise "failed to build Tailwind CSS: #{inspect(reason)}"
+        {:error, reason} -> raise "Volt Tailwind build failed: #{inspect(reason)}"
       end
     end
   end

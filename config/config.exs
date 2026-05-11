@@ -24,13 +24,13 @@ config :vibe, Vibe.Web.Endpoint,
   live_view: [signing_salt: "vibe-web-signing-salt-2026"]
 
 config :volt,
-  entry: "web/app.ts",
+  entry: "assets/web/app.ts",
   root: "assets",
   outdir: "priv/static/assets",
   target: :es2020,
   external: ~w(phoenix phoenix_html phoenix_live_view),
   tailwind: [
-    css: "web/app.css",
+    css: "assets/web/app.css",
     sources: [
       %{base: "lib/", pattern: "**/*.{ex,heex}"},
       %{base: "assets/", pattern: "**/*.{ts,css}"}

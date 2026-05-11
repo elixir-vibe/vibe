@@ -15,7 +15,7 @@
       })();
     </script>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static src={~p"/assets/app.js"}></script>
+    <script defer phx-track-static src={Volt.entry_path(Vibe.Web.Endpoint)}></script>
   </head>
   <body class="min-h-full overflow-x-hidden bg-vibe-bg text-vibe-fg antialiased">
     {@inner_content}
