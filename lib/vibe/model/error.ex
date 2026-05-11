@@ -1,7 +1,6 @@
 defmodule Vibe.Model.Error do
   @moduledoc "Normalizes model/provider failures into semantic UI errors."
 
-  alias ReqLLM.Error.API.Request
   alias Vibe.UI.Error
 
   @spec normalize(term()) :: Error.t()
@@ -11,8 +10,10 @@ defmodule Vibe.Model.Error do
   def normalize({:http_streaming_failed, reason}), do: normalize(reason)
   def normalize({:provider_build_failed, reason}), do: normalize(reason)
 
-  def normalize(%Request{reason: reason} = error) when is_binary(reason) do
+  def normalize(%{__struct__: struct, reason: reason} = error)
+      when struct in [ReqLLM.Error.API.Request, ReqLLM.Error.API.Stream] and is_binary(reason) do
     reason
+    |> unwrap_reason()
     |> from_request_reason()
     |> maybe_put_detail(inspect(error, limit: 6, printable_limit: 220))
   end
@@ -70,6 +71,15 @@ defmodule Vibe.Model.Error do
     case Regex.run(~r/reason: "([^"]+)"/, text) do
       [_match, reason] -> reason
       _no_reason -> nil
+    end
+  end
+
+  defp unwrap_reason("Stream failed: " <> inner), do: unwrap_reason(inner)
+
+  defp unwrap_reason(reason) do
+    case Regex.run(~r/reason: "([^"]+)"/, reason) do
+      [_match, extracted] -> extracted
+      _no_match -> reason
     end
   end
 

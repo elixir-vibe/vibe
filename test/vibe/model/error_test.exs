@@ -26,6 +26,16 @@ defmodule Vibe.Model.ErrorTest do
              "missing token"
   end
 
+  test "extracts reason from Stream errors wrapping Request errors" do
+    stream_error = %ReqLLM.Error.API.Stream{
+      reason:
+        "Stream failed: %ReqLLM.Error.API.Request{reason: \"The usage limit has been reached\", status: 429}"
+    }
+
+    assert %Vibe.UI.Error{message: "The usage limit has been reached"} =
+             Error.normalize(stream_error)
+  end
+
   test "normalizes prompt runner exceptions without parsing formatted strings" do
     error =
       try do
