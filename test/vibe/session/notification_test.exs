@@ -10,13 +10,15 @@ defmodule Vibe.Session.NotificationTest do
     :ok =
       Session.dispatch(
         session,
-        Command.new(:notification_added, %{level: :error, text: "temporary error", ttl_ms: 20})
+        Command.new(:notification_added, %{level: :error, text: "temporary error", ttl_ms: 50})
       )
 
     assert [%{id: id, text: "temporary error"}] = Session.state(session).notifications
     assert is_binary(id)
 
-    assert eventually(fn -> Session.state(session).notifications == [] end)
+    # Wait for the timer to fire, then flush the GenServer mailbox with a sync call
+    Process.sleep(80)
+    assert Session.state(session).notifications == []
   end
 
   test "notifications are not replayed from durable session history" do
@@ -33,19 +35,5 @@ defmodule Vibe.Session.NotificationTest do
 
     {:ok, restored} = Session.start_link(session_id: "notification-transient", restoring?: true)
     assert Session.state(restored).notifications == []
-  end
-
-  defp eventually(fun, deadline \\ System.monotonic_time(:millisecond) + 500) do
-    cond do
-      fun.() ->
-        true
-
-      System.monotonic_time(:millisecond) < deadline ->
-        Process.sleep(10)
-        eventually(fun, deadline)
-
-      true ->
-        false
-    end
   end
 end
