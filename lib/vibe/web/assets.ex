@@ -21,7 +21,7 @@ defmodule Vibe.Web.Assets do
            hash: config.hash,
            sourcemap: false,
            format: config.format,
-           external: config.external,
+           external: config[:external] || [],
            resolve_dirs: config.resolve_dirs,
            aliases: config.aliases,
            plugins: config.plugins,

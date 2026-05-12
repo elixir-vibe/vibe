@@ -28,7 +28,7 @@ config :volt,
   root: "assets",
   outdir: "priv/static/assets",
   target: :es2020,
-  external: ~w(phoenix phoenix_html phoenix_live_view),
+  resolve_dirs: ["deps"],
   tailwind: [
     css: "assets/web/app.css",
     sources: [
