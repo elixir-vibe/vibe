@@ -7,7 +7,13 @@ defmodule Vibe.Web.SessionsLive do
   @page_size 20
 
   @impl true
-  def mount(_params, _session, socket), do: {:ok, assign_dashboard(socket)}
+  def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Vibe.PubSub, Vibe.Session.sessions_topic())
+    end
+
+    {:ok, assign_dashboard(socket)}
+  end
 
   @impl true
   def handle_params(params, _uri, socket) do
@@ -62,6 +68,13 @@ defmodule Vibe.Web.SessionsLive do
      |> put_flash(:info, "Pruned #{length(pruned)} empty sessions.")
      |> assign_sessions(socket.assigns.query, socket.assigns.page)}
   end
+
+  @impl true
+  def handle_info({:session_changed, _session_id}, socket) do
+    {:noreply, assign_sessions(socket, socket.assigns.query, socket.assigns.page)}
+  end
+
+  def handle_info(_message, socket), do: {:noreply, socket}
 
   @impl true
   def render(assigns) do

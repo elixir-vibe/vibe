@@ -114,7 +114,9 @@ defmodule Vibe.Session do
           model: state.model
         )
 
+    maybe_register_in_registry(state.session_id)
     maybe_register_ui_bus(state.session_id)
+    broadcast_session_change(state.session_id)
     unless restoring?, do: PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
 
     {:ok,
@@ -361,6 +363,7 @@ defmodule Vibe.Session do
       end)
 
     Enum.each(events, fn {_seq, event} -> PluginBridge.dispatch(ui_state, event) end)
+    if session_list_relevant?(event), do: broadcast_session_change(state.state.session_id)
 
     %{
       state
@@ -606,7 +609,41 @@ defmodule Vibe.Session do
   defp last_event([event], _default), do: event
   defp last_event([_event | events], default), do: last_event(events, default)
 
+  defp maybe_register_in_registry(session_id) do
+    case Registry.lookup(Vibe.Registry, {:session, session_id}) do
+      [{pid, _}] when pid == self() -> :ok
+      [{_other, _}] -> :ok
+      [] -> Registry.register(Vibe.Registry, {:session, session_id}, nil)
+    end
+
+    :ok
+  end
+
   defp maybe_register_ui_bus(session_id) do
     if Process.whereis(Vibe.UI.Bus), do: Vibe.UI.Bus.register(session_id, self()), else: :ok
+  end
+
+  @session_list_events [
+    :user_message_added,
+    :assistant_message_added,
+    :assistant_stream_finished,
+    :assistant_aborted,
+    :status_changed,
+    :model_selected,
+    :usage_updated
+  ]
+
+  defp session_list_relevant?(%{type: type}) when type in @session_list_events, do: true
+  defp session_list_relevant?(_event), do: false
+
+  @sessions_topic "vibe:sessions"
+
+  @doc false
+  def sessions_topic, do: @sessions_topic
+
+  defp broadcast_session_change(session_id) do
+    Phoenix.PubSub.broadcast(Vibe.PubSub, @sessions_topic, {:session_changed, session_id})
+  rescue
+    _error -> :ok
   end
 end
