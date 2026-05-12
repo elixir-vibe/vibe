@@ -1,8 +1,8 @@
 defmodule Vibe.TUI.Views.AgentsTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.Views.Agents
   alias Vibe.TUI.Theme
+  alias Vibe.TUI.Views.Agents
 
   test "new returns a dashboard with sessions" do
     dashboard = Agents.new(width: 80, height: 24)
@@ -68,9 +68,9 @@ defmodule Vibe.TUI.Views.AgentsTest do
     dashboard = %Agents{sessions: sessions, selected: 0, width: 80, height: 24}
     lines = Agents.render(dashboard, Theme.default())
     assert is_list(lines)
-    assert length(lines) > 0
+    assert lines != []
 
-    text = lines |> Enum.map(&IO.iodata_to_binary/1) |> Enum.join("\n")
+    text = Enum.map_join(lines, "\n", &IO.iodata_to_binary/1)
     assert text =~ "Agent sessions"
     assert text =~ "fix bug"
     assert text =~ "hello"
@@ -79,7 +79,7 @@ defmodule Vibe.TUI.Views.AgentsTest do
   test "render with empty sessions shows placeholder" do
     dashboard = %Agents{sessions: [], selected: 0, width: 80, height: 24}
     lines = Agents.render(dashboard, Theme.default())
-    text = lines |> Enum.map(&IO.iodata_to_binary/1) |> Enum.join("\n")
+    text = Enum.map_join(lines, "\n", &IO.iodata_to_binary/1)
     assert text =~ "No sessions"
   end
 

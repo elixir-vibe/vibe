@@ -81,6 +81,9 @@ defmodule Vibe.Paths do
   @spec subagent_schedules() :: String.t()
   def subagent_schedules, do: Path.join(subagents_dir(), "schedules.jsonl")
 
+  @spec rules_dir() :: String.t()
+  def rules_dir, do: Path.join(home(), "rules")
+
   @spec skills_dir() :: String.t()
   def skills_dir, do: Path.join(home(), "skills")
 end

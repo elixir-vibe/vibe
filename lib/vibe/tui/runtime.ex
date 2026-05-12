@@ -4,8 +4,12 @@ defmodule Vibe.TUI.Runtime do
   """
 
   alias IO.ANSI
+  alias Phoenix.PubSub, as: PS
+  alias Vibe.Session
   alias Vibe.TUI.{Cast, RuntimeSupervisor, TerminalLoop, TerminalPainter}
   alias Vibe.TUI.Cast.Writer
+  alias Vibe.TUI.Views.Agents, as: AgentsView
+  alias Vibe.UI.Event
 
   @interrupt_repeat_window_ms 1_500
 
@@ -276,8 +280,8 @@ defmodule Vibe.TUI.Runtime do
   end
 
   defp agents_view(tty, loop, painter, cast) do
-    Phoenix.PubSub.subscribe(Vibe.PubSub, Vibe.Session.sessions_topic())
-    dashboard = Vibe.TUI.Views.Agents.new(width: painter.width, height: painter.height)
+    PS.subscribe(Vibe.PubSub, Session.sessions_topic())
+    dashboard = AgentsView.new(width: painter.width, height: painter.height)
     theme = Vibe.TUI.Theme.default()
     painter = render_agents(dashboard, theme, painter, cast)
     agents_receive(tty, loop, dashboard, theme, painter, cast)
@@ -286,7 +290,7 @@ defmodule Vibe.TUI.Runtime do
   defp agents_receive(tty, loop, dashboard, theme, painter, cast) do
     receive do
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape}}} ->
-        Phoenix.PubSub.unsubscribe(Vibe.PubSub, Vibe.Session.sessions_topic())
+        PS.unsubscribe(Vibe.PubSub, Session.sessions_topic())
         painter = TerminalPainter.force_full_redraw(painter)
         painter = render(loop, painter, cast)
         receive_events(tty, loop, nil, painter, cast)
@@ -298,17 +302,17 @@ defmodule Vibe.TUI.Runtime do
         agents_attach(tty, loop, dashboard, painter, cast)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :arrow_up}}} ->
-        dashboard = Vibe.TUI.Views.Agents.move(dashboard, :up)
+        dashboard = AgentsView.move(dashboard, :up)
         painter = render_agents(dashboard, theme, painter, cast)
         agents_receive(tty, loop, dashboard, theme, painter, cast)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :arrow_down}}} ->
-        dashboard = Vibe.TUI.Views.Agents.move(dashboard, :down)
+        dashboard = AgentsView.move(dashboard, :down)
         painter = render_agents(dashboard, theme, painter, cast)
         agents_receive(tty, loop, dashboard, theme, painter, cast)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :space}}} ->
-        dashboard = Vibe.TUI.Views.Agents.toggle_peek(dashboard)
+        dashboard = AgentsView.toggle_peek(dashboard)
         painter = render_agents(dashboard, theme, painter, cast)
         agents_receive(tty, loop, dashboard, theme, painter, cast)
 
@@ -319,16 +323,16 @@ defmodule Vibe.TUI.Runtime do
         agents_receive(tty, loop, dashboard, theme, painter, cast)
 
       {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]}}} ->
-        Phoenix.PubSub.unsubscribe(Vibe.PubSub, Vibe.Session.sessions_topic())
+        PS.unsubscribe(Vibe.PubSub, Session.sessions_topic())
         :ok
 
       {:session_changed, _session_id} ->
-        dashboard = Vibe.TUI.Views.Agents.refresh(dashboard)
+        dashboard = AgentsView.refresh(dashboard)
         painter = render_agents(dashboard, theme, painter, cast)
         agents_receive(tty, loop, dashboard, theme, painter, cast)
 
       {Ghostty.TTY, ^tty, :eof} ->
-        Phoenix.PubSub.unsubscribe(Vibe.PubSub, Vibe.Session.sessions_topic())
+        PS.unsubscribe(Vibe.PubSub, Session.sessions_topic())
         :ok
 
       {Ghostty.TTY, ^tty, {:key, _event}} ->
@@ -343,18 +347,18 @@ defmodule Vibe.TUI.Runtime do
   end
 
   defp agents_attach(tty, loop, dashboard, painter, cast) do
-    Phoenix.PubSub.unsubscribe(Vibe.PubSub, Vibe.Session.sessions_topic())
+    PS.unsubscribe(Vibe.PubSub, Session.sessions_topic())
 
-    case Vibe.TUI.Views.Agents.selected_session(dashboard) do
+    case AgentsView.selected_session(dashboard) do
       %{id: session_id} ->
         runtime_id = Process.get(:vibe_runtime_id)
         session_name = RuntimeSupervisor.name(runtime_id, :session)
 
         case GenServer.whereis(session_name) do
           pid when is_pid(pid) ->
-            Vibe.Session.emit_transient_event(
+            Session.emit_transient_event(
               pid,
-              Vibe.UI.Event.new(:session_selected, session_id, %{session_id: session_id})
+              Event.new(:session_selected, session_id, %{session_id: session_id})
             )
 
           nil ->
@@ -371,7 +375,7 @@ defmodule Vibe.TUI.Runtime do
   end
 
   defp render_agents(dashboard, theme, painter, cast) do
-    lines = Vibe.TUI.Views.Agents.render(dashboard, theme)
+    lines = AgentsView.render(dashboard, theme)
     row = min(dashboard.selected + 5, length(lines))
     cursor = {row, 1}
     {frame, painter} = TerminalPainter.render(%{painter | lines: []}, lines, cursor)

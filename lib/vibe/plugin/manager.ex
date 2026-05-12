@@ -23,6 +23,16 @@ defmodule Vibe.Plugin.Manager do
     GenServer.call(__MODULE__, {:dispatch, Map.put(payload, :type, type), context})
   end
 
+  @spec system_prompt_blocks(map()) :: [String.t()]
+  def system_prompt_blocks(context \\ %{}) do
+    GenServer.call(__MODULE__, {:system_prompt_blocks, context})
+  end
+
+  @spec before_command(String.t(), map()) :: :ok | {:warn, String.t()} | {:block, String.t()}
+  def before_command(command, context \\ %{}) do
+    GenServer.call(__MODULE__, {:before_command, command, context})
+  end
+
   @spec plugins() :: [module()]
   def plugins, do: GenServer.call(__MODULE__, :plugins)
 
@@ -73,6 +83,16 @@ defmodule Vibe.Plugin.Manager do
   end
 
   def handle_call(:plugins, _from, state), do: {:reply, Map.keys(state.plugins), state}
+
+  def handle_call({:system_prompt_blocks, context}, _from, state) do
+    {blocks, state} = collect_system_prompts(state, context)
+    {:reply, blocks, state}
+  end
+
+  def handle_call({:before_command, command, context}, _from, state) do
+    {result, state} = run_before_command(state, command, context)
+    {:reply, result, state}
+  end
 
   def handle_call(:commands, _from, state) do
     commands =
@@ -233,6 +253,59 @@ defmodule Vibe.Plugin.Manager do
     Vibe.Plugin.Discovery.builtin()
     |> Vibe.Support.Lists.join(Application.get_env(:vibe, :plugins, []))
     |> Enum.uniq()
+  end
+
+  defp collect_system_prompts(state, context) do
+    Enum.reduce(Map.to_list(state.plugins), {[], state}, fn {module, entry}, {blocks, state} ->
+      safe_system_prompt(module, entry, context, blocks, state)
+    end)
+    |> then(fn {blocks, state} -> {Enum.reverse(blocks), state} end)
+  end
+
+  defp safe_system_prompt(module, entry, context, blocks, state) do
+    if function_exported?(module, :system_prompt, 2) do
+      case module.system_prompt(context, entry.state) do
+        {text, new_state} when is_binary(text) and text != "" ->
+          {[text | blocks], put_plugin_state(state, module, new_state)}
+
+        {_nil_or_empty, new_state} ->
+          {blocks, put_plugin_state(state, module, new_state)}
+      end
+    else
+      {blocks, state}
+    end
+  rescue
+    _error -> {blocks, state}
+  end
+
+  defp run_before_command(state, command, context) do
+    Enum.reduce_while(Map.to_list(state.plugins), {:ok, state}, fn {module, entry}, acc ->
+      safe_before_command(module, entry, command, context, acc)
+    end)
+    |> then(fn
+      {:ok, state} -> {:ok, state}
+      {{:warn, label}, state} -> {{:warn, label}, state}
+      {{:block, reason}, state} -> {{:block, reason}, state}
+    end)
+  end
+
+  defp safe_before_command(module, entry, command, context, {:ok, state}) do
+    if function_exported?(module, :before_command, 3) do
+      case module.before_command(command, context, entry.state) do
+        {:ok, new_state} ->
+          {:cont, {:ok, put_plugin_state(state, module, new_state)}}
+
+        {:warn, label, new_state} ->
+          {:cont, {{:warn, label}, put_plugin_state(state, module, new_state)}}
+
+        {:block, reason, new_state} ->
+          {:halt, {{:block, reason}, put_plugin_state(state, module, new_state)}}
+      end
+    else
+      {:cont, {:ok, state}}
+    end
+  rescue
+    _error -> {:cont, {:ok, state}}
   end
 
   defp safe_shutdown(module, plugin_state) do

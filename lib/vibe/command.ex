@@ -24,9 +24,27 @@ defmodule Vibe.Command do
       |> Keyword.put_new_lazy(:on_output, &Vibe.Command.Streaming.callback_from_process/0)
       |> Keyword.put_new_lazy(:eval_session_id, &Vibe.Command.Streaming.current_session_id/0)
 
-    with {:ok, %Job{} = job} <- start(argv, opts) do
+    with :ok <- check_safety(argv, opts),
+         {:ok, %Job{} = job} <- start(argv, opts) do
       await(job, timeout)
     end
+  end
+
+  defp check_safety(argv, opts) do
+    if Process.whereis(Vibe.Plugin.Manager) do
+      command = Enum.join(argv, " ")
+      session_id = Keyword.get(opts, :eval_session_id)
+
+      case Vibe.Plugin.Manager.before_command(command, %{session_id: session_id}) do
+        :ok -> :ok
+        {:warn, _label} -> :ok
+        {:block, reason} -> {:error, {:blocked, reason}}
+      end
+    else
+      :ok
+    end
+  rescue
+    _error -> :ok
   end
 
   @spec start([String.Chars.t()], keyword()) :: {:ok, Job.t()} | {:error, term()}

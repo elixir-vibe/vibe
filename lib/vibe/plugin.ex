@@ -19,6 +19,9 @@ defmodule Vibe.Plugin do
 
   @callback init(keyword()) :: {:ok, term()} | {:error, term()}
   @callback handle_event(event(), context(), term()) :: {result(), term()}
+  @callback system_prompt(context(), term()) :: {String.t() | nil, term()}
+  @callback before_command(String.t(), context(), term()) ::
+              {:ok, term()} | {:warn, String.t(), term()} | {:block, String.t(), term()}
   @callback actions(term()) :: [module()]
   @callback commands(term()) :: [module() | map()]
   @callback apis(term()) :: [API.t() | keyword() | map()]
@@ -27,7 +30,9 @@ defmodule Vibe.Plugin do
   @callback ui_document(term()) :: Document.t() | keyword() | map()
   @callback shutdown(term()) :: :ok
 
-  @optional_callbacks actions: 1,
+  @optional_callbacks system_prompt: 2,
+                      before_command: 3,
+                      actions: 1,
                       commands: 1,
                       apis: 1,
                       children: 1,
@@ -49,6 +54,12 @@ defmodule Vibe.Plugin do
 
       @impl Vibe.Plugin
       def handle_event(_event, _context, state), do: {:ok, state}
+
+      @impl Vibe.Plugin
+      def system_prompt(_context, state), do: {nil, state}
+
+      @impl Vibe.Plugin
+      def before_command(_command, _context, state), do: {:ok, state}
 
       @impl Vibe.Plugin
       def actions(_state), do: []
@@ -73,6 +84,8 @@ defmodule Vibe.Plugin do
 
       defoverridable init: 1,
                      handle_event: 3,
+                     system_prompt: 2,
+                     before_command: 3,
                      actions: 1,
                      commands: 1,
                      apis: 1,

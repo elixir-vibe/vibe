@@ -17,20 +17,36 @@ defmodule Vibe.Agent.Options do
 
   @spec system_prompt(keyword()) :: String.t()
   def system_prompt(opts) do
-    base =
-      case Vibe.Memory.Manager.system_prompt_block() do
-        "" -> Vibe.Prompts.system()
-        memory -> Vibe.Prompts.system() <> "\n\n" <> memory
-      end
+    context = %{model: Keyword.get(opts, :model)}
 
-    case Keyword.get(opts, :system) do
-      system when is_binary(system) and system != "" ->
-        base <> "\n\nRole instructions:\n" <> system
+    parts =
+      [
+        Vibe.Prompts.system(),
+        non_empty(Vibe.Memory.Manager.system_prompt_block()),
+        plugin_system_prompt_blocks(context),
+        case Keyword.get(opts, :system) do
+          system when is_binary(system) and system != "" -> "Role instructions:\n" <> system
+          _system -> nil
+        end
+      ]
+      |> List.flatten()
+      |> Enum.reject(&is_nil/1)
 
-      _system ->
-        base
-    end
+    Enum.join(parts, "\n\n")
   end
+
+  defp plugin_system_prompt_blocks(context) do
+    if Process.whereis(Vibe.Plugin.Manager) do
+      Vibe.Plugin.Manager.system_prompt_blocks(context)
+    else
+      []
+    end
+  rescue
+    _error -> []
+  end
+
+  defp non_empty(""), do: nil
+  defp non_empty(text), do: text
 
   @spec configure_model_alias(keyword()) :: :ok
   def configure_model_alias(opts) do
