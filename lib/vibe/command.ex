@@ -44,7 +44,10 @@ defmodule Vibe.Command do
       :ok
     end
   rescue
-    _error -> :ok
+    error ->
+      require Logger
+      Logger.warning("Plugin before_command check failed: #{Exception.message(error)}")
+      :ok
   end
 
   @spec start([String.Chars.t()], keyword()) :: {:ok, Job.t()} | {:error, term()}

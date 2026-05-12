@@ -2,6 +2,8 @@ defmodule Vibe.Plugin.Manager do
   @moduledoc "Supervised plugin lifecycle, discovery, and dispatch."
   use GenServer
 
+  require Logger
+
   alias Vibe.Plugin.API
   alias Vibe.UI.Document
 
@@ -206,7 +208,9 @@ defmodule Vibe.Plugin.Manager do
   defp plugin_commands(module, plugin_state) do
     if function_exported?(module, :commands, 1), do: module.commands(plugin_state), else: []
   rescue
-    _ -> []
+    error ->
+      Logger.warning("Plugin #{inspect(module)} commands/1 failed: #{Exception.message(error)}")
+      []
   end
 
   defp plugin_apis(module, plugin_state) do
@@ -216,7 +220,9 @@ defmodule Vibe.Plugin.Manager do
       []
     end
   rescue
-    _ -> []
+    error ->
+      Logger.warning("Plugin #{inspect(module)} apis/1 failed: #{Exception.message(error)}")
+      []
   end
 
   defp plugin_ui_document(module, plugin_state) do
@@ -226,7 +232,12 @@ defmodule Vibe.Plugin.Manager do
       Document.empty()
     end
   rescue
-    _ -> Document.empty()
+    error ->
+      Logger.warning(
+        "Plugin #{inspect(module)} ui_document/1 failed: #{Exception.message(error)}"
+      )
+
+      Document.empty()
   end
 
   defp put_plugin(%__MODULE__{} = state, module, entry) do
@@ -275,7 +286,12 @@ defmodule Vibe.Plugin.Manager do
       {blocks, state}
     end
   rescue
-    _error -> {blocks, state}
+    error ->
+      Logger.warning(
+        "Plugin #{inspect(module)} system_prompt/2 failed: #{Exception.message(error)}"
+      )
+
+      {blocks, state}
   end
 
   defp run_before_command(state, command, context) do
@@ -305,12 +321,19 @@ defmodule Vibe.Plugin.Manager do
       {:cont, {:ok, state}}
     end
   rescue
-    _error -> {:cont, {:ok, state}}
+    error ->
+      Logger.warning(
+        "Plugin #{inspect(module)} before_command/3 failed: #{Exception.message(error)}"
+      )
+
+      {:cont, {:ok, state}}
   end
 
   defp safe_shutdown(module, plugin_state) do
     if function_exported?(module, :shutdown, 1), do: module.shutdown(plugin_state), else: :ok
   rescue
-    _ -> :ok
+    error ->
+      Logger.warning("Plugin #{inspect(module)} shutdown/1 failed: #{Exception.message(error)}")
+      :ok
   end
 end

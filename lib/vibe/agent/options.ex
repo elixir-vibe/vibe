@@ -42,7 +42,10 @@ defmodule Vibe.Agent.Options do
       []
     end
   rescue
-    _error -> []
+    error ->
+      require Logger
+      Logger.warning("Plugin system_prompt_blocks failed: #{Exception.message(error)}")
+      []
   end
 
   defp non_empty(""), do: nil

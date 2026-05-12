@@ -10,7 +10,10 @@ defmodule Vibe.Plugin.Discovery do
 
   @spec builtin() :: [module()]
   def builtin do
-    disabled = MapSet.new(Application.get_env(:vibe, :disabled_plugins, []))
+    disabled =
+      Application.get_env(:vibe, :disabled_plugins, [])
+      |> Vibe.Support.Lists.join(profile_disabled())
+      |> MapSet.new()
 
     :vibe
     |> Application.spec(:modules)
@@ -28,5 +31,14 @@ defmodule Vibe.Plugin.Discovery do
       _ ->
         false
     end
+  end
+
+  defp profile_disabled do
+    Vibe.Agent.Profile.disabled_plugins()
+  rescue
+    error ->
+      require Logger
+      Logger.warning("Failed to load disabled_plugins from profile: #{Exception.message(error)}")
+      []
   end
 end

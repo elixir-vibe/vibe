@@ -9,17 +9,22 @@ defmodule Vibe.Plugins.Notify.Terminal do
 
   @spec notify(String.t(), String.t()) :: :ok
   def notify(title, body) when is_binary(title) and is_binary(body) do
-    title = sanitize(title)
-    body = sanitize(body)
+    if interactive?() do
+      title = sanitize(title)
+      body = sanitize(body)
 
-    IO.write(:stderr, [
-      osc_777(title, body),
-      osc_9(title, body)
-    ])
+      IO.write(:stderr, [
+        osc_777(title, body),
+        osc_9(title, body)
+      ])
+    end
 
     :ok
   rescue
-    _error -> :ok
+    error ->
+      require Logger
+      Logger.debug("Desktop notification failed: #{Exception.message(error)}")
+      :ok
   end
 
   @spec task_completed(String.t() | nil) :: :ok
@@ -34,6 +39,12 @@ defmodule Vibe.Plugins.Notify.Terminal do
 
   defp osc_777(title, body), do: "\e]777;notify;#{title};#{body}\e\\"
   defp osc_9(title, body), do: "\e]9;#{title}: #{body}\e\\"
+
+  defp interactive? do
+    :prim_tty.isatty(:stderr)
+  rescue
+    _error -> false
+  end
 
   defp sanitize(text) do
     text

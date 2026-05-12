@@ -195,4 +195,30 @@ defmodule Vibe.Agent.Profile do
   defp provider_option({:reasoning_effort, value}), do: [reasoning_effort: value]
   defp provider_option({:session_id, value}), do: [session_id: value]
   defp provider_option({_unknown, _value}), do: []
+
+  @spec disabled_plugins() :: [module()]
+  def disabled_plugins do
+    case load() do
+      {:ok, data} ->
+        data
+        |> Map.get("disabled_plugins", [])
+        |> Enum.flat_map(&resolve_plugin_module/1)
+
+      {:error, _reason} ->
+        []
+    end
+  end
+
+  defp resolve_plugin_module(name) when is_binary(name) do
+    module =
+      if String.starts_with?(name, "Elixir.") or String.starts_with?(name, "Vibe.") do
+        Module.concat([name])
+      else
+        Module.concat(["Vibe", "Plugins", Macro.camelize(name)])
+      end
+
+    if Code.ensure_loaded?(module), do: [module], else: []
+  end
+
+  defp resolve_plugin_module(_name), do: []
 end
