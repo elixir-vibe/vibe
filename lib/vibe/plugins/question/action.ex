@@ -18,6 +18,8 @@ defmodule Vibe.Plugins.Question.Action do
             ]
           )
 
+  @user_response_timeout_ms 300_000
+
   use Jido.Action,
     name: "question",
     description:
@@ -67,7 +69,7 @@ defmodule Vibe.Plugins.Question.Action do
         {:question_answered, answer} -> {:ok, answer}
         {:question_cancelled} -> {:error, :cancelled}
       after
-        300_000 ->
+        @user_response_timeout_ms ->
           Vibe.Plugins.Question.unregister_waiter(session_id)
           {:error, :cancelled}
       end

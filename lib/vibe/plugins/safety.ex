@@ -11,6 +11,7 @@ defmodule Vibe.Plugins.Safety do
   alias Vibe.Session
   alias Vibe.UI.Event
 
+  @confirmation_timeout_ms 300_000
   @table :vibe_safety_waiters
 
   @impl true
@@ -95,7 +96,7 @@ defmodule Vibe.Plugins.Safety do
       {:safety_confirmed, true} -> {:ok, state}
       {:safety_confirmed, false} -> {:block, "#{label} cancelled by user", state}
     after
-      300_000 ->
+      @confirmation_timeout_ms ->
         unregister_waiter(session_id)
         {:block, "#{label} confirmation timed out", state}
     end
