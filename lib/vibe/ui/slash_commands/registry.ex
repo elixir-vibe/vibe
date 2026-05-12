@@ -9,6 +9,7 @@ defmodule Vibe.UI.SlashCommands.Registry do
     Vibe.UI.SlashCommands.Skill,
     Vibe.UI.SlashCommands.Clear,
     Vibe.UI.SlashCommands.Compact,
+    Vibe.UI.SlashCommands.Background,
     Vibe.UI.SlashCommands.Commands,
     Vibe.UI.SlashCommands.Help
   ]

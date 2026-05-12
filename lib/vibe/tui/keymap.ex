@@ -21,6 +21,7 @@ defmodule Vibe.TUI.Keymap do
     if has_mod?(mods, :shift), do: [:cycle_effort], else: [:tab]
   end
 
+  def from_event(%Ghostty.KeyEvent{key: :arrow_left, mods: []}), do: [:left]
   def from_event(%Ghostty.KeyEvent{key: :escape}), do: [:cancel]
 
   def from_event(%Ghostty.KeyEvent{key: :c, mods: mods} = event),

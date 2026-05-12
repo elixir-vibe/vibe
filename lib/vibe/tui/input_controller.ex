@@ -12,6 +12,9 @@ defmodule Vibe.TUI.InputController do
       app_action_key?(key) ->
         handle_app_action_key(key, state)
 
+      key == :left and empty_prompt?(state) ->
+        handle_app_action_key(:background_session, state)
+
       selector_open?(state) ->
         handle_selector_key(key, state)
 
@@ -26,7 +29,14 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp app_action_key?(key),
-    do: key in [:cycle_model_forward, :cycle_model_backward, :open_model_selector, :cycle_effort]
+    do:
+      key in [
+        :cycle_model_forward,
+        :cycle_model_backward,
+        :open_model_selector,
+        :cycle_effort,
+        :background_session
+      ]
 
   defp handle_app_action_key(:cycle_model_forward, state) do
     dispatch_async(state.ui, Command.new(:cycle_model, %{direction: :forward}))
@@ -46,6 +56,15 @@ defmodule Vibe.TUI.InputController do
   defp handle_app_action_key(:cycle_effort, state) do
     dispatch_async(state.ui, Command.new(:cycle_effort))
     state
+  end
+
+  defp handle_app_action_key(:background_session, state) do
+    dispatch_async(state.ui, Command.new(:background_session))
+    state
+  end
+
+  defp empty_prompt?(state) do
+    state.editor |> EditorServer.state() |> Map.get(:text, "") |> String.trim() == ""
   end
 
   defp selector_open?(state), do: not is_nil(state.ui_snapshot.selector)

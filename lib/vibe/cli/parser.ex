@@ -46,7 +46,8 @@ defmodule Vibe.CLI.Parser do
     group_allowed_chats: :string,
     require_mention: :boolean,
     free_response_chats: :string,
-    stream_mode: :string
+    stream_mode: :string,
+    bg: :boolean
   ]
 
   @aliases [h: :help, v: :version, p: :print]

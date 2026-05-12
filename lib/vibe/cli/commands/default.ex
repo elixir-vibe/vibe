@@ -42,6 +42,10 @@ defmodule Vibe.CLI.Commands.Default do
       opts[:sessions] ->
         Output.print({:ok, Vibe.Session.Store.list()}, opts)
 
+      opts[:bg] == true and args != [] ->
+        prompt = Enum.join(args, " ")
+        background(prompt, opts)
+
       opts[:print] == true or args != [] ->
         {file_args, message_args} = split_file_args(args)
 
@@ -85,6 +89,27 @@ defmodule Vibe.CLI.Commands.Default do
       |> maybe_put(:model, opts[:model])
 
     Output.print(Vibe.Context.compact(opts), opts)
+  end
+
+  defp background(prompt, opts) do
+    Runner.configure_api_key(opts)
+    Vibe.Application.configure_dependency_logging()
+
+    session_id = Vibe.Session.Store.new_id()
+    model = Vibe.Model.Config.resolve(opts)
+
+    case Vibe.Session.start(session_id: session_id, cwd: File.cwd!(), model: model) do
+      {:ok, session} ->
+        Vibe.Session.dispatch(session, {:submit_prompt, %{text: prompt}})
+        IO.puts("backgrounded · #{session_id}")
+        IO.puts("  mix vibe sessions          list sessions")
+        IO.puts("  mix vibe attach #{session_id}   attach")
+        :ok
+
+      {:error, reason} ->
+        Output.error("Failed to start background session: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   defp maybe_put(opts, _key, nil), do: opts

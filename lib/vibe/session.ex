@@ -265,6 +265,10 @@ defmodule Vibe.Session do
     PromptLifecycle.cancel(state, &emit/2)
   end
 
+  defp handle_command(%Command{type: :background_session}, state) do
+    emit(state, Event.new(:session_backgrounded, state.state.session_id, %{}), persist?: false)
+  end
+
   defp handle_command(%Command{type: :toggle_truncation}, state) do
     emit(state, Event.new(:truncation_toggled, state.state.session_id, %{}))
   end
