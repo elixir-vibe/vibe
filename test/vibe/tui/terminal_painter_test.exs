@@ -94,6 +94,22 @@ defmodule Vibe.TUI.TerminalPainterTest do
     refute screen =~ "old bottom"
   end
 
+  test "tall documents write all lines to terminal scrollback" do
+    {:ok, terminal} = Ghostty.Terminal.start_link(cols: 40, rows: 5, max_scrollback: 200)
+    painter = TerminalPainter.new(40, 5)
+
+    lines = Enum.map(1..20, &"line #{&1}")
+    {frame, _painter} = TerminalPainter.render(painter, lines, {20, 1})
+    :ok = Ghostty.Terminal.write(terminal, frame)
+
+    :ok = Ghostty.Terminal.scroll(terminal, -200)
+    assert {:ok, scrollback} = Ghostty.Terminal.snapshot(terminal, :plain)
+    assert scrollback =~ "line 1"
+    assert scrollback =~ "line 5"
+    assert scrollback =~ "line 15"
+    assert scrollback =~ "line 20"
+  end
+
   test "appended content scrolls native terminal history like Pi" do
     painter = TerminalPainter.new(20, 3)
     {_frame, painter} = TerminalPainter.render(painter, ["one", "two", "three"], {3, 6})
