@@ -84,7 +84,8 @@ defmodule Vibe.TUI.StressTest do
         event_target: self()
       )
 
-    {:ok, terminal} = Ghostty.Terminal.start_link(cols: @width, rows: @height)
+    {:ok, terminal} =
+      Ghostty.Terminal.start_link(cols: @width, rows: @height, max_scrollback: 10_000)
 
     Enum.each(large_history_events(session_id), fn event ->
       :ok = Vibe.Session.emit_transient_event(session, event)
@@ -120,7 +121,8 @@ defmodule Vibe.TUI.StressTest do
         event_target: self()
       )
 
-    {:ok, terminal} = Ghostty.Terminal.start_link(cols: @width, rows: @height)
+    {:ok, terminal} =
+      Ghostty.Terminal.start_link(cols: @width, rows: @height, max_scrollback: 10_000)
 
     start =
       tool_event(session_id, :tool_started,
@@ -157,6 +159,13 @@ defmodule Vibe.TUI.StressTest do
       end)
 
     assert us < @incremental_budget_us
+
+    # Drain pending TerminalLoop events before final snapshot
+    receive do
+      {TerminalLoop, :event, _} -> :ok
+    after
+      10 -> :ok
+    end
 
     {screen, _painter} = paint_screen(loop, terminal, painter)
     assert screen =~ "line 600"

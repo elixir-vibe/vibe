@@ -87,7 +87,7 @@ defmodule Vibe.TUI.TerminalPainter do
           disable_autowrap(),
           ANSI.clear(),
           ANSI.home(),
-          intersperse_lines(lines),
+          intersperse_lines(visible_lines(lines, viewport_top, painter.height)),
           end_synchronized_update(),
           ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
           enable_autowrap(),
@@ -107,33 +107,28 @@ defmodule Vibe.TUI.TerminalPainter do
         frame = [ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1))]
         {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
 
-      {first, last} when desired_viewport_top != painter.viewport_top ->
-        if append_start?(painter.lines, first) do
-          append_and_scroll(lines, cursor, painter, first, last, desired_viewport_top)
-        else
-          render_native(lines, cursor, full_redraw(painter))
-        end
-
-      {first, _last} when first + 1 < painter.viewport_top ->
-        render_native(lines, cursor, full_redraw(painter))
-
       {first, last} ->
         patch_lines(lines, cursor, painter, first, last)
     end
   end
 
   defp patch_lines(lines, cursor, painter, first, last) do
+    desired_viewport_top = viewport_top(lines, painter.height)
+    viewport_shifted? = desired_viewport_top != painter.viewport_top
+
+    {first, last} =
+      if viewport_shifted? do
+        visible_first = max(first, desired_viewport_top - 1)
+        visible_last = desired_viewport_top + painter.height - 2
+        {visible_first, visible_last}
+      else
+        {first, last}
+      end
+
     target_row = first + 1
     {move, viewport_top} = move_to_row(painter, target_row)
-
-    viewport_top =
-      max(
-        viewport_top,
-        min(viewport_top(lines, painter.height), max(last + 2 - painter.height, 1))
-      )
-
+    viewport_top = max(viewport_top, desired_viewport_top)
     screen_cursor = screen_cursor(cursor, viewport_top)
-
     patch_count = last - first + 1
 
     frame = [
@@ -154,36 +149,10 @@ defmodule Vibe.TUI.TerminalPainter do
     {frame, put_render_state(painter, lines, cursor, viewport_top)}
   end
 
-  defp append_and_scroll(lines, cursor, painter, first, last, desired_viewport_top) do
-    count = last - first + 1
-    current_screen_row = painter.hardware_row - painter.viewport_top + 1
-    move_to_bottom = move_from_to(current_screen_row, painter.height)
-    screen_cursor = screen_cursor(cursor, desired_viewport_top)
-
-    frame = [
-      begin_synchronized_update(),
-      hide_cursor(),
-      disable_autowrap(),
-      move_to_bottom,
-      "\r\n",
-      lines
-      |> replacement_lines(first, count)
-      |> Enum.map_intersperse("\r\n", &[ANSI.clear_line(), &1]),
-      end_synchronized_update(),
-      ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
-      enable_autowrap(),
-      show_cursor()
-    ]
-
-    {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
-  end
-
   defp replacement_lines(lines, first, count) do
     replacement = Enum.slice(lines, first, count)
     Vibe.TUI.Lines.join(replacement, List.duplicate("", count - length(replacement)))
   end
-
-  defp append_start?(old_lines, first_changed), do: first_changed == length(old_lines)
 
   defp initial_paint?(%{initialized?: false}), do: true
   defp initial_paint?(_painter), do: false
@@ -266,8 +235,6 @@ defmodule Vibe.TUI.TerminalPainter do
     end
   end
 
-  defp full_redraw(painter), do: %{painter | lines: []}
-
   defp move_from_to(from, to) when to > from, do: ANSI.cursor_down(to - from)
   defp move_from_to(from, to) when to < from, do: ANSI.cursor_up(from - to)
   defp move_from_to(_from, _to), do: []
@@ -276,6 +243,11 @@ defmodule Vibe.TUI.TerminalPainter do
   defp show_cursor, do: "\e[?25h"
   defp disable_autowrap, do: "\e[?7l"
   defp enable_autowrap, do: "\e[?7h"
+
+  defp visible_lines(lines, viewport_top, height) do
+    Enum.slice(lines, (viewport_top - 1)..(viewport_top + height - 2)//1)
+  end
+
   defp begin_synchronized_update, do: "\e[?2026h"
   defp end_synchronized_update, do: "\e[?2026l"
 end
