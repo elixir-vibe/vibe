@@ -66,10 +66,14 @@ defmodule Vibe.CLI.Server do
 
   @spec launch_background() :: :ok
   def launch_background do
+    Vibe.Server.TLS.ensure!()
     log_path = Vibe.Paths.server_log()
     File.mkdir_p!(Path.dirname(log_path))
 
-    command = "exec #{background_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null"
+    erl_flags = tls_erl_flags()
+
+    command =
+      "#{erl_flags}exec #{background_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null"
 
     :erlang.open_port({:spawn_executable, "/bin/sh"}, [
       :binary,
@@ -168,6 +172,16 @@ defmodule Vibe.CLI.Server do
 
       path ->
         "#{shell_quote(path)} server start --foreground"
+    end
+  end
+
+  defp tls_erl_flags do
+    config = Vibe.Server.TLS.dist_config_path()
+
+    if File.exists?(config) do
+      "ERL_FLAGS='-proto_dist inet_tls -ssl_dist_optfile #{config}' "
+    else
+      ""
     end
   end
 

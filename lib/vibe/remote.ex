@@ -6,6 +6,7 @@ defmodule Vibe.Remote do
   def connect do
     with {:ok, %{"node" => node_name} = metadata} <- Metadata.read(),
          :ok <- verify_build(metadata),
+         :ok <- check_tls_compatibility(metadata),
          {:ok, node} <- parse_node(node_name),
          :ok <- ensure_distribution(),
          true <- Node.connect(node) do
@@ -49,6 +50,33 @@ defmodule Vibe.Remote do
       error ->
         error
     end
+  end
+
+  defp check_tls_compatibility(%{"tls" => true}) do
+    if tls_distribution?() do
+      :ok
+    else
+      require Logger
+
+      Logger.warning(
+        "Server uses TLS distribution but this client does not. " <>
+          "Set ERL_FLAGS='-proto_dist inet_tls -ssl_dist_optfile #{Vibe.Server.TLS.dist_config_path()}' " <>
+          "before starting mix/vibe."
+      )
+
+      {:error, :tls_mismatch}
+    end
+  end
+
+  defp check_tls_compatibility(_metadata), do: :ok
+
+  defp tls_distribution? do
+    case :net_kernel.get_state() do
+      %{started: :no} -> false
+      _ -> :inet_tls_dist in (:net_kernel.get_state() |> Map.get(:protos, []))
+    end
+  rescue
+    _error -> false
   end
 
   defp parse_node(node_name) when is_binary(node_name), do: {:ok, String.to_atom(node_name)}

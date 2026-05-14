@@ -107,8 +107,16 @@ defmodule Vibe.Server do
       pid: System.pid(),
       version: Vibe.Build.version(),
       build_id: Vibe.Build.id(),
+      tls: tls_distribution?(),
       started_at: DateTime.utc_now() |> DateTime.to_iso8601()
     })
+  end
+
+  defp tls_distribution? do
+    match?(%{protos: protos} when is_list(protos), :net_kernel.get_state()) and
+      :inet_tls_dist in Map.get(:net_kernel.get_state(), :protos, [])
+  rescue
+    _error -> false
   end
 
   @spec default_node_name() :: node()

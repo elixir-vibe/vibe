@@ -21,8 +21,13 @@ defmodule Vibe.Session.Listing do
     stored = Store.list() |> Enum.map(&Map.put(&1, :live?, false))
     live_ids = MapSet.new(Enum.map(live, & &1.id))
 
-    (live ++ Enum.reject(stored, &MapSet.member?(live_ids, &1.id)))
-    |> Enum.reject(&empty_session?/1)
+    local =
+      (live ++ Enum.reject(stored, &MapSet.member?(live_ids, &1.id)))
+      |> Enum.reject(&empty_session?/1)
+
+    remote = if Keyword.get(opts, :include_remote, false), do: remote_sessions(), else: []
+
+    (local ++ remote)
     |> Enum.sort_by(&updated_at_sort_key/1, :desc)
   end
 
@@ -35,6 +40,24 @@ defmodule Vibe.Session.Listing do
 
   @spec via(String.t()) :: {:via, Registry, {Vibe.Registry, {:session, String.t()}}}
   def via(id), do: {:via, Registry, {Vibe.Registry, {:session, id}}}
+
+  defp remote_sessions do
+    case Vibe.Remote.connect() do
+      {:ok, node} ->
+        case :erpc.call(node, __MODULE__, :list, [], 5_000) do
+          sessions when is_list(sessions) ->
+            Enum.map(sessions, &Map.merge(&1, %{remote?: true, node: node}))
+
+          _error ->
+            []
+        end
+
+      _error ->
+        []
+    end
+  rescue
+    _error -> []
+  end
 
   defp updated_at_sort_key(%{updated_at: %DateTime{} = updated_at}),
     do: DateTime.to_unix(updated_at, :microsecond)

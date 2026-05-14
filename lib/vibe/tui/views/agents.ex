@@ -114,12 +114,15 @@ defmodule Vibe.TUI.Views.Agents do
     preview = Map.get(session, :last_message_preview) || Map.get(session, :first_message) || ""
     preview = String.slice(preview, 0, max(width - 40, 20))
 
+    remote_tag = if Map.get(session, :remote?), do: Theme.fg(theme, :dim, " [remote]"), else: []
+
     line = [
       Widget.spaces(2),
       if(selected?, do: Theme.fg(theme, :accent, "› "), else: "  "),
       icon,
       " ",
       Theme.fg(theme, :fg_strong, String.pad_trailing(String.slice(name, 0, 24), 25)),
+      remote_tag,
       Theme.fg(theme, :muted, preview)
     ]
 

@@ -99,6 +99,7 @@ defmodule Vibe.Web.Sessions.Components do
           <span class="font-mono">{@session.id}</span>
           <span>{Map.get(@session, :message_count, 0)} messages</span>
           <span :if={Map.get(@session, :model)}>{Map.get(@session, :model)}</span>
+          <span :if={Map.get(@session, :remote?)} class="rounded bg-vibe-accent/15 px-1.5 py-0.5 text-vibe-accent">remote</span>
         </div>
       </.link>
 
