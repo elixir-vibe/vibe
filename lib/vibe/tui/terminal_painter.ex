@@ -114,20 +114,59 @@ defmodule Vibe.TUI.TerminalPainter do
 
   defp patch_lines(lines, cursor, painter, first, last) do
     desired_viewport_top = viewport_top(lines, painter.height)
-    viewport_shifted? = desired_viewport_top != painter.viewport_top
 
-    {first, last} =
-      if viewport_shifted? do
-        visible_first = max(first, desired_viewport_top - 1)
-        visible_last = desired_viewport_top + painter.height - 2
-        {visible_first, visible_last}
+    if desired_viewport_top != painter.viewport_top do
+      repaint_viewport(lines, cursor, painter, desired_viewport_top)
+    else
+      patch_changed(lines, cursor, painter, first, last)
+    end
+  end
+
+  defp repaint_viewport(lines, cursor, painter, desired_viewport_top) do
+    scroll_amount = desired_viewport_top - painter.viewport_top
+    screen_cursor = screen_cursor(cursor, desired_viewport_top)
+
+    visible = visible_lines(lines, desired_viewport_top, painter.height)
+
+    frame =
+      if scroll_amount > 0 do
+        current_screen_row =
+          (painter.hardware_row - painter.viewport_top + 1) |> max(1) |> min(painter.height)
+
+        [
+          begin_synchronized_update(),
+          hide_cursor(),
+          disable_autowrap(),
+          move_from_to(current_screen_row, painter.height),
+          String.duplicate("\r\n", scroll_amount),
+          ANSI.cursor(1, 1),
+          Enum.map_intersperse(visible, "\r\n", &[ANSI.clear_line(), &1]),
+          end_synchronized_update(),
+          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
+          enable_autowrap(),
+          show_cursor()
+        ]
       else
-        {first, last}
+        [
+          begin_synchronized_update(),
+          hide_cursor(),
+          disable_autowrap(),
+          ANSI.cursor(1, 1),
+          Enum.map_intersperse(visible, "\r\n", &[ANSI.clear_line(), &1]),
+          end_synchronized_update(),
+          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
+          enable_autowrap(),
+          show_cursor()
+        ]
       end
 
+    {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
+  end
+
+  defp patch_changed(lines, cursor, painter, first, last) do
     target_row = first + 1
     {move, viewport_top} = move_to_row(painter, target_row)
-    viewport_top = max(viewport_top, desired_viewport_top)
+    viewport_top = max(viewport_top, viewport_top(lines, painter.height))
     screen_cursor = screen_cursor(cursor, viewport_top)
     patch_count = last - first + 1
 
