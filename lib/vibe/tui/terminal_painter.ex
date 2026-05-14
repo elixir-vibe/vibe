@@ -19,8 +19,7 @@ defmodule Vibe.TUI.TerminalPainter do
             width: 80,
             height: 24,
             hardware_row: 1,
-            viewport_top: 1,
-            initialized?: false
+            viewport_top: 1
 
   @type t :: %__MODULE__{
           lines: [IO.chardata()],
@@ -28,8 +27,7 @@ defmodule Vibe.TUI.TerminalPainter do
           width: pos_integer(),
           height: pos_integer(),
           hardware_row: pos_integer(),
-          viewport_top: pos_integer(),
-          initialized?: boolean()
+          viewport_top: pos_integer()
         }
 
   @spec new(pos_integer(), pos_integer()) :: t()
@@ -53,7 +51,7 @@ defmodule Vibe.TUI.TerminalPainter do
 
   @spec force_full_redraw(t()) :: t()
   def force_full_redraw(%__MODULE__{} = painter) do
-    %{painter | lines: [], cursor: {1, 1}, hardware_row: 1, viewport_top: 1, initialized?: true}
+    %{painter | lines: [], cursor: {1, 1}, hardware_row: 1, viewport_top: 1}
   end
 
   @spec render(t(), [IO.chardata()], {pos_integer(), pos_integer()}) :: {IO.chardata(), t()}
@@ -71,14 +69,7 @@ defmodule Vibe.TUI.TerminalPainter do
   defp do_render(lines, cursor, %{lines: []} = painter) do
     vt = viewport_top(lines, painter.height)
 
-    frame =
-      wrap_frame(
-        if painter.initialized? do
-          [ANSI.clear(), ANSI.home(), write_lines(lines)]
-        else
-          write_lines(lines)
-        end
-      )
+    frame = wrap_frame(write_lines(lines))
 
     {frame ++ [position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
   end
@@ -161,8 +152,7 @@ defmodule Vibe.TUI.TerminalPainter do
       | lines: lines,
         cursor: cursor,
         hardware_row: elem(cursor, 0),
-        viewport_top: vt,
-        initialized?: true
+        viewport_top: vt
     }
   end
 
