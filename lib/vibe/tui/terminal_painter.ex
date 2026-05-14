@@ -94,11 +94,12 @@ defmodule Vibe.TUI.TerminalPainter do
   # -- Viewport shifted: scroll then repaint full visible area ----------------
 
   defp scroll_and_repaint(lines, cursor, painter, desired_vt) do
+    grew? = length(lines) > length(painter.lines)
     scroll = desired_vt - painter.viewport_top
     visible = viewport_slice(lines, desired_vt, painter.height)
 
     body =
-      if scroll > 0 do
+      if grew? and scroll > 0 do
         [
           move_to_screen_row(painter, painter.height),
           String.duplicate("\r\n", scroll),
@@ -116,6 +117,18 @@ defmodule Vibe.TUI.TerminalPainter do
   # -- Same viewport: patch only changed lines --------------------------------
 
   defp patch_in_place(lines, cursor, painter, first, last) do
+    first = max(first, painter.viewport_top - 1)
+    last = min(last, painter.viewport_top + painter.height - 2)
+
+    if first > last do
+      vt = viewport_top(lines, painter.height)
+      {[position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
+    else
+      patch_visible(lines, cursor, painter, first, last)
+    end
+  end
+
+  defp patch_visible(lines, cursor, painter, first, last) do
     target = first + 1
     {move, vt} = navigate_to_row(painter, target)
     vt = max(vt, viewport_top(lines, painter.height))

@@ -153,6 +153,8 @@ defmodule Vibe.TUI.StressTest do
             )
 
           :ok = Vibe.Session.emit_transient_event(session, event)
+          # Sync flush: GenServer call forces mailbox processing
+          _ = TerminalLoop.render_snapshot(loop)
           {_screen, painter} = paint_screen(loop, terminal, painter)
           painter
         end)
@@ -160,13 +162,7 @@ defmodule Vibe.TUI.StressTest do
 
     assert us < @incremental_budget_us
 
-    # Drain pending TerminalLoop events before final snapshot
-    receive do
-      {TerminalLoop, :event, _} -> :ok
-    after
-      10 -> :ok
-    end
-
+    _ = TerminalLoop.render_snapshot(loop)
     {screen, _painter} = paint_screen(loop, terminal, painter)
     assert screen =~ "line 600"
     assert screen =~ "Prompt"
@@ -229,6 +225,14 @@ defmodule Vibe.TUI.StressTest do
       end
 
     Event.new(type, session_id, event)
+  end
+
+  defp drain_loop_events do
+    receive do
+      {TerminalLoop, :event, _} -> drain_loop_events()
+    after
+      100 -> :ok
+    end
   end
 
   defp paint_screen(loop, terminal, painter) do
