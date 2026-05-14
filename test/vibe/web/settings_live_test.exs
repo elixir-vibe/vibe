@@ -2,7 +2,7 @@ defmodule Vibe.Web.SettingsLiveTest do
   use Vibe.WebCase, async: false
 
   test "renders model and auth settings" do
-    conn = build_conn() |> get("/settings")
+    conn = authenticated_conn() |> get("/settings")
     html = html_response(conn, 200)
 
     assert html =~ "Settings"

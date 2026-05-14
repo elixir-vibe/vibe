@@ -9,7 +9,7 @@ defmodule Vibe.Web.SessionLiveTest do
   end
 
   test "starts and renders a session" do
-    conn = build_conn() |> get("/sessions/web-live-session")
+    conn = authenticated_conn() |> get("/sessions/web-live-session")
 
     assert html_response(conn, 200) =~ "web-live-session"
     assert html_response(conn, 200) =~ "Ask Vibe"
@@ -22,7 +22,7 @@ defmodule Vibe.Web.SessionLiveTest do
       {1, Event.new(:user_message_added, session_id, %{text: "describe", image_count: 1})}
     ])
 
-    conn = build_conn() |> get("/sessions/#{session_id}")
+    conn = authenticated_conn() |> get("/sessions/#{session_id}")
     html = html_response(conn, 200)
 
     assert html =~ "describe"
@@ -52,7 +52,7 @@ defmodule Vibe.Web.SessionLiveTest do
        )}
     ])
 
-    conn = build_conn() |> get("/sessions/#{session_id}")
+    conn = authenticated_conn() |> get("/sessions/#{session_id}")
     html = html_response(conn, 200)
 
     assert html =~ "Eval"
@@ -78,7 +78,7 @@ defmodule Vibe.Web.SessionLiveTest do
        )}
     ])
 
-    conn = build_conn() |> get("/sessions/#{session_id}")
+    conn = authenticated_conn() |> get("/sessions/#{session_id}")
     html = html_response(conn, 200)
 
     assert html =~ "Lsp"

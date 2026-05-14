@@ -8,6 +8,11 @@ defmodule Vibe.WebCase do
       import Phoenix.LiveViewTest
 
       @endpoint Vibe.Web.Endpoint
+
+      defp authenticated_conn do
+        Phoenix.ConnTest.build_conn()
+        |> Plug.Test.init_test_session(%{"vibe_web_auth" => true})
+      end
     end
   end
 

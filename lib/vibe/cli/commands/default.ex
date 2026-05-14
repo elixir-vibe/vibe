@@ -1,11 +1,9 @@
 defmodule Vibe.CLI.Commands.Default do
   @moduledoc "Default CLI entrypoint: prompt, TUI, eval, and flag dispatch."
   alias Vibe.CLI.{Output, Runner, Sessions}
-  alias Vibe.Web
 
   @version Mix.Project.config()[:version]
   @default_eval_timeout_ms 30_000
-  @default_web_port 4321
 
   @spec run([String.t()], keyword()) :: :ok | {:error, term()}
   def run(args, opts) do
@@ -65,21 +63,19 @@ defmodule Vibe.CLI.Commands.Default do
     {Enum.map(files, &String.replace_prefix(&1, "@", "")), messages}
   end
 
-  defp web(opts) do
-    port = opts[:port] || @default_web_port
+  defp web(_opts) do
+    url = Vibe.Web.Auth.authenticated_url()
+    IO.puts(url)
 
-    case Web.start(port: port) do
-      {:ok, _pid} ->
-        IO.puts("Vibe web listening on #{Web.url(port: port)}")
-        Process.sleep(:infinity)
-
-      {:error, {:already_started, _pid}} ->
-        IO.puts("Vibe web already listening on #{Web.url(port: port)}")
-        Process.sleep(:infinity)
-
-      {:error, reason} ->
-        {:error, reason}
+    case :os.type() do
+      {:unix, :darwin} -> System.cmd("open", [url])
+      {:unix, _linux} -> System.cmd("xdg-open", [url])
+      {:win32, _} -> System.cmd("cmd", ["/c", "start", url])
     end
+
+    :ok
+  rescue
+    _error -> :ok
   end
 
   defp compact(opts) do

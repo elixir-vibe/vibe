@@ -16,6 +16,11 @@ defmodule Vibe.Web do
   @spec url(keyword()) :: String.t()
   def url(opts \\ []), do: "http://localhost:#{Keyword.get(opts, :port, 4321)}"
 
+  @spec endpoint_config(pos_integer()) :: keyword()
+  def endpoint_config(port) do
+    build_endpoint_config(port)
+  end
+
   def router do
     quote do
       use Phoenix.Router, helpers: false
@@ -58,12 +63,13 @@ defmodule Vibe.Web do
     end
   end
 
-  defp endpoint_config(port) do
+  defp build_endpoint_config(port) do
     :vibe
     |> Application.get_env(Vibe.Web.Endpoint, [])
     |> Keyword.put(:http, ip: {127, 0, 0, 1}, port: port)
     |> Keyword.put(:server, true)
     |> Keyword.put(:secret_key_base, secret_key_base())
+    |> Keyword.put(:check_origin, :conn)
   end
 
   defp secret_key_base do

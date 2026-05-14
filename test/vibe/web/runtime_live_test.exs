@@ -2,7 +2,7 @@ defmodule Vibe.Web.RuntimeLiveTest do
   use Vibe.WebCase, async: false
 
   test "renders" do
-    conn = build_conn() |> get("/runtime")
+    conn = authenticated_conn() |> get("/runtime")
 
     assert html_response(conn, 200) =~ "Runtime"
     assert html_response(conn, 200) =~ "Top processes"
@@ -12,7 +12,7 @@ defmodule Vibe.Web.RuntimeLiveTest do
     :alarm_handler.set_alarm({{:disk_almost_full, ~c"/tmp"}, []})
     assert_active_alert(:disk_almost_full)
 
-    conn = build_conn() |> get("/runtime")
+    conn = authenticated_conn() |> get("/runtime")
     html = html_response(conn, 200)
 
     assert html =~ "Disk almost full"

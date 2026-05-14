@@ -17,7 +17,7 @@ defmodule Vibe.Web.StorageLiveTest do
     File.mkdir_p!(dir)
     File.write!(Path.join(dir, "image.png"), "12345")
 
-    conn = build_conn() |> get("/storage")
+    conn = authenticated_conn() |> get("/storage")
     html = html_response(conn, 200)
 
     assert html =~ "Storage"
@@ -27,7 +27,7 @@ defmodule Vibe.Web.StorageLiveTest do
   end
 
   test "search route redirects to storage" do
-    {:error, {:live_redirect, %{to: to}}} = live(build_conn(), "/search?q=hello")
+    {:error, {:live_redirect, %{to: to}}} = live(authenticated_conn(), "/search?q=hello")
 
     assert to == "/storage?q=hello"
   end

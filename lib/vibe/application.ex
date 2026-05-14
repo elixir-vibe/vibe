@@ -38,9 +38,25 @@ defmodule Vibe.Application do
       Vibe.Memory.Manager
     ]
 
-    children = children ++ gateway_children()
+    children = children ++ gateway_children() ++ web_children()
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Vibe.Supervisor)
+  end
+
+  defp web_children do
+    if Application.get_env(:vibe, :web, true) do
+      port = Application.get_env(:vibe, :web_port, 4321)
+      Application.put_env(:vibe, Vibe.Web.Endpoint, Vibe.Web.endpoint_config(port))
+      Vibe.Web.Assets.ensure_built!()
+      [Vibe.Web.Endpoint]
+    else
+      []
+    end
+  rescue
+    error ->
+      require Logger
+      Logger.warning("Failed to start web console: #{Exception.message(error)}")
+      []
   end
 
   defp gateway_children do

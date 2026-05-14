@@ -12,7 +12,7 @@ defmodule Vibe.Web.SessionsLiveTest do
       1
     )
 
-    conn = build_conn() |> get("/")
+    conn = authenticated_conn() |> get("/")
 
     assert html_response(conn, 200) =~ "Agent sessions"
     assert html_response(conn, 200) =~ "web-list-session"

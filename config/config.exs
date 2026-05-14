@@ -7,6 +7,7 @@ config :ex_gram, adapter: ExGram.Adapter.Req
 config :vibe, ecto_repos: [Vibe.Repo]
 config :vibe, env: config_env()
 config :vibe, compile_time_debug: config_env() != :prod
+config :vibe, web: config_env() != :test
 
 sqlite_busy_timeout_ms = 5_000
 
@@ -20,7 +21,7 @@ config :vibe, Vibe.Web.Endpoint,
   url: [host: "localhost"],
   render_errors: [formats: [html: Vibe.Web.ErrorHTML], layout: false],
   pubsub_server: Vibe.PubSub,
-  secret_key_base: String.duplicate("0", 64),
+  secret_key_base: String.duplicate("vibe-test-secret-key-base-", 4),
   live_view: [signing_salt: "vibe-web-signing-salt-2026"]
 
 config :volt,

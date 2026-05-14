@@ -8,7 +8,7 @@ defmodule Vibe.Web.MemoryLiveTest do
   end
 
   test "renders user memory page and manages memory entries" do
-    conn = get(build_conn(), "/memory")
+    conn = get(authenticated_conn(), "/memory")
     html = html_response(conn, 200)
 
     assert html =~ "Memory"

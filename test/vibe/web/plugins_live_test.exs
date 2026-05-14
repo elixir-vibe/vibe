@@ -2,7 +2,7 @@ defmodule Vibe.Web.PluginsLiveTest do
   use Vibe.WebCase, async: false
 
   test "renders plugin capabilities" do
-    conn = build_conn() |> get("/plugins")
+    conn = authenticated_conn() |> get("/plugins")
     html = html_response(conn, 200)
 
     assert html =~ "Plugins"
