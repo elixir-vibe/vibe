@@ -2,9 +2,14 @@ defmodule Vibe.TUI.TerminalPainter do
   @moduledoc """
   Pure terminal-diff state machine for Vibe's TUI runtime.
 
-  The painter receives fully rendered semantic lines and a cursor position in
-  document coordinates. It returns iodata to write to the terminal plus updated
-  painter state. Runtime owns IO; this module owns terminal positioning logic.
+  Receives fully rendered semantic lines and a cursor position in document
+  coordinates. Returns iodata to write to the terminal plus updated state.
+
+  Three render paths:
+
+  - **First paint** — writes all lines, creating native terminal scrollback.
+  - **Viewport shift** — scrolls via `\\r\\n` then repaints the visible area.
+  - **In-place patch** — rewrites only changed lines within the current viewport.
   """
 
   alias IO.ANSI
@@ -31,9 +36,8 @@ defmodule Vibe.TUI.TerminalPainter do
   def new(width, height), do: %__MODULE__{width: width, height: height}
 
   @spec resize(t(), pos_integer(), pos_integer()) :: t()
-  def resize(%__MODULE__{width: width} = painter, width, height) do
-    %{painter | height: height}
-  end
+  def resize(%__MODULE__{width: width} = painter, width, height),
+    do: %{painter | height: height}
 
   def resize(%__MODULE__{} = painter, width, height) do
     %{
@@ -54,239 +58,189 @@ defmodule Vibe.TUI.TerminalPainter do
 
   @spec render(t(), [IO.chardata()], {pos_integer(), pos_integer()}) :: {IO.chardata(), t()}
   def render(%__MODULE__{} = painter, lines, cursor) do
-    padded_lines = pad_to_viewport(lines, painter.height)
-    cursor = pad_cursor(cursor, length(padded_lines) - length(lines))
-    render_native(padded_lines, cursor, painter)
+    padded = pad_to_height(lines, painter.height)
+    cursor = shift_cursor(cursor, length(padded) - length(lines))
+    do_render(padded, cursor, painter)
   end
 
   @spec cleanup() :: IO.chardata()
-  def cleanup do
-    [end_synchronized_update(), enable_autowrap(), show_cursor(), ANSI.reset()]
-  end
+  def cleanup, do: [sync_end(), autowrap_on(), cursor_show(), ANSI.reset()]
 
-  defp render_native(lines, cursor, %{lines: []} = painter) do
-    viewport_top = viewport_top(lines, painter.height)
-    screen_cursor = screen_cursor(cursor, viewport_top)
+  # -- Render dispatch --------------------------------------------------------
+
+  defp do_render(lines, cursor, %{lines: []} = painter) do
+    vt = viewport_top(lines, painter.height)
 
     frame =
-      if initial_paint?(painter) do
-        [
-          begin_synchronized_update(),
-          hide_cursor(),
-          disable_autowrap(),
-          intersperse_lines(lines),
-          end_synchronized_update(),
-          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
-          enable_autowrap(),
-          show_cursor()
-        ]
-      else
-        [
-          begin_synchronized_update(),
-          hide_cursor(),
-          disable_autowrap(),
-          ANSI.clear(),
-          ANSI.home(),
-          intersperse_lines(visible_lines(lines, viewport_top, painter.height)),
-          end_synchronized_update(),
-          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
-          enable_autowrap(),
-          show_cursor()
-        ]
-      end
+      wrap_frame(
+        if painter.initialized? do
+          [ANSI.clear(), ANSI.home(), write_lines(viewport_slice(lines, vt, painter.height))]
+        else
+          write_lines(lines)
+        end
+      )
 
-    {frame, put_render_state(painter, lines, cursor, viewport_top)}
+    {frame ++ [position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
   end
 
-  defp render_native(lines, cursor, painter) do
-    desired_viewport_top = viewport_top(lines, painter.height)
-
+  defp do_render(lines, cursor, painter) do
     case changed_range(painter.lines, lines) do
       nil ->
-        screen_cursor = screen_cursor(cursor, desired_viewport_top)
-        frame = [ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1))]
-        {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
+        vt = viewport_top(lines, painter.height)
+        {[position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
 
       {first, last} ->
-        patch_lines(lines, cursor, painter, first, last)
+        vt = viewport_top(lines, painter.height)
+
+        if vt != painter.viewport_top do
+          scroll_and_repaint(lines, cursor, painter, vt)
+        else
+          patch_in_place(lines, cursor, painter, first, last)
+        end
     end
   end
 
-  defp patch_lines(lines, cursor, painter, first, last) do
-    desired_viewport_top = viewport_top(lines, painter.height)
+  # -- Viewport shifted: scroll then repaint full visible area ----------------
 
-    if desired_viewport_top != painter.viewport_top do
-      repaint_viewport(lines, cursor, painter, desired_viewport_top)
-    else
-      patch_changed(lines, cursor, painter, first, last)
-    end
-  end
+  defp scroll_and_repaint(lines, cursor, painter, desired_vt) do
+    scroll = desired_vt - painter.viewport_top
+    visible = viewport_slice(lines, desired_vt, painter.height)
 
-  defp repaint_viewport(lines, cursor, painter, desired_viewport_top) do
-    scroll_amount = desired_viewport_top - painter.viewport_top
-    screen_cursor = screen_cursor(cursor, desired_viewport_top)
-
-    visible = visible_lines(lines, desired_viewport_top, painter.height)
-
-    frame =
-      if scroll_amount > 0 do
-        current_screen_row =
-          (painter.hardware_row - painter.viewport_top + 1) |> max(1) |> min(painter.height)
-
+    body =
+      if scroll > 0 do
         [
-          begin_synchronized_update(),
-          hide_cursor(),
-          disable_autowrap(),
-          move_from_to(current_screen_row, painter.height),
-          String.duplicate("\r\n", scroll_amount),
+          move_to_screen_row(painter, painter.height),
+          String.duplicate("\r\n", scroll),
           ANSI.cursor(1, 1),
-          Enum.map_intersperse(visible, "\r\n", &[ANSI.clear_line(), &1]),
-          end_synchronized_update(),
-          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
-          enable_autowrap(),
-          show_cursor()
+          write_cleared_lines(visible)
         ]
       else
-        [
-          begin_synchronized_update(),
-          hide_cursor(),
-          disable_autowrap(),
-          ANSI.cursor(1, 1),
-          Enum.map_intersperse(visible, "\r\n", &[ANSI.clear_line(), &1]),
-          end_synchronized_update(),
-          ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
-          enable_autowrap(),
-          show_cursor()
-        ]
+        [ANSI.cursor(1, 1), write_cleared_lines(visible)]
       end
 
-    {frame, put_render_state(painter, lines, cursor, desired_viewport_top)}
+    frame = wrap_frame(body)
+    {frame ++ [position_cursor(cursor, desired_vt)], commit(painter, lines, cursor, desired_vt)}
   end
 
-  defp patch_changed(lines, cursor, painter, first, last) do
-    target_row = first + 1
-    {move, viewport_top} = move_to_row(painter, target_row)
-    viewport_top = max(viewport_top, viewport_top(lines, painter.height))
-    screen_cursor = screen_cursor(cursor, viewport_top)
-    patch_count = last - first + 1
+  # -- Same viewport: patch only changed lines --------------------------------
 
-    frame = [
-      begin_synchronized_update(),
-      hide_cursor(),
-      disable_autowrap(),
+  defp patch_in_place(lines, cursor, painter, first, last) do
+    target = first + 1
+    {move, vt} = navigate_to_row(painter, target)
+    vt = max(vt, viewport_top(lines, painter.height))
+    count = last - first + 1
+
+    body = [
       move,
       "\r",
-      lines
-      |> replacement_lines(first, patch_count)
-      |> Enum.map_intersperse("\r\n", &[ANSI.clear_line(), &1]),
-      end_synchronized_update(),
-      ANSI.cursor(elem(screen_cursor, 0), elem(screen_cursor, 1)),
-      enable_autowrap(),
-      show_cursor()
+      lines |> slice_with_padding(first, count) |> write_cleared_lines()
     ]
 
-    {frame, put_render_state(painter, lines, cursor, viewport_top)}
+    frame = wrap_frame(body)
+    {frame ++ [position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
   end
 
-  defp replacement_lines(lines, first, count) do
-    replacement = Enum.slice(lines, first, count)
-    Vibe.TUI.Lines.join(replacement, List.duplicate("", count - length(replacement)))
-  end
+  # -- Frame helpers ----------------------------------------------------------
 
-  defp initial_paint?(%{initialized?: false}), do: true
-  defp initial_paint?(_painter), do: false
+  defp wrap_frame(body),
+    do: [sync_begin(), cursor_hide(), autowrap_off() | List.wrap(body)] ++ [sync_end()]
 
-  defp put_render_state(painter, lines, cursor, viewport_top) do
+  defp position_cursor({row, col}, vt),
+    do: [ANSI.cursor(max(row - vt + 1, 1), col), autowrap_on(), cursor_show()]
+
+  defp write_lines(lines), do: Enum.intersperse(lines, "\r\n")
+
+  defp write_cleared_lines(lines),
+    do: Enum.map_intersperse(lines, "\r\n", &[ANSI.clear_line(), &1])
+
+  # -- State ------------------------------------------------------------------
+
+  defp commit(painter, lines, cursor, vt) do
     %{
       painter
       | lines: lines,
         cursor: cursor,
         hardware_row: elem(cursor, 0),
-        viewport_top: viewport_top,
+        viewport_top: vt,
         initialized?: true
     }
   end
 
-  defp changed_range(old, new) do
-    case first_changed_index(old, new, 0) do
-      nil ->
-        nil
+  # -- Viewport ---------------------------------------------------------------
 
-      first ->
-        max_length = max(length(old), length(new))
-        max_tail = max(max_length - first - 1, 0)
-        tail = common_tail_length(Enum.reverse(old), Enum.reverse(new), max_tail, 0)
-        {first, max_length - tail - 1}
-    end
-  end
+  defp viewport_top(lines, height), do: max(length(lines) - height + 1, 1)
+  defp viewport_slice(lines, vt, height), do: Enum.slice(lines, (vt - 1)..(vt + height - 2)//1)
 
-  defp first_changed_index([], [], _index), do: nil
-  defp first_changed_index([], _new, index), do: index
-  defp first_changed_index(_old, [], index), do: index
-
-  defp first_changed_index([old_line | old], [new_line | new], index) do
-    if old_line == new_line do
-      first_changed_index(old, new, index + 1)
-    else
-      index
-    end
-  end
-
-  defp common_tail_length(_old, _new, 0, count), do: count
-  defp common_tail_length([], _new, _remaining, count), do: count
-  defp common_tail_length(_old, [], _remaining, count), do: count
-
-  defp common_tail_length([old_line | old], [new_line | new], remaining, count) do
-    if old_line == new_line do
-      common_tail_length(old, new, remaining - 1, count + 1)
-    else
-      count
-    end
-  end
-
-  defp pad_to_viewport(lines, height) do
+  defp pad_to_height(lines, height) do
     padding = max(height - length(lines), 0)
     Vibe.TUI.Lines.join(List.duplicate("", padding), lines)
   end
 
-  defp pad_cursor({row, column}, padding), do: {row + padding, column}
-  defp viewport_top(lines, height), do: max(length(lines) - height + 1, 1)
+  defp shift_cursor({row, col}, offset), do: {row + offset, col}
 
-  defp screen_cursor({row, column}, viewport_top), do: {max(row - viewport_top + 1, 1), column}
-  defp intersperse_lines(lines), do: Enum.intersperse(lines, "\r\n")
+  defp slice_with_padding(lines, start, count) do
+    slice = Enum.slice(lines, start, count)
+    Vibe.TUI.Lines.join(slice, List.duplicate("", count - length(slice)))
+  end
 
-  defp move_to_row(painter, target_row) do
-    bottom = painter.viewport_top + painter.height - 1
+  # -- Diff -------------------------------------------------------------------
 
-    if target_row > bottom do
-      current_screen_row =
-        (painter.hardware_row - painter.viewport_top + 1) |> max(1) |> min(painter.height)
+  defp changed_range(old, new) do
+    case first_diff(old, new, 0) do
+      nil ->
+        nil
 
-      move_to_bottom = painter.height - current_screen_row
-      scroll = target_row - bottom
-
-      {[move_from_to(1, move_to_bottom + 1), String.duplicate("\r\n", scroll)],
-       painter.viewport_top + scroll}
-    else
-      current_screen_row = painter.hardware_row - painter.viewport_top + 1
-      target_screen_row = target_row - painter.viewport_top + 1
-      {move_from_to(current_screen_row, target_screen_row), painter.viewport_top}
+      first ->
+        max_len = max(length(old), length(new))
+        tail = matching_tail(Enum.reverse(old), Enum.reverse(new), max(max_len - first - 1, 0), 0)
+        {first, max_len - tail - 1}
     end
   end
 
-  defp move_from_to(from, to) when to > from, do: ANSI.cursor_down(to - from)
-  defp move_from_to(from, to) when to < from, do: ANSI.cursor_up(from - to)
-  defp move_from_to(_from, _to), do: []
+  defp first_diff([], [], _i), do: nil
+  defp first_diff([], _new, i), do: i
+  defp first_diff(_old, [], i), do: i
+  defp first_diff([h | a], [h | b], i), do: first_diff(a, b, i + 1)
+  defp first_diff(_old, _new, i), do: i
 
-  defp hide_cursor, do: "\e[?25l"
-  defp show_cursor, do: "\e[?25h"
-  defp disable_autowrap, do: "\e[?7l"
-  defp enable_autowrap, do: "\e[?7h"
+  defp matching_tail(_old, _new, 0, n), do: n
+  defp matching_tail([], _new, _r, n), do: n
+  defp matching_tail(_old, [], _r, n), do: n
+  defp matching_tail([h | a], [h | b], r, n), do: matching_tail(a, b, r - 1, n + 1)
+  defp matching_tail(_old, _new, _r, n), do: n
 
-  defp visible_lines(lines, viewport_top, height) do
-    Enum.slice(lines, (viewport_top - 1)..(viewport_top + height - 2)//1)
+  # -- Cursor navigation -----------------------------------------------------
+
+  defp navigate_to_row(painter, target) do
+    bottom = painter.viewport_top + painter.height - 1
+
+    if target > bottom do
+      scroll = target - bottom
+
+      {[move_to_screen_row(painter, painter.height), String.duplicate("\r\n", scroll)],
+       painter.viewport_top + scroll}
+    else
+      from = painter.hardware_row - painter.viewport_top + 1
+      to = target - painter.viewport_top + 1
+      {cursor_move(from, to), painter.viewport_top}
+    end
   end
 
-  defp begin_synchronized_update, do: "\e[?2026h"
-  defp end_synchronized_update, do: "\e[?2026l"
+  defp move_to_screen_row(painter, target_screen_row) do
+    current = (painter.hardware_row - painter.viewport_top + 1) |> max(1) |> min(painter.height)
+    cursor_move(current, target_screen_row)
+  end
+
+  defp cursor_move(from, to) when to > from, do: ANSI.cursor_down(to - from)
+  defp cursor_move(from, to) when to < from, do: ANSI.cursor_up(from - to)
+  defp cursor_move(_from, _to), do: []
+
+  # -- Terminal escape sequences ----------------------------------------------
+
+  defp cursor_hide, do: "\e[?25l"
+  defp cursor_show, do: "\e[?25h"
+  defp autowrap_off, do: "\e[?7l"
+  defp autowrap_on, do: "\e[?7h"
+  defp sync_begin, do: "\e[?2026h"
+  defp sync_end, do: "\e[?2026l"
 end
