@@ -74,7 +74,7 @@ defmodule Vibe.TUI.TerminalPainter do
     frame =
       wrap_frame(
         if painter.initialized? do
-          [ANSI.clear(), ANSI.home(), write_lines(viewport_slice(lines, vt, painter.height))]
+          [ANSI.clear(), ANSI.home(), write_lines(lines)]
         else
           write_lines(lines)
         end
