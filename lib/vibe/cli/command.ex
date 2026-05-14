@@ -18,7 +18,8 @@ defmodule Vibe.CLI.Command do
     Commands.Skill,
     Commands.Subagents,
     Commands.Send,
-    Commands.Attach
+    Commands.Attach,
+    Commands.Connect
   ]
 
   @spec dispatch(Vibe.CLI.Parser.parsed()) :: :ok | {:error, term()}
