@@ -13,7 +13,10 @@ defmodule Vibe.Context.Serializer do
   end
 
   @spec estimate_tokens([Trajectory.t()]) :: non_neg_integer()
-  def estimate_tokens(events), do: div(String.length(serialize(events)), 4)
+  def estimate_tokens(events), do: Enum.sum(Enum.map(events, &event_tokens/1))
+
+  @spec event_tokens(Trajectory.t()) :: non_neg_integer()
+  def event_tokens(event), do: event |> serialize_event() |> String.length() |> div(4)
 
   @spec file_operations([Trajectory.t()]) :: %{
           read: MapSet.t(String.t()),

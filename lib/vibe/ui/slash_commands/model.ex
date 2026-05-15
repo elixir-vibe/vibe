@@ -8,8 +8,24 @@ defmodule Vibe.UI.SlashCommands.Model do
   @impl true
   def run(args, _ui_state) when is_binary(args) do
     case String.trim(args) do
-      "" -> {:command, :open_model_selector}
-      model -> {:command, {:select_model, %{model: model}}}
+      "" ->
+        {:command, :open_model_selector}
+
+      input ->
+        case Vibe.Model.Resolver.resolve(input) do
+          {:ok, model, nil} ->
+            {:command, {:select_model, %{model: model}}}
+
+          {:ok, model, effort} ->
+            {:events,
+             [
+               Vibe.UI.Event.new(:model_selected, "", %{model: model}),
+               Vibe.UI.Event.new(:effort_selected, "", %{effort: effort})
+             ]}
+
+          {:error, :not_found} ->
+            {:command, {:select_model, %{model: input}}}
+        end
     end
   end
 end

@@ -269,6 +269,21 @@ defmodule Vibe.Session do
     emit(state, Event.new(:session_backgrounded, state.state.session_id, %{}), persist?: false)
   end
 
+  defp handle_command(%Command{type: :branch_session, data: %{seq: seq}}, state) do
+    branch_id = Vibe.Session.Store.new_id()
+
+    case Vibe.Session.Store.branch(state.state.session_id, seq, branch_id) do
+      :ok ->
+        emit(
+          state,
+          Event.new(:session_selected, state.state.session_id, %{session_id: branch_id})
+        )
+
+      {:error, reason} ->
+        notify(state, "Branch failed: #{inspect(reason)}")
+    end
+  end
+
   defp handle_command(%Command{type: :toggle_truncation}, state) do
     emit(state, Event.new(:truncation_toggled, state.state.session_id, %{}))
   end

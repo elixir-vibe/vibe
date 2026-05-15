@@ -22,6 +22,10 @@ defmodule Vibe.Plugin do
   @callback system_prompt(context(), term()) :: {String.t() | nil, term()}
   @callback before_command(String.t(), context(), term()) ::
               {:ok, term()} | {:warn, String.t(), term()} | {:block, String.t(), term()}
+  @callback tool_call(map(), context(), term()) ::
+              {:ok, term()} | {:ok, map(), term()} | {:block, String.t(), term()}
+  @callback tool_result(map(), context(), term()) :: {:ok, term()} | {:ok, map(), term()}
+  @callback context(list(), context(), term()) :: {:ok, term()} | {:ok, list(), term()}
   @callback actions(term()) :: [module()]
   @callback commands(term()) :: [module() | map()]
   @callback apis(term()) :: [API.t() | keyword() | map()]
@@ -32,6 +36,9 @@ defmodule Vibe.Plugin do
 
   @optional_callbacks system_prompt: 2,
                       before_command: 3,
+                      tool_call: 3,
+                      tool_result: 3,
+                      context: 3,
                       actions: 1,
                       commands: 1,
                       apis: 1,
@@ -62,6 +69,15 @@ defmodule Vibe.Plugin do
       def before_command(_command, _context, state), do: {:ok, state}
 
       @impl Vibe.Plugin
+      def tool_call(_call, _context, state), do: {:ok, state}
+
+      @impl Vibe.Plugin
+      def tool_result(_result, _context, state), do: {:ok, state}
+
+      @impl Vibe.Plugin
+      def context(_messages, _context, state), do: {:ok, state}
+
+      @impl Vibe.Plugin
       def actions(_state), do: []
 
       @impl Vibe.Plugin
@@ -86,6 +102,9 @@ defmodule Vibe.Plugin do
                      handle_event: 3,
                      system_prompt: 2,
                      before_command: 3,
+                     tool_call: 3,
+                     tool_result: 3,
+                     context: 3,
                      actions: 1,
                      commands: 1,
                      apis: 1,

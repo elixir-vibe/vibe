@@ -1,7 +1,18 @@
 defmodule Vibe.Context.Compactor do
-  @moduledoc "LLM-driven context compaction for long sessions."
+  @moduledoc """
+  LLM-driven context compaction for long sessions.
+
+  Uses token estimation (`chars / 4`) to find optimal cut points rather than
+  fixed event counts. Walks backwards from the newest events, accumulating
+  tokens until `keep_recent_tokens` is reached. The cut always lands on a
+  user or assistant message boundary — never mid-tool-result.
+  """
+
   alias Vibe.Context.Serializer
   alias Vibe.Trajectory
+
+  @default_keep_tokens 20_000
+  @valid_cut_types [:user_message, :assistant_message]
 
   @type compact_result :: %{
           summary: String.t(),
@@ -18,11 +29,11 @@ defmodule Vibe.Context.Compactor do
 
   @spec compact([Trajectory.t()], keyword()) :: {:ok, compact_result()} | {:error, term()}
   def compact(events, opts) when is_list(events) do
-    keep_recent = Keyword.get(opts, :keep_recent, 12)
+    keep_tokens = Keyword.get(opts, :keep_recent_tokens, @default_keep_tokens)
     previous_summary = Keyword.get(opts, :previous_summary) || latest_compaction_summary(events)
     events = drop_prior_compactions(events)
 
-    {old_events, kept_events} = split_events(events, keep_recent)
+    {old_events, kept_events} = find_cut_point(events, keep_tokens)
 
     if old_events == [] do
       {:error, :nothing_to_compact}
@@ -93,10 +104,38 @@ defmodule Vibe.Context.Compactor do
       previous <> "\n\n" <> prompt
   end
 
-  defp split_events(events, keep_recent) do
-    keep_recent = max(0, keep_recent)
-    cut = max(length(events) - keep_recent, 0)
-    Enum.split(events, cut)
+  defp find_cut_point(events, keep_tokens) do
+    reversed = Enum.reverse(events)
+
+    {kept_reversed, _tokens} =
+      Enum.reduce_while(reversed, {[], 0}, fn event, {acc, tokens} ->
+        event_tokens = Serializer.event_tokens(event)
+        new_tokens = tokens + event_tokens
+
+        if new_tokens > keep_tokens and acc != [] do
+          {:halt, {acc, tokens}}
+        else
+          {:cont, {[event | acc], new_tokens}}
+        end
+      end)
+
+    kept = snap_to_boundary(kept_reversed)
+    cut_index = length(events) - length(kept)
+    Enum.split(events, max(cut_index, 0))
+  end
+
+  @spec find_cut_point_for_test([Trajectory.t()], non_neg_integer()) ::
+          {[Trajectory.t()], [Trajectory.t()]}
+  def find_cut_point_for_test(events, keep_tokens), do: find_cut_point(events, keep_tokens)
+
+  @spec snap_to_boundary_for_test([Trajectory.t()]) :: [Trajectory.t()]
+  def snap_to_boundary_for_test(events), do: snap_to_boundary(events)
+
+  defp snap_to_boundary(events) do
+    case Enum.find_index(events, &(&1.type in @valid_cut_types)) do
+      nil -> events
+      index -> Enum.drop(events, index)
+    end
   end
 
   defp latest_compaction_summary(events) do

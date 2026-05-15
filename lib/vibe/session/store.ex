@@ -116,6 +116,25 @@ defmodule Vibe.Session.Store do
     end
   end
 
+  @spec branch(String.t(), non_neg_integer(), String.t()) :: :ok | {:error, term()}
+  def branch(source_session_id, up_to_seq, branch_id) do
+    events = ui_events(source_session_id)
+
+    kept = Enum.filter(events, fn {seq, _event} -> seq <= up_to_seq end)
+
+    if kept == [] do
+      {:error, :nothing_to_branch}
+    else
+      branch_events =
+        Enum.map(kept, fn {seq, event} ->
+          {seq, %{event | session_id: branch_id}}
+        end)
+
+      ensure_session(branch_id, DateTime.utc_now())
+      append_ui_events(branch_events, index?: true, refresh_summary?: true)
+    end
+  end
+
   @spec delete_many([String.t()]) :: %{deleted: [String.t()], skipped: [{String.t(), term()}]}
   def delete_many(session_ids) when is_list(session_ids) do
     Enum.reduce(session_ids, %{deleted: [], skipped: []}, fn session_id, acc ->
