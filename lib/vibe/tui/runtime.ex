@@ -91,10 +91,13 @@ defmodule Vibe.TUI.Runtime do
              :model_selected,
              :status_changed,
              :assistant_stream_started,
-             :assistant_stream_finished
+             :assistant_stream_finished,
+             :user_message_added,
+             :assistant_message_added
            ] ->
         Writer.app_event(cast, event)
         update_title_from_event(event)
+        emit_osc133(event)
         repaint_or_stop(tty, loop, last_interrupt_at, painter, cast)
 
       {TerminalLoop, :event, event} ->
@@ -415,6 +418,14 @@ defmodule Vibe.TUI.Runtime do
     do: set_window_title("Vibe")
 
   defp update_title_from_event(_event), do: :ok
+
+  defp emit_osc133(%{type: :user_message_added}), do: IO.write(:stdio, "\e]133;B\a")
+  defp emit_osc133(%{type: :assistant_stream_started}), do: IO.write(:stdio, "\e]133;C\a")
+
+  defp emit_osc133(%{type: :assistant_message_added}),
+    do: IO.write(:stdio, "\e]133;D;0\a\e]133;A\a")
+
+  defp emit_osc133(_event), do: :ok
 
   defp ensure_interactive_terminal do
     if :prim_tty.isatty(:stdin) do

@@ -105,10 +105,36 @@ VIBE_REAL_MODEL=1 mix run scripts/image_agent_smoke.exs
 
 Image files read by the agent are model-facing through `read`, resized through pluggable command backends (`magick`, `sips`, `vips`) when needed, and large payloads are stored as session artifacts instead of being duplicated in JSON logs. Interactive image prompts keep the original text visible while sending the image as semantic content; TUI and Web transcripts show attachment badges. In the TUI, `Ctrl+V` can paste a clipboard PNG into the composer as an `@path` marker when `pngpaste` is installed.
 
-Open the prototype Phoenix LiveView client:
+## Web console
+
+The Phoenix LiveView web console starts automatically on port 4321. Open it with:
 
 ```bash
-vibe --web --port 4321
+vibe --web                  # opens browser with auth token
+/web                        # from TUI: opens browser
+```
+
+The web console shares sessions with the TUI in real time — both attach to the same `Vibe.Session` process. Token-based authentication protects access.
+
+## Agent dashboard
+
+Background sessions and manage multiple agents from one screen:
+
+```bash
+vibe --bg "fix the flaky test"    # start a headless background session
+/bg                                # background the current TUI session
+←                                  # on empty prompt: open agent dashboard
+```
+
+The dashboard shows all sessions with status, preview, and model. Arrow keys navigate, Space peeks, Enter attaches, Esc returns.
+
+## Providers
+
+Any `provider:model` string works — Vibe passes through to ReqLLM which supports 50+ providers. Most authenticate via env vars (`ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, etc.). OAuth providers (Codex) have dedicated wrappers.
+
+```bash
+vibe --model anthropic:claude-sonnet-4
+/model claude-sonnet:high           # fuzzy matching + effort shorthand
 ```
 
 ## Core workflows
@@ -161,7 +187,23 @@ vibe a <job.child_session_id>
 
 ### Plugins and skills
 
-Plugins can add supervised workers, slash commands, eval APIs, semantic UI updates, model-facing actions, and Markdown renderers. Executable skills are trusted local Elixir files discovered from `priv/skills`, `./skills`, `./.vibe/skills`, and `~/.vibe/skills`.
+Plugins are OTP modules under `Vibe.Plugins.*` that extend Vibe through the `Vibe.Plugin` behaviour. Built-in plugins:
+
+- **Rules** — loads `~/.vibe/rules/*.md` into the system prompt with optional model-glob filtering
+- **Safety** — blocks destructive commands (PR create, force push, sudo, DROP TABLE) with a TUI confirmation selector
+- **Notify** — desktop notifications via OSC terminal escape sequences when tasks complete or fail
+- **Question** — model-facing `question` tool that pauses execution and shows options to the user
+- **WebSearch** — provider-neutral web search and fetch via the `Web` eval alias
+
+Disable plugins in `~/.vibe/agent-profiles.toml`:
+
+```toml
+disabled_plugins = ["notify", "safety"]
+```
+
+Plugin API callbacks: `system_prompt/2`, `before_command/3`, `tool_call/3`, `tool_result/3`, `context/3`, `actions/1`, `commands/1`, `apis/1`, `children/1`.
+
+Executable skills are trusted local Elixir files discovered from `priv/skills`, `./skills`, `./.vibe/skills`, and `~/.vibe/skills`.
 
 ```bash
 vibe skill list
@@ -202,11 +244,17 @@ Module docs describe exact Elixir API contracts. Built-in help is for operationa
 ```text
 ~/.vibe/vibe.db                 # SQLite database for durable Vibe state
 ~/.vibe/auth.json              # ChatGPT/Codex OAuth credentials
-~/.vibe/server.cookie          # Vibe-specific Erlang distribution cookie
+~/.vibe/server.cookie          # Erlang distribution cookie
 ~/.vibe/server.json            # server node metadata
 ~/.vibe/server.out             # background server log
 ~/.vibe/sessions/<id>.log      # dependency/session log output
-~/.vibe/skills                 # skill files
+~/.vibe/skills/                # user skill files
+~/.vibe/rules/                 # system prompt rule files
+~/.vibe/tls/                   # TLS certificates for remote distribution
+~/.vibe/web-token              # web console auth token
+~/.vibe/web-secret-key-base    # Phoenix secret key
+~/.vibe/known-nodes.json       # trusted remote Vibe nodes
+~/.vibe/agent-profiles.toml    # model/role/plugin configuration
 ```
 
 Use environment variables to isolate dev/test instances:
@@ -225,10 +273,13 @@ Type `/` in the TUI to open command autocomplete.
 /sessions  Browse and attach sessions
 /new       Start a new session
 /attach ID Attach by session id
-/model     Choose model
+/model     Choose model (supports fuzzy matching + model:effort shorthand)
 /skill     Choose skill
+/branch    Branch session from an earlier message
+/bg        Background current session and open agent dashboard
+/web       Open web console in browser
 /clear     Clear visible messages
-/compact   Compact context
+/compact   Compact context (token-based cut point)
 /commands  Command palette
 /help      Open built-in docs
 ```

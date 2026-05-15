@@ -86,27 +86,38 @@ defmodule Vibe.Agent.Streaming.Plugin do
 
   def handle_signal(%{type: "ai.tool.started", data: data}, %{agent: %{id: agent_id}})
       when is_map(data) do
-    Vibe.Agent.Streaming.dispatch_tool_started(
-      agent_id,
-      ToolEvent.started(
-        id: tool_call_id(data),
-        name: tool_name(data),
-        args: tool_arguments(data)
-      )
-    )
+    call = %{name: tool_name(data), args: tool_arguments(data), id: tool_call_id(data)}
 
-    {:ok, :continue}
+    case dispatch_plugin_tool_call(call) do
+      {:block, _reason} ->
+        {:ok, :continue}
+
+      _ok ->
+        Vibe.Agent.Streaming.dispatch_tool_started(
+          agent_id,
+          ToolEvent.started(
+            id: tool_call_id(data),
+            name: tool_name(data),
+            args: tool_arguments(data)
+          )
+        )
+
+        {:ok, :continue}
+    end
   end
 
   def handle_signal(%{type: "ai.tool.result", data: data}, %{agent: %{id: agent_id}})
       when is_map(data) do
+    result = %{name: tool_name(data), output: event_field(data, :result), id: tool_call_id(data)}
+    result = dispatch_plugin_tool_result(result)
+
     Vibe.Agent.Streaming.dispatch_tool_finished(
       agent_id,
       ToolEvent.finished(
         id: tool_call_id(data),
         name: tool_name(data),
         args: tool_arguments(data),
-        output: event_field(data, :result)
+        output: Map.get(result, :output, event_field(data, :result))
       )
     )
 
@@ -158,5 +169,28 @@ defmodule Vibe.Agent.Streaming.Plugin do
 
   defp event_field(map, key, default \\ nil) when is_map(map) do
     Map.get(map, key, Map.get(map, to_string(key), default))
+  end
+
+  defp dispatch_plugin_tool_call(call) do
+    if Process.whereis(Vibe.Plugin.Manager) do
+      Vibe.Plugin.Manager.tool_call(call, %{})
+    else
+      :ok
+    end
+  rescue
+    _error -> :ok
+  end
+
+  defp dispatch_plugin_tool_result(result) do
+    if Process.whereis(Vibe.Plugin.Manager) do
+      case Vibe.Plugin.Manager.tool_result(result, %{}) do
+        {:ok, modified} when is_map(modified) -> modified
+        _other -> result
+      end
+    else
+      result
+    end
+  rescue
+    _error -> result
   end
 end
