@@ -41,9 +41,11 @@ defmodule Vibe.TUI.Runtime do
 
         try do
           Process.put(:vibe_runtime_id, runtime_id)
+          set_window_title("Vibe")
           painter = render(loop, TerminalPainter.new(columns, rows), cast)
           receive_events(tty, loop, nil, painter, cast)
         after
+          restore_window_title()
           write_output(TerminalPainter.cleanup(), cast)
           Writer.close(cast)
           GenServer.stop(tty)
@@ -83,6 +85,17 @@ defmodule Vibe.TUI.Runtime do
 
       {TerminalLoop, :event, %{type: :session_backgrounded}} ->
         agents_view(tty, loop, painter, cast)
+
+      {TerminalLoop, :event, %{type: type} = event}
+      when type in [
+             :model_selected,
+             :status_changed,
+             :assistant_stream_started,
+             :assistant_stream_finished
+           ] ->
+        Writer.app_event(cast, event)
+        update_title_from_event(event)
+        repaint_or_stop(tty, loop, last_interrupt_at, painter, cast)
 
       {TerminalLoop, :event, event} ->
         Writer.app_event(cast, event)
@@ -382,6 +395,26 @@ defmodule Vibe.TUI.Runtime do
     write_output(frame, cast)
     painter
   end
+
+  defp set_window_title(title), do: IO.write(:stderr, "\e]0;#{title}\a")
+  defp restore_window_title, do: IO.write(:stderr, "\e]0;\a")
+
+  defp update_title_from_event(%{type: :assistant_stream_started}),
+    do: set_window_title("Vibe · working")
+
+  defp update_title_from_event(%{type: :assistant_stream_finished}),
+    do: set_window_title("Vibe")
+
+  defp update_title_from_event(%{type: :model_selected, data: %{model: model}}),
+    do: set_window_title("Vibe · #{model}")
+
+  defp update_title_from_event(%{type: :status_changed, data: %{status: :working}}),
+    do: set_window_title("Vibe · working")
+
+  defp update_title_from_event(%{type: :status_changed}),
+    do: set_window_title("Vibe")
+
+  defp update_title_from_event(_event), do: :ok
 
   defp ensure_interactive_terminal do
     if :prim_tty.isatty(:stdin) do

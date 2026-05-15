@@ -307,8 +307,16 @@ defmodule Vibe.TUI.Markdown do
   defp inline(%MDEx.Strong{nodes: nodes}, theme), do: nodes |> inline(theme) |> Theme.bold()
   defp inline(%MDEx.Emph{nodes: nodes}, theme), do: nodes |> inline(theme) |> Theme.italic()
 
-  defp inline(%MDEx.Link{nodes: nodes, url: url}, theme),
-    do: Theme.fg(theme, :accent, [inline(nodes, theme), " (", url, ")"])
+  defp inline(%MDEx.Link{nodes: nodes, url: url}, theme) do
+    text = inline(nodes, theme)
+    link_text = IO.iodata_to_binary(List.wrap(text))
+
+    if hyperlinks?() and link_text != url do
+      [osc8_open(url), Theme.fg(theme, :accent, text), osc8_close()]
+    else
+      Theme.fg(theme, :accent, [text, " (", url, ")"])
+    end
+  end
 
   defp inline(%MDEx.SoftBreak{}, _theme), do: "\n"
   defp inline(%MDEx.LineBreak{}, _theme), do: "\n"
@@ -321,4 +329,14 @@ defmodule Vibe.TUI.Markdown do
 
   defp trim_trailing_blank(lines),
     do: Enum.reverse(lines) |> Enum.drop_while(&(&1 == "")) |> Enum.reverse()
+
+  defp hyperlinks? do
+    case Application.get_env(:vibe, :tui_hyperlinks) do
+      nil -> Vibe.TUI.Image.capabilities().hyperlinks?
+      value -> value
+    end
+  end
+
+  defp osc8_open(url), do: ["\e]8;;", url, "\e\\"]
+  defp osc8_close, do: "\e]8;;\e\\"
 end

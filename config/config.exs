@@ -9,6 +9,10 @@ config :vibe, env: config_env()
 config :vibe, compile_time_debug: config_env() != :prod
 config :vibe, web: config_env() != :test
 
+if config_env() == :test do
+  config :vibe, tui_hyperlinks: false
+end
+
 sqlite_busy_timeout_ms = 5_000
 
 config :vibe, Vibe.Repo,
