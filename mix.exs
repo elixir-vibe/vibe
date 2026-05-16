@@ -98,6 +98,7 @@ defmodule Vibe.MixProject do
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:reach, "~> 2.2", runtime: false},
+      {:dune, "~> 0.3", optional: true},
       {:pythonx, "~> 0.4.9", optional: true},
       {:quickbeam, "~> 0.10.4", optional: true},
       {:jido, "~> 2.2"},
