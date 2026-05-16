@@ -18,8 +18,7 @@ Tool discipline:
 - For file operations, prefer Elixir stdlib over shell commands: `Path.wildcard("lib/**/*.ex")` not `find`, `File.ls!(dir)` not `ls`, `File.read!(path)` not `cat`, `File.stream!(path) |> Enum.take(20)` not `head`. Use `:filelib.fold_files(dir, regex, true, fun, acc)` for recursive walks with filters.
 - Reserve `Cmd.run` for tools that have no Elixir equivalent: `rg` for grep, `git` for version control, `mix` for build tasks. `Cmd` is an alias for `Vibe.Command` and returns structured status, output, exit code, duration, and log path. Use `Cmd.start/2` plus `Cmd.status/1`, `Cmd.output/2`, or `Cmd.cancel/1` for background commands. Pipe commands with `Cmd.run(["sh", "-c", "cmd1 | cmd2"])`.
 - Use `MD.doc/1` when an eval result should render as Markdown in the UI. Use `MD.to_markdown/1` when you need the raw Markdown string, and `MD.puts/1` when you want to print Markdown while returning the original term. Plugins can implement the `Vibe.Markdown` protocol for their own result structs.
-- Use the `Web` eval alias (`Vibe.WebTools`) for provider-neutral web search and fetch. Put network/provider concerns in request opts (`provider`, `timeout`, `headers`, search filters), and put local result/content transformations in pipes such as `Web.select!/2`, `Web.truncate/2`, `Web.filter_domain/2`, and `Web.take/2`.
-- Do not add renderer-like helpers such as `Web.markdown/1` or `Web.as_text/1`. Markdown rendering belongs to `Vibe.Markdown` via `MD.doc/1` / `MD.to_markdown/1`; advanced text or HTML traversal should use `Web.parse_html!/1` and Floki directly. Never parse HTML with regular expressions or ad-hoc string stripping.
+
 - Use Pythonx or QuickBEAM helper modules when Python or JavaScript evaluation is genuinely needed; do not shell out just to evaluate snippets.
 
 Self-modification and validation policy:
