@@ -58,8 +58,20 @@ defmodule Vibe.CLI.Sessions do
         attach(session_id, Keyword.put(opts, :remote_node, node))
 
       {:error, _reason} ->
-        Server.launch_background()
-        Runner.tui(opts, start_server_async: true)
+        case Server.ensure_running() do
+          :ok ->
+            case Vibe.Remote.connect() do
+              {:ok, node} ->
+                session_id = opts[:session] || new_remote_session_id(opts)
+                attach(session_id, Keyword.put(opts, :remote_node, node))
+
+              {:error, reason} ->
+                Output.print({:error, {:server_not_running, reason}}, opts)
+            end
+
+          {:error, reason} ->
+            Output.print({:error, {:server_not_running, reason}}, opts)
+        end
     end
   end
 

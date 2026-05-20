@@ -1,6 +1,6 @@
 defmodule Vibe.CLI.Commands.Default do
   @moduledoc "Default CLI entrypoint: prompt, TUI, eval, and flag dispatch."
-  alias Vibe.CLI.{Output, Runner, Sessions}
+  alias Vibe.CLI.{Output, Runner, Server, Sessions}
 
   @version Mix.Project.config()[:version]
   @default_eval_timeout_ms 30_000
@@ -63,8 +63,9 @@ defmodule Vibe.CLI.Commands.Default do
     {Enum.map(files, &String.replace_prefix(&1, "@", "")), messages}
   end
 
-  defp web(_opts) do
-    url = Vibe.Web.Auth.authenticated_url()
+  defp web(opts) do
+    _ = Server.ensure_running(20_000, opts)
+    url = Vibe.Web.Auth.authenticated_url(port: opts[:port] || 4321)
     IO.puts(url)
 
     case :os.type() do

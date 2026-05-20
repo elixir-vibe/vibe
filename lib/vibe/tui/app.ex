@@ -23,7 +23,7 @@ defmodule Vibe.TUI.App do
   end
 
   @spec key(GenServer.server(), Vibe.UI.Editor.key()) :: :ok
-  def key(server, key), do: GenServer.call(server, {:key, key})
+  def key(server, key), do: GenServer.call(server, {:key, key}, 30_000)
 
   @spec resize(GenServer.server(), pos_integer(), pos_integer()) :: :ok
   def resize(server, columns, rows), do: GenServer.call(server, {:resize, columns, rows})
@@ -217,7 +217,7 @@ defmodule Vibe.TUI.App do
   end
 
   defp switch_session(state, session_id) do
-    with {:ok, session} <- Session.lookup(session_id),
+    with {:ok, session} <- lookup_session(state, session_id),
          :ok <- Session.detach(state.ui, self()),
          {:ok, ui_snapshot, _cursor} <- Session.attach(session, self()) do
       {:ok, %{state | ui: session, ui_snapshot: ui_snapshot, autocomplete: nil}}
@@ -227,12 +227,26 @@ defmodule Vibe.TUI.App do
   defp start_new_session(state) do
     current = state.ui_snapshot
 
-    with {:ok, session} <- Session.start_link(cwd: current.cwd, model: current.model),
+    with {:ok, session} <- start_session(state, cwd: current.cwd, model: current.model),
          :ok <- Session.detach(state.ui, self()),
          {:ok, ui_snapshot, _cursor} <- Session.attach(session, self()) do
       {:ok, %{state | ui: session, ui_snapshot: ui_snapshot, autocomplete: nil}}
     end
   end
+
+  defp lookup_session(%{remote_node: node}, session_id) when not is_nil(node) do
+    Vibe.Remote.Session.lookup(session_id)
+  end
+
+  defp lookup_session(_state, session_id), do: Session.lookup(session_id)
+
+  defp start_session(%{remote_node: node}, opts) when not is_nil(node) do
+    with {:ok, %{id: session_id}} <- Vibe.Remote.Session.start(opts) do
+      Vibe.Remote.Session.lookup(session_id)
+    end
+  end
+
+  defp start_session(_state, opts), do: Session.start_link(opts)
 
   defp notify_session_switch_failed(state, session_id, reason) do
     Session.dispatch(

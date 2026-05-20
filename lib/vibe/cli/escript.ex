@@ -12,9 +12,12 @@ defmodule Vibe.CLI.Escript do
   end
 
   defp run(argv, _opts) do
+    parsed = Vibe.CLI.parse(argv)
+    Vibe.CLI.Boot.configure_application_start(parsed)
+
     with :ok <- prepare_priv_dirs(),
          {:ok, _apps} <- Application.ensure_all_started(:vibe) do
-      Vibe.CLI.main(argv)
+      Vibe.CLI.Command.dispatch(parsed)
     end
   end
 

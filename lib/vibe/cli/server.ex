@@ -12,9 +12,9 @@ defmodule Vibe.CLI.Server do
 
   def command(["start", _mode], opts) do
     if opts[:foreground] do
-      Vibe.Server.start(foreground: true)
+      Vibe.Server.start(server_start_opts(opts))
     else
-      Output.print(start_background(), opts)
+      Output.print(start_background(@default_start_timeout_ms, opts), opts)
     end
   end
 
@@ -27,9 +27,9 @@ defmodule Vibe.CLI.Server do
     wait_for_shutdown(node, @shutdown_grace_ms)
 
     if opts[:foreground] do
-      Vibe.Server.start(foreground: true)
+      Vibe.Server.start(server_start_opts(opts))
     else
-      Output.print(start_background(), opts)
+      Output.print(start_background(@default_start_timeout_ms, opts), opts)
     end
   end
 
@@ -41,18 +41,18 @@ defmodule Vibe.CLI.Server do
     {:error, :invalid_server_command}
   end
 
-  @spec ensure_running(non_neg_integer()) :: :ok | {:error, term()}
-  def ensure_running(timeout_ms \\ @default_start_timeout_ms) do
+  @spec ensure_running(non_neg_integer(), keyword()) :: :ok | {:error, term()}
+  def ensure_running(timeout_ms \\ @default_start_timeout_ms, opts \\ []) do
     case Vibe.Remote.connect() do
       {:ok, _node} -> :ok
-      {:error, {:stale_server, _metadata}} -> restart_background(timeout_ms)
-      {:error, _reason} -> start_background(timeout_ms)
+      {:error, {:stale_server, _metadata}} -> restart_background(timeout_ms, opts)
+      {:error, _reason} -> start_background(timeout_ms, opts)
     end
   end
 
-  @spec start_background(non_neg_integer()) :: :ok | {:error, term()}
-  def start_background(timeout_ms \\ @default_start_timeout_ms) do
-    launch_background()
+  @spec start_background(non_neg_integer(), keyword()) :: :ok | {:error, term()}
+  def start_background(timeout_ms \\ @default_start_timeout_ms, opts \\ []) do
+    launch_background(opts)
 
     case wait(timeout_ms) do
       :ok ->
@@ -64,16 +64,12 @@ defmodule Vibe.CLI.Server do
     end
   end
 
-  @spec launch_background() :: :ok
-  def launch_background do
-    Vibe.Server.TLS.ensure!()
+  @spec launch_background(keyword()) :: :ok
+  def launch_background(opts \\ []) do
     log_path = Vibe.Paths.server_log()
     File.mkdir_p!(Path.dirname(log_path))
 
-    erl_flags = tls_erl_flags()
-
-    command =
-      "#{erl_flags}exec #{background_command()} > #{shell_quote(log_path)} 2>&1 < /dev/null"
+    command = "exec #{background_command(opts)} > #{shell_quote(log_path)} 2>&1 < /dev/null"
 
     :erlang.open_port({:spawn_executable, "/bin/sh"}, [
       :binary,
@@ -84,17 +80,17 @@ defmodule Vibe.CLI.Server do
     :ok
   end
 
-  defp restart_background(timeout_ms) do
+  defp restart_background(timeout_ms, opts) do
     node = current_server_node()
     _ = Vibe.Server.stop()
     wait_for_shutdown(node, min(timeout_ms, @shutdown_grace_ms))
-    start_background(timeout_ms)
+    start_background(timeout_ms, opts)
   end
 
   defp current_server_node do
     with {:ok, %{"node" => node_name}} <- Metadata.read(),
          true <- is_binary(node_name) do
-      String.to_atom(node_name)
+      :erlang.binary_to_atom(node_name)
     else
       _other -> Vibe.Server.default_node_name()
     end
@@ -147,43 +143,58 @@ defmodule Vibe.CLI.Server do
     end
   end
 
-  defp background_command do
+  defp background_command(opts) do
+    server_args = server_start_args(opts)
+
     case :escript.script_name() do
       path when is_list(path) and path != [] ->
         path = path |> List.to_string() |> Path.expand()
 
         if Path.basename(path) in ["mix", "mix.bat"] do
-          "sh -c #{shell_quote("cd #{shell_quote(File.cwd!())} && #{shell_quote(path)} vibe server start --foreground")}"
+          "sh -c #{shell_quote("cd #{shell_quote(File.cwd!())} && #{shell_quote(path)} vibe #{server_args}")}"
         else
-          "#{shell_quote(path)} server start --foreground"
+          "#{shell_quote(path)} #{server_args}"
         end
 
       _other ->
-        installed_command()
+        installed_command(opts)
     end
   rescue
-    _error -> installed_command()
+    _error -> installed_command(opts)
   end
 
-  defp installed_command do
+  defp installed_command(opts) do
+    server_args = server_start_args(opts)
+
     case System.find_executable("vibe") do
       nil ->
-        "sh -c #{shell_quote("cd #{shell_quote(File.cwd!())} && mix vibe server start --foreground")}"
+        "sh -c #{shell_quote("cd #{shell_quote(File.cwd!())} && mix vibe #{server_args}")}"
 
       path ->
-        "#{shell_quote(path)} server start --foreground"
+        "#{shell_quote(path)} #{server_args}"
     end
   end
 
-  defp tls_erl_flags do
-    config = Vibe.Server.TLS.dist_config_path()
-
-    if File.exists?(config) do
-      "ERL_FLAGS='-proto_dist inet_tls -ssl_dist_optfile #{config}' "
-    else
-      ""
-    end
+  defp server_start_opts(opts) do
+    [foreground: true]
+    |> maybe_put(:ssh, opts[:ssh])
+    |> maybe_put(:port, opts[:port])
   end
+
+  defp server_start_args(opts) do
+    ["server", "start", "--foreground"]
+    |> maybe_append(opts[:ssh], "--ssh")
+    |> maybe_append(opts[:port], "--port #{opts[:port]}")
+    |> Enum.join(" ")
+  end
+
+  defp maybe_append(args, nil, _arg), do: args
+  defp maybe_append(args, false, _arg), do: args
+  defp maybe_append(args, _value, arg), do: args ++ [arg]
+
+  defp maybe_put(opts, _key, nil), do: opts
+  defp maybe_put(opts, _key, false), do: opts
+  defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
 
   defp shell_quote(value), do: "'" <> String.replace(value, "'", "'\\''") <> "'"
 end

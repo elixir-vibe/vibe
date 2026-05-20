@@ -88,7 +88,9 @@ defmodule Mix.Tasks.Vibe do
 
   @impl true
   def run(argv) do
+    parsed = Vibe.CLI.parse(argv)
+    Vibe.CLI.Boot.configure_application_start(parsed)
     Mix.Task.run("app.start")
-    Vibe.CLI.main(argv)
+    Vibe.CLI.Command.dispatch(parsed)
   end
 end
