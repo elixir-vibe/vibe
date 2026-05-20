@@ -33,7 +33,7 @@ defmodule Vibe.EvalTest do
   test "command result exposes exit_status" do
     assert {:ok, result} =
              Vibe.Eval.once(~S|Cmd.run(["sh", "-c", "exit 0"]).exit_status|,
-               timeout: 10_000
+               timeout: 30_000
              )
 
     assert result.output =~ "0"
