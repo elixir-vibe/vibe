@@ -47,7 +47,10 @@ defmodule Vibe.CLI.Parser do
     require_mention: :boolean,
     free_response_chats: :string,
     stream_mode: :string,
-    bg: :boolean
+    bg: :boolean,
+    ssh: :boolean,
+    dist: :boolean,
+    yes: :boolean
   ]
 
   @aliases [h: :help, v: :version, p: :print]

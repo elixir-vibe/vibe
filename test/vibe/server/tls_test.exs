@@ -1,5 +1,5 @@
 defmodule Vibe.Server.TLSTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Vibe.Server.TLS
 

@@ -1,5 +1,5 @@
 defmodule Vibe.Remote.Session do
-  @moduledoc "Remote session lifecycle commands over distributed Erlang."
+  @moduledoc "Trusted remote session lifecycle commands over Erlang distribution."
 
   alias Vibe.UI.Command
   @spec list() :: {:ok, [map()]} | {:error, term()} | {:badrpc, term()}

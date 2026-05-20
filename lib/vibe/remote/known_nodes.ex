@@ -1,6 +1,6 @@
 defmodule Vibe.Remote.KnownNodes do
   @moduledoc """
-  Persisted trusted remote node addresses at `~/.vibe/known-nodes.json`.
+  Persisted trusted remote endpoints at `~/.vibe/known-nodes.json`.
   """
 
   @spec path() :: String.t()
@@ -28,7 +28,8 @@ defmodule Vibe.Remote.KnownNodes do
     entry = %{
       "node" => node_name,
       "added_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "label" => Keyword.get(opts, :label)
+      "label" => Keyword.get(opts, :label),
+      "transport" => Keyword.get(opts, :transport, "distribution")
     }
 
     nodes =

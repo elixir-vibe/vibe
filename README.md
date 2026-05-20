@@ -250,7 +250,8 @@ Module docs describe exact Elixir API contracts. Built-in help is for operationa
 ~/.vibe/sessions/<id>.log      # dependency/session log output
 ~/.vibe/skills/                # user skill files
 ~/.vibe/rules/                 # system prompt rule files
-~/.vibe/tls/                   # TLS certificates for remote distribution
+~/.vibe/tls/                   # TLS certificates for trusted remote distribution
+~/.vibe/ssh/                   # OTP SSH daemon host keys
 ~/.vibe/web-token              # web console auth token
 ~/.vibe/web-secret-key-base    # Phoenix secret key
 ~/.vibe/known-nodes.json       # trusted remote Vibe nodes

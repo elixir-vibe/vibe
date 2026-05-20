@@ -1,5 +1,6 @@
 defmodule Vibe.Server do
   @moduledoc "Background session server for tmux-style detached operation."
+  alias Vibe.Remote.SSH.Daemon, as: SSHDaemon
   alias Vibe.Server.{Cookie, Metadata}
 
   @remote_stop_timeout_ms 5_000
@@ -11,7 +12,8 @@ defmodule Vibe.Server do
 
     with {:ok, _apps} <- Application.ensure_all_started(:vibe),
          :ok <- ensure_distribution(name),
-         :ok <- write_metadata(name) do
+         {:ok, ssh_metadata} <- maybe_start_ssh(opts),
+         :ok <- write_metadata(name, ssh_metadata) do
       if Keyword.get(opts, :foreground, false) do
         Process.sleep(:infinity)
       end
@@ -100,8 +102,21 @@ defmodule Vibe.Server do
     if Node.self() == name, do: :ok, else: {:error, {:already_started_as, Node.self()}}
   end
 
-  defp write_metadata(name) do
-    Metadata.write!(%{
+  defp maybe_start_ssh(opts) do
+    if Keyword.get(opts, :ssh, false) do
+      port = Keyword.get(opts, :port, 8022)
+
+      with {:ok, daemon} <- SSHDaemon.start(port: port),
+           {:ok, actual_port} <- SSHDaemon.port(daemon) do
+        {:ok, %{ssh: %{port: actual_port, user: "vibe"}}}
+      end
+    else
+      {:ok, %{}}
+    end
+  end
+
+  defp write_metadata(name, extra_metadata) do
+    %{
       node: Atom.to_string(name),
       cookie_path: Cookie.path(),
       pid: System.pid(),
@@ -109,7 +124,9 @@ defmodule Vibe.Server do
       build_id: Vibe.Build.id(),
       tls: tls_distribution?(),
       started_at: DateTime.utc_now() |> DateTime.to_iso8601()
-    })
+    }
+    |> Map.merge(extra_metadata)
+    |> Metadata.write!()
   end
 
   defp tls_distribution? do
@@ -129,7 +146,7 @@ defmodule Vibe.Server do
       |> Base.encode16(case: :lower)
       |> binary_part(0, 12)
 
-    String.to_atom("vibe_server_#{user}_#{home_hash}@127.0.0.1")
+    :erlang.binary_to_atom("vibe_server_#{user}_#{home_hash}@127.0.0.1")
   end
 
   defp stop_node(node) do
@@ -184,7 +201,7 @@ defmodule Vibe.Server do
       :ok
     else
       ensure_distribution(
-        String.to_atom(
+        :erlang.binary_to_atom(
           "vibe_stop_#{System.unique_integer([:positive, :monotonic])}_#{System.os_time(:nanosecond)}@127.0.0.1"
         )
       )
@@ -192,7 +209,7 @@ defmodule Vibe.Server do
   end
 
   defp server_node({:ok, %{"node" => node_name}}) when is_binary(node_name),
-    do: String.to_atom(node_name)
+    do: :erlang.binary_to_atom(node_name)
 
   defp server_node(_metadata), do: default_node_name()
 
@@ -225,7 +242,9 @@ defmodule Vibe.Server do
     _error -> :ok
   end
 
-  defp parse_node(node_name) when is_binary(node_name), do: {:ok, String.to_atom(node_name)}
+  defp parse_node(node_name) when is_binary(node_name),
+    do: {:ok, :erlang.binary_to_atom(node_name)}
+
   defp connect_node(node), do: Node.connect(node)
   defp ensure_epmd, do: System.cmd("epmd", ["-daemon"])
 end

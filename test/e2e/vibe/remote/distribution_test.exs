@@ -1,4 +1,4 @@
-defmodule Vibe.Remote.DistributionTest do
+defmodule Vibe.E2E.Remote.DistributionTest do
   use ExUnit.Case, async: false
 
   @moduletag :integration

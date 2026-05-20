@@ -17,6 +17,6 @@ defmodule Vibe.Server.Cookie do
     path
     |> File.read!()
     |> String.trim()
-    |> String.to_atom()
+    |> :erlang.binary_to_atom()
   end
 end

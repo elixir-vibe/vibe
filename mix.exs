@@ -28,7 +28,7 @@ defmodule Vibe.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :tools, :mix],
+      extra_applications: [:logger, :tools, :mix, :ssh, :public_key, :crypto],
       mod: {Vibe.Application, []}
     ]
   end

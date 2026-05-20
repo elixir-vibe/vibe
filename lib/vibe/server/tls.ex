@@ -13,6 +13,7 @@ defmodule Vibe.Server.TLS do
   @tls_dir "tls"
   @ca_validity_days 3650
   @node_validity_days 3650
+  @openssl System.find_executable("openssl") || "openssl"
 
   @spec tls_dir() :: String.t()
   def tls_dir, do: Path.join(Vibe.Paths.home(), @tls_dir)
@@ -131,7 +132,7 @@ defmodule Vibe.Server.TLS do
   end
 
   defp openssl!(args) do
-    case System.cmd("openssl", args, stderr_to_stdout: true) do
+    case System.cmd(@openssl, args, stderr_to_stdout: true) do
       {_output, 0} -> :ok
       {output, code} -> raise "openssl #{Enum.join(args, " ")} failed (#{code}): #{output}"
     end

@@ -10,5 +10,5 @@ defmodule Vibe.CLI do
   @doc """
   Parses CLI arguments without dispatching a command.
   """
-  def parse(argv), do: Vibe.CLI.Parser.parse(argv)
+  defdelegate parse(argv), to: Vibe.CLI.Parser
 end

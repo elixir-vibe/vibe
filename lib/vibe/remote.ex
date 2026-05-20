@@ -1,84 +1,32 @@
 defmodule Vibe.Remote do
-  @moduledoc "RPC bridge for server-mode session operations."
-  alias Vibe.Server.{Cookie, Metadata}
+  @moduledoc """
+  Remote Vibe connection facade.
 
-  @spec connect() :: {:ok, node()} | {:error, term()}
-  def connect do
-    with {:ok, %{"node" => node_name} = metadata} <- Metadata.read(),
-         :ok <- verify_build(metadata),
-         :ok <- check_tls_compatibility(metadata),
-         {:ok, node} <- parse_node(node_name),
-         :ok <- ensure_distribution(),
-         true <- Node.connect(node) do
-      {:ok, node}
-    else
-      false -> {:error, :not_connected}
-      error -> error
+  The existing implementation is the trusted Erlang distribution transport. It is
+  kept for local server mode and internal/trusted BEAM nodes while user-facing
+  remote access can grow as a separate transport.
+  """
+
+  alias Vibe.Remote.Transport.{Distribution, SSH}
+
+  @type transport :: :distribution | :ssh
+
+  @spec connect(keyword()) :: {:ok, node() | SSH.t()} | {:error, term()}
+  def connect(opts \\ []) do
+    case Keyword.get(opts, :transport, :distribution) do
+      :distribution -> Distribution.connect()
+      :ssh -> SSH.connect(nil, opts)
+      transport -> {:error, {:unsupported_transport, transport}}
     end
   end
 
-  defp verify_build(%{"build_id" => build_id} = metadata) when is_binary(build_id) do
-    if build_id == Vibe.Build.id(), do: :ok, else: {:error, {:stale_server, metadata}}
-  end
-
-  defp verify_build(metadata), do: {:error, {:stale_server, metadata}}
-
-  defp ensure_distribution do
-    cookie = Cookie.get()
-
-    if Node.alive?() do
-      :ok
-    else
-      name =
-        String.to_atom(
-          "vibe_client_#{System.unique_integer([:positive, :monotonic])}_#{System.os_time(:nanosecond)}@127.0.0.1"
-        )
-
-      ensure_epmd()
-
-      case Node.start(name) do
-        {:ok, _pid} -> :ok
-        {:error, {:already_started, _pid}} -> :ok
-        {:error, reason} -> {:error, reason}
-      end
-    end
-    |> case do
-      :ok ->
-        Node.set_cookie(cookie)
-        :ok
-
-      error ->
-        error
+  @spec connect_node(node() | String.t() | {String.t(), non_neg_integer()}, keyword()) ::
+          {:ok, node() | SSH.t()} | {:error, term()}
+  def connect_node(node, opts \\ []) do
+    case Keyword.get(opts, :transport, :distribution) do
+      :distribution -> Distribution.connect(node, opts)
+      :ssh -> SSH.connect(node, opts)
+      transport -> {:error, {:unsupported_transport, transport}}
     end
   end
-
-  defp check_tls_compatibility(%{"tls" => true}) do
-    if tls_distribution?() do
-      :ok
-    else
-      require Logger
-
-      Logger.warning(
-        "Server uses TLS distribution but this client does not. " <>
-          "Set ERL_FLAGS='-proto_dist inet_tls -ssl_dist_optfile #{Vibe.Server.TLS.dist_config_path()}' " <>
-          "before starting mix/vibe."
-      )
-
-      {:error, :tls_mismatch}
-    end
-  end
-
-  defp check_tls_compatibility(_metadata), do: :ok
-
-  defp tls_distribution? do
-    case :net_kernel.get_state() do
-      %{started: :no} -> false
-      _ -> :inet_tls_dist in (:net_kernel.get_state() |> Map.get(:protos, []))
-    end
-  rescue
-    _error -> false
-  end
-
-  defp parse_node(node_name) when is_binary(node_name), do: {:ok, String.to_atom(node_name)}
-  defp ensure_epmd, do: System.cmd("epmd", ["-daemon"])
 end
