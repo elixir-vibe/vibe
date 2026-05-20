@@ -1,5 +1,5 @@
 defmodule Vibe.EvalTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   test "one-off eval captures result and io" do
     assert {:ok, result} = Vibe.Eval.once(~s|IO.puts("hello"); 1 + 2|)
