@@ -76,29 +76,27 @@ defmodule Vibe.Web.SessionLive do
     ~H"""
     <.app_shell current={:sessions} title="Session workbench" subtitle={@session_id}>
       <:actions>
-        <button :if={Status.working?(@ui_state)} type="button" phx-click="cancel" class="rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-3 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60 sm:px-4">Stop</button>
+        <button :if={Status.working?(@ui_state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-3 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60 sm:px-4">
+          <.icon name="lucide:circle-stop" class="size-4" />
+          <span>Stop</span>
+        </button>
       </:actions>
 
-      <:sidebar>
-        <.session_sidebar state={@ui_state} />
-      </:sidebar>
-
-      <:mobile_meta>
-        <.mobile_meta state={@ui_state} />
-      </:mobile_meta>
-
-      <:inspector>
-        <.runtime_inspector state={@ui_state} cursor={@cursor} />
-        <.tool_timeline state={@ui_state} />
-      </:inspector>
-
-      <.link navigate={~p"/"} class="mb-3 inline-flex text-sm text-vibe-dim hover:text-vibe-fg-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">← Sessions</.link>
+      <.link navigate={~p"/"} class="mb-3 inline-flex items-center gap-1 text-sm text-vibe-dim hover:text-vibe-fg-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">
+        <.icon name="lucide:chevron-left" class="size-4" />
+        <span>Sessions</span>
+      </.link>
 
       <.status_strip state={@ui_state} />
 
-      <section class="rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
+      <section class="overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
         <.transcript state={@ui_state} final_assistant_messages={@final_assistant_messages} />
         <.composer state={@ui_state} prompt={@prompt} />
+      </section>
+
+      <section class="mt-4 grid gap-4 md:grid-cols-2">
+        <.runtime_inspector state={@ui_state} cursor={@cursor} />
+        <.tool_timeline state={@ui_state} />
       </section>
     </.app_shell>
     """

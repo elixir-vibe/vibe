@@ -4,6 +4,7 @@ defmodule Vibe.Web.Session.Components do
 
   alias Vibe.Web.Session.{Messages, Status}
 
+  import PhoenixIconify, only: [icon: 1]
   import Vibe.Web.Components.Tool, only: [tool_card: 1]
 
   defp effort_label(effort) when effort in [:off, :minimal, :low, :medium, :high, :xhigh],
@@ -17,7 +18,7 @@ defmodule Vibe.Web.Session.Components do
   def activity_row(assigns) do
     ~H"""
     <article class="flex items-center gap-2 rounded-lg border border-vibe-accent/15 bg-vibe-accent/[0.045] px-3 py-2 text-sm text-vibe-accent-strong/90">
-      <span class="size-2 rounded-full bg-vibe-accent animate-pulse"></span>
+      <.icon name="lucide:loader-circle" class="size-4 animate-spin" />
       <span>{@label}</span>
     </article>
     """
@@ -31,10 +32,8 @@ defmodule Vibe.Web.Session.Components do
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
           <div class="flex items-center gap-2 text-sm font-medium text-vibe-fg-strong">
-            <span class={[
-              "size-2 rounded-full",
-              if(Status.working?(@state), do: "animate-pulse bg-vibe-accent", else: "bg-vibe-success/80")
-            ]}></span>
+            <.icon :if={Status.working?(@state)} name="lucide:loader-circle" class="size-4 animate-spin text-vibe-accent" />
+            <.icon :if={!Status.working?(@state)} name="lucide:circle-check" class="size-4 text-vibe-success" />
             <span>{if Status.working?(@state), do: "Working…", else: "Idle"}</span>
           </div>
           <p :if={Status.activity_label(@state)} class="mt-1 truncate text-xs text-vibe-dim">{Status.activity_label(@state)}</p>
@@ -49,48 +48,6 @@ defmodule Vibe.Web.Session.Components do
         </div>
       </div>
     </section>
-    """
-  end
-
-  attr(:state, :map, required: true)
-
-  def session_sidebar(assigns) do
-    ~H"""
-    <Vibe.Web.Components.Core.panel title="Session">
-      <div class="space-y-3 text-sm text-vibe-fg">
-        <div>
-          <p class="text-[0.68rem] uppercase tracking-[0.2em] text-vibe-dim">Workspace</p>
-          <p class="mt-1 break-words font-mono text-xs [overflow-wrap:anywhere]">{@state.cwd}</p>
-        </div>
-        <div class="flex min-w-0 justify-between gap-4"><span class="text-vibe-dim">Model</span><span class="truncate">{@state.model}</span></div>
-        <div class="flex justify-between gap-4"><span class="text-vibe-dim">Effort</span><span>{effort_label(@state.effort)}</span></div>
-        <div class="flex justify-between gap-4"><span class="text-vibe-dim">Status</span><Vibe.Web.Components.Core.status_badge status={@state.status} /></div>
-        <div class="flex justify-between gap-4"><span class="text-vibe-dim">Messages</span><span class="tabular-nums">{length(@state.messages)}</span></div>
-        <div :if={map_size(Map.get(@state, :plugin_statuses, %{})) > 0}>
-          <p class="text-[0.68rem] uppercase tracking-[0.2em] text-vibe-dim">Plugin status</p>
-          <div class="mt-2 space-y-1">
-            <div :for={{key, text} <- Map.get(@state, :plugin_statuses, %{})} class="rounded-md bg-vibe-accent/10 px-2 py-1 text-xs text-vibe-accent-strong">
-              <span class="font-mono text-vibe-accent-strong/70">{key}</span> {text}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Vibe.Web.Components.Core.panel>
-    """
-  end
-
-  attr(:state, :map, required: true)
-
-  def mobile_meta(assigns) do
-    ~H"""
-    <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface/78 p-3 text-xs text-vibe-muted">
-      <div class="flex items-center justify-between gap-3">
-        <Vibe.Web.Components.Core.status_badge status={@state.status} />
-        <span class="tabular-nums">{length(@state.messages)} messages</span>
-      </div>
-      <p class="mt-2 truncate">{@state.model} · {effort_label(@state.effort)}</p>
-      <p class="mt-1 truncate font-mono">{@state.cwd}</p>
-    </div>
     """
   end
 
@@ -168,10 +125,20 @@ defmodule Vibe.Web.Session.Components do
       <label class="sr-only" for="session-prompt">Message Vibe</label>
       <textarea id="session-prompt" name="prompt" value={@prompt} rows="2" autocomplete="off" placeholder="Ask Vibe anything. Use /help, /model, /sessions, or plain language…" class="min-h-16 w-full resize-y rounded-lg border border-vibe-border/50 bg-vibe-bg/85 px-3 py-2 text-sm leading-6 text-vibe-fg-strong ring-vibe-accent/20 placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-4 sm:min-h-20"></textarea>
       <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-xs leading-5 text-vibe-dim">{if Status.working?(@state), do: Status.activity_label(@state) || "Working…", else: "Ready · Cmd+Enter to send"}</p>
+        <p class="inline-flex items-center gap-1.5 text-xs leading-5 text-vibe-dim">
+          <.icon :if={Status.working?(@state)} name="lucide:loader-circle" class="size-3.5 animate-spin" />
+          <.icon :if={!Status.working?(@state)} name="lucide:keyboard" class="size-3.5" />
+          <span>{if Status.working?(@state), do: Status.activity_label(@state) || "Working…", else: "Ready · Cmd+Enter to send"}</span>
+        </p>
         <div class="flex justify-end gap-2">
-          <button :if={Status.working?(@state)} type="button" phx-click="cancel" class="rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-4 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60">Stop</button>
-          <button :if={!Status.working?(@state)} class="rounded-lg bg-vibe-accent px-5 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">Send</button>
+          <button :if={Status.working?(@state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-4 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60">
+            <.icon name="lucide:circle-stop" class="size-4" />
+            <span>Stop</span>
+          </button>
+          <button :if={!Status.working?(@state)} class="inline-flex items-center gap-1.5 rounded-lg bg-vibe-accent px-5 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">
+            <.icon name="lucide:send" class="size-4" />
+            <span>Send</span>
+          </button>
         </div>
       </div>
     </form>

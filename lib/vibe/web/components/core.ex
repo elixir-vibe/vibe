@@ -4,6 +4,33 @@ defmodule Vibe.Web.Components.Core do
 
   attr(:label, :string, required: true)
   attr(:value, :any, required: true)
+
+  def metric_tile(assigns) do
+    ~H"""
+    <div class="bg-vibe-bg-soft px-4 py-3">
+      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
+      <p class="mt-1 font-mono text-xl text-vibe-fg-strong tabular-nums">{@value}</p>
+    </div>
+    """
+  end
+
+  attr(:label, :string, required: true)
+  attr(:value, :any, required: true)
+  attr(:detail, :any, default: nil)
+  attr(:detail_class, :string, default: "font-mono text-vibe-dim")
+
+  def info_tile(assigns) do
+    ~H"""
+    <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
+      <p class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
+      <p class="mt-2 font-medium text-vibe-fg-strong">{@value}</p>
+      <p :if={@detail not in [nil, ""]} class={["mt-1 text-xs", @detail_class]}>{@detail}</p>
+    </div>
+    """
+  end
+
+  attr(:label, :string, required: true)
+  attr(:value, :any, required: true)
   attr(:accent, :string, default: "text-vibe-accent")
 
   def stat_card(assigns) do

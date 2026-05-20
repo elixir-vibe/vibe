@@ -19,10 +19,10 @@ defmodule Vibe.Web.StorageLive do
     <.app_shell current={:storage} title="Storage" subtitle="Search sessions, memory, and indexed runtime history.">
       <section class="overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
         <div class="grid gap-px border-b border-vibe-border/50 bg-vibe-surface-muted sm:grid-cols-4">
-          <.storage_metric label="Sessions" value={@session_count} />
-          <.storage_metric label="Memory" value={@memory_count} />
-          <.storage_metric label="UI events" value={table_count(@storage_status, "ui_events")} />
-          <.storage_metric label="Artifacts" value={artifact_summary_text(@artifact_summary)} />
+          <.metric_tile label="Sessions" value={@session_count} />
+          <.metric_tile label="Memory" value={@memory_count} />
+          <.metric_tile label="UI events" value={table_count(@storage_status, "ui_events")} />
+          <.metric_tile label="Artifacts" value={artifact_summary_text(@artifact_summary)} />
         </div>
 
         <form phx-submit="search" phx-change="search" class="flex flex-col gap-3 p-3 sm:flex-row sm:p-4">
@@ -61,18 +61,6 @@ defmodule Vibe.Web.StorageLive do
         <% end %>
       </section>
     </.app_shell>
-    """
-  end
-
-  attr(:label, :string, required: true)
-  attr(:value, :any, required: true)
-
-  def storage_metric(assigns) do
-    ~H"""
-    <div class="bg-vibe-bg-soft px-4 py-3">
-      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
-      <p class="mt-1 font-mono text-xl text-vibe-fg-strong tabular-nums">{@value}</p>
-    </div>
     """
   end
 

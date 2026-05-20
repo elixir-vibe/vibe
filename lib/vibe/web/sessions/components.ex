@@ -2,6 +2,9 @@ defmodule Vibe.Web.Sessions.Components do
   @moduledoc "Components specific to the sessions index page."
   use Phoenix.Component
 
+  import PhoenixIconify, only: [icon: 1]
+  import Vibe.Web.Components.Core, only: [metric_tile: 1]
+
   use Phoenix.VerifiedRoutes,
     endpoint: Vibe.Web.Endpoint,
     router: Vibe.Web.Router,
@@ -20,16 +23,19 @@ defmodule Vibe.Web.Sessions.Components do
     ~H"""
     <section class="overflow-hidden rounded-t-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
       <div class="grid gap-px border-b border-vibe-border/50 bg-vibe-surface-muted sm:grid-cols-4">
-        <.metric label="Sessions" value={@filtered_count} />
-        <.metric label="Live" value={@active_count} />
-        <.metric label="Messages" value={@message_total} />
-        <.metric label="Tokens" value={@token_total} />
+        <.metric_tile label="Sessions" value={@filtered_count} />
+        <.metric_tile label="Live" value={@active_count} />
+        <.metric_tile label="Messages" value={@message_total} />
+        <.metric_tile label="Tokens" value={@token_total} />
       </div>
 
       <div class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <form phx-change="filter" class="min-w-0 flex-1">
           <label class="sr-only" for="session-search">Search sessions</label>
-          <input id="session-search" name="q" value={@query} autocomplete="off" placeholder="Search prompt, workspace, model, or id…" class="w-full rounded-lg border border-vibe-border/50 bg-vibe-bg px-3 py-2 text-sm text-vibe-fg-strong placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-2 focus:ring-vibe-accent/25" />
+          <div class="relative">
+            <.icon name="lucide:search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-vibe-dim" />
+            <input id="session-search" name="q" value={@query} autocomplete="off" placeholder="Search prompt, workspace, model, or id…" class="w-full rounded-lg border border-vibe-border/50 bg-vibe-bg py-2 pl-9 pr-3 text-sm text-vibe-fg-strong placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-2 focus:ring-vibe-accent/25" />
+          </div>
         </form>
 
         <div class="flex shrink-0 flex-wrap items-center gap-2 text-xs">
@@ -106,18 +112,6 @@ defmodule Vibe.Web.Sessions.Components do
       <div class="col-start-2 sm:col-start-auto sm:pt-0.5">
         <Vibe.Web.Components.Core.status_badge status={Map.get(@session, :status, :idle)} />
       </div>
-    </div>
-    """
-  end
-
-  attr(:label, :string, required: true)
-  attr(:value, :any, required: true)
-
-  def metric(assigns) do
-    ~H"""
-    <div class="bg-vibe-bg-soft px-4 py-3">
-      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
-      <p class="mt-1 font-mono text-xl text-vibe-fg-strong tabular-nums">{@value}</p>
     </div>
     """
   end

@@ -58,50 +58,26 @@ defmodule Vibe.Web.GatewaysLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.app_shell current={:gateways} title="Gateways" subtitle="External chat gateway runtimes, delivery counters, and topic-backed Vibe sessions.">
-      <:sidebar>
-        <.panel title="Status">
-          <div class="space-y-3 text-sm text-vibe-fg">
-            <div class="flex justify-between"><span class="text-vibe-dim">Configured</span><span>{length(@statuses)}</span></div>
-            <div class="flex justify-between"><span class="text-vibe-dim">Running</span><span>{Enum.count(@statuses, &(&1.status == :running))}</span></div>
-            <div class="flex justify-between"><span class="text-vibe-dim">Gateway sessions</span><span>{length(@sessions)}</span></div>
-          </div>
-        </.panel>
-      </:sidebar>
+    <.app_shell current={:gateways} title="Gateways" subtitle="External chat connections, delivery status, and linked Vibe sessions.">
+      <section class="mb-4 grid gap-4 sm:grid-cols-3">
+        <.stat_card label="Configured" value={length(@statuses)} />
+        <.stat_card label="Running" value={Enum.count(@statuses, &(&1.status == :running))} />
+        <.stat_card label="Gateway sessions" value={length(@sessions)} />
+      </section>
 
       <section class="space-y-4">
-        <.panel title="Telegram status">
+        <.panel title="Telegram">
           <div class="grid gap-3 text-sm text-vibe-fg sm:grid-cols-2">
-            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Bot</div>
-              <div class="mt-2 font-medium text-vibe-fg-strong">{telegram_bot_label(@telegram_info.get_me)}</div>
-              <div class="mt-1 font-mono text-xs text-vibe-dim">{telegram_bot_detail(@telegram_info.get_me)}</div>
-            </div>
-            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Webhook</div>
-              <div class="mt-2 font-medium text-vibe-fg-strong">{telegram_webhook_label(@telegram_info.webhook)}</div>
-              <div class="mt-1 break-all font-mono text-xs text-vibe-dim">{telegram_webhook_detail(@telegram_info.webhook)}</div>
-            </div>
+            <.info_tile label="Bot" value={telegram_bot_label(@telegram_info.get_me)} detail={telegram_bot_detail(@telegram_info.get_me)} />
+            <.info_tile label="Webhook" value={telegram_webhook_label(@telegram_info.webhook)} detail={telegram_webhook_detail(@telegram_info.webhook)} detail_class="break-all font-mono text-vibe-dim" />
           </div>
         </.panel>
 
         <.panel title="Telegram polling diagnostics">
           <div class="grid gap-3 text-xs text-vibe-muted sm:grid-cols-3">
-            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">State</div>
-              <div class="mt-2 font-medium text-vibe-fg-strong">{polling_state_label(@telegram_polling)}</div>
-              <div class="mt-1 font-mono text-vibe-dim">offset {polling_value(@telegram_polling, :offset)}</div>
-            </div>
-            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Conflicts</div>
-              <div class="mt-2 font-medium text-vibe-fg-strong">{polling_value(@telegram_polling, :conflict_count)}</div>
-              <div class="mt-1 font-mono text-vibe-dim">consecutive {polling_value(@telegram_polling, :consecutive_conflicts)}</div>
-            </div>
-            <div class="rounded-xl border border-vibe-border/50 bg-vibe-surface-muted/30 p-3">
-              <div class="text-[0.65rem] uppercase tracking-[0.18em] text-vibe-dim">Last poll</div>
-              <div class="mt-2 font-medium text-vibe-fg-strong">{format_time(polling_value(@telegram_polling, :last_poll_at))}</div>
-              <div class="mt-1 font-mono text-vibe-dim">updates {polling_value(@telegram_polling, :last_update_count)}</div>
-            </div>
+            <.info_tile label="State" value={polling_state_label(@telegram_polling)} detail={"offset #{polling_value(@telegram_polling, :offset)}"} />
+            <.info_tile label="Conflicts" value={polling_value(@telegram_polling, :conflict_count)} detail={"consecutive #{polling_value(@telegram_polling, :consecutive_conflicts)}"} />
+            <.info_tile label="Last poll" value={format_time(polling_value(@telegram_polling, :last_poll_at))} detail={"updates #{polling_value(@telegram_polling, :last_update_count)}"} />
           </div>
           <pre :if={polling_value(@telegram_polling, :last_error)} class="mt-3 max-h-40 overflow-auto rounded-xl border border-vibe-error/20 bg-vibe-error/10 p-3 text-xs text-vibe-error">{inspect(polling_value(@telegram_polling, :last_error), pretty: true)}</pre>
         </.panel>

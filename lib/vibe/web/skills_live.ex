@@ -56,10 +56,10 @@ defmodule Vibe.Web.SkillsLive do
     <.app_shell current={:skills} title="Skills" subtitle="Reusable workflow knowledge available to Vibe agents.">
       <section class="overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
         <div class="grid gap-px border-b border-vibe-border/50 bg-vibe-surface-muted sm:grid-cols-4">
-          <.skill_metric label="Total" value={length(@skills)} />
-          <.skill_metric label="Markdown" value={@markdown_count} />
-          <.skill_metric label="Executable" value={@executable_count} />
-          <.skill_metric label="APIs" value={@api_count} />
+          <.metric_tile label="Total" value={length(@skills)} />
+          <.metric_tile label="Markdown" value={@markdown_count} />
+          <.metric_tile label="Executable" value={@executable_count} />
+          <.metric_tile label="APIs" value={@api_count} />
         </div>
 
         <div class="border-b border-vibe-border/50 px-4 py-3">
@@ -86,18 +86,6 @@ defmodule Vibe.Web.SkillsLive do
         </div>
       </section>
     </.app_shell>
-    """
-  end
-
-  attr(:label, :string, required: true)
-  attr(:value, :any, required: true)
-
-  def skill_metric(assigns) do
-    ~H"""
-    <div class="bg-vibe-bg-soft px-4 py-3">
-      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
-      <p class="mt-1 font-mono text-xl text-vibe-fg-strong tabular-nums">{@value}</p>
-    </div>
     """
   end
 

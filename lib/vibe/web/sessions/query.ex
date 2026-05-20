@@ -4,7 +4,8 @@ defmodule Vibe.Web.Sessions.Query do
   @spec page(String.t() | nil, integer(), pos_integer()) :: map()
   def page(query, requested_page, page_size) do
     filtered = sessions(query)
-    total_pages = max(1, ceil_div(length(filtered), page_size))
+    filtered_count = length(filtered)
+    total_pages = max(1, ceil_div(filtered_count, page_size))
     page = requested_page |> max(1) |> min(total_pages)
     sessions = Enum.slice(filtered, (page - 1) * page_size, page_size)
 
@@ -15,8 +16,8 @@ defmodule Vibe.Web.Sessions.Query do
       groups: group_sessions(sessions, page_size),
       page: page,
       total_pages: total_pages,
-      page_start: page_start(length(filtered), page, page_size),
-      page_end: min(page * page_size, length(filtered))
+      page_start: page_start(filtered_count, page, page_size),
+      page_end: min(page * page_size, filtered_count)
     }
   end
 
@@ -36,8 +37,8 @@ defmodule Vibe.Web.Sessions.Query do
     usage = Enum.map(sessions, &(&1.usage || %{}))
 
     %{
-      message_total: Enum.sum(Enum.map(sessions, &(&1.message_count || 0))),
-      token_total: Enum.sum(Enum.map(usage, &Map.get(&1, :total_tokens, 0)))
+      message_total: Enum.sum_by(sessions, &(&1.message_count || 0)),
+      token_total: Enum.sum_by(usage, &Map.get(&1, :total_tokens, 0))
     }
   end
 

@@ -81,10 +81,10 @@ defmodule Vibe.Web.PluginsLive do
     <.app_shell current={:plugins} title="Plugins" subtitle="Supervised extensions, eval APIs, slash commands, and model-facing capabilities.">
       <section class="overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
         <div class="grid gap-px border-b border-vibe-border/50 bg-vibe-surface-muted sm:grid-cols-4">
-          <.plugin_metric label="Loaded" value={length(@loaded_plugins)} />
-          <.plugin_metric label="Discovered" value={length(@discovered_plugins)} />
-          <.plugin_metric label="APIs" value={length(@apis)} />
-          <.plugin_metric label="Commands" value={length(@commands)} />
+          <.metric_tile label="Loaded" value={length(@loaded_plugins)} />
+          <.metric_tile label="Discovered" value={length(@discovered_plugins)} />
+          <.metric_tile label="APIs" value={length(@apis)} />
+          <.metric_tile label="Commands" value={length(@commands)} />
         </div>
 
         <div :if={@plugins == []} class="p-10 text-center text-sm text-vibe-dim">No plugins discovered.</div>
@@ -124,59 +124,6 @@ defmodule Vibe.Web.PluginsLive do
         </div>
       </section>
     </.app_shell>
-    """
-  end
-
-  attr(:widget, Vibe.UI.Widget, required: true)
-
-  def plugin_ui_widget(%{widget: %{type: :markdown}} = assigns) do
-    assigns = assign(assigns, :content, get_in(assigns.widget.props, [:content]) || "")
-
-    ~H"""
-    <PhoenixStreamdown.markdown id={"plugin-ui-#{@widget.id}"} content={@content} streaming={false} class="vibe-markdown" mdex_opts={[render: [unsafe: false]]} />
-    """
-  end
-
-  def plugin_ui_widget(%{widget: %{type: :lines}} = assigns) do
-    assigns =
-      assign(assigns, :content, assigns.widget.props |> Map.get(:content, []) |> Enum.join("\n"))
-
-    ~H"""
-    <p class="whitespace-pre-wrap text-sm leading-6 text-vibe-fg">{@content}</p>
-    """
-  end
-
-  def plugin_ui_widget(%{widget: %{type: :progress}} = assigns) do
-    assigns = assign(assigns, :props, assigns.widget.props)
-
-    ~H"""
-    <div class="rounded-md bg-vibe-surface-muted/35 p-3 text-sm text-vibe-fg">
-      <div class="flex justify-between gap-3">
-        <span>{Map.get(@props, :title) || "Progress"}</span>
-        <span class="font-mono text-vibe-dim">{Map.get(@props, :current, 0)} / {Map.get(@props, :total, "?")}</span>
-      </div>
-      <p :if={Map.get(@props, :message)} class="mt-1 text-xs text-vibe-dim">{Map.get(@props, :message)}</p>
-    </div>
-    """
-  end
-
-  def plugin_ui_widget(assigns) do
-    assigns = assign(assigns, :text, inspect(assigns.widget.props, pretty: true, limit: 40))
-
-    ~H"""
-    <pre class="overflow-auto whitespace-pre-wrap rounded-md bg-vibe-code p-3 font-mono text-xs leading-5 text-vibe-muted">{@text}</pre>
-    """
-  end
-
-  attr(:label, :string, required: true)
-  attr(:value, :any, required: true)
-
-  def plugin_metric(assigns) do
-    ~H"""
-    <div class="bg-vibe-bg-soft px-4 py-3">
-      <p class="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-vibe-dim">{@label}</p>
-      <p class="mt-1 font-mono text-xl text-vibe-fg-strong tabular-nums">{@value}</p>
-    </div>
     """
   end
 

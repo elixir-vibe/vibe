@@ -27,8 +27,9 @@ defmodule Vibe.Web.Session.Status do
 
   defp pending_tool_label(pending_tools) do
     pending_tools
-    |> Map.values()
-    |> Enum.find(fn tool -> Map.get(tool, :status) in [:running, "running", nil] end)
+    |> Enum.find_value(fn {_id, tool} ->
+      if Map.get(tool, :status) in [:running, "running", nil], do: tool
+    end)
     |> case do
       nil -> "Running tool…"
       tool -> "Running #{tool_label(tool)}…"

@@ -81,8 +81,9 @@ defmodule Vibe.Web.SessionsLive do
     ~H"""
     <.app_shell current={:sessions} title="Agent sessions" subtitle="Attach to running work, reopen durable history, or start a fresh server-owned session.">
       <:actions>
-        <button phx-click="new" class="rounded-lg bg-vibe-accent px-3 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70 sm:px-4">
-          New session
+        <button phx-click="new" class="inline-flex items-center gap-1.5 rounded-lg bg-vibe-accent px-3 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70 sm:px-4">
+          <.icon name="lucide:plus" class="size-4" />
+          <span>New session</span>
         </button>
       </:actions>
 

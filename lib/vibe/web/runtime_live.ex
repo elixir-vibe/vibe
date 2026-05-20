@@ -18,8 +18,8 @@ defmodule Vibe.Web.RuntimeLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.app_shell current={:runtime} title="Runtime" subtitle="A LiveDashboard-style view focused on Vibe's sessions, jobs, storage, plugins, and BEAM health.">
-      <:sidebar>
+    <.app_shell current={:runtime} title="Runtime" subtitle="Local Vibe server health, resource use, and background activity.">
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.25fr)_repeat(3,minmax(0,1fr))]">
         <.panel title="Node">
           <div class="space-y-3 text-sm text-vibe-fg">
             <div class="flex justify-between"><span class="text-vibe-dim">OTP</span><span>{@runtime.otp_release}</span></div>
@@ -28,14 +28,11 @@ defmodule Vibe.Web.RuntimeLive do
             <div class="flex justify-between"><span class="text-vibe-dim">Active sessions</span><span>{@active_count}</span></div>
           </div>
         </.panel>
-      </:sidebar>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <.stat_card label="Processes" value={@runtime.process_count} />
-        <.stat_card label="Limit" value={@runtime.process_limit} accent="text-vibe-fg" />
         <.stat_card label="ETS tables" value={length(@ets)} accent="text-vibe-accent" />
         <.stat_card label="Memory MB" value={memory_mb(@runtime.memory[:total])} accent="text-cyan-300" />
-      </div>
+      </section>
 
       <section class="mt-6 grid gap-6 xl:grid-cols-2">
         <.panel title="Top processes by memory">
