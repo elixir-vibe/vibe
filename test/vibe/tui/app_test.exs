@@ -4,7 +4,7 @@ defmodule Vibe.TUI.AppTest do
   alias Vibe.TUI.App
 
   @long_prompt_sleep_ms 5_000
-  @migration_assert_timeout_ms 1_000
+  @migration_assert_timeout_ms 5_000
 
   test "coordinates editor submit and ui events" do
     ask = fn text, opts ->

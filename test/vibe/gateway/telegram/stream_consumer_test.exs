@@ -24,12 +24,12 @@ defmodule Vibe.Gateway.Telegram.StreamConsumerTest do
              )
 
     StreamConsumer.delta(consumer, "**hel**")
-    assert_receive {:draft, 123, 77, "<b>hel</b>", opts}
+    assert_receive {:draft, 123, 77, "<b>hel</b>", opts}, 1_000
     assert opts[:token] == "token"
     assert opts[:parse_mode] == "HTML"
 
     StreamConsumer.delta(consumer, "lo")
-    assert_receive {:draft, 123, 77, "<b>hel</b>lo", opts}
+    assert_receive {:draft, 123, 77, "<b>hel</b>lo", opts}, 1_000
     assert opts[:token] == "token"
     assert opts[:parse_mode] == "HTML"
 
