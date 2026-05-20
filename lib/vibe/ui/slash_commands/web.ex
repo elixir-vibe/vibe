@@ -1,9 +1,10 @@
 defmodule Vibe.UI.SlashCommands.Web do
   @moduledoc "Slash command: /web — open the web console in the default browser."
   @behaviour Vibe.UI.SlashCommands.Command
+  alias Vibe.UI.SlashCommands.Spec
 
   @impl true
-  def spec, do: %{name: "web", description: "Open web console"}
+  def spec, do: %Spec{name: "web", description: "Open web console"}
 
   @impl true
   def run(_args, _ui_state) do

@@ -1,11 +1,12 @@
 defmodule Vibe.UI.SlashCommands.Effort do
   @moduledoc "Slash command: /effort — set reasoning effort level."
   @behaviour Vibe.UI.SlashCommands.Command
+  alias Vibe.UI.SlashCommands.Spec
 
   alias Vibe.Model.Effort
 
   @impl true
-  def spec, do: %{name: "effort", description: "Choose effort", selectors: []}
+  def spec, do: %Spec{name: "effort", description: "Choose effort", selectors: []}
 
   @impl true
   def run(args, _ui_state) when is_binary(args) do

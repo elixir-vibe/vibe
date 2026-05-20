@@ -1,6 +1,7 @@
 defmodule Vibe.UI.SlashCommands do
   @moduledoc "Slash command dispatch and autocomplete."
   alias Vibe.UI.Autocomplete
+  alias Vibe.UI.Autocomplete.Item
   alias Vibe.UI.Event
   alias Vibe.UI.SlashCommands.Registry
 
@@ -40,7 +41,7 @@ defmodule Vibe.UI.SlashCommands do
     do: module.selector_action(item, ui_state)
 
   defp autocomplete_item(spec) do
-    %{
+    %Item{
       value: "/" <> spec.name,
       label: "/" <> spec.name,
       detail: Map.get(spec, :description),
@@ -51,7 +52,7 @@ defmodule Vibe.UI.SlashCommands do
   defp skill_autocomplete_items do
     Vibe.Skill.list()
     |> Enum.map(fn skill ->
-      %{
+      %Item{
         value: "/skill:" <> skill.name,
         label: "/skill:" <> skill.name,
         detail: Map.get(skill, :title),

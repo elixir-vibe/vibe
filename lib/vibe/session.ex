@@ -16,7 +16,7 @@ defmodule Vibe.Session do
   alias Vibe.Model.{Effort, Switcher}
   alias Vibe.Session.PromptLifecycle
   alias Vibe.Storage.Search
-  alias Vibe.UI.{Command, Event, PluginBridge, Reducer, SlashCommands, State, ToolEvent}
+  alias Vibe.UI.{Command, Event, PluginBridge, Reducer, Selector, SlashCommands, State, ToolEvent}
 
   require Vibe.Debug
 
@@ -29,15 +29,12 @@ defmodule Vibe.Session do
     id = Keyword.get_lazy(opts, :session_id, &Vibe.Session.Store.new_id/0)
     opts = Keyword.put(opts, :session_id, id)
 
-    DynamicSupervisor.start_child(
-      Vibe.SessionSupervisor,
-      %{
-        id: {__MODULE__, id},
-        start:
-          {__MODULE__, :start_link, [Keyword.put(opts, :name, Vibe.Session.Listing.via(id))]},
-        restart: :temporary
-      }
-    )
+    child_opts = Keyword.put(opts, :name, Vibe.Session.Listing.via(id))
+
+    child_spec =
+      Supervisor.child_spec({__MODULE__, child_opts}, id: {__MODULE__, id}, restart: :temporary)
+
+    DynamicSupervisor.start_child(Vibe.SessionSupervisor, child_spec)
   end
 
   @spec lookup(String.t()) :: {:ok, pid()} | {:error, :not_found}
@@ -48,11 +45,13 @@ defmodule Vibe.Session do
     end
   end
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec active_count() :: non_neg_integer()
-  def active_count, do: Vibe.Session.Listing.active_count()
+  defdelegate active_count, to: Vibe.Session.Listing
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec list(keyword()) :: [map()]
-  def list(opts \\ []), do: Vibe.Session.Listing.list(opts)
+  defdelegate list(opts \\ []), to: Vibe.Session.Listing
 
   @spec search(String.t(), keyword()) :: [Search.Result.t()]
   def search(query, opts \\ []), do: Search.sessions(query, opts)
@@ -79,7 +78,7 @@ defmodule Vibe.Session do
 
   @spec dispatch(GenServer.server(), Command.t() | atom() | {atom(), map()}) :: :ok
   def dispatch(server, command),
-    do: GenServer.call(server, {:dispatch, normalize_command(command)})
+    do: GenServer.call(server, {:dispatch, normalize_command(command)}, 30_000)
 
   @spec emit_event(GenServer.server(), Event.t()) :: :ok
   def emit_event(server, %Event{} = event), do: GenServer.call(server, {:emit_event, event})
@@ -497,7 +496,7 @@ defmodule Vibe.Session do
   defp open_model_selector(state) do
     items = Switcher.model_options(state.state.model)
 
-    selector = %{
+    selector = %Selector{
       kind: :model_selector,
       title: "Model",
       items: items,
@@ -513,7 +512,7 @@ defmodule Vibe.Session do
 
     current = Effort.label(state.state.effort || Effort.default())
 
-    selector = %{
+    selector = %Selector{
       kind: :effort_selector,
       title: "Effort",
       items: items,
@@ -565,8 +564,7 @@ defmodule Vibe.Session do
     |> Enum.map_join("\n", fn message ->
       message
       |> Map.take([:text, :result, :error])
-      |> Map.values()
-      |> Enum.find(& &1)
+      |> Enum.find_value(fn {_key, value} -> value end)
       |> token_text()
     end)
     |> String.length()

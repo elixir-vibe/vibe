@@ -6,7 +6,7 @@ defmodule Vibe.UI.Reducer do
   alias Vibe.Model.Usage
   alias Vibe.Runtime.Alert
   alias Vibe.Support.Lists
-  alias Vibe.UI.{Event, Notification, Selector, State, ToolEvent}
+  alias Vibe.UI.{Event, Message, Notification, Selector, State, ToolEvent}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
   def apply_event(%State{} = state, %Event{} = event) do
@@ -22,7 +22,7 @@ defmodule Vibe.UI.Reducer do
     text = Map.fetch!(data, :text)
 
     message =
-      %{role: :user, text: text, at: at}
+      %Message{role: :user, text: text, at: at}
       |> maybe_put(:content, Map.get(data, :content))
       |> maybe_put(:image_count, Map.get(data, :image_count))
 
@@ -35,7 +35,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_message_added, at: at, data: data}) do
-    message = Map.merge(%{role: :assistant, at: at}, data)
+    message = struct(Message, Map.merge(%{role: :assistant, at: at}, data))
 
     %{
       state
@@ -47,7 +47,11 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_stream_started}) do
-    %{state | streaming_message: %{role: :assistant, text: "", thinking: ""}, status: :working}
+    %{
+      state
+      | streaming_message: %Message{role: :assistant, text: "", thinking: ""},
+        status: :working
+    }
   end
 
   defp reduce(state, %Event{type: :assistant_delta, at: at, data: %{text: text}}) do
@@ -69,7 +73,7 @@ defmodule Vibe.UI.Reducer do
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
     messages =
       if Map.get(data, :notify?, true) do
-        Lists.append(state.messages, %{
+        Lists.append(state.messages, %Message{
           role: :assistant,
           text: Map.get(data, :reason, "Cancelled."),
           at: DateTime.utc_now()
@@ -442,7 +446,8 @@ defmodule Vibe.UI.Reducer do
   defp notification_id(%{id: id}), do: id
   defp notification_id(_notification), do: nil
 
-  defp finalize_streaming_text(state, text, _at) when not is_binary(text) or text == "", do: state
+  defp finalize_streaming_text(state, "", _at), do: state
+  defp finalize_streaming_text(state, text, _at) when not is_binary(text), do: state
 
   defp finalize_streaming_text(state, text, at) do
     {messages, message} = replace_or_append_assistant_segment(state.messages, :text, text, at)
@@ -461,7 +466,7 @@ defmodule Vibe.UI.Reducer do
         {Lists.append(rest, updated), updated}
 
       {_last, _rest} ->
-        message = %{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
+        message = %Message{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
         updated = Map.put(message, key, value)
         {Lists.append(messages, updated), updated}
     end
@@ -474,7 +479,7 @@ defmodule Vibe.UI.Reducer do
         {Lists.append(rest, updated), updated}
 
       {_last, _rest} ->
-        message = %{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
+        message = %Message{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
         updated = Map.update(message, key, delta, &(&1 <> delta))
         {Lists.append(messages, updated), updated}
     end

@@ -3,14 +3,17 @@ defmodule Vibe.UI.SlashCommands.Clear do
   @behaviour Vibe.UI.SlashCommands.Command
 
   alias Vibe.UI.Event
+  alias Vibe.UI.SlashCommands.Spec
 
   @impl true
   def spec,
-    do: %{
+    do: %Spec{
       name: "clear",
       description: "Clear visible messages",
       selectors: [:clear_session_confirmation]
     }
+
+  def confirmation_selector, do: :clear_session_confirmation
 
   @impl true
   def run(_args, ui_state) do

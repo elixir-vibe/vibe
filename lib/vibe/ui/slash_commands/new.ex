@@ -3,9 +3,10 @@ defmodule Vibe.UI.SlashCommands.New do
   @behaviour Vibe.UI.SlashCommands.Command
 
   alias Vibe.UI.Event
+  alias Vibe.UI.SlashCommands.Spec
 
   @impl true
-  def spec, do: %{name: "new", aliases: ["n"], description: "Start a new session"}
+  def spec, do: %Spec{name: "new", aliases: ["n"], description: "Start a new session"}
 
   @impl true
   def run(_args, ui_state),

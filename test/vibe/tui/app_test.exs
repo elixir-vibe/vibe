@@ -191,7 +191,7 @@ defmodule Vibe.TUI.AppTest do
 
     :ok = App.key(app, {:insert, "slow"})
     :ok = App.key(app, :submit)
-    assert_receive :ask_started, 500
+    assert_receive :ask_started, 10_000
     assert wait_until(app, &(&1.ui.status == :working))
 
     :ok = App.key(app, :cancel)

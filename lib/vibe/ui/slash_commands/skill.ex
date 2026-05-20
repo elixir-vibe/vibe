@@ -3,13 +3,17 @@ defmodule Vibe.UI.SlashCommands.Skill do
   @behaviour Vibe.UI.SlashCommands.Command
 
   alias Vibe.UI.Event
+  alias Vibe.UI.Selector
+  alias Vibe.UI.SlashCommands.Spec
 
   @impl true
-  def spec, do: %{name: "skill", description: "Invoke a skill", selectors: [:skill_selector]}
+  def spec, do: %Spec{name: "skill", description: "Invoke a skill", selectors: [:skill_selector]}
+
+  def skill_selector, do: :skill_selector
 
   @impl true
   def run("", ui_state) do
-    selector = %{
+    selector = %Selector{
       kind: :skill_selector,
       title: "Skill",
       items: skill_items(),

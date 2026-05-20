@@ -3,10 +3,11 @@ defmodule Vibe.UI.SlashCommands.Attach do
   @behaviour Vibe.UI.SlashCommands.Command
 
   alias Vibe.UI.Event
+  alias Vibe.UI.SlashCommands.Spec
   alias Vibe.UI.SlashCommands.Sessions
 
   @impl true
-  def spec, do: %{name: "attach", aliases: ["a"], description: "Attach by session id"}
+  def spec, do: %Spec{name: "attach", aliases: ["a"], description: "Attach by session id"}
 
   @impl true
   def run(args, ui_state) do

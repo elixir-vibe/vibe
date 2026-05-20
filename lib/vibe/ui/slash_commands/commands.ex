@@ -3,15 +3,23 @@ defmodule Vibe.UI.SlashCommands.Commands do
   @behaviour Vibe.UI.SlashCommands.Command
 
   alias Vibe.UI.Event
+  alias Vibe.UI.Selector
+  alias Vibe.UI.SlashCommands.Spec
   alias Vibe.UI.SlashCommands.Registry
 
   @impl true
   def spec,
-    do: %{name: "commands", description: "Open command palette", selectors: [:command_palette]}
+    do: %Spec{
+      name: "commands",
+      description: "Open command palette",
+      selectors: [:command_palette]
+    }
+
+  def command_selector, do: :command_palette
 
   @impl true
   def run(_args, ui_state) do
-    selector = %{
+    selector = %Selector{
       kind: :command_palette,
       title: "Commands",
       items: Enum.map(Registry.specs(), &("/" <> &1.name)),

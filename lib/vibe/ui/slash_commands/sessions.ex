@@ -3,6 +3,8 @@ defmodule Vibe.UI.SlashCommands.Sessions do
   @behaviour Vibe.UI.SlashCommands.Command
 
   alias Vibe.UI.Event
+  alias Vibe.UI.Selector
+  alias Vibe.UI.SlashCommands.Spec
 
   @seconds_per_minute 60
   @seconds_per_hour 3_600
@@ -11,16 +13,18 @@ defmodule Vibe.UI.SlashCommands.Sessions do
 
   @impl true
   def spec,
-    do: %{
+    do: %Spec{
       name: "sessions",
       aliases: ["session", "s"],
       description: "Browse stored sessions",
       selectors: [:session_selector]
     }
 
+  def session_selector, do: :session_selector
+
   @impl true
   def run(_args, ui_state) do
-    selector = %{
+    selector = %Selector{
       kind: :session_selector,
       title: "Sessions",
       items: session_items(ui_state),

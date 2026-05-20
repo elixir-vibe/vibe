@@ -1,9 +1,10 @@
 defmodule Vibe.UI.SlashCommands.Model do
   @moduledoc "Slash command: /model — switch the active model."
   @behaviour Vibe.UI.SlashCommands.Command
+  alias Vibe.UI.SlashCommands.Spec
 
   @impl true
-  def spec, do: %{name: "model", description: "Choose model", selectors: []}
+  def spec, do: %Spec{name: "model", description: "Choose model", selectors: []}
 
   @impl true
   def run(args, _ui_state) when is_binary(args) do

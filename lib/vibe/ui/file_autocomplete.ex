@@ -2,6 +2,12 @@ defmodule Vibe.UI.FileAutocomplete do
   @moduledoc "File path autocomplete for prompt attachments and path-like input."
 
   alias Vibe.UI.Autocomplete
+  alias Vibe.UI.Autocomplete.Item
+
+  defmodule Prefix do
+    @moduledoc false
+    defstruct [:raw, :replace_from, :at?, :quoted?]
+  end
 
   @max_items 20
 
@@ -43,13 +49,13 @@ defmodule Vibe.UI.FileAutocomplete do
   end
 
   defp build_prefix(:quoted_at, token),
-    do: %{raw: String.replace_prefix(token, ~s(@"), ""), at?: true, quoted?: true}
+    do: %Prefix{raw: String.replace_prefix(token, ~s(@"), ""), at?: true, quoted?: true}
 
   defp build_prefix(:bare_at, token),
-    do: %{raw: String.replace_prefix(token, "@", ""), at?: true, quoted?: false}
+    do: %Prefix{raw: String.replace_prefix(token, "@", ""), at?: true, quoted?: false}
 
   defp build_prefix(:path, token),
-    do: %{raw: token, at?: false, quoted?: false}
+    do: %Prefix{raw: token, at?: false, quoted?: false}
 
   defp suggestions(prefix, opts) do
     root = Keyword.get_lazy(opts, :root, &File.cwd!/0)
@@ -77,7 +83,7 @@ defmodule Vibe.UI.FileAutocomplete do
     directory? = File.dir?(path)
     value = completion_value(path, prefix, root, directory?)
 
-    %{
+    %Item{
       value: value,
       label: Path.basename(path) <> if(directory?, do: "/", else: ""),
       detail: Path.relative_to(path, root),
