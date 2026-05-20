@@ -21,13 +21,13 @@ defmodule Vibe.Code.LSP.Client do
         {:ok, pid}
 
       [] ->
-        spec = %{
-          id: {:vibe_lsp, cwd},
-          start: {__MODULE__, :start_link, [[cwd: cwd]]},
-          restart: :temporary
-        }
+        child_spec =
+          Supervisor.child_spec({__MODULE__, [cwd: cwd]},
+            id: {:vibe_lsp, cwd},
+            restart: :temporary
+          )
 
-        case DynamicSupervisor.start_child(Vibe.Code.LSP.Supervisor, spec) do
+        case DynamicSupervisor.start_child(Vibe.Code.LSP.Supervisor, child_spec) do
           {:ok, pid} -> {:ok, pid}
           {:error, {:already_started, pid}} -> {:ok, pid}
           other -> other

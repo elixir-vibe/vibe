@@ -8,7 +8,9 @@ defmodule Vibe.Subagents.Job do
 
   @default_job_timeout_ms 120_000
 
-  @spec start_link(JobInfo.t(), keyword()) :: GenServer.on_start()
+  @spec start_link({JobInfo.t(), keyword()} | JobInfo.t(), keyword()) :: GenServer.on_start()
+  def start_link({%JobInfo{} = job, opts}), do: start_link(job, opts)
+
   def start_link(%JobInfo{} = job, opts) do
     GenServer.start_link(__MODULE__, {job, opts}, name: via(job.id))
   end

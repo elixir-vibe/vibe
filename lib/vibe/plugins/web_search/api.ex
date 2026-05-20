@@ -7,10 +7,16 @@ defmodule Vibe.Plugins.WebSearch.API do
   can be swapped through Vibe config or per-call `:provider` options.
   """
 
+  @doc "Intentional facade for the public Vibe API boundary."
   defdelegate search(query, opts \\ []), to: Vibe.WebTools
+  @doc "Intentional facade for the public Vibe API boundary."
   defdelegate search!(query, opts \\ []), to: Vibe.WebTools
+  @doc "Intentional facade for the public Vibe API boundary."
   defdelegate fetch(url, opts \\ []), to: Vibe.WebTools
+  @doc "Intentional facade for the public Vibe API boundary."
   defdelegate fetch!(url, opts \\ []), to: Vibe.WebTools
+  @doc "Intentional facade for the public Vibe API boundary."
   defdelegate filter_domain(search, domain), to: Vibe.WebTools
+  @doc "Intentional facade for the public Vibe API boundary."
   defdelegate take(search, count), to: Vibe.WebTools
 end

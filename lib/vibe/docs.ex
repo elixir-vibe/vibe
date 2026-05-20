@@ -62,7 +62,10 @@ defmodule Vibe.Docs do
   @spec index() :: String.t()
   def index do
     topic_lines =
-      Enum.map_join(topics(), "\n", fn %{name: name, title: title} -> "- `#{name}` — #{title}" end)
+      topics()
+      |> Enum.map(fn %{name: name, title: title} -> ["- `", name, "` — ", title] end)
+      |> Enum.intersperse("\n")
+      |> IO.iodata_to_binary()
 
     """
     # Vibe help

@@ -73,7 +73,7 @@ defmodule Vibe.MixProject do
     [
       {:abnf_parsec, "~> 2.1"},
       {:boxart, "~> 0.3.3"},
-      {:ex_ast, "~> 0.10"},
+      {:ex_ast, "~> 0.12"},
       {:floki, "~> 0.38"},
       {:jason, "~> 1.4"},
       {:json_spec, "~> 1.1"},
@@ -81,8 +81,8 @@ defmodule Vibe.MixProject do
       {:yaml_elixir, "~> 2.12"},
       {:toml, "~> 0.7"},
       {:ecto_sql, "~> 3.12"},
-      {:ecto_sqlite3, "~> 0.18"},
-      {:ex_gram, "~> 0.65"},
+      {:ecto_sqlite3, "~> 0.23"},
+      {:ex_gram, "~> 0.66"},
       {:req, "~> 0.5"},
       {:req_llm, "~> 1.11"},
       {:phoenix, "~> 1.8"},
@@ -91,7 +91,7 @@ defmodule Vibe.MixProject do
       {:phoenix_iconify, "~> 0.3.0"},
       {:plug_cowboy, "~> 2.7"},
       {:lazy_html, ">= 0.1.0", only: :test},
-      {:volt, "~> 0.10"},
+      {:volt, "~> 0.11"},
       {:opentelemetry_api, "~> 1.5"},
       {:opentelemetry, "~> 1.7"},
       {:opentelemetry_telemetry, "~> 1.1"},
@@ -99,10 +99,10 @@ defmodule Vibe.MixProject do
       {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:reach, "~> 2.2", runtime: false},
+      {:reach, "~> 2.5", runtime: false},
       {:dune, "~> 0.3", optional: true},
-      {:pythonx, "~> 0.4.9", optional: true},
-      {:quickbeam, "~> 0.10.4", optional: true},
+      {:pythonx, "~> 0.4.10", optional: true},
+      {:quickbeam, "~> 0.10.13", optional: true},
       {:jido, "~> 2.2"},
       {:jido_ai, "~> 2.1"},
       {:ghostty, "~> 0.4.8"}
@@ -121,7 +121,8 @@ defmodule Vibe.MixProject do
         "test",
         "credo --strict",
         "dialyzer",
-        "ex_dna"
+        "ex_dna",
+        "reach.check --smells --strict"
       ]
     ]
   end

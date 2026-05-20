@@ -5,8 +5,9 @@ defmodule Vibe.MD do
 
   alias Vibe.MD.Doc
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec to_markdown(term()) :: String.t()
-  def to_markdown(term), do: Vibe.Markdown.to_markdown(term)
+  defdelegate to_markdown(term), to: Vibe.Markdown
 
   @spec doc(term()) :: Doc.t()
   def doc(term), do: %Doc{markdown: to_markdown(term)}

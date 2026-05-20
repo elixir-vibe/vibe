@@ -4,6 +4,7 @@ defmodule Vibe.JSON.Encode do
   alias Vibe.Model.Content
 
   @spec value(term()) :: term()
+  def value(term) when is_boolean(term) or is_nil(term), do: term
   def value(term) when is_atom(term), do: Atom.to_string(term)
 
   def value(%DateTime{} = term), do: DateTime.to_iso8601(term)
@@ -27,7 +28,7 @@ defmodule Vibe.JSON.Encode do
     if String.valid?(term), do: term, else: %{type: "binary", data: Base.encode64(term)}
   end
 
-  def value(term) when is_number(term) or is_boolean(term) or is_nil(term), do: term
+  def value(term) when is_number(term), do: term
 
   def value(term) when is_tuple(term), do: term |> Tuple.to_list() |> value()
   def value(term) when is_list(term), do: Enum.map(term, &value/1)

@@ -94,7 +94,7 @@ defmodule Vibe.Storage.Search do
     |> where_session(session_id)
     |> where_not_session(exclude_session_id)
     |> where_cwd(cwd)
-    |> order_by([row, _session], fragment("bm25(ui_events_fts)"))
+    |> order_by(selected_as(:rank))
     |> limit(^limit)
     |> select([row, session], %{
       session_id: row.session_id,
@@ -104,7 +104,7 @@ defmodule Vibe.Storage.Search do
       cwd: session.cwd,
       at: row.at,
       text: row.text,
-      rank: fragment("bm25(ui_events_fts)"),
+      rank: selected_as(fragment("bm25(ui_events_fts)"), :rank),
       snippet: fragment("snippet(ui_events_fts, 5, ?, ?, ?, ?)", "<mark>", "</mark>", "…", 32)
     })
     |> Vibe.Repo.all()
@@ -119,7 +119,7 @@ defmodule Vibe.Storage.Search do
     MemoryFTS
     |> where([row], fragment("memories_fts MATCH ?", ^fts_query))
     |> where_memory_scopes(encoded_scopes)
-    |> order_by([row], fragment("bm25(memories_fts)"))
+    |> order_by(selected_as(:rank))
     |> limit(^limit)
     |> select([row], %{
       memory_id: row.memory_id,
@@ -127,7 +127,7 @@ defmodule Vibe.Storage.Search do
       scope_id: row.scope_id,
       inserted_at: row.inserted_at,
       text: row.text,
-      rank: fragment("bm25(memories_fts)"),
+      rank: selected_as(fragment("bm25(memories_fts)"), :rank),
       snippet: fragment("snippet(memories_fts, 4, ?, ?, ?, ?)", "<mark>", "</mark>", "…", 32)
     })
     |> Vibe.Repo.all()

@@ -49,6 +49,7 @@ defmodule Vibe.Code.AST do
   """
   @spec search_many(Path.t() | [Path.t()], map() | keyword(), keyword()) :: [map()]
   def search_many(path, patterns, opts \\ []) do
+    opts = Keyword.put_new(opts, :allow_broad, false)
     ExAST.search_many(path, patterns, opts)
   end
 

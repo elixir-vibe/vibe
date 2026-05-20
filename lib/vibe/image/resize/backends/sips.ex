@@ -8,6 +8,8 @@ defmodule Vibe.Image.Resize.Backends.Sips do
 
   @supported_mime_types ["image/png", "image/jpeg"]
 
+  def formats, do: @supported_mime_types
+
   @impl true
   def available?, do: Command.executable?("sips")
 

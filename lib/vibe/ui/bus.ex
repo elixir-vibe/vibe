@@ -53,7 +53,8 @@ defmodule Vibe.UI.Bus do
 
   @spec set_status(String.t(), String.t() | atom(), String.t() | nil) ::
           :ok | {:error, :not_found}
-  def set_status(session_id, key, text), do: Vibe.Plugin.UI.set_status(session_id, key, text)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate set_status(session_id, key, text), to: Vibe.Plugin.UI
 
   @impl true
   def init(_opts), do: {:ok, %{sessions: %{}, monitors: %{}, session_refs: %{}}}

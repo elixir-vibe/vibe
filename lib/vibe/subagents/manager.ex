@@ -124,11 +124,11 @@ defmodule Vibe.Subagents.Manager do
   end
 
   defp start_job_child(job, opts, state) do
-    child_spec = %{
-      id: {Vibe.Subagents.Job, job.id},
-      start: {Vibe.Subagents.Job, :start_link, [job, opts]},
-      restart: :temporary
-    }
+    child_spec =
+      Supervisor.child_spec({Vibe.Subagents.Job, {job, opts}},
+        id: {Vibe.Subagents.Job, job.id},
+        restart: :temporary
+      )
 
     case DynamicSupervisor.start_child(Vibe.Subagents.JobSupervisor, child_spec) do
       {:ok, pid} ->

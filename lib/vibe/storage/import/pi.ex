@@ -193,7 +193,7 @@ defmodule Vibe.Storage.Import.Pi do
   defp content_text(content) when is_binary(content), do: content
 
   defp content_text(content) when is_list(content) do
-    Enum.map_join(content, "", fn
+    Enum.map_join(content, fn
       %{"type" => "text", "text" => text} -> text
       %{"text" => text} -> text
       part when is_binary(part) -> part

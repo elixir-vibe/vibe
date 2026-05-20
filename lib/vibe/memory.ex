@@ -111,7 +111,9 @@ defmodule Vibe.Memory do
       entries ->
         body =
           entries
-          |> Enum.map_join("\n", fn entry -> "- [#{format_scope(entry.scope)}] #{entry.text}" end)
+          |> Enum.map(fn entry -> ["- [", format_scope(entry.scope), "] ", entry.text] end)
+          |> Enum.intersperse("\n")
+          |> IO.iodata_to_binary()
 
         [
           "<memory-context>\n",

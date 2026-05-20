@@ -20,7 +20,9 @@ defmodule Vibe.Plugins.Rules do
     block =
       rules
       |> Loader.filter_for_model(model)
-      |> Enum.map_join("\n\n", fn rule -> "Instructions from: #{rule.path}\n#{rule.body}" end)
+      |> Enum.map(fn rule -> ["Instructions from: ", rule.path, "\n", rule.body] end)
+      |> Enum.intersperse("\n\n")
+      |> IO.iodata_to_binary()
 
     {non_empty(block), state}
   end

@@ -163,11 +163,9 @@ defmodule Vibe.Telemetry do
     :exit, _reason -> {:error, :telemetry_unavailable}
   end
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec execute([atom()], map(), map()) :: :ok
-  def execute(event, measurements \\ %{}, metadata \\ %{})
-      when is_list(event) and is_map(measurements) and is_map(metadata) do
-    :telemetry.execute(event, measurements, metadata)
-  end
+  defdelegate execute(event, measurements \\ %{}, metadata \\ %{}), to: :telemetry
 
   @spec span([atom()], map(), (-> result)) :: result when result: term()
   def span(event_prefix, metadata, fun)

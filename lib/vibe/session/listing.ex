@@ -82,7 +82,12 @@ defmodule Vibe.Session.Listing do
   end
 
   defp live_state(id, pid, %{session_id: id} = state) when pid == self(), do: state
-  defp live_state(_id, pid, _current_state), do: Vibe.Session.state(pid)
+
+  defp live_state(id, pid, _current_state) do
+    Vibe.Session.state(pid)
+  catch
+    :exit, _reason -> %Vibe.UI.State{session_id: id, status: :idle}
+  end
 
   defp conversation_messages(messages) do
     Enum.reject(messages, fn message ->

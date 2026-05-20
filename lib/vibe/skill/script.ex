@@ -83,7 +83,7 @@ defmodule Vibe.Skill.Script do
     module
     |> Module.split()
     |> List.last()
-    |> String.to_atom()
+    |> :erlang.binary_to_atom()
   end
 
   defp moduledoc_markdown(module) do
@@ -98,7 +98,7 @@ defmodule Vibe.Skill.Script do
        when is_binary(name) and is_atom(alias_name) do
     [
       Vibe.Plugin.API.new(
-        name: name |> String.replace("-", "_") |> String.to_atom(),
+        name: name |> String.replace("-", "_") |> :erlang.binary_to_atom(),
         module: module,
         alias: alias_name,
         description: Map.get(metadata, :description, ""),

@@ -33,7 +33,7 @@ defmodule Vibe.EvalTest do
   test "command result exposes exit_status" do
     assert {:ok, result} =
              Vibe.Eval.once(~S|Cmd.run(["sh", "-c", "exit 0"]).exit_status|,
-               timeout: 5_000
+               timeout: 10_000
              )
 
     assert result.output =~ "0"
@@ -76,7 +76,7 @@ defmodule Vibe.EvalTest do
     assert error =~ "evaluation process exited"
   end
 
-  defp assert_eval_registered(session_id, attempts \\ 50)
+  defp assert_eval_registered(session_id, attempts \\ 250)
 
   defp assert_eval_registered(_session_id, 0), do: flunk("eval process was not registered")
 

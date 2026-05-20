@@ -10,18 +10,32 @@ defmodule Vibe.Memory.BuiltinProvider do
       [user: Vibe.Memory.list(:user), global: Vibe.Memory.list(:global)]
       |> Enum.flat_map(fn {scope, entries} ->
         case entries do
-          [] -> []
-          entries -> ["#{scope} memory:\n" <> Enum.map_join(entries, "\n", &"- #{&1.text}")]
+          [] ->
+            []
+
+          entries ->
+            [
+              [
+                to_string(scope),
+                " memory:\n",
+                entries |> Enum.map(&["- ", &1.text]) |> Enum.intersperse("\n")
+              ]
+            ]
         end
       end)
 
-    Enum.join(blocks, "\n\n")
+    blocks |> Enum.intersperse("\n\n") |> IO.iodata_to_binary()
   end
 
   @impl true
   def prefetch(query, context, _state) do
     scopes = scopes(context)
-    Vibe.Memory.context_block(query, scopes: scopes, limit: 8)
+
+    if Enum.any?(scopes, &(Vibe.Memory.list(&1) != [])) do
+      Vibe.Memory.context_block(query, scopes: scopes, limit: 8)
+    else
+      ""
+    end
   end
 
   @impl true

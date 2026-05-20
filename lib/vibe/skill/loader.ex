@@ -34,12 +34,12 @@ defmodule Vibe.Skill.Loader do
     |> files()
     |> Enum.reduce_while({:ok, []}, fn file, {:ok, acc} ->
       case load_file(file) do
-        {:ok, skills} -> {:cont, {:ok, skills ++ acc}}
+        {:ok, skills} -> {:cont, {:ok, [skills | acc]}}
         {:error, reason} -> {:halt, {:error, {file, reason}}}
       end
     end)
     |> case do
-      {:ok, skills} -> {:ok, Enum.reverse(skills)}
+      {:ok, skills} -> {:ok, skills |> Enum.reverse() |> List.flatten()}
       error -> error
     end
   end

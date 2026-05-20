@@ -64,26 +64,33 @@ defmodule Vibe.Subagents do
     await_loop(id, timeout, started)
   end
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec jobs() :: [term()]
-  def jobs, do: Manager.jobs()
+  defdelegate jobs, to: Manager
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec status(String.t()) :: {:ok, term()} | {:error, term()}
-  def status(id), do: Manager.status(id)
+  defdelegate status(id), to: Manager
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec cancel(String.t()) :: :ok | {:error, term()}
-  def cancel(id), do: Manager.cancel(id)
+  defdelegate cancel(id), to: Manager
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec result(String.t()) :: {:ok, term()} | {:error, term()}
-  def result(id), do: Manager.result(id)
+  defdelegate result(id), to: Manager
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec schedule(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
-  def schedule(task, opts \\ []), do: Scheduler.schedule(task, opts)
+  defdelegate schedule(task, opts \\ []), to: Scheduler
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec scheduled() :: [term()]
-  def scheduled, do: Scheduler.scheduled()
+  defdelegate scheduled, to: Scheduler
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec unschedule(String.t()) :: :ok | {:error, term()}
-  def unschedule(id), do: Scheduler.unschedule(id)
+  defdelegate unschedule(id), to: Scheduler
 
   @spec active() :: [map()]
   def active do

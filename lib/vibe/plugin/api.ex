@@ -32,6 +32,6 @@ defmodule Vibe.Plugin.API do
     |> Module.split()
     |> Enum.reject(&(&1 in ["Vibe", "Plugins", "API"]))
     |> List.last()
-    |> String.to_atom()
+    |> :erlang.binary_to_atom()
   end
 end

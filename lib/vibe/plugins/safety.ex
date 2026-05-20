@@ -10,6 +10,7 @@ defmodule Vibe.Plugins.Safety do
 
   alias Vibe.Session
   alias Vibe.UI.Event
+  alias Vibe.UI.Selector
 
   @confirmation_timeout_ms 300_000
   @table :vibe_safety_waiters
@@ -75,7 +76,7 @@ defmodule Vibe.Plugins.Safety do
   defp open_confirmation(session, session_id, label, command) do
     preview = String.slice(command, 0, 80)
 
-    selector = %{
+    selector = %Selector{
       kind: :safety_confirmation,
       title: "#{label}?",
       items: ["Yes, proceed", "No, cancel"],

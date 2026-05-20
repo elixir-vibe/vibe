@@ -6,7 +6,7 @@ defmodule Vibe.Tool.Display.Eval do
 
   @spec from_tool(map()) :: Display.t()
   def from_tool(tool) do
-    expanded? = expanded?(tool)
+    expanded? = Util.expanded?(tool)
     code = code_from_tool(tool)
     output = output(tool)
 
@@ -134,6 +134,4 @@ defmodule Vibe.Tool.Display.Eval do
     do: truncation
 
   defp output_truncation(_tool), do: :tail
-
-  defp expanded?(tool), do: Util.expanded?(tool)
 end

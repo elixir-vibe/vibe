@@ -7,7 +7,12 @@ defmodule Vibe.Code.Checks do
   @max_issue_details 20
   @max_clone_details 10
 
-  @type check_result :: %{name: atom(), status: :ok | :error, details: term()}
+  defmodule Result do
+    @moduledoc false
+    defstruct [:name, :status, :details, :count]
+  end
+
+  @type check_result :: %Result{name: atom(), status: :ok | :error, details: term()}
 
   @spec analyze(keyword()) :: map()
   def analyze(opts \\ []) do
@@ -53,11 +58,11 @@ defmodule Vibe.Code.Checks do
   def run(:reach, opts) do
     case ensure_optional_app(:reach) do
       :ok -> reach_check(opts)
-      {:error, reason} -> %{name: :reach, status: :error, details: reason}
+      {:error, reason} -> %Result{name: :reach, status: :error, details: reason}
     end
   end
 
-  def run(name, _opts), do: %{name: name, status: :error, details: {:unknown_check, name}}
+  def run(name, _opts), do: %Result{name: name, status: :error, details: {:unknown_check, name}}
 
   @spec ok?(keyword()) :: boolean()
   def ok?(opts \\ []), do: match?({:ok, _}, run_all(opts))
@@ -73,7 +78,7 @@ defmodule Vibe.Code.Checks do
       |> Enum.reject(&formatted?/1)
 
     status = if stale == [], do: :ok, else: :error
-    %{name: :format, status: status, details: %{stale: stale}}
+    %Result{name: :format, status: status, details: %{stale: stale}}
   end
 
   defp formatted?(path) do
@@ -88,7 +93,7 @@ defmodule Vibe.Code.Checks do
   defp credo_check(opts) do
     case ensure_optional_app(:credo) do
       :ok -> run_credo(opts)
-      {:error, reason} -> %{name: :credo, status: :error, details: reason}
+      {:error, reason} -> %Result{name: :credo, status: :error, details: reason}
     end
   end
 
@@ -108,7 +113,7 @@ defmodule Vibe.Code.Checks do
       )
 
     status = if matches == [], do: :ok, else: :error
-    %{name: :ast_patterns, status: status, details: %{matches: matches}}
+    %Result{name: :ast_patterns, status: status, details: %{matches: matches}}
   end
 
   defp reach_check(opts) do
@@ -132,7 +137,7 @@ defmodule Vibe.Code.Checks do
       %{files: length(files), errors: errors}
       |> maybe_put_reach_project_details(files, opts, errors)
 
-    %{name: :reach, status: status, details: details}
+    %Result{name: :reach, status: status, details: details}
   end
 
   defp run_credo(opts) do
@@ -214,14 +219,14 @@ defmodule Vibe.Code.Checks do
   defp ex_slop_check(opts) do
     case ensure_optional_app(:credo) do
       :ok -> run_ex_slop(opts)
-      {:error, reason} -> %{name: :ex_slop, status: :error, details: reason}
+      {:error, reason} -> %Result{name: :ex_slop, status: :error, details: reason}
     end
   end
 
   defp ex_dna_check(opts) do
     case ensure_optional_app(:ex_dna) do
       :ok -> run_ex_dna(opts)
-      {:error, reason} -> %{name: :ex_dna, status: :error, details: reason}
+      {:error, reason} -> %Result{name: :ex_dna, status: :error, details: reason}
     end
   end
 
@@ -237,7 +242,7 @@ defmodule Vibe.Code.Checks do
       end)
 
     status = if issues == [], do: :ok, else: :error
-    %{name: :ex_slop, status: status, details: %{issues: Enum.map(issues, &issue_to_map/1)}}
+    %Result{name: :ex_slop, status: status, details: %{issues: Enum.map(issues, &issue_to_map/1)}}
   end
 
   defp run_ex_dna(opts) do
@@ -252,7 +257,12 @@ defmodule Vibe.Code.Checks do
 
     clones = Map.get(report, :clones, [])
     status = if clones == [], do: :ok, else: :error
-    %{name: :ex_dna, status: status, details: %{stats: Map.get(report, :stats), clones: clones}}
+
+    %Result{
+      name: :ex_dna,
+      status: status,
+      details: %{stats: Map.get(report, :stats), clones: clones}
+    }
   end
 
   defp ex_slop_checks do
@@ -296,12 +306,12 @@ defmodule Vibe.Code.Checks do
   defp check_module({module, _opts}), do: module
   defp check_module(module), do: module
 
-  defp summarize_result(%{name: name, status: status, details: details}) do
-    %{name: name, status: status, count: detail_count(details)}
+  defp summarize_result(%Result{name: name, status: status, details: details}) do
+    %Result{name: name, status: status, count: detail_count(details)}
   end
 
-  defp failure_report(%{name: name, details: details}) do
-    %{name: name, details: compact_details(details)}
+  defp failure_report(%Result{name: name, details: details}) do
+    %Result{name: name, details: compact_details(details)}
   end
 
   defp detail_count(%{matches: matches}) when is_list(matches), do: length(matches)
@@ -331,7 +341,7 @@ defmodule Vibe.Code.Checks do
 
     try do
       {_output, result} = capture_io(fn -> Mix.Task.run(task, args) end)
-      %{name: name, status: :ok, details: %{result: result}}
+      %Result{name: name, status: :ok, details: %{result: result}}
     rescue
       exception ->
         %{
@@ -340,7 +350,7 @@ defmodule Vibe.Code.Checks do
           details: Exception.format(:error, exception, __STACKTRACE__)
         }
     catch
-      :exit, reason -> %{name: name, status: :error, details: reason}
+      :exit, reason -> %Result{name: name, status: :error, details: reason}
     end
   end
 

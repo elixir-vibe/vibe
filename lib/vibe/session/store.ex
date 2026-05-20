@@ -295,11 +295,13 @@ defmodule Vibe.Session.Store do
     |> Enum.flat_map(&decode_ui_event_record/1)
   end
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec info(String.t()) :: map() | nil
-  def info(session_id) when is_binary(session_id), do: Listing.info(session_id)
+  defdelegate info(session_id), to: Listing
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec list() :: [map()]
-  def list, do: Listing.list()
+  defdelegate list, to: Listing
 
   @spec ensure_session(String.t(), DateTime.t(), keyword()) :: :ok
   def ensure_session(session_id, at \\ DateTime.utc_now(), attrs \\ []) do

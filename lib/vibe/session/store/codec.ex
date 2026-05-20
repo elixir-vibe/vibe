@@ -193,9 +193,10 @@ defmodule Vibe.Session.Store.Codec do
          data: data
        }) do
     payload =
-      if Map.has_key?(data, :error),
-        do: %{error: Map.get(data, :error)},
-        else: %{result: Map.get(data, :result) || data}
+      case Map.fetch(data, :error) do
+        {:ok, error} -> %{error: error}
+        :error -> %{result: Map.get(data, :result) || data}
+      end
 
     [Event.new(:assistant_message_added, session_id, payload, at: at)]
   end

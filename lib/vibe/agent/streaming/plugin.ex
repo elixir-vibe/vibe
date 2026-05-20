@@ -108,14 +108,15 @@ defmodule Vibe.Agent.Streaming.Plugin do
 
   def handle_signal(%{type: "ai.tool.result", data: data}, %{agent: %{id: agent_id}})
       when is_map(data) do
-    result = %{name: tool_name(data), output: event_field(data, :result), id: tool_call_id(data)}
+    name = tool_name(data)
+    result = %{name: name, output: event_field(data, :result), id: tool_call_id(data)}
     result = dispatch_plugin_tool_result(result)
 
     Vibe.Agent.Streaming.dispatch_tool_finished(
       agent_id,
       ToolEvent.finished(
         id: tool_call_id(data),
-        name: tool_name(data),
+        name: name,
         args: tool_arguments(data),
         output: Map.get(result, :output, event_field(data, :result))
       )

@@ -25,7 +25,14 @@ defmodule Vibe.Prompt.Attachments do
             {:ok, image} ->
               note = image_note(path, image)
               content = image_content(image)
-              {:cont, {:ok, %{acc | text: acc.text <> note, images: [content | acc.images]}}}
+
+              {:cont,
+               {:ok,
+                %{
+                  acc
+                  | text: IO.iodata_to_binary([acc.text, note]),
+                    images: [content | acc.images]
+                }}}
 
             {:error, reason} ->
               {:halt, {:error, reason}}
@@ -35,7 +42,12 @@ defmodule Vibe.Prompt.Attachments do
           case File.read(path) do
             {:ok, content} ->
               {:cont,
-               {:ok, %{acc | text: acc.text <> file_block(path, content), images: acc.images}}}
+               {:ok,
+                %{
+                  acc
+                  | text: IO.iodata_to_binary([acc.text, file_block(path, content)]),
+                    images: acc.images
+                }}}
 
             {:error, reason} ->
               {:halt, {:error, {reason, path}}}

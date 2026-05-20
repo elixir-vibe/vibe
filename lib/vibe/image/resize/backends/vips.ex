@@ -7,6 +7,8 @@ defmodule Vibe.Image.Resize.Backends.Vips do
 
   @supported_mime_types ~w(image/jpeg image/png image/webp)
 
+  def formats, do: @supported_mime_types
+
   @impl true
   def available?, do: Command.executable?("vips")
 

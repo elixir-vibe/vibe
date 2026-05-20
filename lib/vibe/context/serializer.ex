@@ -13,7 +13,7 @@ defmodule Vibe.Context.Serializer do
   end
 
   @spec estimate_tokens([Trajectory.t()]) :: non_neg_integer()
-  def estimate_tokens(events), do: Enum.sum(Enum.map(events, &event_tokens/1))
+  def estimate_tokens(events), do: Enum.sum_by(events, &event_tokens/1)
 
   @spec event_tokens(Trajectory.t()) :: non_neg_integer()
   def event_tokens(event), do: event |> serialize_event() |> String.length() |> div(4)
@@ -49,7 +49,7 @@ defmodule Vibe.Context.Serializer do
 
     case Enum.reverse(sections) do
       [] -> ""
-      sections -> "\n\n" <> Enum.join(sections, "\n\n")
+      sections -> IO.iodata_to_binary(["\n\n", Enum.intersperse(sections, "\n\n")])
     end
   end
 

@@ -12,23 +12,27 @@ defmodule Vibe.Context do
 
   @type compact_result :: Compactor.compact_result()
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec compact(keyword()) :: {:ok, compact_result()} | {:error, term()}
-  def compact(opts \\ []), do: Compactor.compact(opts)
+  defdelegate compact(opts \\ []), to: Compactor
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec compact([Trajectory.t()], keyword()) :: {:ok, compact_result()} | {:error, term()}
-  def compact(events, opts), do: Compactor.compact(events, opts)
+  defdelegate compact(events, opts), to: Compactor
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec summarize([Trajectory.t()], String.t() | nil, keyword()) ::
           {:ok, String.t()} | {:error, term()}
-  def summarize(events, previous_summary \\ nil, opts \\ []),
-    do: Compactor.summarize(events, previous_summary, opts)
+  defdelegate summarize(events, previous_summary \\ nil, opts \\ []), to: Compactor
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec turn_prefix_summary([Trajectory.t()], keyword()) :: {:ok, String.t()} | {:error, term()}
-  def turn_prefix_summary(events, opts \\ []), do: Compactor.turn_prefix_summary(events, opts)
+  defdelegate turn_prefix_summary(events, opts \\ []), to: Compactor
 
   @spec recall(String.t(), keyword()) :: String.t()
   def recall(query, opts \\ []), do: Recall.block(query, opts)
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec serialize([Trajectory.t()]) :: String.t()
-  def serialize(events), do: Serializer.serialize(events)
+  defdelegate serialize(events), to: Serializer
 end

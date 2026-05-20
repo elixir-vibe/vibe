@@ -23,7 +23,8 @@ defmodule Vibe.Plugins.Rules.Loader do
         }
 
   @spec rules_dir() :: String.t()
-  def rules_dir, do: Vibe.Paths.rules_dir()
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate rules_dir, to: Vibe.Paths
 
   @spec load() :: [rule()]
   def load, do: load_dir(rules_dir())
@@ -45,7 +46,9 @@ defmodule Vibe.Plugins.Rules.Loader do
   def system_prompt_block(model \\ nil) do
     load()
     |> filter_for_model(model)
-    |> Enum.map_join("\n\n", fn rule -> "Instructions from: #{rule.path}\n#{rule.body}" end)
+    |> Enum.map(fn rule -> ["Instructions from: ", rule.path, "\n", rule.body] end)
+    |> Enum.intersperse("\n\n")
+    |> IO.iodata_to_binary()
   end
 
   @spec filter_for_model([rule()], String.t() | nil) :: [rule()]

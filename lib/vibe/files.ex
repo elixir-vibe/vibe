@@ -10,7 +10,7 @@ defmodule Vibe.Files do
 
   @spec read_file(String.t(), keyword()) :: {:ok, ReadResult.t()} | {:error, String.t()}
   def read_file(path, opts \\ []) when is_binary(path) do
-    with {:ok, absolute} <- resolve(path, opts),
+    with {:ok, absolute} <- Vibe.Workspace.resolve(path, opts),
          {:ok, stat} <- File.stat(absolute),
          :ok <- ensure_regular(stat),
          {:ok, content} <- File.read(absolute) do
@@ -39,7 +39,7 @@ defmodule Vibe.Files do
 
   @spec write_file(String.t(), String.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
   def write_file(path, content, opts \\ []) when is_binary(path) and is_binary(content) do
-    with {:ok, absolute} <- resolve(path, opts),
+    with {:ok, absolute} <- Vibe.Workspace.resolve(path, opts),
          :ok <- File.mkdir_p(Path.dirname(absolute)) do
       old = if File.exists?(absolute), do: File.read!(absolute), else: ""
       File.write!(absolute, content)
@@ -59,7 +59,7 @@ defmodule Vibe.Files do
 
   @spec edit_file(String.t(), [edit() | map()], keyword()) :: {:ok, map()} | {:error, String.t()}
   def edit_file(path, edits, opts \\ []) when is_binary(path) and is_list(edits) do
-    with {:ok, absolute} <- resolve(path, opts),
+    with {:ok, absolute} <- Vibe.Workspace.resolve(path, opts),
          {:ok, original} <- File.read(absolute),
          {:ok, edited, count} <- apply_edits(path, original, edits) do
       File.write!(absolute, edited)
@@ -165,8 +165,6 @@ defmodule Vibe.Files do
     |> Enum.join("\n")
   end
 
-  defp resolve(path, opts), do: Vibe.Workspace.resolve(path, opts)
-
   defp ensure_regular(%File.Stat{type: :regular}), do: :ok
   defp ensure_regular(%File.Stat{type: type}), do: {:error, "not a regular file: #{type}"}
 
@@ -184,7 +182,7 @@ defmodule Vibe.Files do
           prefix = binary_part(acc, 0, match.index)
           suffix_start = match.index + byte_size(match.old_text)
           suffix = binary_part(acc, suffix_start, byte_size(acc) - suffix_start)
-          prefix <> match.new_text <> suffix
+          IO.iodata_to_binary([prefix, match.new_text, suffix])
         end)
 
       if edited == content do

@@ -153,20 +153,19 @@ defmodule Vibe.Runtime.Standalone do
         end
 
         defp handle(packet, context) do
-          case :erlang.binary_to_term(packet) do
+          case :erlang.binary_to_term(packet, [:safe]) do
             {:eval, id, code, opts} ->
               {result, context} = eval(code, opts, context)
               {{:reply, id, result}, context}
           end
         rescue
           exception ->
-            {{:reply, :unknown,
-              %{
-                status: :error,
-                value: Exception.message(exception),
-                output: "",
-                diagnostics: []
-              }}, context}
+            {{:reply, :unknown, result(:error, Exception.message(exception), "", [])}, context}
+        end
+
+        defp result(status, value, output, diagnostics) do
+          [status: status, value: value, output: output, diagnostics: diagnostics]
+          |> Map.new()
         end
 
         defp eval(code, opts, context) do
@@ -192,16 +191,11 @@ defmodule Vibe.Runtime.Standalone do
                 {value, binding, env} =
                   Code.eval_quoted_with_env(quoted, context.binding, env, prune_binding: true)
 
-                {%{status: :ok, value: value, output: "", diagnostics: []},
-                 %{binding: binding, env: env}}
+                {result(:ok, value, "", []), %{binding: binding, env: env}}
               catch
                 kind, reason ->
-                  {%{
-                     status: :error,
-                     value: Exception.format(kind, reason, __STACKTRACE__),
-                     output: "",
-                     diagnostics: []
-                   }, context}
+                  {result(:error, Exception.format(kind, reason, __STACKTRACE__), "", []),
+                   context}
               end
             end)
 
@@ -258,7 +252,7 @@ defmodule Vibe.Runtime.Standalone do
   end
 
   defp encode(term), do: :erlang.term_to_binary(term)
-  defp decode(packet), do: :erlang.binary_to_term(packet)
+  defp decode(packet), do: :erlang.binary_to_term(packet, [:safe])
 
   defp normalize_env(env) when is_map(env), do: env |> Map.to_list() |> normalize_env()
 

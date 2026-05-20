@@ -92,7 +92,8 @@ defmodule Vibe.Skill do
   def executable, do: Loader.discover()
 
   @spec apis() :: [API.t()]
-  def apis, do: Loader.apis()
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate apis, to: Loader
 
   @spec get(String.t()) :: {:ok, map()} | {:error, String.t()}
   def get(name) do
@@ -250,15 +251,20 @@ defmodule Vibe.Skill do
       |> Enum.flat_map(& &1.examples)
       |> Enum.reject(&(&1 == ""))
 
-    aliases = Enum.map_join(apis, ", ", &"`#{&1.alias}`")
+    aliases =
+      apis |> Enum.map(&["`", &1.alias, "`"]) |> Enum.intersperse(", ") |> IO.iodata_to_binary()
 
     case examples do
       [] ->
         "\nAvailable eval aliases: #{aliases}."
 
       examples ->
-        "\nAvailable eval aliases: #{aliases}.\n\nExamples:\n" <>
-          Enum.map_join(examples, "\n", &"- `#{&1}`")
+        IO.iodata_to_binary([
+          "\nAvailable eval aliases: ",
+          aliases,
+          ".\n\nExamples:\n",
+          examples |> Enum.map(&["- `", &1, "`"]) |> Enum.intersperse("\n")
+        ])
     end
   end
 

@@ -59,9 +59,11 @@ defimpl Vibe.Markdown, for: List do
 
   def to_markdown(list) do
     if keyword_rows?(list) do
-      Enum.map_join(list, "\n", fn {key, value} -> "- #{key}: #{inline(value)}" end)
+      list
+      |> Enum.map(fn {key, value} -> ["- ", to_string(key), ": ", inline(value)] end)
+      |> join_lines()
     else
-      Enum.map_join(list, "\n", &list_item/1)
+      list |> Enum.map(&list_item/1) |> join_lines()
     end
   end
 
@@ -73,12 +75,14 @@ defimpl Vibe.Markdown, for: List do
     |> String.split("\n")
     |> case do
       [single] -> "- " <> single
-      [first | rest] -> Enum.map_join([first | rest], "\n", &list_line/1)
+      [first | rest] -> [first | rest] |> Enum.map(&list_line/1) |> join_lines()
       [] -> "-"
     end
   end
 
-  defp list_line(line), do: "- " <> line
+  defp list_line(line), do: ["- ", line]
+
+  defp join_lines(lines), do: lines |> Enum.intersperse("\n") |> IO.iodata_to_binary()
 
   defp inline(value) do
     value
@@ -95,7 +99,9 @@ defimpl Vibe.Markdown, for: Map do
   def to_markdown(map) do
     map
     |> Enum.sort_by(fn {key, _value} -> to_string(key) end)
-    |> Enum.map_join("\n", fn {key, value} -> "- #{key}: #{inline(value)}" end)
+    |> Enum.map(fn {key, value} -> ["- ", to_string(key), ": ", inline(value)] end)
+    |> Enum.intersperse("\n")
+    |> IO.iodata_to_binary()
   end
 
   defp inline(value) do
