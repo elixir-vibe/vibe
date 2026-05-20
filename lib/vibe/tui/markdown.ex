@@ -222,10 +222,12 @@ defmodule Vibe.TUI.Markdown do
     border_width = max(columns - 1, 0) * 3 + 4
     available = max(width - border_width, columns)
 
+    row_arrays = Enum.map(rows, &:array.from_list/1)
+
     0..max(columns - 1, 0)
     |> Enum.map(fn index ->
-      rows
-      |> Enum.map(fn row -> row |> Enum.at(index, "") |> Width.visible_length() end)
+      row_arrays
+      |> Enum.map(fn row -> row |> array_get(index, "") |> Width.visible_length() end)
       |> Enum.max(fn -> 1 end)
       |> min(max(div(available, max(columns, 1)), 1))
     end)
@@ -235,8 +237,9 @@ defmodule Vibe.TUI.Markdown do
     columns = rows |> Enum.map(&length/1) |> Enum.max(fn -> 0 end)
     border_width = max(columns - 1, 0) * 3 + 4
     available = max(width - border_width, columns)
-    base = max(div(available, max(columns, 1)), 1)
-    extra = rem(available, max(columns, 1))
+    column_count = max(columns, 1)
+    base = max(div(available, column_count), 1)
+    extra = rem(available, column_count)
 
     0..max(columns - 1, 0)
     |> Enum.map(fn index -> base + if(index < extra, do: 1, else: 0) end)
@@ -252,11 +255,13 @@ defmodule Vibe.TUI.Markdown do
   end
 
   defp table_lines(row, widths, theme, header?) do
+    row = :array.from_list(row)
+
     cells =
       widths
       |> Enum.with_index()
       |> Enum.map(fn {width, index} ->
-        table_cell_lines(Enum.at(row, index, ""), width, theme, header?)
+        table_cell_lines(array_get(row, index, ""), width, theme, header?)
       end)
 
     height = cells |> Enum.map(&length/1) |> Enum.max(fn -> 1 end)
@@ -265,14 +270,19 @@ defmodule Vibe.TUI.Markdown do
     |> Enum.map(fn line_index ->
       row_cells =
         cells
+        |> Enum.map(&:array.from_list/1)
         |> Enum.zip(widths)
         |> Enum.map(fn {cell, width} ->
-          Enum.at(cell, line_index) || Widget.pad_line("", width)
+          array_get(cell, line_index, Widget.pad_line("", width))
         end)
         |> Enum.intersperse(Theme.fg(theme, :border, " │ "))
 
       [Theme.fg(theme, :border, "│ "), row_cells, Theme.fg(theme, :border, " │")]
     end)
+  end
+
+  defp array_get(array, index, default) do
+    if index < :array.size(array), do: :array.get(index, array), else: default
   end
 
   defp table_cell_lines(cell, width, theme, header?) do

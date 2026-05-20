@@ -4,13 +4,15 @@ defmodule Vibe.TUI.Lines do
 
   @type line :: IO.chardata()
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec append([line()], line()) :: [line()]
-  def append(lines, line), do: Lists.append(lines, line)
+  defdelegate append(lines, line), to: Lists
 
   @spec append_if([line()], boolean(), line()) :: [line()]
   def append_if(lines, true, line), do: append(lines, line)
   def append_if(lines, false, _line), do: lines
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec join([line()], [line()]) :: [line()]
-  def join(left, right), do: Lists.join(left, right)
+  defdelegate join(left, right), to: Lists
 end

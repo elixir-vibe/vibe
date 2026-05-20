@@ -159,7 +159,8 @@ defmodule Vibe.TUI.Theme do
   def italic(text), do: ansi([:italic, text])
 
   @spec reset() :: String.t()
-  def reset, do: IO.ANSI.reset()
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate reset, to: IO.ANSI
 
   @spec strip(IO.chardata()) :: String.t()
   def strip(text) do

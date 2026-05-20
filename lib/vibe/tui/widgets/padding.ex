@@ -11,8 +11,7 @@ defmodule Vibe.TUI.Widgets.Padding do
     inner_width = max(width - x * 2, 1)
     blank = Widget.spaces(width)
 
-    top = List.duplicate(blank, y)
-    bottom = List.duplicate(blank, y)
+    blanks = List.duplicate(blank, y)
 
     body =
       children
@@ -20,7 +19,7 @@ defmodule Vibe.TUI.Widgets.Padding do
       |> Enum.map(&Widget.pad_line([Widget.spaces(x), &1], width))
 
     body
-    |> Lines.join(bottom)
-    |> then(&Lines.join(top, &1))
+    |> Lines.join(blanks)
+    |> then(&Lines.join(blanks, &1))
   end
 end

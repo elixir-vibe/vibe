@@ -199,12 +199,12 @@ defmodule Vibe.TUI.Cast.Writer do
 
   defp flush_block(state) do
     events = Enum.reverse(state.block_events)
-    t_values = Enum.map(events, &event_time/1)
+    {start_t_us, end_t_us} = Enum.reduce(events, {nil, nil}, &time_range/2)
 
     block = %{
       block: state.block_seq,
-      start_t_us: Enum.min(t_values),
-      end_t_us: Enum.max(t_values),
+      start_t_us: start_t_us,
+      end_t_us: end_t_us,
       width: state.header.width,
       height: state.header.height,
       events: events
@@ -252,6 +252,16 @@ defmodule Vibe.TUI.Cast.Writer do
 
   defp event_size({_kind, _t_us, binary}) when is_binary(binary), do: byte_size(binary)
   defp event_size(event), do: :erlang.external_size(event)
+
+  defp time_range(event, {nil, nil}) do
+    time = event_time(event)
+    {time, time}
+  end
+
+  defp time_range(event, {min_time, max_time}) do
+    time = event_time(event)
+    {min(min_time, time), max(max_time, time)}
+  end
 
   defp event_time({_kind, t_us, _payload}), do: t_us
   defp event_time({_kind, t_us, _a, _b}), do: t_us

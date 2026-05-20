@@ -36,10 +36,12 @@ defmodule Vibe.TUI.Widgets.Frame do
     title_width = Width.visible_length(title)
     remaining = max(width - title_width, 0)
 
+    left_width = div(remaining, 2)
+
     [
-      Theme.fg(theme, :border, String.duplicate(horizontal, div(remaining, 2))),
+      Theme.fg(theme, :border, String.duplicate(horizontal, left_width)),
       title,
-      Theme.fg(theme, :border, String.duplicate(horizontal, remaining - div(remaining, 2)))
+      Theme.fg(theme, :border, String.duplicate(horizontal, remaining - left_width))
     ]
   end
 end

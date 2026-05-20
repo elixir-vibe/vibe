@@ -2,7 +2,13 @@ defmodule Vibe.TUI.TextTruncation do
   @moduledoc "Line truncation with omission hints for tool output."
   alias Vibe.TUI.{Shortcuts, Theme, Widget}
 
-  @type result :: %{lines: [IO.chardata()], omitted: non_neg_integer(), truncated?: boolean()}
+  defstruct lines: [], omitted: 0, truncated?: false
+
+  @type result :: %__MODULE__{
+          lines: [IO.chardata()],
+          omitted: non_neg_integer(),
+          truncated?: boolean()
+        }
 
   @spec lines([IO.chardata()], keyword()) :: result()
   def lines(lines, opts \\ []) when is_list(lines) do
@@ -12,9 +18,9 @@ defmodule Vibe.TUI.TextTruncation do
     if enabled? and length(lines) > limit do
       visible = visible_lines(lines, limit, Keyword.get(opts, :mode, :head))
       omitted = length(lines) - limit
-      %{lines: visible, omitted: omitted, truncated?: true}
+      %__MODULE__{lines: visible, omitted: omitted, truncated?: true}
     else
-      %{lines: lines, omitted: 0, truncated?: false}
+      %__MODULE__{lines: lines, omitted: 0, truncated?: false}
     end
   end
 

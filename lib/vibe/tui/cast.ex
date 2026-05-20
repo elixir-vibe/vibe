@@ -194,8 +194,8 @@ defmodule Vibe.TUI.Cast do
   def encode_block(term, :gzip), do: term |> :erlang.term_to_binary() |> :zlib.gzip()
 
   @doc "Decodes a native cast block with the configured compression."
-  def decode_block(binary, :none), do: :erlang.binary_to_term(binary)
-  def decode_block(binary, :gzip), do: binary |> :zlib.gunzip() |> :erlang.binary_to_term()
+  def decode_block(binary, :none), do: :erlang.binary_to_term(binary, [:safe])
+  def decode_block(binary, :gzip), do: binary |> :zlib.gunzip() |> :erlang.binary_to_term([:safe])
 
   defp generated_name(opts) do
     session_id = Keyword.get(opts, :session_id, "session")
@@ -206,7 +206,7 @@ defmodule Vibe.TUI.Cast do
   defp decode(<<@magic, @version::16, header_len::32, rest::binary>>) do
     case rest do
       <<header_binary::binary-size(header_len), blocks_binary::binary>> ->
-        header = :erlang.binary_to_term(header_binary)
+        header = :erlang.binary_to_term(header_binary, [:safe])
         compression = Map.fetch!(header, :compression)
         first_block_offset = byte_size(@magic) + 2 + 4 + header_len
         {:ok, blocks} = decode_blocks(blocks_binary, compression, first_block_offset, [])

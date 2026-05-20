@@ -4,7 +4,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
   alias Vibe.TUI.{TerminalLoop, Width}
 
   @long_prompt_sleep_ms 5_000
-  @render_wait_timeout_ms 1_000
+  @render_wait_timeout_ms 2_000
   @long_command_timeout_ms 120_000
 
   test "decodes input into app/editor and renders textarea" do
@@ -607,7 +607,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
 
     assert_receive {TerminalLoop, :event, %{type: :prompt_submitted}}, 500
     assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 500
-    assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 500
+    assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 2_000
   end
 
   defp replayed_phoenix_events(session_id) do

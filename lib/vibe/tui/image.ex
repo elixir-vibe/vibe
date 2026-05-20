@@ -3,8 +3,17 @@ defmodule Vibe.TUI.Image do
 
   alias Vibe.Model.Content
 
+  defmodule Capabilities do
+    @moduledoc false
+    defstruct [:images, true_color?: false, hyperlinks?: false]
+  end
+
   @type protocol :: :kitty | :iterm2 | nil
-  @type capabilities :: %{images: protocol(), true_color?: boolean(), hyperlinks?: boolean()}
+  @type capabilities :: %Capabilities{
+          images: protocol(),
+          true_color?: boolean(),
+          hyperlinks?: boolean()
+        }
 
   @default_cell_width_px 9
   @default_cell_height_px 18
@@ -20,26 +29,26 @@ defmodule Vibe.TUI.Image do
     cond do
       Map.has_key?(env, "TMUX") or String.starts_with?(term, "tmux") or
           String.starts_with?(term, "screen") ->
-        %{images: nil, true_color?: true_color?, hyperlinks?: false}
+        %Capabilities{images: nil, true_color?: true_color?, hyperlinks?: false}
 
       Map.has_key?(env, "KITTY_WINDOW_ID") or term_program == "kitty" ->
-        %{images: :kitty, true_color?: true, hyperlinks?: true}
+        %Capabilities{images: :kitty, true_color?: true, hyperlinks?: true}
 
       term_program == "ghostty" or String.contains?(term, "ghostty") or
           Map.has_key?(env, "GHOSTTY_RESOURCES_DIR") ->
-        %{images: :kitty, true_color?: true, hyperlinks?: true}
+        %Capabilities{images: :kitty, true_color?: true, hyperlinks?: true}
 
       Map.has_key?(env, "WEZTERM_PANE") or term_program == "wezterm" ->
-        %{images: :kitty, true_color?: true, hyperlinks?: true}
+        %Capabilities{images: :kitty, true_color?: true, hyperlinks?: true}
 
       Map.has_key?(env, "ITERM_SESSION_ID") or term_program == "iterm.app" ->
-        %{images: :iterm2, true_color?: true, hyperlinks?: true}
+        %Capabilities{images: :iterm2, true_color?: true, hyperlinks?: true}
 
       term_program in ["vscode", "alacritty"] ->
-        %{images: nil, true_color?: true, hyperlinks?: true}
+        %Capabilities{images: nil, true_color?: true, hyperlinks?: true}
 
       true ->
-        %{images: nil, true_color?: true_color?, hyperlinks?: false}
+        %Capabilities{images: nil, true_color?: true_color?, hyperlinks?: false}
     end
   end
 

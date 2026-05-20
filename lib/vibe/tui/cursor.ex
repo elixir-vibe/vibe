@@ -12,10 +12,7 @@ defmodule Vibe.TUI.Cursor do
     logical_lines = String.split(before_cursor, "\n")
     {previous_lines, current_line} = split_current_line(logical_lines)
 
-    previous_rows =
-      previous_lines
-      |> Enum.map(&(&1 |> Widget.wrap(inner_width) |> length()))
-      |> Enum.sum()
+    previous_rows = Enum.sum_by(previous_lines, &(&1 |> Widget.wrap(inner_width) |> length()))
 
     current_width = Width.visible_length(current_line)
 

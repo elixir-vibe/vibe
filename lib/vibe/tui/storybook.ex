@@ -11,6 +11,20 @@ defmodule Vibe.TUI.Storybook do
   alias Vibe.TUI.{Node, Theme, Widget, Width}
   alias Vibe.UI.{Event, Reducer, State, ToolEvent, ViewModel}
 
+  defmodule ToolExample do
+    @moduledoc false
+    defstruct [
+      :args,
+      :id,
+      :name,
+      :output,
+      :status,
+      expanded?: false,
+      truncate?: true,
+      output_parts: []
+    ]
+  end
+
   @sample_footer_tokens 12_345
   @sample_model_tokens 123_456
 
@@ -67,7 +81,7 @@ defmodule Vibe.TUI.Storybook do
   end
 
   def story(:tool_eval_ok) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "eval-1",
       name: :eval,
       status: :ok,
@@ -78,7 +92,7 @@ defmodule Vibe.TUI.Storybook do
   end
 
   def story(:tool_eval_preparing) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "eval-preparing",
       name: :eval,
       status: :preparing,
@@ -91,7 +105,7 @@ defmodule Vibe.TUI.Storybook do
   end
 
   def story(:tool_eval_running) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "eval-running",
       name: :eval,
       status: :running,
@@ -100,12 +114,17 @@ defmodule Vibe.TUI.Storybook do
           ~S|task = Cmd.start(["sh", "-c", "for i in 1 2 3 4 5; do echo tick:$i; sleep 10; done"], timeout: 60_000)|,
         timeout: 60_000
       },
-      output_parts: [%{output: Enum.map_join(1..40, "\n", &"tick:#{&1}"), format: :text}]
+      output_parts: [
+        %{
+          output: 1..40 |> Enum.map(&["tick:", Integer.to_string(&1)]) |> join_lines(),
+          format: :text
+        }
+      ]
     })
   end
 
   def story(:tool_eval_ansi_output) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "eval-ansi",
       name: :eval,
       status: :ok,
@@ -121,7 +140,7 @@ defmodule Vibe.TUI.Storybook do
   end
 
   def story(:tool_eval_expanded) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "eval-expanded",
       name: :eval,
       status: :ok,
@@ -141,7 +160,7 @@ end|,
   end
 
   def story(:tool_read_markdown) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "read-markdown",
       name: :read,
       status: :ok,
@@ -173,7 +192,7 @@ end|,
   end
 
   def story(:tool_read_image) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "read-image",
       name: :read,
       status: :ok,
@@ -201,7 +220,7 @@ end|,
   end
 
   def story(:tool_write_created_file) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "write-created",
       name: :write,
       status: :ok,
@@ -231,7 +250,7 @@ end|,
   end
 
   def story(:tool_edit_diff) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "edit-diff",
       name: :edit,
       status: :ok,
@@ -311,17 +330,11 @@ end|,
             timeout: 900_000
           },
           output: %{
-            output:
-              Enum.map_join(1..24, "\n", fn index ->
-                "project_#{index}: #{if(rem(index, 5) == 0, do: "FAILED", else: "ok")}"
-              end),
+            output: project_status_lines(),
             output_format: :text,
             output_parts: [
               %{
-                output:
-                  Enum.map_join(1..24, "\n", fn index ->
-                    "project_#{index}: #{if(rem(index, 5) == 0, do: "FAILED", else: "ok")}"
-                  end),
+                output: project_status_lines(),
                 format: :text
               }
             ]
@@ -362,7 +375,7 @@ end|,
   end
 
   def story(:tool_ast_matches) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "ast-1",
       name: :ast,
       status: :ok,
@@ -373,7 +386,7 @@ end|,
   end
 
   def story(:tool_ast_replace) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "ast-replace-1",
       name: :ast,
       status: :ok,
@@ -403,7 +416,7 @@ end|,
   end
 
   def story(:tool_lsp_diagnostics) do
-    TUI.tool(%{
+    TUI.tool(%ToolExample{
       id: "lsp-1",
       name: :lsp,
       status: :ok,
@@ -564,6 +577,21 @@ end|,
   end
 
   defp apply_events(state, events), do: Enum.reduce(events, state, &Reducer.apply_event(&2, &1))
+
+  defp project_status_lines do
+    1..24
+    |> Enum.map(fn index ->
+      [
+        "project_",
+        Integer.to_string(index),
+        ": ",
+        if(rem(index, 5) == 0, do: "FAILED", else: "ok")
+      ]
+    end)
+    |> join_lines()
+  end
+
+  defp join_lines(lines), do: lines |> Enum.intersperse("\n") |> IO.iodata_to_binary()
 
   @spec render(atom(), keyword()) :: [IO.chardata()]
   def render(name, opts \\ []) do

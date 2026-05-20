@@ -66,12 +66,27 @@ defmodule Vibe.TUI.Width do
   defp grapheme_width(grapheme) do
     codepoints = String.to_charlist(grapheme)
 
+    properties =
+      Enum.reduce(
+        codepoints,
+        %{any?: false, joiner?: false, variation?: false, wide?: false, all_zero?: true},
+        fn codepoint, acc ->
+          %{
+            any?: true,
+            joiner?: acc.joiner? or codepoint == @zero_width_joiner,
+            variation?: acc.variation? or codepoint == @variation_selector_16,
+            wide?: acc.wide? or wide_codepoint?(codepoint),
+            all_zero?: acc.all_zero? and zero_width_codepoint?(codepoint)
+          }
+        end
+      )
+
     cond do
-      codepoints == [] -> 0
-      Enum.any?(codepoints, &(&1 == @zero_width_joiner)) -> 2
-      Enum.any?(codepoints, &(&1 == @variation_selector_16)) -> 2
-      Enum.any?(codepoints, &wide_codepoint?/1) -> 2
-      Enum.all?(codepoints, &zero_width_codepoint?/1) -> 0
+      not properties.any? -> 0
+      properties.joiner? -> 2
+      properties.variation? -> 2
+      properties.wide? -> 2
+      properties.all_zero? -> 0
       true -> 1
     end
   end

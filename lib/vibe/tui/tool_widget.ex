@@ -55,11 +55,13 @@ defmodule Vibe.TUI.ToolWidget do
     ToolCard.block(tool, width, theme, sections, opts)
   end
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec title(tool(), Theme.t(), keyword()) :: IO.chardata()
-  def title(tool, theme, opts \\ []), do: ToolCard.title(tool, theme, opts)
+  defdelegate title(tool, theme, opts \\ []), to: ToolCard
 
+  @doc "Intentional facade for the public Vibe API boundary."
   @spec title(tool(), pos_integer() | nil, Theme.t(), keyword()) :: IO.chardata()
-  def title(tool, width, theme, opts), do: ToolCard.title(tool, width, theme, opts)
+  defdelegate title(tool, width, theme, opts), to: ToolCard
 
   def generic_lines(tool, width, theme),
     do: block(tool, width, theme, summary: compact_summary(tool))
@@ -73,11 +75,17 @@ defmodule Vibe.TUI.ToolWidget do
   end
 
   def summarize_value(value, limit), do: ValueFormat.summarize(value, limit)
-  def single_line(value), do: ValueFormat.single_line(value)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate single_line(value), to: ValueFormat
 
-  def status_bg(text, status, theme), do: ToolCard.status_bg(text, status, theme)
-  def status(tool), do: ToolCard.status(tool)
-  def status_icon(status, theme), do: ToolCard.status_icon(status, theme)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate status_bg(text, status, theme), to: ToolCard
+
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate status(tool), to: ToolCard
+
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate status_icon(status, theme), to: ToolCard
 
   def params(tool), do: Map.get(tool, :args) || Map.get(tool, :params)
 
@@ -88,20 +96,26 @@ defmodule Vibe.TUI.ToolWidget do
   end
 
   def format_value(value), do: ValueFormat.format(value)
-  def error_lines(error, width, theme), do: ValueFormat.error_lines(error, width, theme)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate error_lines(error, width, theme), to: ValueFormat
 
-  def plain_lines(value, width, theme, opts \\ []),
-    do: ValueFormat.plain_lines(value, width, theme, opts)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate plain_lines(value, width, theme, opts \\ []), to: ValueFormat
 
-  def plain_line(line, width, theme, opts \\ []),
-    do: ValueFormat.plain_line(line, width, theme, opts)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate plain_line(line, width, theme, opts \\ []), to: ValueFormat
 
-  def inspect_lines(value, width, theme), do: ValueFormat.inspect_lines(value, width, theme)
-  def inspect_line(line, width, theme), do: ValueFormat.inspect_line(line, width, theme)
-  def output_line(line, width), do: ValueFormat.output_line(line, width)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate inspect_lines(value, width, theme), to: ValueFormat
 
-  def source_lines(lines, language, width, theme),
-    do: SourceBlock.source_lines(lines, language, width, theme)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate inspect_line(line, width, theme), to: ValueFormat
+
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate output_line(line, width), to: ValueFormat
+
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate source_lines(lines, language, width, theme), to: SourceBlock
 
   defp raw_output(tool), do: Map.get(tool, :output) || Map.get(tool, :result)
 
@@ -209,7 +223,9 @@ defmodule Vibe.TUI.ToolWidget do
     )
   end
 
-  def format_error(error), do: ValueFormat.format_error(error)
+  @doc "Intentional facade for the public Vibe API boundary."
+  defdelegate format_error(error), to: ValueFormat
+
   defp maybe_truncate(lines, :params, _tool, _width, _theme, _opts), do: lines
 
   defp maybe_truncate(lines, _label, tool, width, theme, opts) do

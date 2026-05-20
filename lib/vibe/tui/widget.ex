@@ -124,12 +124,14 @@ defmodule Vibe.TUI.Widget do
   def frame_line(content, width, theme) do
     inner_width = max(width - 4, 0)
 
+    vertical = Theme.fg(theme, :border, Theme.symbol(theme, :dialog_vertical))
+
     [
-      Theme.fg(theme, :border, Theme.symbol(theme, :dialog_vertical)),
+      vertical,
       " ",
       pad_line(content, inner_width),
       " ",
-      Theme.fg(theme, :border, Theme.symbol(theme, :dialog_vertical))
+      vertical
     ]
     |> background_line(width, theme, :input_bg)
   end

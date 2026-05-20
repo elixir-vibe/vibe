@@ -123,13 +123,8 @@ defmodule Vibe.TUI.Keymap do
 
   defp flush_pending(keys, ""), do: keys
 
-  defp flush_pending(keys, pending) do
-    if String.length(pending) == 1 do
-      [{:insert, pending} | keys]
-    else
-      [{:paste, pending} | keys]
-    end
-  end
+  defp flush_pending(keys, <<_::utf8>> = pending), do: [{:insert, pending} | keys]
+  defp flush_pending(keys, pending), do: [{:paste, pending} | keys]
 
   defp multiline_paste?(data) do
     byte_size(data) > 1 and String.contains?(data, ["\n", "\r"]) and printable_paste?(data)

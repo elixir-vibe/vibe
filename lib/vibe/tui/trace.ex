@@ -99,6 +99,12 @@ defmodule Vibe.TUI.Trace do
 
   require Vibe.Debug
 
+  defmodule Entry do
+    @moduledoc false
+    @derive {Jason.Encoder, only: [:seq, :t_us, :type, :payload]}
+    defstruct [:seq, :t_us, :type, :payload]
+  end
+
   @spec record(t() | nil, atom(), term()) :: t() | nil
   def record(trace, type, payload \\ %{})
   def record(nil, _type, _payload), do: nil
@@ -107,7 +113,7 @@ defmodule Vibe.TUI.Trace do
     seq = trace.seq + 1
     trace = %{trace | seq: seq}
 
-    entry = %{
+    entry = %Entry{
       seq: seq,
       t_us: elapsed_us(trace),
       type: type,
@@ -130,7 +136,7 @@ defmodule Vibe.TUI.Trace do
     text = Enum.map_join(lines, "\n", &Width.visible_text/1)
     File.write!(path, text)
 
-    entry = %{
+    entry = %Entry{
       seq: seq,
       t_us: elapsed_us(trace),
       type: :frame,

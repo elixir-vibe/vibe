@@ -55,8 +55,7 @@ defmodule Vibe.TUI.Widgets.Tools.FileMutation do
   defp output_diff(diff, language, width, theme) do
     diff
     |> String.split("\n")
-    |> Enum.map(&style_diff_line(&1, language, theme))
-    |> Enum.flat_map(&Widget.wrap([Widget.spaces(2), &1], width))
+    |> Enum.flat_map(fn line -> Widget.wrap([Widget.spaces(2), style_diff_line(line, language, theme)], width) end)
   end
 
   defp style_diff_line("+" <> rest, language, theme),

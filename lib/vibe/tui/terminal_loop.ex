@@ -19,11 +19,11 @@ defmodule Vibe.TUI.TerminalLoop do
   end
 
   @spec input(GenServer.server(), binary()) :: :ok
-  def input(server, data), do: GenServer.call(server, {:input, data})
+  def input(server, data), do: GenServer.call(server, {:input, data}, 30_000)
 
   @spec input_key(GenServer.server(), Ghostty.KeyEvent.t()) :: :ok
   def input_key(server, %Ghostty.KeyEvent{} = event),
-    do: GenServer.call(server, {:input_key, event})
+    do: GenServer.call(server, {:input_key, event}, 30_000)
 
   @spec resize(GenServer.server(), pos_integer(), pos_integer()) :: :ok
   def resize(server, columns, rows), do: GenServer.call(server, {:resize, columns, rows})
