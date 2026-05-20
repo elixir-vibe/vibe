@@ -205,6 +205,11 @@ mark {
   line-height: 1.55;
 }
 
+.vibe-markdown pre.lumis code,
+.vibe-markdown pre.lumis code > .line {
+  color: inherit;
+}
+
 .vibe-markdown pre code > .line {
   min-height: 1.45em;
 }

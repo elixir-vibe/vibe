@@ -7,6 +7,22 @@ defmodule Vibe.Web.Components.Tool do
   alias Vibe.Tool.Display
   alias Vibe.Web.Components.Code
 
+  defmodule Body do
+    @moduledoc false
+    defstruct [
+      :alt,
+      :caption,
+      :html,
+      :kind,
+      :label,
+      :original_url,
+      :src,
+      :text,
+      collapsible?: false,
+      mono?: false
+    ]
+  end
+
   attr(:tool, :map, required: true)
 
   def tool_card(assigns) do
@@ -20,16 +36,16 @@ defmodule Vibe.Web.Components.Tool do
             <h3 class="text-sm font-semibold text-vibe-fg-strong">{tool_name(@display.name)}</h3>
             <Vibe.Web.Components.Core.status_badge :if={(@display.status || @tool.status) not in [:ok, "ok"]} status={@display.status || @tool.status || :running} />
           </div>
-          <div :if={display_text(@display.summary) not in [nil, ""]} class="mt-1 break-words font-mono text-xs leading-5 text-vibe-dim [overflow-wrap:anywhere]">
+          <div :if={Code.display_text(@display.summary) not in [nil, ""]} class="mt-1 break-words font-mono text-xs leading-5 text-vibe-dim [overflow-wrap:anywhere]">
             <%= if @display.summary_style == :elixir_dim do %>
-              {Phoenix.HTML.raw(Code.summary_html(display_text(@display.summary)))}
+              {Phoenix.HTML.raw(Code.summary_html(Code.display_text(@display.summary)))}
             <% else %>
-              {display_text(@display.summary)}
+              {Code.display_text(@display.summary)}
             <% end %>
           </div>
         </div>
         <div :if={@display.meta != []} class="flex shrink-0 flex-wrap gap-1 text-xs text-vibe-dim">
-          <span :for={meta <- @display.meta} class="rounded bg-vibe-surface-muted/35 px-1.5 py-0.5">{display_text(meta)}</span>
+          <span :for={meta <- @display.meta} class="rounded bg-vibe-surface-muted/35 px-1.5 py-0.5">{Code.display_text(meta)}</span>
         </div>
       </header>
 
@@ -56,7 +72,13 @@ defmodule Vibe.Web.Components.Tool do
     <section class="overflow-hidden rounded-md bg-vibe-bg/72 ring-1 ring-white/8">
       <div :if={@body.label not in [nil, "", "Output", "Inspect"]} class="border-b border-vibe-border/40 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-vibe-dim">{@body.label}</div>
 
-      <div :if={@body.kind in [:markdown, :source_html, :diff_html]} class="max-h-[28rem] overflow-auto px-3 py-2 text-sm leading-6 text-vibe-fg [overflow-wrap:anywhere] [&_a]:text-vibe-accent-strong [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-vibe-accent/30 [&_blockquote]:pl-3 [&_blockquote]:text-vibe-fg [&_code]:rounded [&_code]:bg-vibe-surface-strong [&_code]:px-1 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-md [&_pre]:bg-transparent [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-vibe-border/50 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-vibe-border/50 [&_th]:px-2 [&_th]:py-1 [&_ul]:list-disc">
+      <div :if={@body.kind in [:markdown, :source_html, :diff_html]} class={[
+        "max-h-[28rem] overflow-auto px-3 py-2 text-sm leading-6 [overflow-wrap:anywhere] [&_a]:text-vibe-accent-strong [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-vibe-accent/30 [&_blockquote]:pl-3 [&_blockquote]:text-vibe-fg [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-3 [&_pre]:overflow-auto [&_pre]:rounded-md [&_pre]:bg-transparent [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-vibe-border/50 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-vibe-border/50 [&_th]:px-2 [&_th]:py-1 [&_ul]:list-disc",
+        if(@body.kind == :source_html,
+          do: "bg-[#282c34] font-mono text-[#abb2bf] [&_code]:bg-transparent [&_code]:p-0",
+          else: "text-vibe-fg [&_code]:rounded [&_code]:bg-vibe-surface-strong [&_code]:px-1"
+        )
+      ]}>
         {Phoenix.HTML.raw(@body.html)}
       </div>
 
@@ -86,15 +108,15 @@ defmodule Vibe.Web.Components.Tool do
   defp tool_name(_name), do: "Tool"
 
   defp block_body({:markdown, text, _opts}, truncate?) do
-    text = text |> display_text() |> truncate_text(truncate?)
-    %{kind: :markdown, label: "Markdown", html: Code.markdown_html(text), mono?: false}
+    text = text |> Code.display_text() |> truncate_text(truncate?)
+    %Body{kind: :markdown, label: "Markdown", html: Code.markdown_html(text), mono?: false}
   end
 
   defp block_body({:source, text, opts}, truncate?) do
     language = opts |> Keyword.get(:language, :text) |> to_string()
-    text = text |> display_text() |> truncate_text(truncate?)
+    text = text |> Code.display_text() |> truncate_text(truncate?)
 
-    %{
+    %Body{
       kind: :source_html,
       label: String.upcase(language),
       html: Code.source_html(text, language),
@@ -103,10 +125,10 @@ defmodule Vibe.Web.Components.Tool do
   end
 
   defp block_body({:diff, text, _opts}, truncate?) do
-    %{
+    %Body{
       kind: :diff_html,
       label: "Diff",
-      html: Code.diff_html(text |> display_text() |> truncate_text(truncate?)),
+      html: Code.diff_html(text |> Code.display_text() |> truncate_text(truncate?)),
       mono?: true
     }
   end
@@ -124,12 +146,12 @@ defmodule Vibe.Web.Components.Tool do
   defp block_body({:image_ref, %ImageRef{} = ref, _opts}, _truncate?), do: image_body(ref)
 
   defp block_body({:lines, lines, _opts}, truncate?) do
-    text = lines |> rendered_lines() |> Enum.map_join("\n", &display_text/1)
-    %{kind: :text, label: "Output", text: truncate_text(text, truncate?), mono?: true}
+    text = lines |> rendered_lines() |> Enum.map_join("\n", &Code.display_text/1)
+    %Body{kind: :text, label: "Output", text: truncate_text(text, truncate?), mono?: true}
   end
 
   defp block_body(block, truncate?) do
-    %{
+    %Body{
       kind: :inspect,
       label: "Output",
       text: block |> inspect(pretty: true) |> truncate_text(truncate?),
@@ -143,7 +165,7 @@ defmodule Vibe.Web.Components.Tool do
       |> Enum.reject(&(&1 in [nil, ""]))
       |> Enum.join(" · ")
 
-    %{
+    %Body{
       kind: :image,
       label: "Image",
       src: image_src(image),
@@ -188,10 +210,10 @@ defmodule Vibe.Web.Components.Tool do
   defp format_bytes(bytes), do: "#{bytes} B"
 
   defp text_block(kind, label, text, truncate?) do
-    %{
+    %Body{
       kind: kind,
       label: label,
-      text: text |> display_text() |> truncate_text(truncate?),
+      text: text |> Code.display_text() |> truncate_text(truncate?),
       mono?: true
     }
   end
@@ -199,8 +221,6 @@ defmodule Vibe.Web.Components.Tool do
   defp rendered_lines(nil), do: []
   defp rendered_lines(lines) when is_list(lines), do: lines
   defp rendered_lines(line), do: [line]
-
-  defp display_text(value), do: Code.display_text(value)
   defp truncate_text(text, false), do: text
   defp truncate_text(nil, _truncate?), do: ""
   defp truncate_text(text, true), do: text

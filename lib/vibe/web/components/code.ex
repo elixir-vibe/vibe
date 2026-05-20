@@ -22,17 +22,7 @@ defmodule Vibe.Web.Components.Code do
   end
 
   @spec summary_html(String.t()) :: IO.chardata()
-  def summary_html(code) do
-    {:ok, html} =
-      Lumis.highlight(code,
-        formatter:
-          {:html_inline, language: "elixir", pre_class: "m-0 !bg-transparent !p-0 opacity-70"}
-      )
-
-    html
-  rescue
-    _error -> html_escape(code)
-  end
+  def summary_html(code), do: html_escape(code)
 
   @spec diff_html(String.t()) :: IO.chardata()
   def diff_html(text) do
