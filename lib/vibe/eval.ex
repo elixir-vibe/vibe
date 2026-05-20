@@ -62,8 +62,8 @@ defmodule Vibe.Eval do
 
   @spec cancel(String.t()) :: :ok
   def cancel(session_id) when is_binary(session_id) do
-    stop_evaluator(session_id)
     Vibe.Command.Streaming.cancel_session(session_id)
+    stop_evaluator(session_id)
     :ok
   end
 
