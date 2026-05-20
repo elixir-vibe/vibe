@@ -44,7 +44,7 @@ defmodule Vibe.Gateway.Telegram.StreamConsumer do
        adapter: Keyword.fetch!(opts, :adapter),
        chat_id: Keyword.fetch!(opts, :chat_id),
        adapter_opts: Keyword.get(opts, :adapter_opts, []),
-       draft_fun: Keyword.get(opts, :draft_fun, &ExGram.send_message_draft/4),
+       draft_fun: Keyword.get(opts, :draft_fun, &default_draft/4),
        draft_id: Keyword.get_lazy(opts, :draft_id, &new_draft_id/0),
        buffer_threshold: Keyword.get(opts, :buffer_threshold, @default_buffer_threshold),
        edit_interval_ms: Keyword.get(opts, :edit_interval_ms, @default_interval_ms),
@@ -114,6 +114,10 @@ defmodule Vibe.Gateway.Telegram.StreamConsumer do
 
   defp schedule_flush(state),
     do: %{state | timer: Process.send_after(self(), :flush, state.edit_interval_ms)}
+
+  defp default_draft(chat_id, draft_id, text, opts) do
+    ExGram.send_message_draft(chat_id, draft_id, Keyword.put(opts, :text, text))
+  end
 
   defp draft_opts(state) do
     case Keyword.get(state.adapter_opts, :config) do

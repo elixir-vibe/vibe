@@ -152,7 +152,7 @@ defmodule Vibe.Gateway.Telegram.Config do
       System.get_env(env)
   end
 
-  defp telegram_env_key(key), do: String.to_atom("telegram_#{key}")
+  defp telegram_env_key(key), do: :erlang.binary_to_atom("telegram_#{key}")
 
   defp csv_set(nil), do: MapSet.new()
   defp csv_set(values) when is_list(values), do: values |> Enum.map(&to_string/1) |> MapSet.new()

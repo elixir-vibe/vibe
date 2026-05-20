@@ -70,6 +70,11 @@ defmodule Vibe.Gateway do
     end
   end
 
+  defmodule SessionSourceParts do
+    @moduledoc false
+    defstruct [:platform, :chat_type, :chat_id, :thread_id, :user_id]
+  end
+
   defp config_summary(nil), do: %{}
 
   defp config_summary(config) do
@@ -85,25 +90,18 @@ defmodule Vibe.Gateway do
   defp parse_session_id("gateway:" <> rest) do
     case String.split(rest, ":") do
       [platform, chat_type, chat_id] ->
-        %{
-          platform: platform,
-          chat_type: chat_type,
-          chat_id: chat_id,
-          thread_id: nil,
-          user_id: nil
-        }
+        %SessionSourceParts{platform: platform, chat_type: chat_type, chat_id: chat_id}
 
       [platform, chat_type, chat_id, thread_id] ->
-        %{
+        %SessionSourceParts{
           platform: platform,
           chat_type: chat_type,
           chat_id: chat_id,
-          thread_id: thread_id,
-          user_id: nil
+          thread_id: thread_id
         }
 
       [platform, chat_type, chat_id, thread_id, user_id] ->
-        %{
+        %SessionSourceParts{
           platform: platform,
           chat_type: chat_type,
           chat_id: chat_id,

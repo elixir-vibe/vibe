@@ -8,7 +8,7 @@ defmodule Vibe.Gateway.Telegram.Update do
   metadata for group gating.
   """
 
-  alias Vibe.Gateway.{Message, Source}
+  alias Vibe.Gateway.{Media, Message, Source}
 
   @general_topic_thread_id "1"
 
@@ -128,29 +128,23 @@ defmodule Vibe.Gateway.Telegram.Update do
     end
   end
 
-  defp media(message, :document),
-    do:
-      message
-      |> field(:document)
-      |> file_media(mime_type(field(message, :document)))
-      |> List.wrap()
+  defp media(message, :document) do
+    document = field(message, :document)
+    document |> file_media(mime_type(document)) |> List.wrap()
+  end
 
   defp media(message, :voice),
     do: message |> field(:voice) |> file_media("audio/ogg") |> List.wrap()
 
-  defp media(message, :audio),
-    do:
-      message
-      |> field(:audio)
-      |> file_media(mime_type(field(message, :audio)) || "audio/mpeg")
-      |> List.wrap()
+  defp media(message, :audio) do
+    audio = field(message, :audio)
+    audio |> file_media(mime_type(audio) || "audio/mpeg") |> List.wrap()
+  end
 
-  defp media(message, :video),
-    do:
-      message
-      |> field(:video)
-      |> file_media(mime_type(field(message, :video)) || "video/mp4")
-      |> List.wrap()
+  defp media(message, :video) do
+    video = field(message, :video)
+    video |> file_media(mime_type(video) || "video/mp4") |> List.wrap()
+  end
 
   defp media(_message, _type), do: []
 
@@ -160,7 +154,7 @@ defmodule Vibe.Gateway.Telegram.Update do
     file_id = optional_field(file, :file_id)
 
     if file_id do
-      %{
+      %Media{
         path: "telegram:file_id:#{file_id}",
         mime_type: mime_type,
         filename: optional_field(file, :file_name)
@@ -303,10 +297,11 @@ defmodule Vibe.Gateway.Telegram.Update do
       cond do
         next_position <= offset -> {next_position, acc}
         position >= offset + length -> {next_position, acc}
-        true -> {next_position, acc <> grapheme}
+        true -> {next_position, [acc, grapheme]}
       end
     end)
     |> elem(1)
+    |> IO.iodata_to_binary()
   end
 
   defp utf16_length(text),

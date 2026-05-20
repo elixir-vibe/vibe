@@ -8,7 +8,7 @@ defmodule Vibe.Gateway.Message do
   or any other platform SDK.
   """
 
-  alias Vibe.Gateway.Source
+  alias Vibe.Gateway.{Media, Source}
 
   @message_types [:text, :command, :photo, :video, :audio, :voice, :document, :sticker, :location]
 
@@ -102,7 +102,7 @@ defmodule Vibe.Gateway.Message do
     path = Map.get(media, :path)
 
     if is_binary(path) do
-      %{
+      %Media{
         path: path,
         mime_type: Map.get(media, :mime_type),
         filename: Map.get(media, :filename)
@@ -112,8 +112,7 @@ defmodule Vibe.Gateway.Message do
     end
   end
 
-  defp normalize_media_entry(path) when is_binary(path),
-    do: %{path: path, mime_type: nil, filename: nil}
+  defp normalize_media_entry(path) when is_binary(path), do: %Media{path: path}
 
   defp type!(type) when type in @message_types, do: type
 
