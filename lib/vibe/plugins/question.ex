@@ -15,7 +15,7 @@ defmodule Vibe.Plugins.Question do
 
   @impl true
   def init(_opts) do
-    ensure_table!()
+    Vibe.Plugin.Waiters.ensure_table!(@table)
     {:ok, %{}}
   end
 
@@ -28,7 +28,7 @@ defmodule Vibe.Plugins.Question do
         %{session_id: session_id},
         state
       ) do
-    case pop_waiter(session_id) do
+    case Vibe.Plugin.Waiters.pop(@table, session_id) do
       {:ok, pid} -> send(pid, {:question_answered, answer})
       :error -> :ok
     end
@@ -41,7 +41,7 @@ defmodule Vibe.Plugins.Question do
         %{session_id: session_id},
         state
       ) do
-    case pop_waiter(session_id) do
+    case Vibe.Plugin.Waiters.pop(@table, session_id) do
       {:ok, pid} -> send(pid, {:question_cancelled})
       :error -> :ok
     end
@@ -52,40 +52,8 @@ defmodule Vibe.Plugins.Question do
   def handle_event(_event, _context, state), do: {:ok, state}
 
   @spec register_waiter(String.t(), pid()) :: :ok
-  def register_waiter(session_id, pid) do
-    ensure_table!()
-    :ets.insert(@table, {session_id, pid})
-    :ok
-  end
+  def register_waiter(session_id, pid), do: Vibe.Plugin.Waiters.register(@table, session_id, pid)
 
   @spec unregister_waiter(String.t()) :: :ok
-  def unregister_waiter(session_id) do
-    if table?(), do: :ets.delete(@table, session_id)
-    :ok
-  end
-
-  defp pop_waiter(session_id) do
-    if table?() do
-      case :ets.lookup(@table, session_id) do
-        [{^session_id, pid}] ->
-          :ets.delete(@table, session_id)
-          {:ok, pid}
-
-        [] ->
-          :error
-      end
-    else
-      :error
-    end
-  end
-
-  defp ensure_table! do
-    unless table?() do
-      :ets.new(@table, [:named_table, :public, :set])
-    end
-  rescue
-    ArgumentError -> :ok
-  end
-
-  defp table?, do: :ets.info(@table) != :undefined
+  def unregister_waiter(session_id), do: Vibe.Plugin.Waiters.unregister(@table, session_id)
 end

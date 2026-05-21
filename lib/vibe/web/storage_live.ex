@@ -99,11 +99,7 @@ defmodule Vibe.Web.StorageLive do
   end
 
   defp artifact_summary_text(%{count: count, bytes: bytes}),
-    do: "#{count} / #{format_bytes(bytes)}"
-
-  defp format_bytes(bytes) when bytes >= 1_000_000, do: "#{Float.round(bytes / 1_000_000, 1)} MB"
-  defp format_bytes(bytes) when bytes >= 1_000, do: "#{Float.round(bytes / 1_000, 1)} KB"
-  defp format_bytes(bytes), do: "#{bytes} B"
+    do: "#{count} / #{Vibe.Format.bytes(bytes)}"
 
   defp table_count(%{tables: tables}, table), do: Map.get(tables, table, 0)
   defp table_count(_status, _table), do: 0

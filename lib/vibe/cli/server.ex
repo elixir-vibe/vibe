@@ -190,7 +190,7 @@ defmodule Vibe.CLI.Server do
 
   defp maybe_append(args, nil, _arg), do: args
   defp maybe_append(args, false, _arg), do: args
-  defp maybe_append(args, _value, arg), do: args ++ [arg]
+  defp maybe_append(args, _value, arg), do: List.insert_at(args, -1, arg)
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, _key, false), do: opts

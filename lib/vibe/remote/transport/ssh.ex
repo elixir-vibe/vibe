@@ -48,7 +48,13 @@ defmodule Vibe.Remote.Transport.SSH do
   @spec request(t(), map(), timeout()) :: {:ok, map()} | {:error, term()}
   def request(%__MODULE__{connection: connection}, payload, timeout \\ 5_000) do
     with {:ok, channel} <- :ssh_connection.session_channel(connection, timeout),
-         :success <- :ssh_connection.exec(connection, channel, Protocol.request(payload), timeout),
+         :success <-
+           :ssh_connection.exec(
+             connection,
+             channel,
+             Protocol.request(payload) |> to_charlist(),
+             timeout
+           ),
          request_timeout = request_timeout(payload, timeout),
          {:ok, data} <- collect_response(connection, channel, request_timeout),
          {:ok, decoded} <- Jason.decode(data) do

@@ -8,6 +8,8 @@ defmodule Vibe.Gateway.Source do
   model without leaking platform SDK structs into agent code.
   """
 
+  alias Vibe.Gateway.Options
+
   @enforce_keys [:platform, :chat_id, :chat_type]
   defstruct [
     :platform,
@@ -41,13 +43,13 @@ defmodule Vibe.Gateway.Source do
     %__MODULE__{
       platform: platform,
       chat_id: required_string!(opts, :chat_id),
-      chat_name: optional_string(opts, :chat_name),
+      chat_name: Options.optional_string(opts, :chat_name),
       chat_type: chat_type!(Keyword.get(opts, :chat_type, :dm)),
-      user_id: optional_string(opts, :user_id),
-      user_name: optional_string(opts, :user_name),
-      thread_id: optional_string(opts, :thread_id),
-      chat_topic: optional_string(opts, :chat_topic),
-      message_id: optional_string(opts, :message_id)
+      user_id: Options.optional_string(opts, :user_id),
+      user_name: Options.optional_string(opts, :user_name),
+      thread_id: Options.optional_string(opts, :thread_id),
+      chat_topic: Options.optional_string(opts, :chat_topic),
+      message_id: Options.optional_string(opts, :message_id)
     }
   end
 
@@ -71,16 +73,6 @@ defmodule Vibe.Gateway.Source do
       {:ok, value} when is_binary(value) and value != "" -> value
       {:ok, value} when is_integer(value) -> Integer.to_string(value)
       _other -> raise ArgumentError, "missing required gateway source #{key}"
-    end
-  end
-
-  defp optional_string(opts, key) do
-    case Keyword.get(opts, key) do
-      nil -> nil
-      "" -> nil
-      value when is_binary(value) -> value
-      value when is_integer(value) -> Integer.to_string(value)
-      value -> to_string(value)
     end
   end
 

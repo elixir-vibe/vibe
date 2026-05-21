@@ -4,8 +4,8 @@ defmodule Vibe.UI.SlashCommands.Commands do
 
   alias Vibe.UI.Event
   alias Vibe.UI.Selector
-  alias Vibe.UI.SlashCommands.Spec
   alias Vibe.UI.SlashCommands.Registry
+  alias Vibe.UI.SlashCommands.Spec
 
   @impl true
   def spec,

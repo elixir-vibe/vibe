@@ -24,7 +24,7 @@ defmodule Vibe.UI.SlashCommands.Goal do
       "resume" -> {:command, {:update_goal_status, %{status: :active}}}
       "complete" -> {:command, {:update_goal_status, %{status: :complete}}}
       "blocked" -> {:command, {:update_goal_status, %{status: :blocked}}}
-      _objective -> set_goal(args)
+      _objective -> set_goal(args, ui_state)
     end
   end
 
@@ -41,20 +41,20 @@ defmodule Vibe.UI.SlashCommands.Goal do
      ]}
   end
 
-  defp set_goal(objective) do
+  defp set_goal(objective, ui_state) do
     case Vibe.Goals.validate_objective(objective) do
       {:ok, objective} ->
         {:command, {:set_goal, %{objective: objective}}}
 
       {:error, :empty_objective} ->
-        notice(:warning, "Usage: /goal <objective>")
+        notice(:warning, "Usage: /goal <objective>", ui_state.session_id)
 
       {:error, {:objective_too_long, actual, max}} ->
-        notice(:warning, "Goal is too long: #{actual}/#{max} characters")
+        notice(:warning, "Goal is too long: #{actual}/#{max} characters", ui_state.session_id)
     end
   end
 
-  defp notice(level, text) do
-    {:events, [Event.new(:notification_added, nil, %{level: level, text: text})]}
+  defp notice(level, text, session_id) do
+    {:events, [Event.new(:notification_added, session_id, %{level: level, text: text})]}
   end
 end

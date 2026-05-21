@@ -141,6 +141,22 @@ defmodule Vibe.ToolOutput.Window do
   end
 
   defp take_head_bytes(lines, limit_bytes) do
+    case take_complete_lines(lines, limit_bytes) do
+      [] -> {[take_bytes(hd(lines) || "", limit_bytes, :head)], true}
+      output -> {Enum.reverse(output), false}
+    end
+  end
+
+  defp take_tail_bytes(lines, limit_bytes) do
+    reversed_lines = Enum.reverse(lines)
+
+    case take_complete_lines(reversed_lines, limit_bytes) do
+      [] -> {[take_bytes(hd(reversed_lines) || "", limit_bytes, :tail)], true}
+      output -> {output, false}
+    end
+  end
+
+  defp take_complete_lines(lines, limit_bytes) do
     {visible, _bytes} =
       Enum.reduce_while(lines, {[], 0}, fn line, {acc, bytes} ->
         line_bytes = byte_size(line) + if(acc == [], do: 0, else: 1)
@@ -152,30 +168,7 @@ defmodule Vibe.ToolOutput.Window do
         end
       end)
 
-    case Enum.reverse(visible) do
-      [] -> {[take_bytes(hd(lines) || "", limit_bytes, :head)], true}
-      output -> {output, false}
-    end
-  end
-
-  defp take_tail_bytes(lines, limit_bytes) do
-    {visible, _bytes} =
-      lines
-      |> Enum.reverse()
-      |> Enum.reduce_while({[], 0}, fn line, {acc, bytes} ->
-        line_bytes = byte_size(line) + if(acc == [], do: 0, else: 1)
-
-        if bytes + line_bytes <= limit_bytes do
-          {:cont, {[line | acc], bytes + line_bytes}}
-        else
-          {:halt, {acc, bytes}}
-        end
-      end)
-
-    case visible do
-      [] -> {[take_bytes(List.last(lines) || "", limit_bytes, :tail)], true}
-      output -> {output, false}
-    end
+    visible
   end
 
   defp take_bytes(text, limit_bytes, direction) do

@@ -5,7 +5,7 @@ defmodule Vibe.Remote.SSH.Daemon do
 
   @default_user "vibe"
 
-  @type daemon_ref :: pid() | reference()
+  @type daemon_ref :: :ssh.daemon_ref()
 
   @spec start(keyword()) :: {:ok, daemon_ref()} | {:error, term()}
   def start(opts \\ []) do
@@ -19,17 +19,17 @@ defmodule Vibe.Remote.SSH.Daemon do
     :ssh.daemon(port, daemon_options(user, password, opts))
   end
 
-  @spec stop(daemon_ref()) :: :ok | {:error, term()}
+  @spec stop(daemon_ref()) :: :ok
   def stop(ref), do: :ssh.stop_daemon(ref)
 
-  @spec info(daemon_ref()) :: {:ok, keyword()} | {:error, term()}
+  @spec info(daemon_ref()) :: {:ok, keyword()} | {:error, :bad_daemon_ref}
   def info(ref), do: :ssh.daemon_info(ref)
 
   @spec port(daemon_ref()) :: {:ok, non_neg_integer()} | {:error, term()}
   def port(ref) do
-    with {:ok, info} <- info(ref),
-         port when is_integer(port) <- Keyword.fetch!(info, :port) do
-      {:ok, port}
+    case info(ref) do
+      {:ok, info} -> {:ok, Keyword.fetch!(info, :port)}
+      {:error, reason} -> {:error, reason}
     end
   end
 

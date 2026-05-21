@@ -363,7 +363,7 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp safe_pipeline_step(module, entry, callback, args, {:ok, state}) do
-    full_args = args ++ [entry.state]
+    full_args = List.insert_at(args, -1, entry.state)
 
     if function_exported?(module, callback, length(full_args)) do
       case apply(module, callback, full_args) do

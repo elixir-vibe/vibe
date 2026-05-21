@@ -9,7 +9,7 @@ defmodule Vibe.TUI.Widgets.ListPanel do
     items = Map.get(props, :items, [])
     selected = Map.get(props, :selected, 0)
     limit = normalize_limit(Map.get(props, :limit, 8))
-    offset = Map.get(props, :offset, viewport_offset(length(items), selected, limit))
+    offset = Map.get(props, :offset, Vibe.TUI.Viewport.offset(length(items), selected, limit))
 
     rows =
       items
@@ -61,7 +61,6 @@ defmodule Vibe.TUI.Widgets.ListPanel do
     end
   end
 
-  defp detail(nil, _width, _theme), do: ""
   defp detail("", _width, _theme), do: ""
 
   defp detail(detail, width, theme),
@@ -74,14 +73,6 @@ defmodule Vibe.TUI.Widgets.ListPanel do
 
   defp normalize_limit(limit) when is_integer(limit) and limit > 0, do: limit
   defp normalize_limit(_limit), do: 8
-
-  defp viewport_offset(count, selected, limit) do
-    cond do
-      count <= limit -> 0
-      selected < limit -> 0
-      true -> min(selected - limit + 1, count - limit)
-    end
-  end
 
   defp blank_line(width, theme), do: Widget.background_line("", width, theme, :input_bg)
 

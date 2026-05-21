@@ -80,20 +80,7 @@ defmodule Vibe.Files do
 
   defp image_result(path, absolute, content, stat, opts) do
     mime_type = Image.mime_type(absolute)
-    {width, height} = Image.dimensions(content, mime_type)
-
-    image = %Image{
-      data: Base.encode64(content),
-      mime_type: mime_type,
-      path: path,
-      filename: Path.basename(path),
-      size_bytes: stat.size,
-      width: width,
-      height: height,
-      original_width: width,
-      original_height: height,
-      was_resized?: false
-    }
+    image = Image.from_binary(path, content, mime_type, stat)
 
     with {:ok, image} <- maybe_resize_image(image, opts),
          {:ok, stored} <- Artifacts.maybe_store_image(image, opts) do

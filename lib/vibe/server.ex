@@ -130,8 +130,7 @@ defmodule Vibe.Server do
   end
 
   defp tls_distribution? do
-    match?(%{protos: protos} when is_list(protos), :net_kernel.get_state()) and
-      :inet_tls_dist in Map.get(:net_kernel.get_state(), :protos, [])
+    :inet_tls_dist in Map.get(:net_kernel.get_state(), :protos, [])
   rescue
     _error -> false
   end

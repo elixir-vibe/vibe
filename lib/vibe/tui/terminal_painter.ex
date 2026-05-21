@@ -71,7 +71,7 @@ defmodule Vibe.TUI.TerminalPainter do
 
     frame = wrap_frame(write_lines(lines))
 
-    {frame ++ [position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
+    {[frame, position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
   end
 
   defp do_render(lines, cursor, painter) do
@@ -111,7 +111,7 @@ defmodule Vibe.TUI.TerminalPainter do
       end
 
     frame = wrap_frame(body)
-    {frame ++ [position_cursor(cursor, desired_vt)], commit(painter, lines, cursor, desired_vt)}
+    {[frame, position_cursor(cursor, desired_vt)], commit(painter, lines, cursor, desired_vt)}
   end
 
   # -- Same viewport: patch only changed lines --------------------------------
@@ -141,13 +141,13 @@ defmodule Vibe.TUI.TerminalPainter do
     ]
 
     frame = wrap_frame(body)
-    {frame ++ [position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
+    {[frame, position_cursor(cursor, vt)], commit(painter, lines, cursor, vt)}
   end
 
   # -- Frame helpers ----------------------------------------------------------
 
   defp wrap_frame(body),
-    do: [sync_begin(), cursor_hide(), autowrap_off() | List.wrap(body)] ++ [sync_end()]
+    do: [sync_begin(), cursor_hide(), autowrap_off(), List.wrap(body), sync_end()]
 
   defp position_cursor({row, col}, vt),
     do: [ANSI.cursor(max(row - vt + 1, 1), col), autowrap_on(), cursor_show()]

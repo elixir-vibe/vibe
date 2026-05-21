@@ -17,7 +17,7 @@ defmodule Vibe.Plugins.Safety do
 
   @impl true
   def init(_opts) do
-    ensure_table!()
+    Vibe.Plugin.Waiters.ensure_table!(@table)
     {:ok, %{}}
   end
 
@@ -38,7 +38,7 @@ defmodule Vibe.Plugins.Safety do
         %{session_id: session_id},
         state
       ) do
-    case pop_waiter(session_id) do
+    case Vibe.Plugin.Waiters.pop(@table, session_id) do
       {:ok, pid} -> send(pid, {:safety_confirmed, answer == "Yes, proceed"})
       :error -> :ok
     end
@@ -51,7 +51,7 @@ defmodule Vibe.Plugins.Safety do
         %{session_id: session_id},
         state
       ) do
-    case pop_waiter(session_id) do
+    case Vibe.Plugin.Waiters.pop(@table, session_id) do
       {:ok, pid} -> send(pid, {:safety_confirmed, false})
       :error -> :ok
     end
@@ -103,35 +103,7 @@ defmodule Vibe.Plugins.Safety do
     end
   end
 
-  defp register_waiter(session_id, pid) do
-    ensure_table!()
-    :ets.insert(@table, {session_id, pid})
-  end
+  defp register_waiter(session_id, pid), do: Vibe.Plugin.Waiters.register(@table, session_id, pid)
 
-  defp unregister_waiter(session_id) do
-    if table?(), do: :ets.delete(@table, session_id)
-  end
-
-  defp pop_waiter(session_id) do
-    if table?() do
-      case :ets.lookup(@table, session_id) do
-        [{^session_id, pid}] ->
-          :ets.delete(@table, session_id)
-          {:ok, pid}
-
-        [] ->
-          :error
-      end
-    else
-      :error
-    end
-  end
-
-  defp ensure_table! do
-    unless table?(), do: :ets.new(@table, [:named_table, :public, :set])
-  rescue
-    ArgumentError -> :ok
-  end
-
-  defp table?, do: :ets.info(@table) != :undefined
+  defp unregister_waiter(session_id), do: Vibe.Plugin.Waiters.unregister(@table, session_id)
 end

@@ -127,15 +127,10 @@ defmodule Vibe.CLI.Sessions do
       {:ok, _node} ->
         case Vibe.Remote.Session.list() do
           {:ok, sessions} -> latest_live_session_id(sessions)
-          sessions when is_list(sessions) -> latest_live_session_id(sessions)
           {:error, _reason} -> nil
-          {:badrpc, _reason} -> nil
         end
 
       {:error, _reason} ->
-        nil
-
-      {:badrpc, _reason} ->
         nil
     end
   end

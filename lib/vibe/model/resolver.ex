@@ -69,7 +69,7 @@ defmodule Vibe.Model.Resolver do
   defp try_fuzzy(spec) do
     case search_catalog(spec) do
       {:ok, model} -> {:ok, model, nil}
-      :not_found -> {:error, :not_found}
+      :not_found -> :not_found
     end
   end
 

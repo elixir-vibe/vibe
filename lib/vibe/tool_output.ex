@@ -32,7 +32,7 @@ defmodule Vibe.ToolOutput do
     max_bytes = normalize_max_bytes(max_bytes)
 
     if byte_size(text) <= max_bytes do
-      %{text: text, omitted_bytes: 0, limit_bytes: max_bytes, truncated?: false}
+      text_result(text, 0, max_bytes, false)
     else
       omitted_bytes = byte_size(text) - max_bytes
 
@@ -40,19 +40,23 @@ defmodule Vibe.ToolOutput do
         binary_part(text, 0, max_bytes) <>
           "\n\n[tool output truncated: #{omitted_bytes} bytes omitted; limit=#{max_bytes} bytes]"
 
-      %{text: limited, omitted_bytes: omitted_bytes, limit_bytes: max_bytes, truncated?: true}
+      text_result(limited, omitted_bytes, max_bytes, true)
     end
   end
 
   def limit_text_result(text, opts) when is_binary(text) and is_list(opts) do
     window = Vibe.ToolOutput.Window.build(text, opts)
 
-    %{
-      text: Vibe.ToolOutput.Window.text_with_notice(text, opts),
-      omitted_bytes: max(window.total_bytes - window.output_bytes, 0),
-      limit_bytes: window.limit_bytes,
-      truncated?: window.truncated?
-    }
+    text_result(
+      Vibe.ToolOutput.Window.text_with_notice(text, opts),
+      max(window.total_bytes - window.output_bytes, 0),
+      window.limit_bytes,
+      window.truncated?
+    )
+  end
+
+  defp text_result(text, omitted_bytes, limit_bytes, truncated?) do
+    %{text: text, omitted_bytes: omitted_bytes, limit_bytes: limit_bytes, truncated?: truncated?}
   end
 
   @spec limit_content(String.t(), keyword()) :: %{

@@ -24,9 +24,8 @@ defmodule Vibe.Remote.Transport.Distribution do
     with {:ok, %{"node" => node_name} = metadata} <- Metadata.read(),
          :ok <- verify_build(metadata),
          :ok <- check_tls_compatibility(metadata),
-         {:ok, node} <- parse_node(node_name),
-         {:ok, node} <- connect_node(node) do
-      {:ok, node}
+         {:ok, node} <- parse_node(node_name) do
+      connect_node(node)
     end
   end
 

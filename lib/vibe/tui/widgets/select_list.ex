@@ -17,19 +17,11 @@ defmodule Vibe.TUI.Widgets.SelectList do
         items: items,
         selected: selected,
         limit: limit,
-        offset: viewport_offset(length(items), selected, limit),
+        offset: Vibe.TUI.Viewport.offset(length(items), selected, limit),
         empty_message: Map.get(props, :empty_message)
       },
       width,
       theme
     )
-  end
-
-  defp viewport_offset(count, selected, limit) do
-    cond do
-      count <= limit -> 0
-      selected < limit -> 0
-      true -> min(selected - limit + 1, count - limit)
-    end
   end
 end

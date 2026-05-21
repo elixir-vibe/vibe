@@ -8,7 +8,7 @@ defmodule Vibe.Gateway.Message do
   or any other platform SDK.
   """
 
-  alias Vibe.Gateway.{Media, Source}
+  alias Vibe.Gateway.{Media, Options, Source}
 
   @message_types [:text, :command, :photo, :video, :audio, :voice, :document, :sticker, :location]
 
@@ -49,11 +49,11 @@ defmodule Vibe.Gateway.Message do
       source: source,
       text: Keyword.get(opts, :text, "") || "",
       type: type!(Keyword.get(opts, :type, :text)),
-      id: optional_string(opts, :id),
+      id: Options.optional_string(opts, :id),
       platform_update_id: Keyword.get(opts, :platform_update_id),
       media: normalize_media(Keyword.get(opts, :media, [])),
-      reply_to_message_id: optional_string(opts, :reply_to_message_id),
-      reply_to_text: optional_string(opts, :reply_to_text),
+      reply_to_message_id: Options.optional_string(opts, :reply_to_message_id),
+      reply_to_text: Options.optional_string(opts, :reply_to_text),
       timestamp: Keyword.get(opts, :timestamp),
       metadata: Keyword.get(opts, :metadata, %{})
     }
@@ -138,16 +138,6 @@ defmodule Vibe.Gateway.Message do
       {key, value}, acc when is_atom(key) ->
         Map.put(acc, key, value)
     end)
-  end
-
-  defp optional_string(opts, key) do
-    case Keyword.get(opts, key) do
-      nil -> nil
-      "" -> nil
-      value when is_binary(value) -> value
-      value when is_integer(value) -> Integer.to_string(value)
-      value -> to_string(value)
-    end
   end
 
   defp normalize_dashes(text) do

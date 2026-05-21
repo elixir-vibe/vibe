@@ -35,11 +35,11 @@ defmodule Vibe.Tool.Display.Read do
   end
 
   defp body(%{content: content} = result) when is_binary(content) do
-    kind = if markdown?(result), do: :markdown, else: :source
+    kind = if Util.markdown?(result), do: :markdown, else: :source
 
     opts = [
       language: Map.get(result, :language),
-      read_limit_truncated?: read_limit_truncated?(result),
+      read_limit_truncated?: Util.read_limit_truncated?(result),
       truncation: :head
     ]
 
@@ -50,15 +50,4 @@ defmodule Vibe.Tool.Display.Read do
 
   defp format_value(value) when is_binary(value), do: value
   defp format_value(value), do: inspect(value, pretty: true, limit: 20)
-
-  defp read_limit_truncated?(result),
-    do: Map.get(result, :omitted_lines, 0) > 0 or Map.get(result, :omitted_bytes, 0) > 0
-
-  defp markdown?(%{language: language}) when is_binary(language),
-    do: language in ["markdown", "md"]
-
-  defp markdown?(%{path: path}) when is_binary(path),
-    do: String.downcase(Path.extname(path)) in [".md", ".markdown"]
-
-  defp markdown?(_result), do: false
 end

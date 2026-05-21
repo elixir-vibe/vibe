@@ -191,10 +191,10 @@ defmodule Vibe.Web.Components.Tool do
 
   defp image_size(_image), do: nil
 
-  defp byte_size_label(%{size_bytes: bytes}) when is_integer(bytes), do: format_bytes(bytes)
+  defp byte_size_label(%{size_bytes: bytes}) when is_integer(bytes), do: Vibe.Format.bytes(bytes)
 
   defp byte_size_label(%Content.Image{data: data}) when is_binary(data),
-    do: data |> byte_size() |> format_bytes()
+    do: data |> byte_size() |> Vibe.Format.bytes()
 
   defp byte_size_label(_image), do: nil
 
@@ -204,10 +204,6 @@ defmodule Vibe.Web.Components.Tool do
     do: byte_size(data) >= 500_000
 
   defp collapsible_image?(_image), do: false
-
-  defp format_bytes(bytes) when bytes >= 1_000_000, do: "#{Float.round(bytes / 1_000_000, 1)} MB"
-  defp format_bytes(bytes) when bytes >= 1_000, do: "#{Float.round(bytes / 1_000, 1)} KB"
-  defp format_bytes(bytes), do: "#{bytes} B"
 
   defp text_block(kind, label, text, truncate?) do
     %Body{

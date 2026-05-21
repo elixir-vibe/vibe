@@ -47,7 +47,7 @@ defmodule Vibe.TUI.Widgets.Tools.Read do
       |> TextTruncation.lines(enabled?: Map.get(tool, :truncate?, true), limit: 8)
 
     content_lines =
-      if markdown?(result) do
+      if Vibe.Tool.Display.Util.markdown?(result) do
         truncation.lines
         |> Enum.join("\n")
         |> Markdown.render(max(width - 2, 1), theme)
@@ -82,7 +82,7 @@ defmodule Vibe.TUI.Widgets.Tools.Read do
   defp maybe_append_file_limit_footer(lines, %{truncated?: true}, _result, _theme), do: lines
 
   defp maybe_append_file_limit_footer(lines, _truncation, result, theme) do
-    if read_limit_truncated?(result) do
+    if Vibe.Tool.Display.Util.read_limit_truncated?(result) do
       lines
       |> Lines.join([""])
       |> Lines.join([read_limit_footer(theme)])
@@ -91,20 +91,9 @@ defmodule Vibe.TUI.Widgets.Tools.Read do
     end
   end
 
-  defp read_limit_truncated?(result),
-    do: Map.get(result, :omitted_lines, 0) > 0 or Map.get(result, :omitted_bytes, 0) > 0
-
   defp read_limit_footer(theme) do
     [Widget.spaces(2), Theme.fg(theme, :muted, "… file truncated by read limit")]
   end
-
-  defp markdown?(%{language: language}) when is_binary(language),
-    do: language in ["markdown", "md"]
-
-  defp markdown?(%{path: path}) when is_binary(path),
-    do: String.downcase(Path.extname(path)) in [".md", ".markdown"]
-
-  defp markdown?(_result), do: false
 
   defp display_line(line, width) do
     limit = max(width * 2, 200)

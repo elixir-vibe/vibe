@@ -50,28 +50,31 @@ defmodule Vibe.Image do
   @spec supported?(String.t()) :: boolean()
   def supported?(path), do: is_binary(mime_type(path))
 
+  @spec from_binary(String.t(), binary(), String.t(), File.Stat.t()) :: t()
+  def from_binary(path, binary, mime_type, %File.Stat{} = stat) do
+    {width, height} = dimensions(binary, mime_type)
+
+    %__MODULE__{
+      data: Base.encode64(binary),
+      mime_type: mime_type,
+      path: path,
+      filename: Path.basename(path),
+      size_bytes: stat.size,
+      width: width,
+      height: height,
+      original_width: width,
+      original_height: height,
+      was_resized?: false
+    }
+  end
+
   @spec from_file(String.t(), keyword()) :: {:ok, t()} | {:error, String.t()}
   def from_file(path, opts \\ []) when is_binary(path) do
     with {:ok, absolute} <- resolve(path, opts),
          mime_type when is_binary(mime_type) <- mime_type(absolute),
          {:ok, stat} <- File.stat(absolute),
          {:ok, binary} <- File.read(absolute) do
-      {width, height} = dimensions(binary, mime_type)
-
-      image = %__MODULE__{
-        data: Base.encode64(binary),
-        mime_type: mime_type,
-        path: path,
-        filename: Path.basename(path),
-        size_bytes: stat.size,
-        width: width,
-        height: height,
-        original_width: width,
-        original_height: height,
-        was_resized?: false
-      }
-
-      maybe_resize(image, opts)
+      path |> from_binary(binary, mime_type, stat) |> maybe_resize(opts)
     else
       nil -> {:error, "unsupported image type: #{path}"}
       {:error, reason} -> {:error, to_string(reason)}

@@ -113,10 +113,9 @@ defmodule Vibe.Tool.Display.Eval do
   end
 
   defp timeout_summary(tool) do
-    case Map.get(tool, :args) || %{} do
-      %{timeout: timeout} -> format_timeout(timeout)
-      %{"timeout" => timeout} -> format_timeout(timeout)
-      _args -> nil
+    case Util.timeout_arg(tool) do
+      nil -> nil
+      timeout -> format_timeout(timeout)
     end
   end
 
