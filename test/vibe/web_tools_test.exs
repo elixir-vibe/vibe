@@ -28,6 +28,28 @@ defmodule Vibe.WebToolsTest do
     assert result.text =~ "Hello **web**."
   end
 
+  test "fetch retries transient transport errors" do
+    stub = {__MODULE__, :retry_fetch}
+
+    Req.Test.expect(stub, fn conn ->
+      Req.Test.transport_error(conn, :timeout)
+    end)
+
+    Req.Test.expect(stub, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_header("content-type", "text/html")
+      |> Req.Test.html(~s(<html><body><h1>Recovered</h1></body></html>))
+    end)
+
+    assert {:ok, result} =
+             Vibe.WebTools.fetch("https://example.test/retry",
+               format: :html,
+               req_options: [plug: {Req.Test, stub}, retry_delay: fn _ -> 0 end]
+             )
+
+    assert result.text =~ "Recovered"
+  end
+
   test "fetch follows redirects and records final URL" do
     stub = {__MODULE__, :redirect_fetch}
 

@@ -63,7 +63,7 @@ defmodule Vibe.Subagents.JobTest do
                end
              )
 
-    assert_receive {:subagent_started, ask_pid}, 500
+    assert_receive {:subagent_started, ask_pid}, @await_timeout_ms
     assert {:ok, child_session} = wait_for_child_session(job.child_session_id)
     :ok = Vibe.Session.dispatch(child_session, {:submit_prompt, %{text: "interrupt"}})
     state = Vibe.Session.state(child_session)

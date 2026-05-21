@@ -48,7 +48,8 @@ defmodule Vibe.WebTools.Providers.Exa do
       Req.post(endpoint(),
         json: body,
         auth: {:bearer, api_key},
-        receive_timeout: opt(opts, :timeout, @default_timeout_ms)
+        receive_timeout: opt(opts, :timeout, @default_timeout_ms),
+        retry: :safe_transient
       )
       |> case do
         {:ok, %{status: status, body: body}} when status in 200..299 ->

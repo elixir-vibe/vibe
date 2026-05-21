@@ -51,7 +51,8 @@ defmodule Vibe.WebTools.Providers.ReqFetch do
       Keyword.merge(Keyword.get(context.opts, :req_options, []),
         headers: context.headers,
         redirect: false,
-        receive_timeout: context.timeout
+        receive_timeout: context.timeout,
+        retry: :safe_transient
       )
     )
     |> handle_response(url, context)

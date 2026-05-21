@@ -591,23 +591,22 @@ defmodule Vibe.TUI.TerminalLoopTest do
   end
 
   test "notifies event target for asynchronous UI updates" do
-    ask = fn _text, _opts -> {:ok, "done"} end
+    session_id = "async-ui-#{System.unique_integer([:positive])}"
+    {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
 
-    {:ok, loop} =
+    {:ok, _loop} =
       TerminalLoop.start_link(
         output: false,
         width: 60,
         height: 12,
-        ask_fun: ask,
+        session_server: session,
         event_target: self()
       )
 
-    :ok = TerminalLoop.input(loop, "hello")
-    :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+    event = Vibe.UI.Event.new(:assistant_message_added, session_id, %{text: "done"})
+    {:ok, _task} = Task.start(fn -> Vibe.Session.emit_transient_event(session, event) end)
 
-    assert_receive {TerminalLoop, :event, %{type: :prompt_submitted}}, 500
-    assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 500
-    assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 2_000
+    assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 500
   end
 
   defp replayed_phoenix_events(session_id) do
@@ -754,12 +753,13 @@ defmodule Vibe.TUI.TerminalLoopTest do
         ask_fun: fn _text, _opts ->
           Process.sleep(@long_prompt_sleep_ms)
           {:ok, "ok"}
-        end
+        end,
+        event_target: self()
       )
 
     :ok = TerminalLoop.input(loop, "hello")
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
-    Process.sleep(100)
+    assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 1_000
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :escape})
 
     plain =

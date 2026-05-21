@@ -51,8 +51,11 @@ defmodule Vibe.TelemetryTest do
       }
     })
 
-    assert_event(fn event -> event.event == [:finch, :request, :start] end)
-    [%{metadata: metadata}] = Vibe.Telemetry.recent(1)
+    %{metadata: metadata} =
+      assert_event(fn event ->
+        event.event == [:finch, :request, :start] and
+          get_in(event.metadata, [:request, "host"]) == "example.test"
+      end)
 
     assert metadata.request["host"] == "example.test"
     refute inspect(metadata) =~ "secret"
@@ -66,12 +69,21 @@ defmodule Vibe.TelemetryTest do
       "name" => Req.Finch
     })
 
-    assert_event(fn event -> event.event == [:finch, :request, :stop] end)
-    [%{metadata: metadata}] = Vibe.Telemetry.recent(1)
+    %{metadata: metadata} =
+      assert_event(fn event ->
+        event.event == [:finch, :request, :stop] and
+          get_in(event.metadata, [:request, "host"]) == "auth.openai.com"
+      end)
 
     assert metadata.request["host"] == "auth.openai.com"
     assert metadata["result"] == ["ok", %{:status => 200}]
-    assert [%{metadata: stored_metadata}] = Vibe.Telemetry.all(limit: 1)
+
+    %{metadata: stored_metadata} =
+      Vibe.Telemetry.all()
+      |> Enum.find(fn event ->
+        get_in(event.metadata, [:request, "host"]) == "auth.openai.com"
+      end)
+
     assert stored_metadata.request["host"] == "auth.openai.com"
     assert stored_metadata["result"] == ["ok", %{:status => 200}]
     refute inspect(stored_metadata) =~ <<1, 2, 3>>
@@ -91,15 +103,17 @@ defmodule Vibe.TelemetryTest do
   end
 
   defp wait_for_event(fun, deadline) do
-    if Enum.any?(Vibe.Telemetry.all(), fun) do
-      :ok
-    else
-      if System.monotonic_time(:millisecond) < deadline do
-        Process.sleep(10)
-        wait_for_event(fun, deadline)
-      else
-        flunk("telemetry event was not stored")
-      end
+    case Enum.find(Vibe.Telemetry.all(), fun) do
+      nil ->
+        if System.monotonic_time(:millisecond) < deadline do
+          Process.sleep(10)
+          wait_for_event(fun, deadline)
+        else
+          flunk("telemetry event was not stored")
+        end
+
+      event ->
+        event
     end
   end
 end
