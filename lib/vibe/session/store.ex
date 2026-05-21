@@ -7,7 +7,7 @@ defmodule Vibe.Session.Store do
 
   alias Vibe.Repo
   alias Vibe.Session.Store.{Listing, Summary}
-  alias Vibe.Storage.Representation.SessionLog
+  alias Vibe.Storage.Representation.{EvalSnapshot, SessionLog}
   alias Vibe.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent, UIEventFTS}
   alias Vibe.Trajectory
   alias Vibe.Event
@@ -186,7 +186,7 @@ defmodule Vibe.Session.Store do
     Vibe.Storage.ensure!()
     now = DateTime.utc_now() |> Vibe.Storage.normalize_datetime()
     ensure_session(session_id, now)
-    snapshot = :erlang.term_to_binary(%{binding: binding, env: env})
+    snapshot = EvalSnapshot.encode(binding, env)
 
     %EvalState{session_id: session_id, state: snapshot, updated_at: now}
     |> Vibe.Repo.insert(
@@ -202,7 +202,7 @@ defmodule Vibe.Session.Store do
 
     case Vibe.Repo.get(EvalState, session_id) do
       %EvalState{state: state} ->
-        case SessionLog.decode_eval_state_binary(state) do
+        case EvalSnapshot.decode(state) do
           {:ok, decoded} -> decoded
           :error -> nil
         end

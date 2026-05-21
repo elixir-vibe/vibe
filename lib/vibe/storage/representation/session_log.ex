@@ -78,37 +78,6 @@ defmodule Vibe.Storage.Representation.SessionLog do
     |> Jason.decode!()
   end
 
-  @spec eval_state_entry(String.t(), Code.binding(), Macro.Env.t()) ::
-          {:ok, map()} | {:error, term()}
-  def eval_state_entry(session_id, binding, env) do
-    snapshot = %{binding: binding, env: env}
-
-    {:ok,
-     %{
-       "entry_type" => "eval_state",
-       "session_id" => session_id,
-       "at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-       "state" => :erlang.term_to_binary(snapshot)
-     }}
-  rescue
-    exception -> {:error, exception}
-  end
-
-  @spec decode_eval_state_binary(binary()) ::
-          {:ok, %{binding: Code.binding(), env: Macro.Env.t()}} | :error
-  def decode_eval_state_binary(binary) when is_binary(binary), do: decode_eval_state(binary)
-
-  @spec decode_eval_state_line(String.t(), term()) ::
-          %{binding: Code.binding(), env: Macro.Env.t()} | term()
-  def decode_eval_state_line(line, acc) do
-    with {:ok, %{"entry_type" => "eval_state", "state" => encoded}} <- Jason.decode(line),
-         {:ok, state} <- decode_eval_state(encoded) do
-      state
-    else
-      _ -> acc
-    end
-  end
-
   @spec decode_ui_event_map(map()) :: {:ok, {non_neg_integer(), Event.t()}} | :error
   def decode_ui_event_map(map), do: decode_ui_event(map)
 
@@ -142,24 +111,6 @@ defmodule Vibe.Storage.Representation.SessionLog do
     |> Enum.flat_map(&project_trajectory_event/1)
     |> Enum.with_index(1)
     |> Enum.map(fn {event, seq} -> {seq, event} end)
-  end
-
-  defp decode_eval_state(encoded) do
-    with binary when is_binary(binary) <- maybe_base64_decode(encoded),
-         %{binding: binding, env: %Macro.Env{} = env} <- :erlang.binary_to_term(binary, [:safe]) do
-      {:ok, %{binding: binding, env: env}}
-    else
-      _ -> :error
-    end
-  rescue
-    _exception -> :error
-  end
-
-  defp maybe_base64_decode(encoded) when is_binary(encoded) do
-    case Base.decode64(encoded) do
-      {:ok, binary} -> binary
-      :error -> encoded
-    end
   end
 
   defp decode_ui_event(map) do
