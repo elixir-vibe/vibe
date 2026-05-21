@@ -111,7 +111,7 @@ defmodule Vibe.MixProject do
   end
 
   def cli do
-    [preferred_envs: [ci: :test]]
+    []
   end
 
   defp aliases do
@@ -119,7 +119,7 @@ defmodule Vibe.MixProject do
       ci: [
         "compile --warnings-as-errors",
         "format --check-formatted",
-        "test",
+        "cmd env MIX_ENV=test mix test",
         "credo --strict",
         "dialyzer",
         "ex_dna",
