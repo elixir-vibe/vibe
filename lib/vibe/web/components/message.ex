@@ -7,7 +7,7 @@ defmodule Vibe.Web.Components.Message do
     router: Vibe.Web.Router,
     statics: Vibe.Web.static_paths()
 
-  import Vibe.Web.Components.Tool, only: [tool_card: 1]
+  import Vibe.Web.Presentation.Tool, only: [tool_card: 1]
 
   alias Vibe.UI.Error
 

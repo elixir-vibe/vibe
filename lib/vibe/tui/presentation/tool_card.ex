@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.ToolCard do
+defmodule Vibe.TUI.Presentation.ToolCard do
   @moduledoc "Renders the shared card shell and title for TUI tool output."
 
   alias Vibe.TUI.{Syntax, Theme, Widget, Width}

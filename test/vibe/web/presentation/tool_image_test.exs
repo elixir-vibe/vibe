@@ -1,4 +1,4 @@
-defmodule Vibe.Web.ToolImageTest do
+defmodule Vibe.Web.Presentation.ToolImageTest do
   use Vibe.WebCase, async: false
 
   import Phoenix.Component
@@ -52,7 +52,7 @@ defmodule Vibe.Web.ToolImageTest do
 
     html =
       rendered_to_string(~H"""
-      <Vibe.Web.Components.Tool.tool_body_block block={@block} />
+      <Vibe.Web.Presentation.Tool.tool_body_block block={@block} />
       """)
 
     assert html =~ ~s(href="/sessions/session-1/artifacts/images/tiny.png")

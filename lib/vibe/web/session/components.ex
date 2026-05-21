@@ -5,7 +5,9 @@ defmodule Vibe.Web.Session.Components do
   alias Vibe.Web.Session.{Messages, Status}
 
   import PhoenixIconify, only: [icon: 1]
-  import Vibe.Web.Components.Tool, only: [tool_card: 1]
+  import Vibe.Web.Presentation.Tool, only: [tool_card: 1]
+
+  alias Vibe.Presentation.Presentable
 
   defp effort_label(effort) when effort in [:off, :minimal, :low, :medium, :high, :xhigh],
     do: Atom.to_string(effort)
@@ -155,7 +157,7 @@ defmodule Vibe.Web.Session.Components do
   end
 
   defp tool_summary(tool) do
-    display = Vibe.Tool.Presentation.from_tool(tool)
+    display = Presentable.present(tool)
 
     %{
       name: tool_name(display.name),

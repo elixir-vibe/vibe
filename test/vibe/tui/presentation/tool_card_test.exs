@@ -1,7 +1,8 @@
-defmodule Vibe.TUI.ToolCardTest do
+defmodule Vibe.TUI.Presentation.ToolCardTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{Theme, ToolCard, Width}
+  alias Vibe.TUI.{Theme, Width}
+  alias Vibe.TUI.Presentation.ToolCard
 
   test "renders title with tool name, summary, metadata, and success icon" do
     title =

@@ -1,10 +1,10 @@
-defmodule Vibe.Web.ToolImageComponentTest do
+defmodule Vibe.Web.Presentation.ToolImageComponentTest do
   use Vibe.WebCase, async: true
 
   import Phoenix.Component
 
   alias Vibe.Model.Content
-  alias Vibe.Web.Components.Tool
+  alias Vibe.Web.Presentation.Tool
 
   test "image captions include dimensions and byte size" do
     assigns = %{

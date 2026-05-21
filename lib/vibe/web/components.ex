@@ -8,7 +8,7 @@ defmodule Vibe.Web.Components do
       import Vibe.Web.Components.Core
       import Vibe.Web.Components.Message
       import Vibe.Web.Components.Shell
-      import Vibe.Web.Components.Tool
+      import Vibe.Web.Presentation.Tool
       import Vibe.Web.Plugins.Components
       import Vibe.Web.Session.Components
       import Vibe.Web.Sessions.Components

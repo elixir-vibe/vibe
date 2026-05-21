@@ -1,4 +1,4 @@
-defmodule Vibe.Web.Components.Tool do
+defmodule Vibe.Web.Presentation.Tool do
   @moduledoc "Tool result components for Vibe Web."
   use Phoenix.Component
 

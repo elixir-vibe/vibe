@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.ToolWidget do
+defmodule Vibe.TUI.Presentation.Tool do
   @moduledoc """
   Behaviour and dispatcher for built-in tool widgets.
   """
@@ -6,14 +6,13 @@ defmodule Vibe.TUI.ToolWidget do
   alias Vibe.Presentation.Presentable
   alias Vibe.Tool.Presentation, as: Display
   alias Vibe.TUI
-  alias Vibe.TUI.Presentation.ToolBlock
+  alias Vibe.TUI.Presentation.{ToolBlock, ToolCard}
 
   alias Vibe.TUI.{
     Lines,
     SourceBlock,
     TextTruncation,
     Theme,
-    ToolCard,
     ValueFormat,
     Widget
   }

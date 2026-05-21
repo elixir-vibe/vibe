@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.ToolWidgetTest do
+defmodule Vibe.TUI.Presentation.ToolTest do
   use ExUnit.Case, async: true
 
   alias Vibe.Code.AST.Result
@@ -636,7 +636,7 @@ defmodule Vibe.TUI.ToolWidgetTest do
   end
 
   test "renderer failures become error tool blocks" do
-    assert Vibe.TUI.ToolWidget.render(
+    assert Vibe.TUI.Presentation.Tool.render(
              %{name: :definitely_missing_tool, status: :ok, output: "value"},
              80,
              Theme.default()
