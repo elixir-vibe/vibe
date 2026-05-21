@@ -1,4 +1,4 @@
-defmodule Vibe.Jido do
+defmodule Vibe.Agent.Jido do
   @moduledoc "Jido agent server lifecycle bridge."
   use Jido, otp_app: :vibe
 

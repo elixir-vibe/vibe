@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.Write do
+defmodule Vibe.Tools.Write do
   @moduledoc "Model-facing file write tool."
   import JSONSpec
 
@@ -17,7 +17,7 @@ defmodule Vibe.Actions.Write do
 
   @impl true
   def run(params, _context) do
-    Vibe.Actions.ToolResult.run(fn ->
+    Vibe.Tools.ToolResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
       Vibe.Files.write_file(params.path, params.content)
     end)

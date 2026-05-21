@@ -20,12 +20,12 @@ defmodule Vibe.Agent.Coding do
     name: "vibe_coding_agent",
     model: :vibe,
     tools: [
-      Vibe.Actions.Read,
-      Vibe.Actions.Write,
-      Vibe.Actions.Edit,
-      Vibe.Actions.Eval,
-      Vibe.Actions.AST,
-      Vibe.Actions.LSP
+      Vibe.Tools.Read,
+      Vibe.Tools.Write,
+      Vibe.Tools.Edit,
+      Vibe.Tools.Eval,
+      Vibe.Tools.AST,
+      Vibe.Tools.LSP
     ],
     # Vibe sessions are long-lived and can span days or weeks. Jido.AI currently
     # requires compile-time literal options, so mirror practical_max_iterations/0.

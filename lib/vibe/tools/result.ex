@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.Result do
+defmodule Vibe.Tools.Result do
   @moduledoc "Shared tool result formatting."
   @type t :: {:ok, term()} | {:error, term()}
 

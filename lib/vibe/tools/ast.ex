@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.AST do
+defmodule Vibe.Tools.AST do
   @moduledoc "Model-facing AST search and replace tool."
   import JSONSpec
 
@@ -38,7 +38,7 @@ defmodule Vibe.Actions.AST do
 
   @impl true
   def run(params, _context) do
-    Vibe.Actions.ToolResult.run(fn ->
+    Vibe.Tools.ToolResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
 
       case Vibe.Code.AST.run(params) do

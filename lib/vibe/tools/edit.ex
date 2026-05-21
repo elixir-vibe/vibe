@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.Edit do
+defmodule Vibe.Tools.Edit do
   @moduledoc "Model-facing file edit tool."
   import JSONSpec
 
@@ -24,7 +24,7 @@ defmodule Vibe.Actions.Edit do
 
   @impl true
   def run(params, _context) do
-    Vibe.Actions.ToolResult.run(fn ->
+    Vibe.Tools.ToolResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
       Vibe.Files.edit_file(params.path, params.edits)
     end)

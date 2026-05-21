@@ -1,8 +1,8 @@
-defmodule Vibe.Actions.Eval do
+defmodule Vibe.Tools.Eval do
   @moduledoc "Model-facing Elixir eval tool."
   import JSONSpec
 
-  alias Vibe.Actions.ToolResult
+  alias Vibe.Tools.ToolResult
 
   @schema schema(
             %{

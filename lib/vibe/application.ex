@@ -16,7 +16,7 @@ defmodule Vibe.Application do
       {Phoenix.PubSub, name: Vibe.PubSub},
       Vibe.Telemetry,
       {Jido, name: Jido, otp_app: :vibe},
-      Vibe.Jido,
+      Vibe.Agent.Jido,
       Vibe.Subagents.Supervisor,
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Agent.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Code.LSP.Supervisor},

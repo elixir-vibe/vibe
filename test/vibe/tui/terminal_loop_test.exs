@@ -239,7 +239,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     code =
       ~S|%{answer: 42, elixir: System.version(), example_struct: %URI{scheme: "https", host: "example.com"}}|
 
-    assert {:ok, action_result} = Vibe.Actions.Eval.run(%{code: code}, %{session_id: session_id})
+    assert {:ok, action_result} = Vibe.Tools.Eval.run(%{code: code}, %{session_id: session_id})
 
     assert :ok =
              Vibe.Session.emit_transient_event(

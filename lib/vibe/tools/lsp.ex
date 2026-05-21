@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.LSP do
+defmodule Vibe.Tools.LSP do
   @moduledoc "Model-facing LSP interaction tool."
   import JSONSpec
 
@@ -37,7 +37,7 @@ defmodule Vibe.Actions.LSP do
 
   @impl true
   def run(params, _context) do
-    Vibe.Actions.ToolResult.run(fn ->
+    Vibe.Tools.ToolResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
 
       case Vibe.Code.LSP.run(params) do

@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.Read do
+defmodule Vibe.Tools.Read do
   @moduledoc "Model-facing file and image read tool."
   import JSONSpec
 
@@ -33,7 +33,7 @@ defmodule Vibe.Actions.Read do
 
   @impl true
   def run(params, _context) do
-    Vibe.Actions.ToolResult.run(fn ->
+    Vibe.Tools.ToolResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
 
       Vibe.Files.read_file(params.path,

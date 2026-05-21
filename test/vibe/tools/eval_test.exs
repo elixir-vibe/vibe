@@ -1,13 +1,13 @@
-defmodule Vibe.Actions.EvalTest do
+defmodule Vibe.Tools.EvalTest do
   use ExUnit.Case, async: false
 
   test "default timeout leaves long command timeouts to Cmd.run" do
-    assert Vibe.Actions.Eval.default_timeout_ms() == 86_400_000
+    assert Vibe.Tools.Eval.default_timeout_ms() == 86_400_000
   end
 
   test "schema uses JSONSpec directly" do
-    assert %{code: "1 + 1"} = JSONSpec.atomize(Vibe.Actions.Eval.schema(), %{"code" => "1 + 1"})
-    assert %{code: "1 + 1"} = JSONSpec.atomize(Vibe.Actions.Eval.schema(), %{code: "1 + 1"})
+    assert %{code: "1 + 1"} = JSONSpec.atomize(Vibe.Tools.Eval.schema(), %{"code" => "1 + 1"})
+    assert %{code: "1 + 1"} = JSONSpec.atomize(Vibe.Tools.Eval.schema(), %{code: "1 + 1"})
   end
 
   test "uses session id from tool context for stateful eval" do
@@ -16,14 +16,14 @@ defmodule Vibe.Actions.EvalTest do
     on_exit(fn -> File.rm(Vibe.Session.Store.path(session_id)) end)
 
     assert {:ok, %{output: "query"}} =
-             Vibe.Actions.Eval.run(%{"code" => ~s(query = "query")}, %{session_id: session_id})
+             Vibe.Tools.Eval.run(%{"code" => ~s(query = "query")}, %{session_id: session_id})
 
     assert {:ok, %{output: "query docs"}} =
-             Vibe.Actions.Eval.run(%{"code" => ~s(query <> " docs")}, %{session_id: session_id})
+             Vibe.Tools.Eval.run(%{"code" => ~s(query <> " docs")}, %{session_id: session_id})
   end
 
   test "falls back to one-off eval when tool context has no session id" do
-    assert {:ok, %{output: "2"}} = Vibe.Actions.Eval.run(%{"code" => "1 + 1"}, %{})
+    assert {:ok, %{output: "2"}} = Vibe.Tools.Eval.run(%{"code" => "1 + 1"}, %{})
   end
 
   test "evaluation failures are serializable tool results, not action crashes" do
@@ -32,7 +32,7 @@ defmodule Vibe.Actions.EvalTest do
     on_exit(fn -> File.rm(Vibe.Session.Store.path(session_id)) end)
 
     assert {:ok, %{error: error}} =
-             Vibe.Actions.Eval.run(%{"code" => ~s(raise "intentional")}, %{session_id: session_id})
+             Vibe.Tools.Eval.run(%{"code" => ~s(raise "intentional")}, %{session_id: session_id})
 
     assert error =~ "intentional"
     assert Jason.encode!(%{ok: true, result: %{error: error}})

@@ -12,7 +12,7 @@ defmodule Vibe.Agent do
          :ok <- Options.ensure_provider_credentials(opts) do
       Options.configure_model_alias(opts)
 
-      with {:ok, pid} <- Vibe.Jido.start_agent(Vibe.Agent.Coding) do
+      with {:ok, pid} <- Vibe.Agent.Jido.start_agent(Vibe.Agent.Coding) do
         Jido.AI.set_system_prompt(pid, Options.system_prompt(opts))
         session_id = Keyword.get(opts, :session_id) || Vibe.Session.Store.new_id()
         Vibe.Session.Processes.register(pid, session_id)

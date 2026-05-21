@@ -35,7 +35,7 @@ Vibe.Supervisor
 ├─ Registry Vibe.Registry
 ├─ Vibe.Telemetry
 ├─ Jido
-├─ Vibe.Jido
+├─ Vibe.Agent.Jido
 ├─ Vibe.SessionSupervisor                 DynamicSupervisor
 ├─ Vibe.Agent.Supervisor                   DynamicSupervisor
 ├─ Vibe.Subagents.Supervisor               Supervisor

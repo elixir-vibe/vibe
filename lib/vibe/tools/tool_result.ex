@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.ToolResult do
+defmodule Vibe.Tools.ToolResult do
   @moduledoc "Tool result struct for Jido action outputs."
   @type raw_result :: {:ok, term()} | {:error, term()} | term()
   @type tool_result :: {:ok, term()}

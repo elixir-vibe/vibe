@@ -9,6 +9,6 @@ defmodule Vibe.ApplicationTest do
 
   test "starts both default and Vibe-scoped Jido supervisors" do
     assert Process.whereis(Jido.AgentSupervisor)
-    assert Process.whereis(Vibe.Jido.AgentSupervisor)
+    assert Process.whereis(Vibe.Agent.Jido.AgentSupervisor)
   end
 end

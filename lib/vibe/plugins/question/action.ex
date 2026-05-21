@@ -28,7 +28,7 @@ defmodule Vibe.Plugins.Question.Action do
 
   @impl true
   def run(params, context) do
-    Vibe.Actions.ToolResult.run(fn ->
+    Vibe.Tools.ToolResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
       session_id = session_id(context)
       labels = Enum.map(params.options, & &1.label)

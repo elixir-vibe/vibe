@@ -1,4 +1,4 @@
-defmodule Vibe.Actions.ReadImageToolResultTest do
+defmodule Vibe.Tools.ReadImageToolResultTest do
   use ExUnit.Case, async: true
 
   alias ReqLLM.Message.ContentPart
