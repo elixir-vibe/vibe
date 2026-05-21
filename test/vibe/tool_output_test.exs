@@ -1,8 +1,30 @@
 defmodule Vibe.ToolOutputTest do
   use ExUnit.Case, async: true
 
+  alias Vibe.ToolOutput.Window
+
   @large_item_count 10_000
   @structured_limit_bytes 1_000
+
+  test "builds reusable tail windows with full output pointers" do
+    text = Enum.map_join(1..5, "\n", &"line #{&1}")
+
+    window = Window.build(text, mode: :tail, limit_lines: 2, full_output_path: "/tmp/full.log")
+
+    assert window.truncated?
+    assert window.text == "line 4\nline 5"
+    assert Window.notice(window) == "[Showing lines 4-5 of 5. Full output: /tmp/full.log]"
+  end
+
+  test "limits text output with reusable window notices" do
+    text = Enum.map_join(1..5, "\n", &"line #{&1}")
+
+    assert Vibe.ToolOutput.limit_text(text,
+             mode: :tail,
+             limit_lines: 2,
+             full_output_path: "/tmp/full.log"
+           ) == "line 4\nline 5\n\n[Showing lines 4-5 of 5. Full output: /tmp/full.log]"
+  end
 
   test "keeps text under the default context limit" do
     text = String.duplicate("x", Vibe.ToolOutput.default_max_bytes() + 10)

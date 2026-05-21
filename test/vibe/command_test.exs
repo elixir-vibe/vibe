@@ -14,6 +14,17 @@ defmodule Vibe.CommandTest do
     assert result.duration_ms >= 0
   end
 
+  test "run returns a truncated tail with a full output pointer" do
+    result = Command.run(["sh", "-c", "seq 3000"], timeout: @command_timeout_ms)
+
+    assert %Result{status: :ok, exit_status: 0} = result
+    assert result.output =~ "3000"
+    refute result.output =~ "\n1\n"
+    assert result.output =~ "[Showing lines"
+    assert result.output =~ "Full output: #{result.output_path}"
+    assert File.read!(result.output_path) =~ "1\n2\n3"
+  end
+
   test "run returns errors with exit status" do
     result = Command.run(["sh", "-c", "echo nope; exit 7"], timeout: @command_timeout_ms)
 

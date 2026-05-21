@@ -9,18 +9,26 @@ defmodule Vibe.ToolOutput do
   @spec default_max_bytes() :: pos_integer()
   def default_max_bytes, do: @default_max_bytes
 
-  @spec limit_text(String.t(), pos_integer()) :: String.t()
-  def limit_text(text, max_bytes \\ @default_max_bytes) when is_binary(text) do
+  @spec limit_text(String.t(), pos_integer() | keyword()) :: String.t()
+  def limit_text(text, opts \\ @default_max_bytes)
+
+  def limit_text(text, max_bytes) when is_binary(text) and is_integer(max_bytes) do
     text |> limit_text_result(max_bytes) |> Map.fetch!(:text)
   end
 
-  @spec limit_text_result(String.t(), pos_integer()) :: %{
+  def limit_text(text, opts) when is_binary(text) and is_list(opts) do
+    Vibe.ToolOutput.Window.text_with_notice(text, opts)
+  end
+
+  @spec limit_text_result(String.t(), pos_integer() | keyword()) :: %{
           text: String.t(),
           omitted_bytes: non_neg_integer(),
           limit_bytes: pos_integer(),
           truncated?: boolean()
         }
-  def limit_text_result(text, max_bytes \\ @default_max_bytes) when is_binary(text) do
+  def limit_text_result(text, opts \\ @default_max_bytes)
+
+  def limit_text_result(text, max_bytes) when is_binary(text) and is_integer(max_bytes) do
     max_bytes = normalize_max_bytes(max_bytes)
 
     if byte_size(text) <= max_bytes do
@@ -29,14 +37,22 @@ defmodule Vibe.ToolOutput do
       omitted_bytes = byte_size(text) - max_bytes
 
       limited =
-        text
-        |> binary_part(0, max_bytes)
-        |> Kernel.<>(
+        binary_part(text, 0, max_bytes) <>
           "\n\n[tool output truncated: #{omitted_bytes} bytes omitted; limit=#{max_bytes} bytes]"
-        )
 
       %{text: limited, omitted_bytes: omitted_bytes, limit_bytes: max_bytes, truncated?: true}
     end
+  end
+
+  def limit_text_result(text, opts) when is_binary(text) and is_list(opts) do
+    window = Vibe.ToolOutput.Window.build(text, opts)
+
+    %{
+      text: Vibe.ToolOutput.Window.text_with_notice(text, opts),
+      omitted_bytes: max(window.total_bytes - window.output_bytes, 0),
+      limit_bytes: window.limit_bytes,
+      truncated?: window.truncated?
+    }
   end
 
   @spec limit_content(String.t(), keyword()) :: %{

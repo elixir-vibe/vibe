@@ -146,10 +146,18 @@ defmodule Vibe.Command.Worker do
       cwd: state.cwd,
       status: state.status,
       exit_status: state.exit_status,
-      output: state.output,
+      output: result_output(state),
       output_path: state.output_path,
       duration_ms: max(System.monotonic_time(:millisecond) - state.started_mono, 0)
     }
+  end
+
+  defp result_output(%{status: :running, output: output}), do: output
+
+  defp result_output(state) do
+    state.output_path
+    |> File.read!()
+    |> Vibe.ToolOutput.limit_text(mode: :tail, full_output_path: state.output_path)
   end
 
   defp append_output(state, data) do
