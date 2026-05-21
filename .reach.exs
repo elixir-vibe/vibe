@@ -18,7 +18,14 @@
       "lib/vibe/session/store/codec.ex",
       "lib/vibe/web_tools.ex",
       "lib/vibe/web_tools/**",
-      "lib/vibe/plugins/web_search/api.ex"
+      "lib/vibe/plugins/web_search/api.ex",
+      "lib/vibe/command/markdown.ex",
+      "lib/vibe/code/ast/markdown.ex",
+      "lib/vibe/image/markdown.ex",
+      "lib/vibe/storage/search/markdown.ex",
+      "lib/vibe/subagents/markdown.ex",
+      "lib/vibe/tool/markdown.ex",
+      "lib/vibe/plugins/web_search/markdown.ex"
     ]
   ],
   calls: [
