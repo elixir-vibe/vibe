@@ -38,7 +38,7 @@ defmodule Vibe.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files: ~w(assets config lib priv mix.exs mix.lock README.md LICENSE)
+      files: ~w(assets config lib priv mix.exs mix.lock README.md LICENSE CHANGELOG.md)
     ]
   end
 
@@ -96,6 +96,7 @@ defmodule Vibe.MixProject do
       {:opentelemetry_api, "~> 1.5"},
       {:opentelemetry, "~> 1.7"},
       {:opentelemetry_telemetry, "~> 1.1"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
