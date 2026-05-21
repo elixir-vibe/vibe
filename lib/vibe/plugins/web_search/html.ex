@@ -1,12 +1,12 @@
-defmodule Vibe.WebTools.HTML do
+defmodule Vibe.Plugins.WebSearch.HTML do
   @moduledoc """
-  HTML parsing and extraction helpers for `Vibe.WebTools`.
+  HTML parsing and extraction helpers for `Vibe.Plugins.WebSearch`.
 
   This module intentionally delegates HTML parsing to Floki. It does not parse
   HTML with regular expressions.
   """
 
-  alias Vibe.WebTools.FetchResult
+  alias Vibe.Plugins.WebSearch.FetchResult
 
   @type html_tree :: Floki.html_tree()
 

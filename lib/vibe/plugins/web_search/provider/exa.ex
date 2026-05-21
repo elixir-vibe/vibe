@@ -1,11 +1,11 @@
-defmodule Vibe.WebTools.Providers.Exa do
+defmodule Vibe.Plugins.WebSearch.Provider.Exa do
   @moduledoc """
-  Exa-backed implementation of `Vibe.WebTools.SearchProvider`.
+  Exa-backed implementation of `Vibe.Plugins.WebSearch.SearchProvider`.
   """
 
-  @behaviour Vibe.WebTools.SearchProvider
+  @behaviour Vibe.Plugins.WebSearch.SearchProvider
 
-  alias Vibe.WebTools.{SearchItem, SearchResult}
+  alias Vibe.Plugins.WebSearch.{SearchItem, SearchResult}
 
   @endpoint "https://api.exa.ai/search"
   @default_timeout_ms 30_000

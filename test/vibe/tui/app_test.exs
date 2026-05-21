@@ -1,5 +1,5 @@
 defmodule Vibe.TUI.AppTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Vibe.TUI.App
 

@@ -247,7 +247,7 @@ defmodule Vibe.Eval.Evaluator do
         {Module.concat([:Goal]), Vibe.Goals},
         {Module.concat([:Image]), Image},
         {Module.concat([:MD]), MD},
-        {Module.concat([:Web]), Vibe.WebTools}
+        {Module.concat([:Web]), Vibe.Plugins.WebSearch}
       ] ++
         Enum.map(
           Vibe.Plugin.Manager.apis() ++ Vibe.Skill.apis(),

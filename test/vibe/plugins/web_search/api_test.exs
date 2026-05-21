@@ -1,7 +1,7 @@
-defmodule Vibe.WebToolsTest do
+defmodule Vibe.Plugins.WebSearch.APITest do
   use ExUnit.Case, async: true
 
-  alias Vibe.WebTools.{FetchResult, SearchItem, SearchResult}
+  alias Vibe.Plugins.WebSearch.{FetchResult, SearchItem, SearchResult}
 
   test "fetch converts selected HTML to markdown" do
     stub = {__MODULE__, :html_fetch}
@@ -15,7 +15,7 @@ defmodule Vibe.WebToolsTest do
     end)
 
     assert {:ok, result} =
-             Vibe.WebTools.fetch("https://example.test/page",
+             Vibe.Plugins.WebSearch.fetch("https://example.test/page",
                selector: "main",
                format: :markdown,
                req_options: [plug: {Req.Test, stub}]
@@ -42,7 +42,7 @@ defmodule Vibe.WebToolsTest do
     end)
 
     assert {:ok, result} =
-             Vibe.WebTools.fetch("https://example.test/retry",
+             Vibe.Plugins.WebSearch.fetch("https://example.test/retry",
                format: :html,
                req_options: [plug: {Req.Test, stub}, retry_delay: fn _ -> 0 end]
              )
@@ -66,7 +66,7 @@ defmodule Vibe.WebToolsTest do
     end)
 
     assert {:ok, result} =
-             Vibe.WebTools.fetch("https://example.test/redirect",
+             Vibe.Plugins.WebSearch.fetch("https://example.test/redirect",
                format: :html,
                req_options: [plug: {Req.Test, stub}]
              )
@@ -81,7 +81,7 @@ defmodule Vibe.WebToolsTest do
     <h1>Title</h1><p>Hello <a href=\"/x\">link</a>.</p><blockquote>Quote</blockquote><ul><li>One</li><li>Two<ul><li>Nested</li></ul></li></ul><table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table><pre><code>mix test</code></pre>
     """
 
-    assert {:ok, markdown} = Vibe.WebTools.HTML.to_markdown(html)
+    assert {:ok, markdown} = Vibe.Plugins.WebSearch.HTML.to_markdown(html)
 
     assert markdown ==
              """
@@ -116,7 +116,7 @@ defmodule Vibe.WebToolsTest do
     end)
 
     assert {:ok, result} =
-             Vibe.WebTools.fetch("https://example.test/api",
+             Vibe.Plugins.WebSearch.fetch("https://example.test/api",
                format: :json,
                req_options: [plug: {Req.Test, stub}]
              )
@@ -137,15 +137,18 @@ defmodule Vibe.WebToolsTest do
       total_chars: 91
     }
 
-    selected = Vibe.WebTools.select!(result, "main")
+    selected = Vibe.Plugins.WebSearch.select!(result, "main")
 
     assert selected.format == :html
     assert selected.selector == "main"
     assert selected.text =~ "<main>"
-    assert Vibe.WebTools.parse_html!(selected) |> Floki.find("strong") |> Floki.text() == "web"
+
+    assert Vibe.Plugins.WebSearch.parse_html!(selected) |> Floki.find("strong") |> Floki.text() ==
+             "web"
+
     assert Vibe.Markdown.to_markdown(selected) =~ "Hello **web**."
 
-    text = selected |> Vibe.WebTools.parse_html!() |> Floki.text(sep: " ")
+    text = selected |> Vibe.Plugins.WebSearch.parse_html!() |> Floki.text(sep: " ")
 
     assert text =~ "Title"
     assert text =~ "Hello"
@@ -155,7 +158,7 @@ defmodule Vibe.WebToolsTest do
   test "pipe helper truncates fetched content with shared tool-output limit" do
     result = %FetchResult{text: "abcdef", total_chars: 6}
 
-    truncated = Vibe.WebTools.truncate(result, bytes: 3)
+    truncated = Vibe.Plugins.WebSearch.truncate(result, bytes: 3)
 
     assert truncated.truncated?
     assert truncated.total_chars == 6
@@ -164,17 +167,17 @@ defmodule Vibe.WebToolsTest do
   end
 
   test "pipe helper truncates plain text with shorthand limit" do
-    assert Vibe.WebTools.truncate("abcdef", 3) =~ "tool output truncated"
-    assert Vibe.WebTools.truncate("abc", 3) == "abc"
+    assert Vibe.Plugins.WebSearch.truncate("abcdef", 3) =~ "tool output truncated"
+    assert Vibe.Plugins.WebSearch.truncate("abc", 3) == "abc"
   end
 
   test "fetch validates URLs" do
-    assert {:error, :invalid_url} = Vibe.WebTools.fetch("file:///etc/passwd")
+    assert {:error, :invalid_url} = Vibe.Plugins.WebSearch.fetch("file:///etc/passwd")
   end
 
   test "search provider can be configured per call" do
     defmodule SearchProvider do
-      @behaviour Vibe.WebTools.SearchProvider
+      @behaviour Vibe.Plugins.WebSearch.SearchProvider
 
       @impl true
       def search(query, _opts) do
@@ -189,7 +192,7 @@ defmodule Vibe.WebToolsTest do
       end
     end
 
-    assert {:ok, result} = Vibe.WebTools.search("query", provider: SearchProvider)
+    assert {:ok, result} = Vibe.Plugins.WebSearch.search("query", provider: SearchProvider)
     assert result.provider == :test
     assert [%{title: "Result"}] = result.results
   end

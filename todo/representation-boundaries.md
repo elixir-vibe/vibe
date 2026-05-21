@@ -302,7 +302,7 @@ Vibe.Subagents.Schedule
 
 ## Web search namespace
 
-`lib/vibe/web_tools` should not be a top-level parallel domain if web search is plugin-owned.
+`lib/vibe/web_search` should not be a top-level parallel domain if web search is plugin-owned.
 
 Target: move the whole search/fetch capability under the bundled plugin:
 
@@ -321,7 +321,7 @@ Vibe.Plugins.WebSearch.Presentation
 Remove:
 
 ```elixir
-Vibe.WebTools.*
+Vibe.Plugins.WebSearch.*
 ```
 
 No compatibility aliases. Eval alias `Web` can point to `Vibe.Plugins.WebSearch`.
@@ -389,7 +389,7 @@ Order:
 
 ### Phase 5: move web search
 
-Move `Vibe.WebTools.*` into `Vibe.Plugins.WebSearch.*`. Delete old namespace with no aliases.
+Move `Vibe.Plugins.WebSearch.*` into `Vibe.Plugins.WebSearch.*`. Delete old namespace with no aliases.
 
 ### Phase 6: presentation cleanup
 
@@ -482,8 +482,8 @@ source: [
     "Vibe.UI.Event",
     "Vibe.UI.Event.*",
     "Vibe.UI.Bus",
-    "Vibe.WebTools",
-    "Vibe.WebTools.*",
+    "Vibe.Plugins.WebSearch",
+    "Vibe.Plugins.WebSearch.*",
     "Vibe.Session.Store.Codec",
     "Vibe.Actions.*",
     "Vibe.Tools.*",
@@ -491,8 +491,8 @@ source: [
     "Vibe.ToolDisplay"
   ],
   forbidden_files: [
-    "lib/vibe/web_tools.ex",
-    "lib/vibe/web_tools/**",
+    "lib/vibe/web_search.ex",
+    "lib/vibe/web_search/**",
     "lib/vibe/session/store/codec.ex"
   ]
 ]

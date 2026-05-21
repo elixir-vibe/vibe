@@ -1,4 +1,4 @@
-defmodule Vibe.WebTools.FetchResult do
+defmodule Vibe.Plugins.WebSearch.FetchResult do
   @moduledoc """
   Normalized result for a URL fetch request.
   """

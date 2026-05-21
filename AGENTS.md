@@ -15,7 +15,7 @@ This repository is part of the Elixir Vibe organization.
 - Keep non-immediate follow-up work in `todo/*.md`; use focused files such as `todo/streaming.md` instead of scattering TODOs through code or general notes.
 - Avoid static catalogs/registries when modules can be discovered idiomatically from compiled application modules or dependency availability, like Reach/Volt plugin detection.
 - Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
-- Web access should use the eval alias `Web` (`Vibe.WebTools`) instead of vendor-specific clients. Keep providers behind `Vibe.WebTools.SearchProvider` / `Vibe.WebTools.FetchProvider`.
+- Web access should use the eval alias `Web` (`Vibe.Plugins.WebSearch`) instead of vendor-specific clients. Keep providers behind `Vibe.Plugins.WebSearch.SearchProvider` / `Vibe.Plugins.WebSearch.FetchProvider`.
 - Put network/provider web concerns in request opts (`provider`, `timeout`, `headers`, search filters). Put local content/result transformations in pipeable helpers (`Web.select!/2`, `Web.truncate/2`, `Web.filter_domain/2`, `Web.take/2`). For plain text extraction from HTML, use `Web.parse_html!/1` and Floki directly; do not add renderer-like text helpers unless Vibe has an explicit protocol for them.
 - Markdown rendering belongs to `Vibe.Markdown` implementations and should be invoked with `MD.doc/1` or `MD.to_markdown/1`; do not add renderer-specific helpers such as `Web.markdown/1`.
 - Use `Web.parse_html!/1` as the Floki shortcut for advanced HTML traversal. Common extraction should use `Web.select!/2` so fetch metadata is preserved. Never parse HTML with regular expressions or ad-hoc string stripping.

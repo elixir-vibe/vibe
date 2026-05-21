@@ -1,11 +1,11 @@
-defmodule Vibe.WebTools.Providers.ReqFetch do
+defmodule Vibe.Plugins.WebSearch.Provider.ReqFetch do
   @moduledoc """
-  Local `Req`-based implementation of `Vibe.WebTools.FetchProvider`.
+  Local `Req`-based implementation of `Vibe.Plugins.WebSearch.FetchProvider`.
   """
 
-  @behaviour Vibe.WebTools.FetchProvider
+  @behaviour Vibe.Plugins.WebSearch.FetchProvider
 
-  alias Vibe.WebTools.{FetchResult, HTML}
+  alias Vibe.Plugins.WebSearch.{FetchResult, HTML}
 
   @max_response_size 5 * 1024 * 1024
   @default_timeout_ms 30_000

@@ -7,12 +7,18 @@
       "Vibe.Tools.*",
       "Vibe.ToolOutput",
       "Vibe.ToolDisplay",
-      "Vibe.Session.Store.Codec"
+      "Vibe.Session.Store.Codec",
+      "Vibe.WebTools",
+      "Vibe.WebTools.*",
+      "Vibe.Plugins.WebSearch.API"
     ],
     forbidden_files: [
       "lib/vibe/actions/**",
       "lib/vibe/tools/**",
-      "lib/vibe/session/store/codec.ex"
+      "lib/vibe/session/store/codec.ex",
+      "lib/vibe/web_tools.ex",
+      "lib/vibe/web_tools/**",
+      "lib/vibe/plugins/web_search/api.ex"
     ]
   ],
   calls: [

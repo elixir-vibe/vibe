@@ -1,4 +1,4 @@
-defmodule Vibe.WebTools.SearchItem do
+defmodule Vibe.Plugins.WebSearch.SearchItem do
   @moduledoc """
   Normalized web search result item.
   """

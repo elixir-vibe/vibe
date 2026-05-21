@@ -45,8 +45,8 @@ Supported fetch formats:
 Search and fetch providers are behaviours, so future backends can share the same eval-facing API:
 
 ```elixir
-Vibe.WebTools.SearchProvider
-Vibe.WebTools.FetchProvider
+Vibe.Plugins.WebSearch.SearchProvider
+Vibe.Plugins.WebSearch.FetchProvider
 ```
 
 Per-call provider override:
@@ -56,7 +56,7 @@ Web.search!("query", provider: :exa)
 Web.fetch!("https://example.com", provider: :req)
 ```
 
-Provider-specific details are normalized into `Vibe.WebTools.SearchResult`, `Vibe.WebTools.SearchItem`, and `Vibe.WebTools.FetchResult` structs with Markdown protocol rendering.
+Provider-specific details are normalized into `Vibe.Plugins.WebSearch.SearchResult`, `Vibe.Plugins.WebSearch.SearchItem`, and `Vibe.Plugins.WebSearch.FetchResult` structs with Markdown protocol rendering.
 
 Use `Web.parse_html!/1` when you need direct Floki traversal:
 

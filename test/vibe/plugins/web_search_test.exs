@@ -5,7 +5,7 @@ defmodule Vibe.Plugins.WebSearchTest do
   alias Vibe.Plugins.WebSearch.Result
 
   test "exposes pipeable eval API" do
-    assert [%API{alias: Web, module: Vibe.WebTools}] =
+    assert [%API{alias: Web, module: Vibe.Plugins.WebSearch}] =
              Vibe.Plugins.WebSearch.apis([])
   end
 

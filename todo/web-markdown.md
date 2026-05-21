@@ -2,7 +2,7 @@
 
 ## Current state
 
-- `Vibe.WebTools.HTML.to_markdown/1` is a deliberately small Floki-tree HTML-to-Markdown renderer.
+- `Vibe.Plugins.WebSearch.HTML.to_markdown/1` is a deliberately small Floki-tree HTML-to-Markdown renderer.
 - It exists to keep `MD.doc(Web.fetch!(..., format: :html) |> Web.select!(...))` usable while the standalone `turndown` package is built.
 - It does not parse HTML with regular expressions; Floki owns parsing and CSS selection.
 - It handles the common shape needed by Vibe now: headings, paragraphs, links, emphasis, code/pre, blockquotes, nested lists, basic tables, images, hr/br, and ignored script/style-like tags.

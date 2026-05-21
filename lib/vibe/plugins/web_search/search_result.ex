@@ -1,9 +1,9 @@
-defmodule Vibe.WebTools.SearchResult do
+defmodule Vibe.Plugins.WebSearch.SearchResult do
   @moduledoc """
   Normalized result for a web search request.
   """
 
-  alias Vibe.WebTools.SearchItem
+  alias Vibe.Plugins.WebSearch.SearchItem
 
   @type t :: %__MODULE__{
           query: String.t(),
