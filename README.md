@@ -6,6 +6,9 @@ Vibe gives you an interactive terminal agent, a Phoenix LiveView web console, an
 
 If you are new, start with the Hex install below, run `vibe`, and use `/help` inside the TUI.
 
+> [!WARNING]
+> Vibe is experimental and not production-ready. It can run commands, edit files, store local state, start background processes, and talk to external model providers. Use it at your own risk, review changes before applying them, and avoid pointing it at repositories or machines where unintended agent actions would be costly.
+
 ## Quick start
 
 Install the released executable:
