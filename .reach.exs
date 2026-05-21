@@ -13,6 +13,7 @@
       "Vibe.UI.Event.*",
       "Vibe.UI.Bus",
       "Vibe.Session.Store.Codec",
+      "Vibe.Storage.Representation.SessionLog",
       "Vibe.WebTools",
       "Vibe.WebTools.*",
       "Vibe.Plugins.WebSearch.API"
@@ -25,6 +26,7 @@
       "lib/vibe/ui/event.ex",
       "lib/vibe/ui/bus.ex",
       "lib/vibe/session/store/codec.ex",
+      "lib/vibe/storage/representation/session_log.ex",
       "lib/vibe/web_tools.ex",
       "lib/vibe/web_tools/**",
       "lib/vibe/plugins/web_search/api.ex",

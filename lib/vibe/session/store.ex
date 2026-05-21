@@ -7,7 +7,8 @@ defmodule Vibe.Session.Store do
 
   alias Vibe.Repo
   alias Vibe.Session.Store.{Listing, Summary}
-  alias Vibe.Storage.Representation.{EvalSnapshot, SessionLog}
+  alias Vibe.Storage.Representation.Event, as: EventRepresentation
+  alias Vibe.Storage.Representation.EvalSnapshot
   alias Vibe.Storage.Representation.Trajectory, as: TrajectoryRepresentation
   alias Vibe.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent, UIEventFTS}
   alias Vibe.Trajectory
@@ -325,7 +326,7 @@ defmodule Vibe.Session.Store do
   defp present_attrs(attrs), do: Enum.reject(attrs, fn {_key, value} -> is_nil(value) end)
 
   defp ui_event_row(%Event{} = event, seq) do
-    encoded = SessionLog.encode_ui_event(event, seq)
+    encoded = EventRepresentation.encode(event, seq)
 
     %{
       session_id: event.session_id,
@@ -359,7 +360,7 @@ defmodule Vibe.Session.Store do
       "at" => DateTime.to_iso8601(event.at),
       "data" => event.data
     }
-    |> SessionLog.decode_ui_event_map()
+    |> EventRepresentation.decode_map()
     |> case do
       {:ok, event} -> [event]
       :error -> []

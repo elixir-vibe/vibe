@@ -1,7 +1,7 @@
-defmodule Vibe.Storage.Representation.SessionLogTest do
+defmodule Vibe.Storage.Representation.EventTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.Storage.Representation.SessionLog
+  alias Vibe.Storage.Representation.Event, as: EventRepresentation
   alias Vibe.SystemAlarms.Alert
   alias Vibe.Event
 
@@ -9,9 +9,9 @@ defmodule Vibe.Storage.Representation.SessionLogTest do
     tool = Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
     event = Event.new(:tool_started, "session-1", tool, at: ~U[2026-05-20 12:00:01Z])
 
-    encoded = SessionLog.encode_ui_event(event, 6)
+    encoded = EventRepresentation.encode(event, 6)
 
-    assert {:ok, {6, decoded}} = SessionLog.decode_ui_event_map(encoded)
+    assert {:ok, {6, decoded}} = EventRepresentation.decode_map(encoded)
     assert %Event{data: ^tool} = decoded
   end
 
@@ -30,9 +30,9 @@ defmodule Vibe.Storage.Representation.SessionLogTest do
 
     event = Event.new(:goal_set, "session-1", %{goal: goal}, at: ~U[2026-05-20 12:00:01Z])
 
-    encoded = SessionLog.encode_ui_event(event, 7)
+    encoded = EventRepresentation.encode(event, 7)
 
-    assert {:ok, {7, decoded}} = SessionLog.decode_ui_event_map(encoded)
+    assert {:ok, {7, decoded}} = EventRepresentation.decode_map(encoded)
     assert %Event{data: %{goal: ^goal}} = decoded
   end
 
@@ -43,9 +43,9 @@ defmodule Vibe.Storage.Representation.SessionLogTest do
     event =
       Event.new(:runtime_alert_set, "session-1", %{alert: alert}, at: ~U[2026-05-20 12:00:01Z])
 
-    encoded = SessionLog.encode_ui_event(event, 8)
+    encoded = EventRepresentation.encode(event, 8)
 
-    assert {:ok, {8, decoded}} = SessionLog.decode_ui_event_map(encoded)
+    assert {:ok, {8, decoded}} = EventRepresentation.decode_map(encoded)
     assert %Event{data: %{alert: ^alert}} = decoded
   end
 end

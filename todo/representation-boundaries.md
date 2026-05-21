@@ -257,7 +257,6 @@ Storage representation structs:
 ```elixir
 Vibe.Storage.Representation.Event
 Vibe.Storage.Representation.Trajectory
-Vibe.Storage.Representation.SessionLog
 Vibe.Storage.Representation.EvalSnapshot
 Vibe.Storage.Representation.Goal
 Vibe.Storage.Representation.ToolEvent
