@@ -36,11 +36,13 @@ defmodule Vibe.Tool.OutputTest do
     assert output =~ "10 bytes omitted"
   end
 
-  test "small structured values remain encodable through project Jason encoders" do
+  test "small structured values remain encodable through explicit JSON projection" do
     value = %{matches: [{"lib/a.ex", 1}], date: ~D[2026-04-27]}
 
     assert Vibe.Tool.Output.limit_value(value) == value
-    assert Jason.encode!(value) == ~s({"date":"2026-04-27","matches":[["lib/a.ex",1]]})
+
+    assert Jason.encode!(Vibe.JSON.Encode.value(value)) ==
+             ~s({"date":"2026-04-27","matches":[["lib/a.ex",1]]})
   end
 
   test "large structured values become a bounded textual tool result" do

@@ -8,6 +8,7 @@ defmodule Vibe.JSON.Encode do
   def value(term) when is_atom(term), do: Atom.to_string(term)
 
   def value(%DateTime{} = term), do: DateTime.to_iso8601(term)
+  def value(%Date{} = term), do: Date.to_iso8601(term)
 
   def value(%Content.Text{} = term), do: %{type: "text", text: term.text}
 

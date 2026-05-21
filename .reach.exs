@@ -29,6 +29,7 @@
       "lib/vibe/storage/representation/session_log.ex",
       "lib/vibe/web_tools.ex",
       "lib/vibe/web_tools/**",
+      "lib/vibe/json/tuple_encoder.ex",
       "lib/vibe/plugins/web_search/api.ex",
       "lib/vibe/command/markdown.ex",
       "lib/vibe/code/ast/markdown.ex",
