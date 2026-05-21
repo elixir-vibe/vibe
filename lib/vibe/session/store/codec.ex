@@ -6,10 +6,13 @@ defmodule Vibe.Session.Store.Codec do
   @json_atom_keys MapSet.new([
                     "args",
                     "content",
+                    "created_at",
                     "cwd",
                     "data",
                     "error",
                     "filename",
+                    "goal",
+                    "goal_id",
                     "height",
                     "id",
                     "image",
@@ -21,6 +24,7 @@ defmodule Vibe.Session.Store.Codec do
                     "mime_type",
                     "model",
                     "name",
+                    "objective",
                     "output",
                     "output_format",
                     "output_parts",
@@ -34,15 +38,20 @@ defmodule Vibe.Session.Store.Codec do
                     "result",
                     "role",
                     "selector_kind",
+                    "session_id",
                     "seq",
                     "size_bytes",
                     "status",
                     "text",
+                    "time_used_seconds",
+                    "token_budget",
+                    "tokens_used",
                     "tool_call_id",
                     "tool_name",
                     "total_cost",
                     "total_tokens",
                     "type",
+                    "updated_at",
                     "usage",
                     "width"
                   ])
@@ -233,10 +242,39 @@ defmodule Vibe.Session.Store.Codec do
   defp decode_ui_event_data(%{status: status} = data, :status_changed) when is_binary(status),
     do: %{data | status: existing_atom_or_string(status)}
 
+  defp decode_ui_event_data(%{goal: goal} = data, type) when type in [:goal_set, :goal_updated] do
+    %{data | goal: decode_goal(goal)}
+  end
+
   defp decode_ui_event_data(%{level: level} = data, :notification_added) when is_binary(level),
     do: %{data | level: existing_atom_or_string(level)}
 
   defp decode_ui_event_data(data, _type), do: data
+
+  defp decode_goal(%{status: status} = goal) do
+    {:ok, status} = Vibe.Goals.Goal.status(status)
+
+    struct(
+      Vibe.Goals.Goal,
+      goal
+      |> Map.put(:status, status)
+      |> Map.update(:created_at, nil, &decode_datetime/1)
+      |> Map.update(:updated_at, nil, &decode_datetime/1)
+    )
+  end
+
+  defp decode_goal(goal), do: goal
+
+  defp decode_datetime(%DateTime{} = datetime), do: datetime
+
+  defp decode_datetime(value) when is_binary(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, datetime, _offset} -> datetime
+      _error -> value
+    end
+  end
+
+  defp decode_datetime(value), do: value
 
   defp decode_tool_event_values(%{name: name} = data) when is_binary(name),
     do: %{data | name: existing_atom_or_string(name)}

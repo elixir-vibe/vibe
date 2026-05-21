@@ -149,6 +149,32 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{type: :goal_set, data: %{goal: goal}}) do
+    %{state | goal: goal, messages: Lists.append(state.messages, goal_message(goal, "Goal set"))}
+  end
+
+  defp reduce(state, %Event{type: :goal_updated, data: %{goal: goal}}) do
+    %{
+      state
+      | goal: goal,
+        messages: Lists.append(state.messages, goal_message(goal, "Goal updated"))
+    }
+  end
+
+  defp reduce(state, %Event{type: :goal_cleared, at: at}) do
+    %{
+      state
+      | goal: nil,
+        messages:
+          Lists.append(state.messages, %{
+            role: :system,
+            text: "Goal cleared",
+            level: :info,
+            at: at
+          })
+    }
+  end
+
   defp reduce(state, %Event{type: :truncation_toggled}) do
     %{state | truncate?: !state.truncate?}
   end
@@ -483,6 +509,17 @@ defmodule Vibe.UI.Reducer do
         updated = Map.update(message, key, delta, &(&1 <> delta))
         {Lists.append(messages, updated), updated}
     end
+  end
+
+  defp goal_message(goal, label) do
+    %{
+      role: :system,
+      marker: :goal,
+      text: label <> ": " <> goal.objective,
+      level: :info,
+      goal: goal,
+      at: DateTime.utc_now()
+    }
   end
 
   defp maybe_put(map, _key, nil), do: map

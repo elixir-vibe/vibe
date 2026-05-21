@@ -9,6 +9,7 @@ defmodule Vibe.Storage do
     eval_states: Vibe.Storage.Schema.EvalState,
     subagent_jobs: Vibe.Storage.Schema.SubagentJob,
     subagent_schedules: Vibe.Storage.Schema.SubagentSchedule,
+    goals: Vibe.Storage.Schema.Goal,
     memories: Vibe.Storage.Schema.Memory,
     telemetry_events: Vibe.Storage.Schema.TelemetryEvent,
     imports: Vibe.Storage.Schema.Import

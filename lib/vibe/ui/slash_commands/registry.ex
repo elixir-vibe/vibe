@@ -7,6 +7,7 @@ defmodule Vibe.UI.SlashCommands.Registry do
     Vibe.UI.SlashCommands.Model,
     Vibe.UI.SlashCommands.Effort,
     Vibe.UI.SlashCommands.Skill,
+    Vibe.UI.SlashCommands.Goal,
     Vibe.UI.SlashCommands.Clear,
     Vibe.UI.SlashCommands.Compact,
     Vibe.UI.SlashCommands.Background,

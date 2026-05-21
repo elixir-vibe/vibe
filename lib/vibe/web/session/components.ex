@@ -37,6 +37,9 @@ defmodule Vibe.Web.Session.Components do
             <span>{if Status.working?(@state), do: "Working…", else: "Idle"}</span>
           </div>
           <p :if={Status.activity_label(@state)} class="mt-1 truncate text-xs text-vibe-dim">{Status.activity_label(@state)}</p>
+          <p :if={@state.goal} class="mt-1 truncate text-xs text-vibe-dim">
+            Goal: <span class="text-vibe-fg">{@state.goal.objective}</span>
+          </p>
         </div>
         <div class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-vibe-dim">
           <span :for={{key, text} <- Map.get(@state, :plugin_statuses, %{})} class="rounded-full border border-vibe-accent/15 bg-vibe-accent/10 px-2 py-0.5 text-vibe-accent-strong">

@@ -152,6 +152,7 @@ defmodule Vibe.Session.PromptLifecycle do
   defp prompt_with_memory(text, context) do
     [
       text,
+      Vibe.Goals.context_block(Map.get(context, :session_id)),
       Vibe.Memory.Manager.prefetch(text, context),
       active_skill_context(text),
       recalled_history(text, context)

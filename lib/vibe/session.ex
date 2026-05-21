@@ -105,6 +105,7 @@ defmodule Vibe.Session do
     persist? = Keyword.get(opts, :persist?, true)
     restoring? = Keyword.get(opts, :restoring?, false)
     {state, event_seq, events_tail} = restore_state(State.new(opts), persist?, restoring?)
+    state = maybe_load_goal(state, persist?)
 
     if persist?,
       do:
@@ -262,6 +263,30 @@ defmodule Vibe.Session do
 
   defp handle_command(%Command{type: :cancel_stream}, state) do
     PromptLifecycle.cancel(state, &emit/2)
+  end
+
+  defp handle_command(%Command{type: :set_goal, data: %{objective: objective} = data}, state)
+       when is_binary(objective) do
+    case Vibe.Goals.set(state.state.session_id, objective,
+           token_budget: Map.get(data, :token_budget)
+         ) do
+      {:ok, goal} -> emit(state, Event.new(:goal_set, state.state.session_id, %{goal: goal}))
+      {:error, reason} -> notify(state, goal_error(reason))
+    end
+  end
+
+  defp handle_command(%Command{type: :update_goal_status, data: %{status: status}}, state) do
+    case Vibe.Goals.update_status(state.state.session_id, status) do
+      {:ok, goal} -> emit(state, Event.new(:goal_updated, state.state.session_id, %{goal: goal}))
+      {:error, reason} -> notify(state, goal_error(reason))
+    end
+  end
+
+  defp handle_command(%Command{type: :clear_goal}, state) do
+    case Vibe.Goals.clear(state.state.session_id) do
+      :ok -> emit(state, Event.new(:goal_cleared, state.state.session_id, %{}))
+      {:error, reason} -> notify(state, goal_error(reason))
+    end
   end
 
   defp handle_command(%Command{type: :background_session}, state) do
@@ -448,6 +473,15 @@ defmodule Vibe.Session do
     end
   end
 
+  defp goal_error(:empty_objective), do: "Goal objective must not be empty"
+
+  defp goal_error({:objective_too_long, actual, max}) do
+    "Goal objective is too long: #{actual} characters. Limit: #{max} characters. Put longer instructions in a file and refer to that file in the goal."
+  end
+
+  defp goal_error(:not_found), do: "No goal is currently set"
+  defp goal_error(reason), do: "Goal error: #{inspect(reason)}"
+
   defp command_metadata(%Command{} = command, state) do
     %{
       session_id: state.state.session_id,
@@ -574,6 +608,9 @@ defmodule Vibe.Session do
   defp token_text(nil), do: ""
   defp token_text(value) when is_binary(value), do: value
   defp token_text(value), do: inspect(value, limit: 20)
+
+  defp maybe_load_goal(state, false), do: state
+  defp maybe_load_goal(state, true), do: %{state | goal: Vibe.Goals.get(state.session_id)}
 
   defp restore_state(state, false, _restoring?), do: {state, 0, []}
 

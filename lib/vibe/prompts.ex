@@ -5,7 +5,8 @@ defmodule Vibe.Prompts do
     summarization_system: "summarization_system.md",
     context_summary: "context_summary.md",
     context_update: "context_update.md",
-    turn_prefix_summary: "turn_prefix_summary.md"
+    turn_prefix_summary: "turn_prefix_summary.md",
+    goal_continuation: "goal_continuation.md"
   }
 
   for {_name, file} <- @prompt_files do
@@ -33,4 +34,7 @@ defmodule Vibe.Prompts do
 
   @spec turn_prefix_summary() :: String.t()
   def turn_prefix_summary, do: fetch!(:turn_prefix_summary)
+
+  @spec goal_continuation() :: String.t()
+  def goal_continuation, do: fetch!(:goal_continuation)
 end

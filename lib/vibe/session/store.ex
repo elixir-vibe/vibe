@@ -168,6 +168,7 @@ defmodule Vibe.Session.Store do
         EvalState,
         Vibe.Storage.Schema.SubagentJob,
         Vibe.Storage.Schema.SubagentSchedule,
+        Vibe.Storage.Schema.Goal,
         Vibe.Storage.Schema.Memory,
         Vibe.Storage.Schema.TelemetryEvent,
         Session
@@ -390,6 +391,7 @@ defmodule Vibe.Session.Store do
     Repo.delete_all(from(row in UIEvent, where: row.session_id == ^session_id))
     Repo.delete_all(from(row in TrajectoryEvent, where: row.session_id == ^session_id))
     Repo.delete_all(from(row in EvalState, where: row.session_id == ^session_id))
+    Repo.delete_all(from(row in Vibe.Storage.Schema.Goal, where: row.session_id == ^session_id))
     Repo.delete_all(from(row in Session, where: row.id == ^session_id))
 
     session_id |> path() |> File.rm() |> ignore_missing_file()

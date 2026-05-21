@@ -244,6 +244,7 @@ defmodule Vibe.Eval.Evaluator do
     aliases =
       [
         {Module.concat([:Cmd]), Command},
+        {Module.concat([:Goal]), Vibe.Goals},
         {Module.concat([:Image]), Image},
         {Module.concat([:MD]), MD},
         {Module.concat([:Web]), Vibe.WebTools}
