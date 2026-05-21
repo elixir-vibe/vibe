@@ -77,4 +77,23 @@ defmodule Vibe.Model.ContentTest do
              &match?(%{"type" => "input_image", "image_url" => "data:image/png;base64,AQID"}, &1)
            )
   end
+
+  test "content JSON projection stays explicit" do
+    content = Content.image(data: "abc", mime_type: "image/png", filename: "tiny.png")
+
+    assert Vibe.JSON.Encode.value(content) == %{
+             type: "image",
+             data: "abc",
+             mime_type: "image/png",
+             filename: "tiny.png",
+             width: nil,
+             height: nil
+           }
+  end
+
+  test "content structs are not directly JSON encodable domain values" do
+    assert_raise Protocol.UndefinedError, fn ->
+      Jason.encode!(Content.text("hello"))
+    end
+  end
 end

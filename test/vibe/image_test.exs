@@ -31,4 +31,12 @@ defmodule Vibe.ImageTest do
     assert content.mime_type == "image/png"
     assert content.filename == "tiny.png"
   end
+
+  test "image structs are not directly JSON encodable domain values" do
+    image = %Vibe.Image{data: "abc", mime_type: "image/png", filename: "tiny.png"}
+
+    assert_raise Protocol.UndefinedError, fn ->
+      Jason.encode!(image)
+    end
+  end
 end

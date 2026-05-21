@@ -1,4 +1,4 @@
-defmodule Vibe.UI.ErrorJSONTest do
+defmodule Vibe.UI.ErrorTest do
   use ExUnit.Case, async: true
 
   alias Vibe.UI.Error
