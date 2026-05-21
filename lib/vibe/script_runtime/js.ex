@@ -1,4 +1,4 @@
-defmodule Vibe.Runtime.JS do
+defmodule Vibe.ScriptRuntime.JS do
   @moduledoc """
   Optional JavaScript/TypeScript evaluation through QuickBEAM.
 

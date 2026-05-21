@@ -1,4 +1,4 @@
-defmodule Vibe.Runtime.Python do
+defmodule Vibe.ScriptRuntime.Python do
   @moduledoc """
   Optional Python evaluation through Pythonx.
 

@@ -3,11 +3,11 @@ defmodule Vibe.Script do
   Run Livebook-style Elixir scripts, including `Mix.install/2`.
 
   By default scripts run in a disposable BEAM OS process. Use
-  `runtime: :standalone` to evaluate through `Vibe.Runtime.Standalone`, which keeps
+  `runtime: :standalone` to evaluate through `Vibe.ScriptRuntime.Standalone`, which keeps
   Livebook-like binding/env state in a child BEAM process.
   """
 
-  alias Vibe.Runtime.Standalone
+  alias Vibe.ScriptRuntime.Standalone
 
   @default_timeout_ms 120_000
 

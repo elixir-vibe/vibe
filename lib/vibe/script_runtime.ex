@@ -1,4 +1,4 @@
-defmodule Vibe.Runtime do
+defmodule Vibe.ScriptRuntime do
   @moduledoc """
   Behaviour for stateful evaluation runtimes.
   """

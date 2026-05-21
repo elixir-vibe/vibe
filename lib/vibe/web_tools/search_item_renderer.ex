@@ -1,4 +1,4 @@
-defmodule Vibe.WebTools.Markdown.Item do
+defmodule Vibe.WebTools.SearchItemRenderer do
   @moduledoc "Shared Markdown rendering for URL-like search results."
 
   @spec render(map()) :: String.t()

@@ -10,7 +10,7 @@ defmodule Vibe do
     * shell/file operations live at the client layer
 
   Rich capabilities are exposed as normal Elixir modules callable from
-  `Vibe.Eval`: `Vibe.OTP`, `Vibe.Profile`, `Vibe.Skill`, `Vibe.Subagents`,
+  `Vibe.Eval`: `Vibe.OTP`, `Vibe.Profiler`, `Vibe.Skill`, `Vibe.Subagents`,
   `Vibe.Context`, and `Vibe.SelfPatch`.
   """
 

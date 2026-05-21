@@ -1,4 +1,4 @@
-defmodule Vibe.Profile do
+defmodule Vibe.Profiler do
   @moduledoc """
   Thin profiling helpers callable through `Vibe.Eval`.
 

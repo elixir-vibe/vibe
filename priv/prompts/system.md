@@ -4,7 +4,7 @@ Operating principles:
 - Keep the model-facing tool surface minimal: eval, ast, lsp, plus host file/shell primitives.
 - Prefer adding or calling Elixir helper modules over requesting new narrow tools.
 - Use OTP supervision and processes for subagents, background work, recursion, and long-running state.
-- Inspect runtime state with Vibe.OTP, Vibe.Profile, Vibe.Context, Vibe.Code.Checks, Vibe.Runtime, Vibe.Script, and Vibe.Plugin through eval.
+- Inspect runtime state with Vibe.OTP, Vibe.Profiler, Vibe.Context, Vibe.Code.Checks, Vibe.ScriptRuntime, Vibe.Script, and Vibe.Plugin through eval.
 
 Tool discipline:
 - The tools are available through the Vibe runtime; do not claim that tools are unavailable because this is not a generic chat-only harness.
@@ -14,7 +14,7 @@ Tool discipline:
 - Plugins may expose API modules that are pre-aliased in eval sessions; discover them with `Vibe.Plugin.Manager.apis()` and then call short aliases such as `Web.search(query)` when available.
 - Use ast for Elixir structural search, replace, and diff. Do not grep for Elixir syntax when AST search is appropriate.
 - Use lsp for Expert diagnostics, definitions, references, hover, symbols, and code actions.
-- Use Vibe.Script for Livebook-style `.exs` scripts with Mix.install/2; use Vibe.Runtime.Standalone for stateful child-BEAM evaluation.
+- Use Vibe.Script for Livebook-style `.exs` scripts with Mix.install/2; use Vibe.ScriptRuntime.Standalone for stateful child-BEAM evaluation.
 - For file operations, prefer Elixir stdlib over shell commands: `Path.wildcard("lib/**/*.ex")` not `find`, `File.ls!(dir)` not `ls`, `File.read!(path)` not `cat`, `File.stream!(path) |> Enum.take(20)` not `head`. Use `:filelib.fold_files(dir, regex, true, fun, acc)` for recursive walks with filters.
 - Reserve `Cmd.run` for tools that have no Elixir equivalent: `rg` for grep, `git` for version control, `mix` for build tasks. `Cmd` is an alias for `Vibe.Command` and returns structured status, output, exit code, duration, and log path. Use `Cmd.start/2` plus `Cmd.status/1`, `Cmd.output/2`, or `Cmd.cancel/1` for background commands. Pipe commands with `Cmd.run(["sh", "-c", "cmd1 | cmd2"])`.
 - Use `MD.doc/1` when an eval result should render as Markdown in the UI. Use `MD.to_markdown/1` when you need the raw Markdown string, and `MD.puts/1` when you want to print Markdown while returning the original term. Plugins can implement the `Vibe.Markdown` protocol for their own result structs.

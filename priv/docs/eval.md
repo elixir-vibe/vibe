@@ -8,7 +8,7 @@ Use the smallest execution layer that fits:
 |---|---|
 | `Vibe.Eval.run/2` | In-process runtime inspection and session-persistent helper state |
 | `Vibe.Eval.once/2` | One-off in-process evaluation |
-| `Vibe.Runtime.Standalone` | Isolated child BEAM for `Mix.install/2` experiments |
+| `Vibe.ScriptRuntime.Standalone` | Isolated child BEAM for `Mix.install/2` experiments |
 | `Vibe.Script` | Disposable scripts |
 
 Eval sessions preload useful aliases:

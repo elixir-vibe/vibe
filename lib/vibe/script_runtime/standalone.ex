@@ -1,4 +1,4 @@
-defmodule Vibe.Runtime.Standalone do
+defmodule Vibe.ScriptRuntime.Standalone do
   @moduledoc """
   Stateful standalone BEAM runtime for Livebook-style script evaluation.
 
@@ -10,21 +10,21 @@ defmodule Vibe.Runtime.Standalone do
 
   use GenServer
 
-  @behaviour Vibe.Runtime
+  @behaviour Vibe.ScriptRuntime
 
   @default_timeout_ms 30_000
   @call_overhead_ms 1_000
 
-  @impl Vibe.Runtime
+  @impl Vibe.ScriptRuntime
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts)
 
-  @impl Vibe.Runtime
+  @impl Vibe.ScriptRuntime
   def evaluate(runtime, code, opts \\ []) when is_binary(code) do
     timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
     GenServer.call(runtime, {:evaluate, code, opts}, timeout + @call_overhead_ms)
   end
 
-  @impl Vibe.Runtime
+  @impl Vibe.ScriptRuntime
   def stop(runtime), do: GenServer.stop(runtime, :normal)
 
   @impl true

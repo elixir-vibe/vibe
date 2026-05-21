@@ -17,7 +17,7 @@ defimpl Vibe.Markdown, for: Vibe.WebTools.SearchItem do
   @moduledoc "Markdown rendering for normalized web search result items."
 
   def to_markdown(result) do
-    Vibe.WebTools.Markdown.Item.render(%{
+    Vibe.WebTools.SearchItemRenderer.render(%{
       title: result.title,
       url: result.url,
       author: result.author,
