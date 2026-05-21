@@ -172,23 +172,3 @@ defmodule Vibe.Image do
     end
   end
 end
-
-defimpl Jason.Encoder, for: Vibe.Image do
-  def encode(image, opts) do
-    Jason.Encode.map(
-      %{
-        data: image.data,
-        mime_type: image.mime_type,
-        path: image.path,
-        filename: image.filename,
-        size_bytes: image.size_bytes,
-        width: image.width,
-        height: image.height,
-        original_width: image.original_width,
-        original_height: image.original_height,
-        was_resized?: image.was_resized?
-      },
-      opts
-    )
-  end
-end
