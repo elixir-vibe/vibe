@@ -1,8 +1,72 @@
 # Vibe
 
-BEAM-native coding-agent runtime for Elixir/OTP projects.
+BEAM-native coding agent for Elixir/OTP projects.
 
-Vibe is an OTP application, terminal client, background session server, and coding-agent runtime. It keeps the model-facing tool surface small while exposing Elixir APIs for commands, eval, storage, telemetry, subagents, plugins, AST, and LSP.
+Vibe gives you an interactive terminal agent, a Phoenix LiveView web console, and a background session server that all run as supervised BEAM processes. It is designed for Elixir codebases where the agent should inspect runtime state, use project APIs, keep durable local history, and stay attachable/cancellable like any other OTP workload.
+
+If you are new, start with the Hex install below, run `vibe`, and use `/help` inside the TUI.
+
+## Quick start
+
+Install the released executable:
+
+```bash
+mix escript.install hex vibe
+export PATH="$HOME/.mix/escripts:$PATH"
+```
+
+Sign in with ChatGPT/Codex if you want to use Codex/OpenAI OAuth:
+
+```bash
+vibe --login codex
+```
+
+Start the TUI:
+
+```bash
+vibe
+```
+
+Open the web console from another terminal or from inside the TUI:
+
+```bash
+vibe --web
+# or type /web in the TUI
+```
+
+Run one prompt without opening the TUI:
+
+```bash
+vibe -p "Inspect this project and suggest next steps"
+```
+
+Useful first commands inside the TUI:
+
+```text
+/help        Show built-in docs
+/model       Pick a model and effort
+/sessions    Browse sessions
+/new         Start another session
+/goal TASK   Keep a persistent goal for long-running work
+```
+
+Requirements: Elixir 1.19+, Erlang/OTP 27+, and whichever provider credentials your selected model needs. Vibe stores local runtime state under `~/.vibe` by default.
+
+## What Vibe is
+
+Vibe is an OTP application, terminal client, background session server, web console, and coding-agent runtime. It keeps the model-facing tool surface small while exposing Elixir APIs for commands, eval, storage, telemetry, subagents, plugins, AST, and LSP.
+
+Vibe is useful when you want an agent that can:
+
+- work inside a real Elixir runtime instead of treating the project as files plus shell commands;
+- keep sessions, eval state, memory, telemetry, subagent jobs, and tool output in durable SQLite storage;
+- attach multiple TUI/web clients to the same server-owned session;
+- run supervised commands and subagents that can be cancelled, inspected, and resumed;
+- expose plugins and project helpers through Elixir APIs rather than adding many narrow model tools.
+
+Good fit: Elixir/OTP projects, long-running debugging/refactoring sessions, agent workflows that need runtime introspection, and teams that want local durable state.
+
+Less ideal: quick one-off CLI prompting with no need for BEAM integration, or environments where you cannot run a local SQLite-backed OTP app.
 
 Most coding-agent harnesses wrap an LLM with a CLI, shell access, and a growing list of tools. Vibe treats the BEAM as the runtime boundary: agents, sessions, subagents, plugins, command jobs, telemetry, eval state, storage, and UI updates are supervised Elixir processes with durable local state and runtime introspection.
 
@@ -13,7 +77,7 @@ Vibe is for people who want a coding agent that feels native to Elixir/OTP inste
 - **Small model-facing tool surface, rich eval APIs.** The model sees `read`, `write`, `edit`, `eval`, `ast`, and `lsp`; `eval` exposes pipeable Elixir APIs such as `Cmd`, `MD`, `Vibe.Telemetry`, `Vibe.Storage`, `Vibe.Subagents`, plugins, and project helpers.
 - **OTP-native sessions and background work.** Agent sessions, command jobs, subagents, plugin workers, terminal panes, and schedulers are supervised processes that can be monitored, cancelled, restarted, attached to, and inspected.
 - **Server-owned sessions.** Vibe supports a tmux-like workflow where sessions live in a background server and clients can create, send to, list, and attach to them.
-- **Semantic UI state.** The TUI and Phoenix LiveView prototype consume `Vibe.UI.State` events and commands. Terminal rendering is an adapter, not the source of truth.
+- **Semantic UI state.** The TUI and Phoenix LiveView web console consume `Vibe.UI.State` events and commands. Terminal rendering and HTML rendering are adapters, not the source of truth.
 - **BEAM introspection as an agent capability.** Agents can inspect Vibe's own processes, telemetry, storage, eval state, jobs, and sessions through Elixir APIs.
 - **Plugins as OTP extensions.** Plugins can add supervised children, slash commands, eval APIs, semantic UI updates, model-facing actions, and Markdown renderers.
 - **Durable local state.** Sessions, trajectory events, UI events, eval snapshots, curated memory, imports, subagent jobs, schedules, and telemetry live in local SQLite through Ecto.
@@ -22,8 +86,11 @@ Vibe focuses on making agent work observable, attachable, cancellable, composabl
 
 ## Install from checkout
 
+Use a checkout when developing Vibe itself or testing unreleased changes:
+
 ```bash
-cd ~/Development/vibe
+git clone https://github.com/elixir-vibe/vibe.git
+cd vibe
 mix deps.get
 mix ci
 ```
@@ -54,31 +121,13 @@ vibe
 vibe --help
 ```
 
-## First run
+## Common commands
 
-Sign in with ChatGPT/Codex OAuth when needed:
-
-```bash
-vibe --login codex
-```
-
-Start the interactive TUI:
-
-```bash
-vibe
-mix vibe
-```
-
-Start a fresh server-owned session:
+Start and attach sessions:
 
 ```bash
 vibe new
 vibe n
-```
-
-List, send to, and attach sessions:
-
-```bash
 vibe sessions
 vibe ls
 vibe send <session-id> "Run tests and summarize failures"
@@ -86,24 +135,16 @@ vibe attach <session-id>
 vibe a <session-id>
 ```
 
-Run a non-interactive prompt:
+Attach files with Pi-style `@file` arguments. Text files become `<file name="...">...</file>` context blocks; image files become semantic multimodal content for direct prompts and TUI/Web session prompts.
 
 ```bash
-vibe -p "Inspect this project and suggest next steps"
-```
-
-Attach files at startup with Pi-style `@file` argv arguments. Text files are inserted as `<file name="...">...</file>` blocks; image files become semantic multimodal content for direct prompts and interactive TUI/Web session prompts.
-
-```bash
-vibe --direct @test/fixtures/images/vision-smoke.png "describe this"
-vibe --direct "describe @test/fixtures/images/vision-smoke.png"
+vibe --direct @path/to/image.png "describe this"
+vibe --direct "summarize @README.md"
 vibe
-# then type: describe @test/fixtures/images/vision-smoke.png
-mix run scripts/image_model_smoke.exs
-VIBE_REAL_MODEL=1 mix run scripts/image_agent_smoke.exs
+# then type: compare @lib/foo.ex and @test/foo_test.exs
 ```
 
-Image files read by the agent are model-facing through `read`, resized through pluggable command backends (`magick`, `sips`, `vips`) when needed, and large payloads are stored as session artifacts instead of being duplicated in JSON logs. Interactive image prompts keep the original text visible while sending the image as semantic content; TUI and Web transcripts show attachment badges. In the TUI, `Ctrl+V` can paste a clipboard PNG into the composer as an `@path` marker when `pngpaste` is installed.
+Image files read by the agent are available through `read`, resized through pluggable command backends (`magick`, `sips`, `vips`) when needed, and large payloads are stored as session artifacts instead of being duplicated in JSON logs. In the TUI, `Ctrl+V` can paste a clipboard PNG into the composer as an `@path` marker when `pngpaste` is installed.
 
 ## Web console
 
@@ -295,7 +336,7 @@ Run the full gate:
 mix ci
 ```
 
-`mix ci` runs compile, format check, tests, Credo with ExSlop, Dialyzer, and ExDNA.
+`mix ci` runs compile, format check, tests, Credo, Dialyzer, ExDNA, and Reach smell checks.
 
 Useful checks from Elixir:
 
