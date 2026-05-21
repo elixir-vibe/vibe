@@ -3,7 +3,8 @@ defmodule Vibe.TUI.Views.ChatTest do
 
   alias Vibe.TUI.{Theme, Width}
   alias Vibe.TUI.Views.Chat
-  alias Vibe.UI.{Event, Reducer, State, ViewModel}
+  alias Vibe.Event
+  alias Vibe.UI.{Reducer, State, ViewModel}
 
   test "declarative chat view renders iodata lines" do
     view =

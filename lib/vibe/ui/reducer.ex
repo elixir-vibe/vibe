@@ -3,11 +3,12 @@ defmodule Vibe.UI.Reducer do
   Pure reducer for Vibe's UI-neutral event stream.
   """
 
+  alias Vibe.Event
   alias Vibe.Model.Usage
   alias Vibe.SystemAlarms.Alert
   alias Vibe.Support.Lists
   alias Vibe.Tool.Event, as: ToolEvent
-  alias Vibe.UI.{Event, Message, Notification, Selector, State}
+  alias Vibe.UI.{Message, Notification, Selector, State}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
   def apply_event(%State{} = state, %Event{} = event) do

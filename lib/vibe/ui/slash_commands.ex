@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands do
   @moduledoc "Slash command dispatch and autocomplete."
   alias Vibe.UI.Autocomplete
   alias Vibe.UI.Autocomplete.Item
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.SlashCommands.Registry
 
   @spec autocomplete(String.t()) :: Autocomplete.t() | nil

@@ -1,7 +1,7 @@
 defmodule Vibe.Storage.SearchTest do
   use ExUnit.Case, async: false
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   setup do
     Vibe.Session.Store.clear()

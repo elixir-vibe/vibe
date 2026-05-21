@@ -35,6 +35,6 @@ defmodule Vibe.UI.SlashCommands.Branch do
   end
 
   defp notification(level, text) do
-    Vibe.UI.Event.new(:notification_added, "", %{level: level, text: text})
+    Vibe.Event.new(:notification_added, "", %{level: level, text: text})
   end
 end

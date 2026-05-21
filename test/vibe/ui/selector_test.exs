@@ -1,7 +1,8 @@
 defmodule Vibe.UI.SelectorTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.UI.{Command, Event, Reducer, State}
+  alias Vibe.Event
+  alias Vibe.UI.{Command, Reducer, State}
 
   test "opens, moves, and closes selector state" do
     state =

@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands.Goal do
   @moduledoc "Slash command: /goal — set, view, pause, resume, or clear a long-running goal."
   @behaviour Vibe.UI.SlashCommands.Command
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.SlashCommands.Spec
 
   @impl true

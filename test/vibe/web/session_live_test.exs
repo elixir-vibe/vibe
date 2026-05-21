@@ -2,7 +2,7 @@ defmodule Vibe.Web.SessionLiveTest do
   use Vibe.WebCase, async: false
 
   alias Vibe.Tool.Event, as: ToolEvent
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   setup do
     Vibe.Session.Store.clear()

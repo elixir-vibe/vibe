@@ -1,6 +1,6 @@
 defmodule Vibe.UI.SlashCommands.Command do
   @moduledoc "Slash command: /command — run a shell command."
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.State
 
   @type spec ::

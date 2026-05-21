@@ -7,7 +7,7 @@ defmodule Vibe.Plugin.UI do
   """
 
   alias Vibe.Presentation.Widget
-  alias Vibe.UI.Bus
+  alias Vibe.Event.Bus
 
   @type session_id :: String.t()
   @type status_key :: String.t() | atom()

@@ -4,7 +4,7 @@ defmodule Vibe.Subagents.Job do
 
   alias Vibe.Session
   alias Vibe.Subagents.JobInfo
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   @default_job_timeout_ms 120_000
 

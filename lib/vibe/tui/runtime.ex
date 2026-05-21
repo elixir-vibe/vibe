@@ -9,7 +9,7 @@ defmodule Vibe.TUI.Runtime do
   alias Vibe.TUI.{Cast, RuntimeSupervisor, TerminalLoop, TerminalPainter}
   alias Vibe.TUI.Cast.Writer
   alias Vibe.TUI.Views.Agents, as: AgentsView
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   @interrupt_repeat_window_ms 1_500
 

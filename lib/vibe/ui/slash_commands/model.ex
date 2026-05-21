@@ -20,8 +20,8 @@ defmodule Vibe.UI.SlashCommands.Model do
           {:ok, model, effort} ->
             {:events,
              [
-               Vibe.UI.Event.new(:model_selected, "", %{model: model}),
-               Vibe.UI.Event.new(:effort_selected, "", %{effort: effort})
+               Vibe.Event.new(:model_selected, "", %{model: model}),
+               Vibe.Event.new(:effort_selected, "", %{effort: effort})
              ]}
 
           {:error, :not_found} ->

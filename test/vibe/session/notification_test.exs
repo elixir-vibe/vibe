@@ -2,7 +2,8 @@ defmodule Vibe.Session.NotificationTest do
   use ExUnit.Case, async: true
 
   alias Vibe.Session
-  alias Vibe.UI.{Command, Event}
+  alias Vibe.Event
+  alias Vibe.UI.Command
 
   test "notifications get ids and expire as transient UI state" do
     {:ok, session} = Session.start_link(persist?: false, session_id: "notification-expiry")

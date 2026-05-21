@@ -5,10 +5,10 @@ defmodule Vibe.TUI.RendererTest do
     state =
       Vibe.UI.State.new(session_id: "s1", cwd: "/tmp/project", model: "openai_codex:gpt-5.5")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:user_message_added, "s1", %{text: String.duplicate("hello ", 20)})
+        Vibe.Event.new(:user_message_added, "s1", %{text: String.duplicate("hello ", 20)})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_message_added, "s1", %{text: "ok"})
+        Vibe.Event.new(:assistant_message_added, "s1", %{text: "ok"})
       )
 
     lines = state |> Vibe.UI.ViewModel.from_state() |> Vibe.TUI.Renderer.render(40)

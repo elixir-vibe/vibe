@@ -72,7 +72,7 @@ defmodule Vibe.SessionProcessTest do
 
     events =
       for index <- 1..201 do
-        {index, Vibe.UI.Event.new(:overlay_opened, session_id, %{id: index, kind: :test_overlay})}
+        {index, Vibe.Event.new(:overlay_opened, session_id, %{id: index, kind: :test_overlay})}
       end
 
     :ok = Vibe.Session.Store.append_ui_events(events)

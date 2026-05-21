@@ -36,7 +36,7 @@ defmodule Vibe.SessionTest do
       session_id: session_id
     )
 
-    ui_event = Vibe.UI.Event.new(:user_message_added, session_id, %{text: "hello"})
+    ui_event = Vibe.Event.new(:user_message_added, session_id, %{text: "hello"})
     assert :ok = Vibe.Session.Store.append_ui_event(ui_event, 1)
 
     assert [%{id: ^session_id, path: path, message_count: 1, first_message: "hello"}] =
@@ -73,7 +73,7 @@ defmodule Vibe.SessionTest do
 
     assert :ok =
              Vibe.Session.Store.append_ui_event(
-               Vibe.UI.Event.new(
+               Vibe.Event.new(
                  :tool_started,
                  session_id,
                  Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})

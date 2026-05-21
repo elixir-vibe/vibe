@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands.Commands do
   @moduledoc "Slash command: /commands — list available slash commands."
   @behaviour Vibe.UI.SlashCommands.Command
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.Selector
   alias Vibe.UI.SlashCommands.Registry
   alias Vibe.UI.SlashCommands.Spec

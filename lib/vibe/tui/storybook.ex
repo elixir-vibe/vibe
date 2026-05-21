@@ -10,7 +10,8 @@ defmodule Vibe.TUI.Storybook do
   alias Vibe.TUI
   alias Vibe.TUI.{Node, Theme, Widget, Width}
   alias Vibe.Tool.Event, as: ToolEvent
-  alias Vibe.UI.{Event, Reducer, State, ViewModel}
+  alias Vibe.Event
+  alias Vibe.UI.{Reducer, State, ViewModel}
 
   defmodule ToolExample do
     @moduledoc false

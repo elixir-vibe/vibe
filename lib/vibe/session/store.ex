@@ -10,7 +10,7 @@ defmodule Vibe.Session.Store do
   alias Vibe.Storage.Representation.SessionLog
   alias Vibe.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent, UIEventFTS}
   alias Vibe.Trajectory
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   @spec new_id() :: String.t()
   def new_id do

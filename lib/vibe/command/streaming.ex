@@ -1,7 +1,7 @@
 defmodule Vibe.Command.Streaming do
   @moduledoc "Streaming output capture for long-running commands."
   alias Vibe.Tool.Event, as: ToolEvent
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   @process_key :vibe_eval_command_stream_session_id
   @table __MODULE__
@@ -104,7 +104,7 @@ defmodule Vibe.Command.Streaming do
   end
 
   defp emit(session_id, output) do
-    with {:ok, session} <- Vibe.UI.Bus.server(session_id),
+    with {:ok, session} <- Vibe.Event.Bus.server(session_id),
          {:ok, tool} <- running_eval_tool(session) do
       Vibe.Session.emit_transient_event(
         session,

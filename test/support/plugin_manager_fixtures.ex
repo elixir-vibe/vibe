@@ -77,7 +77,7 @@ defmodule Vibe.Test.PluginManagerFixtures.PluginCommand do
   def run(_args, ui_state) do
     {:events,
      [
-       Vibe.UI.Event.new(:notification_added, ui_state.session_id, %{
+       Vibe.Event.new(:notification_added, ui_state.session_id, %{
          level: :info,
          text: "fixture command"
        })

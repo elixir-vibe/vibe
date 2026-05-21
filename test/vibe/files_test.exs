@@ -4,7 +4,7 @@ defmodule Vibe.FilesTest do
   alias Vibe.Image
   alias Vibe.Model.Content
   alias Vibe.Tool.Event, as: ToolEvent
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   defmodule FakeResizeBackend do
     @behaviour Vibe.Image.Resize.Backend

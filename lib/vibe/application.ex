@@ -29,7 +29,7 @@ defmodule Vibe.Application do
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Remote.SSH.AttachmentSupervisor},
       {Task.Supervisor, name: Vibe.TaskSupervisor},
       {Task.Supervisor, name: Vibe.UI.PluginTaskSupervisor},
-      Vibe.UI.Bus,
+      Vibe.Event.Bus,
       Vibe.SystemAlarms,
       Vibe.Session.Processes,
       Vibe.Agent.Memory,

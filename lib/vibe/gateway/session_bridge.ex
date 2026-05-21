@@ -11,7 +11,7 @@ defmodule Vibe.Gateway.SessionBridge do
   use GenServer
 
   alias Vibe.Gateway.{Message, StreamConsumer}
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   @spec start(Message.t(), String.t(), keyword()) :: {:ok, pid()} | {:error, term()}
   def start(%Message{} = message, session_id, opts \\ []) do

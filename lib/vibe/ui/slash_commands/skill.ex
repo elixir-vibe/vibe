@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands.Skill do
   @moduledoc "Slash command: /skill — invoke executable skills."
   @behaviour Vibe.UI.SlashCommands.Command
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.Selector
   alias Vibe.UI.SlashCommands.Spec
 

@@ -1,7 +1,8 @@
 defmodule Vibe.Session.PromptLifecycle do
   @moduledoc "Prompt submission, cancellation, memory injection, and result recording."
   alias Vibe.Model.{Content, Error, Usage}
-  alias Vibe.UI.{Event, PromptRunner}
+  alias Vibe.Event
+  alias Vibe.UI.PromptRunner
 
   require Vibe.Debug
 

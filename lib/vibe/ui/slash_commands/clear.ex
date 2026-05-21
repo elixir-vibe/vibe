@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands.Clear do
   @moduledoc "Slash command: /clear — reset session history."
   @behaviour Vibe.UI.SlashCommands.Command
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.SlashCommands.Spec
 
   @impl true

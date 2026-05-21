@@ -79,7 +79,7 @@ defmodule Vibe.SkillScriptTest do
     Vibe.Session.Store.ensure_session(session_id, ~U[2026-01-01 00:00:00Z], cwd: dir)
 
     :ok =
-      Vibe.UI.Event.new(:user_message_added, session_id, %{text: "Debug reusable workflow"},
+      Vibe.Event.new(:user_message_added, session_id, %{text: "Debug reusable workflow"},
         at: ~U[2026-01-01 00:00:01Z]
       )
       |> Vibe.Session.Store.append_ui_event(1)

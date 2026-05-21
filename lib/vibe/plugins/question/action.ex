@@ -62,7 +62,7 @@ defmodule Vibe.Plugins.Question.Action do
 
       Vibe.Session.emit_transient_event(
         session,
-        Vibe.UI.Event.new(:selector_opened, session_id, selector)
+        Vibe.Event.new(:selector_opened, session_id, selector)
       )
 
       receive do

@@ -9,7 +9,8 @@ defmodule Vibe.UI.State do
   """
 
   alias Vibe.Model.Effort
-  alias Vibe.UI.{Event, Notification, Selector}
+  alias Vibe.Event
+  alias Vibe.UI.{Notification, Selector}
 
   defstruct session_id: nil,
             cwd: nil,

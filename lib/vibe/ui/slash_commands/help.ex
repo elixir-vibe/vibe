@@ -19,7 +19,7 @@ defmodule Vibe.UI.SlashCommands.Help do
 
     {:events,
      [
-       Vibe.UI.Event.new(:notification_added, ui_state.session_id, %{
+       Vibe.Event.new(:notification_added, ui_state.session_id, %{
          level: :info,
          title: help_title(topic),
          text: markdown

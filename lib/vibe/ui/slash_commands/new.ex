@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands.New do
   @moduledoc "Slash command: /new — start a fresh session."
   @behaviour Vibe.UI.SlashCommands.Command
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.SlashCommands.Spec
 
   @impl true

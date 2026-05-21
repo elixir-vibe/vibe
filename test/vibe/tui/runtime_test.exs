@@ -97,7 +97,7 @@ defmodule Vibe.TUI.RuntimeTest do
     :ok =
       Vibe.Session.emit_event(
         session,
-        Vibe.UI.Event.new(:notification_added, "remote-runtime", %{text: "live event"})
+        Vibe.Event.new(:notification_added, "remote-runtime", %{text: "live event"})
       )
 
     assert_receive {Vibe.TUI.App, :event,

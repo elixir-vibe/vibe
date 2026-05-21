@@ -11,7 +11,7 @@ defmodule Vibe.Web.SessionStreamingTest do
 
     Vibe.Session.emit_transient_event(
       session,
-      Vibe.UI.Event.new(:user_message_added, session_id, %{text: "streaming test prompt"})
+      Vibe.Event.new(:user_message_added, session_id, %{text: "streaming test prompt"})
     )
 
     Process.sleep(50)
@@ -20,7 +20,7 @@ defmodule Vibe.Web.SessionStreamingTest do
 
     Vibe.Session.emit_transient_event(
       session,
-      Vibe.UI.Event.new(:assistant_message_added, session_id, %{
+      Vibe.Event.new(:assistant_message_added, session_id, %{
         text: "streaming response from agent"
       })
     )

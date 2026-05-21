@@ -54,7 +54,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok =
       Vibe.Session.emit_transient_event(
         target,
-        Vibe.UI.Event.new(:assistant_message_added, target_id, %{text: "target session"})
+        Vibe.Event.new(:assistant_message_added, target_id, %{text: "target session"})
       )
 
     {:ok, loop} =
@@ -63,7 +63,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok =
       Vibe.Session.emit_transient_event(
         source,
-        Vibe.UI.Event.new(:session_selected, source_id, %{session_id: target_id})
+        Vibe.Event.new(:session_selected, source_id, %{session_id: target_id})
       )
 
     Process.sleep(50)
@@ -155,7 +155,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok =
       Vibe.Session.emit_transient_event(
         session,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_started,
           session_id,
           Vibe.Tool.Event.started(id: "read-1", name: :read, args: %{path: "large.ex"})
@@ -165,7 +165,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok =
       Vibe.Session.emit_transient_event(
         session,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           session_id,
           Vibe.Tool.Event.finished(
@@ -198,7 +198,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok =
       Vibe.Session.emit_transient_event(
         session,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           session_id,
           Vibe.Tool.Event.finished(
@@ -245,7 +245,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert :ok =
              Vibe.Session.emit_transient_event(
                session,
-               Vibe.UI.Event.new(
+               Vibe.Event.new(
                  :tool_started,
                  session_id,
                  Vibe.Tool.Event.started(id: "eval-1", name: :eval, args: %{code: code})
@@ -255,7 +255,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert :ok =
              Vibe.Session.emit_transient_event(
                session,
-               Vibe.UI.Event.new(
+               Vibe.Event.new(
                  :tool_finished,
                  session_id,
                  Vibe.Tool.Event.finished(
@@ -388,7 +388,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok =
       Vibe.Session.emit_transient_event(
         session,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           session_id,
           Vibe.Tool.Event.finished(
@@ -448,7 +448,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok =
       Vibe.Session.emit_transient_event(
         session,
-        Vibe.UI.Event.new(:assistant_stream_started, session_id, %{})
+        Vibe.Event.new(:assistant_stream_started, session_id, %{})
       )
 
     {_, painter} = paint_screen(loop, terminal, painter)
@@ -458,7 +458,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         :ok =
           Vibe.Session.emit_transient_event(
             session,
-            Vibe.UI.Event.new(:assistant_delta, session_id, %{text: "stream line #{index}\n"})
+            Vibe.Event.new(:assistant_delta, session_id, %{text: "stream line #{index}\n"})
           )
 
         {_screen, painter} = paint_screen(loop, terminal, painter)
@@ -493,7 +493,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         :ok =
           Vibe.Session.emit_transient_event(
             session,
-            Vibe.UI.Event.new(:assistant_message_added, session_id, %{text: "message #{index}"})
+            Vibe.Event.new(:assistant_message_added, session_id, %{text: "message #{index}"})
           )
 
         {_screen, painter} = paint_screen(loop, terminal, painter)
@@ -525,7 +525,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         loader_tick_ms: 1
       )
 
-    assert :ok = Vibe.UI.Bus.emit(session_id, :assistant_stream_started, %{})
+    assert :ok = Vibe.Event.Bus.emit(session_id, :assistant_stream_started, %{})
     assert_receive {TerminalLoop, :event, :loader_tick}, 300
 
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
@@ -549,10 +549,10 @@ defmodule Vibe.TUI.TerminalLoopTest do
         loader_tick_ms: 1
       )
 
-    assert :ok = Vibe.UI.Bus.emit(session_id, :assistant_stream_started, %{})
+    assert :ok = Vibe.Event.Bus.emit(session_id, :assistant_stream_started, %{})
 
     assert :ok =
-             Vibe.UI.Bus.emit(
+             Vibe.Event.Bus.emit(
                session_id,
                :tool_started,
                Vibe.Tool.Event.started(id: "eval-1", name: :eval)
@@ -575,7 +575,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert :ok =
              Vibe.Session.emit_transient_event(
                session,
-               Vibe.UI.Event.new(:assistant_stream_started, session_id, %{})
+               Vibe.Event.new(:assistant_stream_started, session_id, %{})
              )
 
     {:ok, _loop} =
@@ -604,7 +604,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         event_target: self()
       )
 
-    event = Vibe.UI.Event.new(:assistant_message_added, session_id, %{text: "done"})
+    event = Vibe.Event.new(:assistant_message_added, session_id, %{text: "done"})
     {:ok, _task} = Task.start(fn -> Vibe.Session.emit_transient_event(session, event) end)
 
     assert_receive {TerminalLoop, :event, %{type: :assistant_message_added}}, 500
@@ -615,8 +615,8 @@ defmodule Vibe.TUI.TerminalLoopTest do
       "Create a new phoenix project in ~/Development and let's implement tic tac toe game there"
 
     [
-      Vibe.UI.Event.new(:user_message_added, session_id, %{text: prompt}),
-      Vibe.UI.Event.new(:assistant_stream_started, session_id, %{}),
+      Vibe.Event.new(:user_message_added, session_id, %{text: prompt}),
+      Vibe.Event.new(:assistant_stream_started, session_id, %{}),
       tool_started(session_id, "eval-1", :eval, %{
         code: "Cmd.run([\"mix\", \"phx.new\"], timeout: #{@long_command_timeout_ms})"
       }),
@@ -655,7 +655,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
   end
 
   defp tool_started(session_id, id, name, args) do
-    Vibe.UI.Event.new(
+    Vibe.Event.new(
       :tool_started,
       session_id,
       Vibe.Tool.Event.started(id: id, name: name, args: args)
@@ -663,7 +663,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
   end
 
   defp tool_finished(session_id, id, name, output, format) do
-    Vibe.UI.Event.new(
+    Vibe.Event.new(
       :tool_finished,
       session_id,
       Vibe.Tool.Event.finished(

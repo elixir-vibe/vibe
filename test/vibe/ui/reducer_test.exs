@@ -5,9 +5,9 @@ defmodule Vibe.UI.ReducerTest do
     state = Vibe.UI.State.new(session_id: "ui-test", cwd: "/tmp", model: "openai_codex:gpt-5.5")
 
     events = [
-      Vibe.UI.Event.new(:user_message_added, "ui-test", %{text: "hello"}),
-      Vibe.UI.Event.new(:assistant_message_added, "ui-test", %{text: "hi"}),
-      Vibe.UI.Event.new(:usage_updated, "ui-test", %{
+      Vibe.Event.new(:user_message_added, "ui-test", %{text: "hello"}),
+      Vibe.Event.new(:assistant_message_added, "ui-test", %{text: "hi"}),
+      Vibe.Event.new(:usage_updated, "ui-test", %{
         input_tokens: 2,
         output_tokens: 3,
         total_tokens: 5
@@ -28,10 +28,10 @@ defmodule Vibe.UI.ReducerTest do
     state =
       state
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-b"})
+        Vibe.Event.new(:model_selected, "ui-test", %{model: "model-b"})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:effort_selected, "ui-test", %{effort: :high})
+        Vibe.Event.new(:effort_selected, "ui-test", %{effort: :high})
       )
 
     assert state.model == "model-b"
@@ -44,10 +44,10 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.State.new(session_id: "ui-test", model: "model-a")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-b"})
+        Vibe.Event.new(:model_selected, "ui-test", %{model: "model-b"})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-c"})
+        Vibe.Event.new(:model_selected, "ui-test", %{model: "model-c"})
       )
 
     assert state.model == "model-c"
@@ -61,13 +61,13 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.State.new(session_id: "ui-test", model: "model-a")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-b"})
+        Vibe.Event.new(:model_selected, "ui-test", %{model: "model-b"})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:user_message_added, "ui-test", %{text: "hello"})
+        Vibe.Event.new(:user_message_added, "ui-test", %{text: "hello"})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:model_selected, "ui-test", %{model: "model-c"})
+        Vibe.Event.new(:model_selected, "ui-test", %{model: "model-c"})
       )
 
     assert Enum.map(state.messages, & &1.text) == ["Model: model-b", "hello", "Model: model-c"]
@@ -77,11 +77,11 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:user_message_added, "ui-test", %{text: "hello"})
+        Vibe.Event.new(:user_message_added, "ui-test", %{text: "hello"})
       )
-      |> Vibe.UI.Reducer.apply_event(Vibe.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Vibe.UI.Reducer.apply_event(Vibe.Event.new(:assistant_stream_started, "ui-test", %{}))
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_delta, "ui-test", %{text: "streaming text"})
+        Vibe.Event.new(:assistant_delta, "ui-test", %{text: "streaming text"})
       )
 
     assert state.usage.total_tokens == 0
@@ -92,7 +92,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(:usage_updated, "ui-test", %{
+        Vibe.Event.new(:usage_updated, "ui-test", %{
           input_tokens: 10,
           output_tokens: 20,
           total_tokens: 30
@@ -109,17 +109,17 @@ defmodule Vibe.UI.ReducerTest do
     state =
       state
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:overlay_opened, "ui-test", %{kind: :session_selector})
+        Vibe.Event.new(:overlay_opened, "ui-test", %{kind: :session_selector})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_started,
           "ui-test",
           Vibe.Tool.Event.started(id: "tool-1", name: "eval")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           "ui-test",
           Vibe.Tool.Event.finished(id: "tool-1", status: :ok)
@@ -137,7 +137,7 @@ defmodule Vibe.UI.ReducerTest do
     state = Vibe.UI.State.new(session_id: "s1")
 
     event =
-      Vibe.UI.Event.new(
+      Vibe.Event.new(
         :tool_updated,
         "s1",
         Vibe.Tool.Event.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
@@ -157,7 +157,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_updated,
           "s1",
           Vibe.Tool.Event.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
@@ -167,7 +167,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_started,
           "s1",
           Vibe.Tool.Event.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
@@ -184,7 +184,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_started,
           "s1",
           Vibe.Tool.Event.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
@@ -194,7 +194,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           "s1",
           Vibe.Tool.Event.finished(id: "call-1", name: :eval, output: "ok")
@@ -211,7 +211,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:runtime_alert_set, "ui-test", %{alert: alert})
+        Vibe.Event.new(:runtime_alert_set, "ui-test", %{alert: alert})
       )
 
     assert [%Vibe.SystemAlarms.Alert{type: :disk_almost_full}] = Map.values(state.runtime_alerts)
@@ -223,7 +223,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(:runtime_alert_clear, "ui-test", %{alert: clear})
+        Vibe.Event.new(:runtime_alert_clear, "ui-test", %{alert: clear})
       )
 
     assert state.runtime_alerts == %{}
@@ -234,7 +234,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:subagent_started, "ui-test", %{
+        Vibe.Event.new(:subagent_started, "ui-test", %{
           id: "sg-1",
           role: :scout,
           task: "inspect docs",
@@ -242,7 +242,7 @@ defmodule Vibe.UI.ReducerTest do
         })
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:subagent_finished, "ui-test", %{
+        Vibe.Event.new(:subagent_finished, "ui-test", %{
           id: "sg-1",
           role: :scout,
           status: :ok,
@@ -263,18 +263,18 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:user_message_added, "ui-test", %{text: "work"})
+        Vibe.Event.new(:user_message_added, "ui-test", %{text: "work"})
       )
-      |> Vibe.UI.Reducer.apply_event(Vibe.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Vibe.UI.Reducer.apply_event(Vibe.Event.new(:assistant_stream_started, "ui-test", %{}))
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_started,
           "ui-test",
           Vibe.Tool.Event.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           "ui-test",
           Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
@@ -287,7 +287,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(:assistant_stream_finished, "ui-test", %{})
+        Vibe.Event.new(:assistant_stream_finished, "ui-test", %{})
       )
 
     assert state.status == :idle
@@ -299,12 +299,12 @@ defmodule Vibe.UI.ReducerTest do
   test "stream finish reconciles final response text" do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
-      |> Vibe.UI.Reducer.apply_event(Vibe.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Vibe.UI.Reducer.apply_event(Vibe.Event.new(:assistant_stream_started, "ui-test", %{}))
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_delta, "ui-test", %{text: "Reviewed../ `actsprogram_f`"})
+        Vibe.Event.new(:assistant_delta, "ui-test", %{text: "Reviewed../ `actsprogram_f`"})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_stream_finished, "ui-test", %{
+        Vibe.Event.new(:assistant_stream_finished, "ui-test", %{
           text: "Reviewed `../program_facts`"
         })
       )
@@ -317,23 +317,23 @@ defmodule Vibe.UI.ReducerTest do
   test "stream finish appends final response when no delta created an assistant segment" do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
-      |> Vibe.UI.Reducer.apply_event(Vibe.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Vibe.UI.Reducer.apply_event(Vibe.Event.new(:assistant_stream_started, "ui-test", %{}))
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_started,
           "ui-test",
           Vibe.Tool.Event.started(id: "tool-1", name: "eval")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           "ui-test",
           Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: "ok")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_stream_finished, "ui-test", %{text: "Done"})
+        Vibe.Event.new(:assistant_stream_finished, "ui-test", %{text: "Done"})
       )
 
     assert [%{role: :tool, id: "tool-1"}, %{role: :assistant, text: "Done"}] = state.messages
@@ -342,30 +342,28 @@ defmodule Vibe.UI.ReducerTest do
   test "keeps assistant text and tool calls in chronological order" do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
-      |> Vibe.UI.Reducer.apply_event(Vibe.UI.Event.new(:assistant_stream_started, "ui-test", %{}))
+      |> Vibe.UI.Reducer.apply_event(Vibe.Event.new(:assistant_stream_started, "ui-test", %{}))
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_delta, "ui-test", %{text: "Before."})
+        Vibe.Event.new(:assistant_delta, "ui-test", %{text: "Before."})
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_started,
           "ui-test",
           Vibe.Tool.Event.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(
+        Vibe.Event.new(
           :tool_finished,
           "ui-test",
           Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_delta, "ui-test", %{text: "After."})
+        Vibe.Event.new(:assistant_delta, "ui-test", %{text: "After."})
       )
-      |> Vibe.UI.Reducer.apply_event(
-        Vibe.UI.Event.new(:assistant_stream_finished, "ui-test", %{})
-      )
+      |> Vibe.UI.Reducer.apply_event(Vibe.Event.new(:assistant_stream_finished, "ui-test", %{}))
 
     assert [
              %{role: :assistant, text: "Before."},

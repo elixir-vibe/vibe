@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands.Sessions do
   @moduledoc "Slash command: /sessions — list active sessions."
   @behaviour Vibe.UI.SlashCommands.Command
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.Selector
   alias Vibe.UI.SlashCommands.Spec
 

@@ -2,7 +2,7 @@ defmodule Vibe.UI.SlashCommands.Attach do
   @moduledoc "Slash command: /attach — switch to an existing session."
   @behaviour Vibe.UI.SlashCommands.Command
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.SlashCommands.Sessions
   alias Vibe.UI.SlashCommands.Spec
 

@@ -41,9 +41,9 @@ Potential later transport protocols should only be introduced after storage, pre
 
 ## Semantic events
 
-`Vibe.UI.Event` is the wrong namespace if events are semantic session/runtime events consumed by TUI, Web, storage, plugins, sessions, and remote clients.
+`Vibe.UI.Event` was the wrong namespace because events are semantic session/runtime events consumed by TUI, Web, storage, plugins, sessions, and remote clients.
 
-Target namespace:
+Current/target namespace:
 
 ```elixir
 Vibe.Event
@@ -143,7 +143,7 @@ Vibe.UI.SlashCommands
 
 `Vibe.UI.Reducer` is acceptable because it reduces semantic `Vibe.Event` values into UI state.
 
-`Vibe.UI.Bus` should become `Vibe.Event.Bus` if it broadcasts semantic events.
+`Vibe.Event.Bus` owns semantic event broadcast. UI consumes it; UI does not own it.
 
 ## Presentation layer
 

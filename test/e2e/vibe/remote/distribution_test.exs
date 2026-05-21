@@ -30,7 +30,7 @@ defmodule Vibe.E2E.Remote.DistributionTest do
     # Dispatch a prompt event and verify it arrives
     Vibe.Session.emit_transient_event(
       session,
-      Vibe.UI.Event.new(:user_message_added, session_id, %{text: "remote test"})
+      Vibe.Event.new(:user_message_added, session_id, %{text: "remote test"})
     )
 
     assert_receive {Vibe.Session, :event,

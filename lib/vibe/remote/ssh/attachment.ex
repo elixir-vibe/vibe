@@ -25,7 +25,7 @@ defmodule Vibe.Remote.SSH.Attachment do
     end
   end
 
-  @spec next_events(String.t(), timeout()) :: {:ok, [Vibe.UI.Event.t()]} | {:error, term()}
+  @spec next_events(String.t(), timeout()) :: {:ok, [Vibe.Event.t()]} | {:error, term()}
   def next_events(id, timeout_ms \\ @default_timeout_ms) do
     with {:ok, pid} <- lookup(id) do
       GenServer.call(pid, {:next_events, timeout_ms}, timeout_ms + 1_000)

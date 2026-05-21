@@ -9,7 +9,7 @@ defmodule Vibe.Plugins.Safety do
   use Vibe.Plugin
 
   alias Vibe.Session
-  alias Vibe.UI.Event
+  alias Vibe.Event
   alias Vibe.UI.Selector
 
   @confirmation_timeout_ms 300_000

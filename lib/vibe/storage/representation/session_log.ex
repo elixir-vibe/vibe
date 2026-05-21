@@ -1,7 +1,7 @@
 defmodule Vibe.Storage.Representation.SessionLog do
   @moduledoc "Current storage representation boundary for persisted session log entries."
   alias Vibe.Trajectory
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   @json_atom_keys MapSet.new([
                     "alert",

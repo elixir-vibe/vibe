@@ -8,7 +8,7 @@ defmodule Vibe.Web.SessionsLiveTest do
 
   test "renders stored sessions" do
     Vibe.Session.Store.append_ui_event(
-      Vibe.UI.Event.new(:user_message_added, "web-list-session", %{text: "hello web"}),
+      Vibe.Event.new(:user_message_added, "web-list-session", %{text: "hello web"}),
       1
     )
 

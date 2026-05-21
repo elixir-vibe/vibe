@@ -14,7 +14,7 @@ defmodule Vibe.Storage.Representation.Event do
         }
 end
 
-defimpl Vibe.Storage.Persistable, for: Vibe.UI.Event do
+defimpl Vibe.Storage.Persistable, for: Vibe.Event do
   def persist(event) do
     %Vibe.Storage.Representation.Event{
       id: event.id,

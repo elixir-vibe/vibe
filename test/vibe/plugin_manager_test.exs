@@ -20,7 +20,7 @@ defmodule Vibe.PluginManagerTest do
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
 
-    assert :ok = Vibe.UI.Bus.register(session_id, server)
+    assert :ok = Vibe.Event.Bus.register(session_id, server)
 
     assert :ok = Vibe.Plugin.Manager.load(BackgroundPlugin, session_id: session_id)
 
@@ -137,7 +137,7 @@ defmodule Vibe.PluginManagerTest do
         ask_fun: fn _text, _opts -> {:ok, "ok"} end
       )
 
-    assert :ok = Vibe.UI.Bus.register(session_id, server)
+    assert :ok = Vibe.Event.Bus.register(session_id, server)
     assert :ok = Vibe.Plugin.Manager.load(EventPlugin, session_id: session_id)
     assert :ok = Vibe.Session.dispatch(server, {:submit_prompt, %{text: "hello"}})
 

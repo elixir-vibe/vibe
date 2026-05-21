@@ -103,7 +103,7 @@ defmodule Vibe.SystemAlarms do
 
   defp emit_runtime_alert(action, alert) do
     type = if action == :set, do: :runtime_alert_set, else: :runtime_alert_clear
-    Vibe.UI.Bus.emit_all(type, %{alert: alert})
+    Vibe.Event.Bus.emit_all(type, %{alert: alert})
   rescue
     exception -> Logger.debug("Runtime alert UI emission failed: #{Exception.message(exception)}")
   catch

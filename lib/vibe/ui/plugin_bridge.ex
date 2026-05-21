@@ -1,7 +1,8 @@
 defmodule Vibe.UI.PluginBridge do
   @moduledoc "Bridges plugin events into the session UI state loop."
 
-  alias Vibe.UI.{Event, State}
+  alias Vibe.Event
+  alias Vibe.UI.State
 
   @ignored_events MapSet.new([
                     :plugin_status_updated,

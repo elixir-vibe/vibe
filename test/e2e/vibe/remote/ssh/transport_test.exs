@@ -5,7 +5,7 @@ defmodule Vibe.E2E.Remote.SSH.TransportTest do
 
   alias Vibe.Remote.SSH.Daemon
   alias Vibe.Remote.Transport.SSH
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   setup do
     dir =

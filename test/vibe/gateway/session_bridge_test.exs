@@ -2,7 +2,7 @@ defmodule Vibe.Gateway.SessionBridgeTest do
   use ExUnit.Case, async: true
 
   alias Vibe.Gateway.{Message, SessionBridge, Source}
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   test "streams assistant deltas to the gateway adapter" do
     parent = self()

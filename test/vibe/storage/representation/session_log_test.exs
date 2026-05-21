@@ -3,7 +3,7 @@ defmodule Vibe.Storage.Representation.SessionLogTest do
 
   alias Vibe.Storage.Representation.SessionLog
   alias Vibe.SystemAlarms.Alert
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   test "encodes and decodes tool events through storage representation" do
     tool = Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})

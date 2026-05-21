@@ -19,6 +19,6 @@ defmodule Vibe.Plugin.Context do
     |> Map.take([:session_id, :cwd, :model])
     |> Map.put_new(:cwd, File.cwd!())
     |> Map.put(:ui, Vibe.Plugin.UI)
-    |> Map.put(:bus, Vibe.UI.Bus)
+    |> Map.put(:bus, Vibe.Event.Bus)
   end
 end

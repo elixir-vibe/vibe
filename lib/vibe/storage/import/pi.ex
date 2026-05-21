@@ -2,7 +2,7 @@ defmodule Vibe.Storage.Import.Pi do
   @moduledoc "Pi JSONL session importer."
   @behaviour Vibe.Storage.Importer
 
-  alias Vibe.UI.Event
+  alias Vibe.Event
 
   @impl true
   def source, do: :pi

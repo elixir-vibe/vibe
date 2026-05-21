@@ -1,4 +1,4 @@
-defmodule Vibe.UI.Bus do
+defmodule Vibe.Event.Bus do
   @moduledoc """
   Registry-backed access point for UI sessions.
 
@@ -9,7 +9,8 @@ defmodule Vibe.UI.Bus do
   use GenServer
 
   alias Vibe.Session
-  alias Vibe.UI.{Command, Event}
+  alias Vibe.Event
+  alias Vibe.UI.Command
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)

@@ -1,4 +1,4 @@
-defmodule Vibe.UI.Event do
+defmodule Vibe.Event do
   @moduledoc """
   UI-neutral event emitted by Vibe sessions.
 

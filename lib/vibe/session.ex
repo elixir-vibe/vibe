@@ -17,7 +17,8 @@ defmodule Vibe.Session do
   alias Vibe.Session.PromptLifecycle
   alias Vibe.Storage.Search
   alias Vibe.Tool.Event, as: ToolEvent
-  alias Vibe.UI.{Command, Event, PluginBridge, Reducer, Selector, SlashCommands, State}
+  alias Vibe.Event
+  alias Vibe.UI.{Command, PluginBridge, Reducer, Selector, SlashCommands, State}
 
   require Vibe.Debug
 
@@ -708,7 +709,7 @@ defmodule Vibe.Session do
   end
 
   defp maybe_register_ui_bus(session_id) do
-    if Process.whereis(Vibe.UI.Bus), do: Vibe.UI.Bus.register(session_id, self()), else: :ok
+    if Process.whereis(Vibe.Event.Bus), do: Vibe.Event.Bus.register(session_id, self()), else: :ok
   end
 
   @session_list_events [

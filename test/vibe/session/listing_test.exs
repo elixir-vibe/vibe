@@ -11,7 +11,7 @@ defmodule Vibe.Session.ListingTest do
     Vibe.Session.Store.ensure_session("listing-empty-stored", DateTime.utc_now())
 
     Vibe.Session.Store.append_ui_event(
-      Vibe.UI.Event.new(:user_message_added, "listing-useful", %{text: "keep me"}),
+      Vibe.Event.new(:user_message_added, "listing-useful", %{text: "keep me"}),
       1
     )
 
@@ -26,7 +26,7 @@ defmodule Vibe.Session.ListingTest do
 
   test "stored SQLite sessions can be looked up without legacy JSON files" do
     Vibe.Session.Store.append_ui_event(
-      Vibe.UI.Event.new(:user_message_added, "listing-restored", %{text: "restore me"}),
+      Vibe.Event.new(:user_message_added, "listing-restored", %{text: "restore me"}),
       1
     )
 
