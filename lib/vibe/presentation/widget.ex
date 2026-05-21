@@ -1,7 +1,5 @@
 defmodule Vibe.Presentation.Widget do
-  @moduledoc """
-  Semantic widget state shared by TUI and web renderers.
-  """
+  @moduledoc "Renderer-neutral presentation widget shared by TUI and web surfaces."
 
   @placements [:above_editor, :below_editor, :sidebar]
   @types [:lines, :markdown, :status, :panel, :progress, :list]

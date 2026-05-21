@@ -40,7 +40,7 @@ defmodule Vibe.Web.PluginsLive do
           </.panel>
 
           <.panel title="Plugin UI">
-            <div :if={@plugin.ui_document.sections == []} class="text-sm text-vibe-dim">No plugin-owned UI document exposed.</div>
+            <div :if={@plugin.ui_document.sections == []} class="text-sm text-vibe-dim">No plugin-owned presentation exposed.</div>
             <div :if={@plugin.ui_document.sections != []} class="space-y-3">
               <article :for={section <- @plugin.ui_document.sections} class="rounded-lg border border-vibe-border/40 bg-vibe-bg/55 p-4">
                 <h2 class="text-base font-semibold text-vibe-fg-strong">{section.title}</h2>

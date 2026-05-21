@@ -1,5 +1,5 @@
 defmodule Vibe.Tool.Presentation do
-  @moduledoc "Renderer-neutral semantic display document for tool results."
+  @moduledoc "Renderer-neutral presentation for tool lifecycle events and results."
   defstruct name: nil,
             status: nil,
             summary: nil,

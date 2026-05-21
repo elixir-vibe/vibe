@@ -1,7 +1,5 @@
 defmodule Vibe.TUI.Presentation.Tool do
-  @moduledoc """
-  Behaviour and dispatcher for built-in tool widgets.
-  """
+  @moduledoc "Terminal projection for tool presentations."
 
   alias Vibe.Presentation.Presentable
   alias Vibe.Tool.Presentation, as: Display
@@ -18,9 +16,8 @@ defmodule Vibe.TUI.Presentation.Tool do
   }
 
   @type tool :: map()
-  @callback render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
 
-  @spec render(tool(), pos_integer(), Theme.t()) :: [IO.chardata()]
+  @spec render(tool() | Display.t(), pos_integer(), Theme.t()) :: [IO.chardata()]
   def render(%Display{} = display, width, theme), do: render_display(display, width, theme)
 
   def render(tool, width, theme) when is_map(tool) do

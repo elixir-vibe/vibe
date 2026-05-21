@@ -1,5 +1,5 @@
 defmodule Vibe.Web.Plugins.Components do
-  @moduledoc "Components for rendering plugin-owned UI documents."
+  @moduledoc "Components for rendering plugin-owned presentation documents."
   use Phoenix.Component
 
   attr(:widget, Vibe.Presentation.Widget, required: true)

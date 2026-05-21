@@ -1,5 +1,5 @@
 defmodule Vibe.Web.Presentation.Tool do
-  @moduledoc "Tool result components for Vibe Web."
+  @moduledoc "Web surface projection for tool presentations."
   use Phoenix.Component
 
   alias Vibe.Files.{Artifacts, ImageRef}

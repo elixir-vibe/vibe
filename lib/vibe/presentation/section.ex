@@ -1,5 +1,5 @@
 defmodule Vibe.Presentation.Section do
-  @moduledoc "Renderer-neutral semantic UI document section."
+  @moduledoc "Renderer-neutral presentation document section."
 
   alias Vibe.Presentation.Widget
 
