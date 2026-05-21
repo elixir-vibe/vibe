@@ -28,7 +28,7 @@ defmodule Vibe.Storage.Representation.Trajectory do
       at: event.at,
       data: event.data
     }
-    |> Vibe.JSON.Encode.value()
+    |> Vibe.Storage.JSON.value()
   end
 
   @spec decode_map(map()) :: {:ok, Trajectory.t()} | :error

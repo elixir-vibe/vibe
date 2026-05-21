@@ -151,11 +151,11 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :goal_set, data: %{goal: goal}}) do
+  defp reduce(state, %Event{type: :goal_set, data: %Vibe.Event.Goal.Set{goal: goal}}) do
     %{state | goal: goal, messages: Lists.append(state.messages, goal_message(goal, "Goal set"))}
   end
 
-  defp reduce(state, %Event{type: :goal_updated, data: %{goal: goal}}) do
+  defp reduce(state, %Event{type: :goal_updated, data: %Vibe.Event.Goal.Updated{goal: goal}}) do
     %{
       state
       | goal: goal,
@@ -163,11 +163,14 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :goal_continuation_started}) do
+  defp reduce(state, %Event{
+         type: :goal_continuation_started,
+         data: %Vibe.Event.Goal.ContinuationStarted{}
+       }) do
     %{state | status: :working}
   end
 
-  defp reduce(state, %Event{type: :goal_cleared, at: at}) do
+  defp reduce(state, %Event{type: :goal_cleared, data: %Vibe.Event.Goal.Cleared{}, at: at}) do
     %{
       state
       | goal: nil,
@@ -326,18 +329,10 @@ defmodule Vibe.UI.Reducer do
     set_runtime_alert(state, alert)
   end
 
-  defp reduce(state, %Event{type: :runtime_alert_set, data: %{alert: %Alert{} = alert}}) do
-    set_runtime_alert(state, alert)
-  end
-
   defp reduce(state, %Event{
          type: :runtime_alert_clear,
          data: %Vibe.Event.RuntimeAlert.Cleared{alert: %Alert{} = alert}
        }) do
-    clear_runtime_alert(state, alert)
-  end
-
-  defp reduce(state, %Event{type: :runtime_alert_clear, data: %{alert: %Alert{} = alert}}) do
     clear_runtime_alert(state, alert)
   end
 

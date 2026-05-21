@@ -1,5 +1,5 @@
-defmodule Vibe.JSON.Encode do
-  @moduledoc "JSON value normalization for Vibe domain encoders."
+defmodule Vibe.Storage.JSON do
+  @moduledoc "JSON projection for storage representation values."
 
   alias Vibe.Files.{ImageRef, ReadResult}
   alias Vibe.Model.Content
@@ -7,10 +7,8 @@ defmodule Vibe.JSON.Encode do
   @spec value(term()) :: term()
   def value(term) when is_boolean(term) or is_nil(term), do: term
   def value(term) when is_atom(term), do: Atom.to_string(term)
-
   def value(%DateTime{} = term), do: DateTime.to_iso8601(term)
   def value(%Date{} = term), do: Date.to_iso8601(term)
-
   def value(%Content.Text{} = term), do: %{type: "text", text: term.text}
 
   def value(%Content.Image{} = term) do
@@ -45,7 +43,6 @@ defmodule Vibe.JSON.Encode do
   end
 
   def value(term) when is_number(term), do: term
-
   def value(term) when is_tuple(term), do: term |> Tuple.to_list() |> value()
   def value(term) when is_list(term), do: Enum.map(term, &value/1)
 

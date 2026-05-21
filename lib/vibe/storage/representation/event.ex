@@ -125,9 +125,18 @@ defmodule Vibe.Storage.Representation.Event do
   defp decode_event_data(%{status: status} = data, :status_changed) when is_binary(status),
     do: %{data | status: existing_atom_or_string(status)}
 
-  defp decode_event_data(%{goal: goal} = data, type) when type in [:goal_set, :goal_updated] do
-    %{data | goal: decode_goal(goal)}
+  defp decode_event_data(%{goal: goal}, :goal_set) do
+    goal |> decode_goal() |> Vibe.Event.Goal.set()
   end
+
+  defp decode_event_data(%{goal: goal}, :goal_updated) do
+    goal |> decode_goal() |> Vibe.Event.Goal.updated()
+  end
+
+  defp decode_event_data(_data, :goal_cleared), do: Vibe.Event.Goal.cleared()
+
+  defp decode_event_data(_data, :goal_continuation_started),
+    do: Vibe.Event.Goal.continuation_started()
 
   defp decode_event_data(%{alert: alert}, :runtime_alert_set) do
     alert |> decode_runtime_alert() |> Vibe.Event.RuntimeAlert.set()
@@ -225,21 +234,23 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
     Vibe.Storage.Persistable.persist(event)
   end
 
-  defp persist_data(type, %{goal: %Vibe.Goals.Goal{} = goal} = data)
-       when type in [:goal_set, :goal_updated] do
-    %{data | goal: Vibe.Storage.Persistable.persist(goal)}
+  defp persist_data(:goal_set, %Vibe.Event.Goal.Set{goal: goal}) do
+    %{goal: Vibe.Storage.Persistable.persist(goal)}
   end
+
+  defp persist_data(:goal_updated, %Vibe.Event.Goal.Updated{goal: goal}) do
+    %{goal: Vibe.Storage.Persistable.persist(goal)}
+  end
+
+  defp persist_data(:goal_cleared, %Vibe.Event.Goal.Cleared{}), do: %{}
+
+  defp persist_data(:goal_continuation_started, %Vibe.Event.Goal.ContinuationStarted{}), do: %{}
 
   defp persist_data(:runtime_alert_set, %Vibe.Event.RuntimeAlert.Set{alert: alert}) do
     %{alert: Vibe.Storage.Persistable.persist(alert)}
   end
 
   defp persist_data(:runtime_alert_clear, %Vibe.Event.RuntimeAlert.Cleared{alert: alert}) do
-    %{alert: Vibe.Storage.Persistable.persist(alert)}
-  end
-
-  defp persist_data(type, %{alert: %Vibe.SystemAlarms.Alert{} = alert})
-       when type in [:runtime_alert_set, :runtime_alert_clear] do
     %{alert: Vibe.Storage.Persistable.persist(alert)}
   end
 
@@ -256,7 +267,7 @@ defimpl Jason.Encoder, for: Vibe.Storage.Representation.Event do
       data: event.data
     }
     |> maybe_put_seq(event.seq)
-    |> Vibe.JSON.Encode.value()
+    |> Vibe.Storage.JSON.value()
     |> Jason.Encode.map(opts)
   end
 

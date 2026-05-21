@@ -81,7 +81,7 @@ defmodule Vibe.Model.ContentTest do
   test "content JSON projection stays explicit" do
     content = Content.image(data: "abc", mime_type: "image/png", filename: "tiny.png")
 
-    assert Vibe.JSON.Encode.value(content) == %{
+    assert Vibe.Tool.Transport.JSON.value(content) == %{
              type: "image",
              data: "abc",
              mime_type: "image/png",

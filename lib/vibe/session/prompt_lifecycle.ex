@@ -194,7 +194,10 @@ defmodule Vibe.Session.PromptLifecycle do
     state =
       case Vibe.Goals.add_usage(state.state.session_id, usage) do
         {:ok, goal} ->
-          emit.(state, Event.new(:goal_updated, state.state.session_id, %{goal: goal}))
+          emit.(
+            state,
+            Event.new(:goal_updated, state.state.session_id, Vibe.Event.Goal.updated(goal))
+          )
 
         _result ->
           state

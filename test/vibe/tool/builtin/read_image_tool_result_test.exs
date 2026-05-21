@@ -51,7 +51,7 @@ defmodule Vibe.Tool.Builtin.ReadImageToolResultTest do
       __content_parts__: [ContentPart.text("Read image")]
     }
 
-    encoded = result |> Vibe.JSON.Encode.value() |> Jason.encode!()
+    encoded = result |> Vibe.Tool.Transport.JSON.value() |> Jason.encode!()
     refute encoded =~ "__content_parts__"
   end
 end

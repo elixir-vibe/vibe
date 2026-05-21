@@ -44,18 +44,12 @@ defmodule Vibe.Tool.Builtin.Read do
              max_height: Map.get(params, :max_height, 2_000),
              max_bytes: Map.get(params, :max_bytes, 4_500_000)
            ) do
-        {:ok, %Vibe.Files.ReadResult{} = result} -> {:ok, tool_result(result)}
-        other -> other
+        {:ok, %Vibe.Files.ReadResult{} = result} ->
+          {:ok, Vibe.Tool.Transport.ReadResult.from_read_result(result)}
+
+        other ->
+          other
       end
     end)
-  end
-
-  defp tool_result(%Vibe.Files.ReadResult{} = result) do
-    result
-    |> Map.from_struct()
-    |> Map.delete(:__content_parts__)
-    |> Map.new(fn {key, value} -> {key, Vibe.JSON.Encode.value(value)} end)
-    |> Map.put(:content_type, result.content_type)
-    |> Map.put(:__content_parts__, result.__content_parts__)
   end
 end

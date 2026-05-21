@@ -114,13 +114,15 @@ defmodule Vibe.Remote.SSH.Protocol do
   defp normalize_timeout(_timeout), do: 30_000
 
   defp encode({:ok, data}) do
-    {:ok, [Jason.encode!(Vibe.JSON.Encode.value(%{"ok" => true, "data" => data})), "\n"]}
+    {:ok, [Jason.encode!(Vibe.Transport.JSON.value(%{"ok" => true, "data" => data})), "\n"]}
   end
 
   defp encode({:error, data}) do
     {:ok,
      [
-       Jason.encode!(Vibe.JSON.Encode.value(%{"ok" => false, "error" => normalize_error(data)})),
+       Jason.encode!(
+         Vibe.Transport.JSON.value(%{"ok" => false, "error" => normalize_error(data)})
+       ),
        "\n"
      ]}
   end
@@ -129,7 +131,7 @@ defmodule Vibe.Remote.SSH.Protocol do
     {:ok,
      [
        Jason.encode!(
-         Vibe.JSON.Encode.value(%{
+         Vibe.Transport.JSON.value(%{
            "ok" => false,
            "error" => %{"reason" => reason, "message" => message}
          })

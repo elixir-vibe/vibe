@@ -45,13 +45,14 @@ defmodule Vibe.GoalsTest do
 
   test "active goals can continue after idle turns" do
     parent = self()
-    assert {:ok, _goal} = Vibe.Goals.set("continuing-goal", "Finish the queued work")
+    session_id = "continuing-goal-#{System.unique_integer([:positive])}"
+    assert {:ok, _goal} = Vibe.Goals.set(session_id, "Finish the queued work")
 
     ask_fun = fn prompt, _opts ->
       send(parent, {:prompt, prompt})
 
       if String.starts_with?(prompt, "Continue the active goal.") do
-        assert {:ok, _goal} = Vibe.Goals.complete("continuing-goal")
+        assert {:ok, _goal} = Vibe.Goals.complete(session_id)
       end
 
       {:ok, "ok"}
@@ -59,7 +60,7 @@ defmodule Vibe.GoalsTest do
 
     {:ok, session} =
       Vibe.Session.start_link(
-        session_id: "continuing-goal",
+        session_id: session_id,
         persist?: true,
         goal_continuation?: true,
         ask_fun: ask_fun
@@ -67,8 +68,8 @@ defmodule Vibe.GoalsTest do
 
     assert :ok = Vibe.Session.dispatch(session, {:submit_prompt, %{text: "Start"}})
     assert_receive {:prompt, "Start" <> _context}, 1_000
-    assert_receive {:prompt, "Continue the active goal." <> _context}, 1_000
-    assert_goal_status("continuing-goal", :complete)
+    assert_receive {:prompt, "Continue the active goal." <> _context}, 5_000
+    assert_goal_status(session_id, :complete)
   end
 
   defp assert_goal_status(

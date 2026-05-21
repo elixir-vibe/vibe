@@ -41,7 +41,7 @@ defmodule Vibe.Tool.OutputTest do
 
     assert Vibe.Tool.Output.limit_value(value) == value
 
-    assert Jason.encode!(Vibe.JSON.Encode.value(value)) ==
+    assert Jason.encode!(Vibe.Tool.Transport.JSON.value(value)) ==
              ~s({"date":"2026-04-27","matches":[["lib/a.ex",1]]})
   end
 

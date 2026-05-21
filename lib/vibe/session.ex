@@ -216,7 +216,16 @@ defmodule Vibe.Session do
     state = %{state | goal_continuation_timer: nil}
 
     if continue_goal?(state) do
-      state = emit(state, Event.new(:goal_continuation_started, state.state.session_id, %{}))
+      state =
+        emit(
+          state,
+          Event.new(
+            :goal_continuation_started,
+            state.state.session_id,
+            Vibe.Event.Goal.continuation_started()
+          )
+        )
+
       {:noreply, PromptLifecycle.submit(state, "Continue the active goal.", &emit/2)}
     else
       {:noreply, state}
@@ -286,22 +295,34 @@ defmodule Vibe.Session do
     case Vibe.Goals.set(state.state.session_id, objective,
            token_budget: Map.get(data, :token_budget)
          ) do
-      {:ok, goal} -> emit(state, Event.new(:goal_set, state.state.session_id, %{goal: goal}))
-      {:error, reason} -> notify(state, goal_error(reason))
+      {:ok, goal} ->
+        emit(state, Event.new(:goal_set, state.state.session_id, Vibe.Event.Goal.set(goal)))
+
+      {:error, reason} ->
+        notify(state, goal_error(reason))
     end
   end
 
   defp handle_command(%Command{type: :update_goal_status, data: %{status: status}}, state) do
     case Vibe.Goals.update_status(state.state.session_id, status) do
-      {:ok, goal} -> emit(state, Event.new(:goal_updated, state.state.session_id, %{goal: goal}))
-      {:error, reason} -> notify(state, goal_error(reason))
+      {:ok, goal} ->
+        emit(
+          state,
+          Event.new(:goal_updated, state.state.session_id, Vibe.Event.Goal.updated(goal))
+        )
+
+      {:error, reason} ->
+        notify(state, goal_error(reason))
     end
   end
 
   defp handle_command(%Command{type: :clear_goal}, state) do
     case Vibe.Goals.clear(state.state.session_id) do
-      :ok -> emit(state, Event.new(:goal_cleared, state.state.session_id, %{}))
-      {:error, reason} -> notify(state, goal_error(reason))
+      :ok ->
+        emit(state, Event.new(:goal_cleared, state.state.session_id, Vibe.Event.Goal.cleared()))
+
+      {:error, reason} ->
+        notify(state, goal_error(reason))
     end
   end
 

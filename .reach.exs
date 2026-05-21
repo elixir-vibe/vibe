@@ -14,6 +14,7 @@
       "Vibe.UI.Bus",
       "Vibe.Session.Store.Codec",
       "Vibe.Storage.Representation.SessionLog",
+      "Vibe.JSON.Encode",
       "Vibe.WebTools",
       "Vibe.WebTools.*",
       "Vibe.Plugins.WebSearch.API"
@@ -30,6 +31,7 @@
       "lib/vibe/web_tools.ex",
       "lib/vibe/web_tools/**",
       "lib/vibe/json/tuple_encoder.ex",
+      "lib/vibe/json/encode.ex",
       "lib/vibe/plugins/web_search/api.ex",
       "lib/vibe/command/markdown.ex",
       "lib/vibe/code/ast/markdown.ex",

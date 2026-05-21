@@ -153,7 +153,7 @@ defimpl Jason.Encoder, for: Vibe.Storage.Representation.ToolEvent do
   def encode(event, opts) do
     event
     |> Map.from_struct()
-    |> Vibe.JSON.Encode.value()
+    |> Vibe.Storage.JSON.value()
     |> Jason.Encode.map(opts)
   end
 end

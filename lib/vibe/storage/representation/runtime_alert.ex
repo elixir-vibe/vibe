@@ -93,7 +93,7 @@ defimpl Jason.Encoder, for: Vibe.Storage.Representation.RuntimeAlert do
   def encode(alert, opts) do
     alert
     |> Map.from_struct()
-    |> Vibe.JSON.Encode.value()
+    |> Vibe.Storage.JSON.value()
     |> Jason.Encode.map(opts)
   end
 end

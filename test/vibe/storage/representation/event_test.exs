@@ -28,12 +28,13 @@ defmodule Vibe.Storage.Representation.EventTest do
       updated_at: ~U[2026-05-20 12:00:00Z]
     }
 
-    event = Event.new(:goal_set, "session-1", %{goal: goal}, at: ~U[2026-05-20 12:00:01Z])
+    event =
+      Event.new(:goal_set, "session-1", Vibe.Event.Goal.set(goal), at: ~U[2026-05-20 12:00:01Z])
 
     encoded = EventRepresentation.encode(event, 7)
 
     assert {:ok, {7, decoded}} = EventRepresentation.decode_map(encoded)
-    assert %Event{data: %{goal: ^goal}} = decoded
+    assert %Event{data: %Vibe.Event.Goal.Set{goal: ^goal}} = decoded
   end
 
   test "encodes and decodes runtime alert events through storage representation" do

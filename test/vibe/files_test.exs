@@ -90,7 +90,7 @@ defmodule Vibe.FilesTest do
 
     assert %Vibe.Files.ImageRef{} = result.image
     assert File.exists?(result.image.path)
-    refute Jason.encode!(Vibe.JSON.Encode.value(result.image)) =~ result.image.data
+    refute Jason.encode!(Vibe.Tool.Transport.JSON.value(result.image)) =~ result.image.data
   end
 
   test "preserves image content structs across session storage" do

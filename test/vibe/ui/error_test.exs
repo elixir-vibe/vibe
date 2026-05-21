@@ -6,7 +6,7 @@ defmodule Vibe.UI.ErrorTest do
   test "error JSON projection stays explicit" do
     error = Error.new("boom", kind: :model, retryable?: true)
 
-    assert Vibe.JSON.Encode.value(error) == %{
+    assert Vibe.Tool.Transport.JSON.value(error) == %{
              "kind" => "model",
              "message" => "boom",
              "hint" => nil,
