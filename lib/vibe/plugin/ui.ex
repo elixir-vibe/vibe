@@ -6,7 +6,8 @@ defmodule Vibe.Plugin.UI do
   renderers decide where/how to show it. Passing `nil` clears the status.
   """
 
-  alias Vibe.UI.{Bus, Widget}
+  alias Vibe.Presentation.Widget
+  alias Vibe.UI.Bus
 
   @type session_id :: String.t()
   @type status_key :: String.t() | atom()

@@ -2,7 +2,7 @@ defmodule Vibe.SessionTest do
   use ExUnit.Case, async: false
 
   alias Vibe.Files.Artifacts
-  alias Vibe.UI.ToolEvent
+  alias Vibe.Tool.Event, as: ToolEvent
 
   setup do
     session_dir =
@@ -76,7 +76,7 @@ defmodule Vibe.SessionTest do
                Vibe.UI.Event.new(
                  :tool_started,
                  session_id,
-                 Vibe.UI.ToolEvent.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
+                 Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
                ),
                1
              )

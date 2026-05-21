@@ -7,7 +7,7 @@ defmodule Vibe.Eval.Evaluator do
   alias Vibe.Image
   alias Vibe.MD
   alias Vibe.Session.Store
-  alias Vibe.ToolOutput
+  alias Vibe.Tool.Output
 
   @inspect_opts [charlists: :as_lists, limit: 80, pretty: true]
 
@@ -105,11 +105,11 @@ defmodule Vibe.Eval.Evaluator do
         {{:ok, io_result(result, io)}, state}
 
       io != "" ->
-        error = [ToolOutput.limit_text(io), "\n", ToolOutput.limit_text(result)]
+        error = [Output.limit_text(io), "\n", Output.limit_text(result)]
         {{:error, IO.iodata_to_binary(error)}, state}
 
       true ->
-        {{:error, ToolOutput.limit_text(result)}, state}
+        {{:error, Output.limit_text(result)}, state}
     end
   end
 
@@ -136,7 +136,7 @@ defmodule Vibe.Eval.Evaluator do
 
   defp display_result(%MD.Doc{} = doc) do
     %Result{
-      output: ToolOutput.limit_text(doc.markdown),
+      output: Output.limit_text(doc.markdown),
       format: :markdown,
       value_type: MD.Doc
     }
@@ -144,7 +144,7 @@ defmodule Vibe.Eval.Evaluator do
 
   defp display_result(%Image{} = image) do
     %Result{
-      output: ToolOutput.limit_text(Vibe.Markdown.to_markdown(image)),
+      output: Output.limit_text(Vibe.Markdown.to_markdown(image)),
       format: :markdown,
       parts: Image.to_content_parts(image),
       value_type: Image
@@ -153,7 +153,7 @@ defmodule Vibe.Eval.Evaluator do
 
   defp display_result(%Command.Result{} = command) do
     %Result{
-      output: ToolOutput.limit_text(command.output),
+      output: Output.limit_text(command.output),
       format: :text,
       value_type: Command.Result
     }
@@ -161,7 +161,7 @@ defmodule Vibe.Eval.Evaluator do
 
   defp display_result(result) when is_binary(result) do
     %Result{
-      output: ToolOutput.limit_text(result),
+      output: Output.limit_text(result),
       format: :text,
       truncation: :head,
       value_type: String
@@ -170,7 +170,7 @@ defmodule Vibe.Eval.Evaluator do
 
   defp display_result(result) do
     %Result{
-      output: result |> inspect(@inspect_opts) |> ToolOutput.limit_text(),
+      output: result |> inspect(@inspect_opts) |> Output.limit_text(),
       format: :inspect,
       value_type: value_type(result)
     }
@@ -179,20 +179,20 @@ defmodule Vibe.Eval.Evaluator do
   defp io_result(result, io) do
     if boring_result?(result) do
       %Result{
-        output: ToolOutput.limit_text(io),
+        output: Output.limit_text(io),
         format: :text,
-        parts: [%{output: ToolOutput.limit_text(io), format: :text}],
+        parts: [%{output: Output.limit_text(io), format: :text}],
         io: io,
         value_type: value_type(result)
       }
     else
-      inspected = result |> inspect(@inspect_opts) |> ToolOutput.limit_text()
+      inspected = result |> inspect(@inspect_opts) |> Output.limit_text()
 
       %Result{
-        output: [io, "\n", inspected] |> IO.iodata_to_binary() |> ToolOutput.limit_text(),
+        output: [io, "\n", inspected] |> IO.iodata_to_binary() |> Output.limit_text(),
         format: :text,
         parts: [
-          %{output: ToolOutput.limit_text(io), format: :text},
+          %{output: Output.limit_text(io), format: :text},
           %{output: inspected, format: :inspect}
         ],
         io: io,
@@ -264,7 +264,7 @@ defmodule Vibe.Eval.Evaluator do
       name: name,
       type: value_type(value),
       bytes: value_bytes(value),
-      preview: value |> inspect(@inspect_opts) |> ToolOutput.limit_text()
+      preview: value |> inspect(@inspect_opts) |> Output.limit_text()
     }
   end
 

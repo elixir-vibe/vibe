@@ -1,6 +1,6 @@
 defmodule Vibe.TUI.Widgets.Tools.FileTool do
   @moduledoc "TUI tool widget: shared file path summary."
-  alias Vibe.Tool.Display.Util
+  alias Vibe.Tool.Presentation.Util
   alias Vibe.TUI.ToolWidget
 
   @spec path_summary(map(), term()) :: String.t() | nil

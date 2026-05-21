@@ -72,7 +72,7 @@ defmodule Vibe.CommandTest do
         Vibe.UI.Event.new(
           :tool_started,
           session_id,
-          Vibe.UI.ToolEvent.started(id: "eval-tool", name: :eval, args: %{code: "Cmd.run(...)"})
+          Vibe.Tool.Event.started(id: "eval-tool", name: :eval, args: %{code: "Cmd.run(...)"})
         )
       )
 

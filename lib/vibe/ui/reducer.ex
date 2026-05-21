@@ -6,7 +6,8 @@ defmodule Vibe.UI.Reducer do
   alias Vibe.Model.Usage
   alias Vibe.SystemAlarms.Alert
   alias Vibe.Support.Lists
-  alias Vibe.UI.{Event, Message, Notification, Selector, State, ToolEvent}
+  alias Vibe.Tool.Event, as: ToolEvent
+  alias Vibe.UI.{Event, Message, Notification, Selector, State}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
   def apply_event(%State{} = state, %Event{} = event) do
@@ -254,7 +255,7 @@ defmodule Vibe.UI.Reducer do
 
   defp reduce(state, %Event{type: :context_compaction_started, data: data}) do
     widget =
-      Vibe.UI.Widget.progress(:context_compaction,
+      Vibe.Presentation.Widget.progress(:context_compaction,
         title: "Compacting context",
         current: Map.get(data, :tokens_before, 0),
         total: Map.get(data, :tokens_before, 0),
@@ -285,7 +286,7 @@ defmodule Vibe.UI.Reducer do
     notice = %{level: :success, text: summary}
 
     widget =
-      Vibe.UI.Widget.markdown(:context_compaction_summary, summary,
+      Vibe.Presentation.Widget.markdown(:context_compaction_summary, summary,
         placement: :above_editor,
         version: System.unique_integer([:positive])
       )
@@ -383,7 +384,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :plugin_widget_updated, data: %{widget: widget}}) do
-    widget = Vibe.UI.Widget.normalize(widget)
+    widget = Vibe.Presentation.Widget.normalize(widget)
     %{state | plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)}
   end
 

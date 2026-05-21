@@ -2,7 +2,8 @@ defmodule Vibe.UI.ViewModelTest do
   use ExUnit.Case, async: true
 
   alias Vibe.UI.Block.{AssistantMessage, ToolCall, UserMessage}
-  alias Vibe.UI.{Event, Reducer, State, ToolEvent, ViewModel}
+  alias Vibe.Tool.Event, as: ToolEvent
+  alias Vibe.UI.{Event, Reducer, State, ViewModel}
 
   test "builds semantic blocks from state" do
     state =

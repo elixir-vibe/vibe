@@ -194,7 +194,7 @@ defmodule Vibe.TUI.Widgets.Tools.Eval do
   defp markdown_output?(_tool), do: false
 
   defp timeout_summary(tool) do
-    case Vibe.Tool.Display.Util.timeout_arg(tool) do
+    case Vibe.Tool.Presentation.Util.timeout_arg(tool) do
       nil -> nil
       timeout -> format_timeout(timeout)
     end

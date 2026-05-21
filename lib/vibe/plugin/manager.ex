@@ -5,7 +5,7 @@ defmodule Vibe.Plugin.Manager do
   require Logger
 
   alias Vibe.Plugin.API
-  alias Vibe.UI.Document
+  alias Vibe.Presentation.Document
 
   defstruct plugins: %{}
 

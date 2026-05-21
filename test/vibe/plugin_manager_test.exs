@@ -1,7 +1,7 @@
 defmodule Vibe.PluginManagerTest do
   use ExUnit.Case, async: false
 
-  alias Vibe.UI.Widget
+  alias Vibe.Presentation.Widget
 
   alias Vibe.Test.PluginManagerFixtures.{
     APIPlugin,

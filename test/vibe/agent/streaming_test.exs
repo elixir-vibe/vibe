@@ -2,7 +2,7 @@ defmodule Vibe.Agent.StreamingTest do
   use ExUnit.Case, async: false
 
   alias ReqLLM.StreamChunk
-  alias Vibe.UI.ToolEvent
+  alias Vibe.Tool.Event, as: ToolEvent
 
   setup do
     System.delete_env("VIBE_STREAM_TRACE_DIR")

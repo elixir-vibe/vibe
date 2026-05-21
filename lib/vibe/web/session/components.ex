@@ -155,7 +155,7 @@ defmodule Vibe.Web.Session.Components do
   end
 
   defp tool_summary(tool) do
-    display = Vibe.Tool.Display.from_tool(tool)
+    display = Vibe.Tool.Presentation.from_tool(tool)
 
     %{
       name: tool_name(display.name),

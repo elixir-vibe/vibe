@@ -7,7 +7,7 @@ defmodule Vibe.Terminal.Snapshot do
   """
 
   alias Ghostty.Terminal
-  alias Vibe.ToolOutput
+  alias Vibe.Tool.Output
 
   @type t :: %{
           plain: String.t(),
@@ -22,7 +22,7 @@ defmodule Vibe.Terminal.Snapshot do
     if Code.ensure_loaded?(Terminal) do
       cols = Keyword.get(opts, :cols, 120)
       rows = Keyword.get(opts, :rows, 80)
-      max_bytes = Keyword.get(opts, :max_bytes, ToolOutput.default_max_bytes())
+      max_bytes = Keyword.get(opts, :max_bytes, Output.default_max_bytes())
 
       with {:ok, term} <- Terminal.start_link(cols: cols, rows: rows),
            :ok <- Terminal.write(term, data),
@@ -32,7 +32,7 @@ defmodule Vibe.Terminal.Snapshot do
         cells = Terminal.cells(term)
         GenServer.stop(term)
 
-        limited = ToolOutput.limit_text(plain, max_bytes)
+        limited = Output.limit_text(plain, max_bytes)
 
         {:ok,
          %{
@@ -44,7 +44,7 @@ defmodule Vibe.Terminal.Snapshot do
          }}
       end
     else
-      plain = data |> IO.iodata_to_binary() |> ToolOutput.limit_text()
+      plain = data |> IO.iodata_to_binary() |> Output.limit_text()
       {:ok, %{plain: plain, html: nil, vt: nil, cells: nil, truncated?: true}}
     end
   end

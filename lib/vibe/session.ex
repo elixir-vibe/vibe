@@ -16,7 +16,8 @@ defmodule Vibe.Session do
   alias Vibe.Model.{Effort, Switcher}
   alias Vibe.Session.PromptLifecycle
   alias Vibe.Storage.Search
-  alias Vibe.UI.{Command, Event, PluginBridge, Reducer, Selector, SlashCommands, State, ToolEvent}
+  alias Vibe.Tool.Event, as: ToolEvent
+  alias Vibe.UI.{Command, Event, PluginBridge, Reducer, Selector, SlashCommands, State}
 
   require Vibe.Debug
 

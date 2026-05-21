@@ -157,7 +157,7 @@ defmodule Vibe.Command.Worker do
   defp result_output(state) do
     state.output_path
     |> File.read!()
-    |> Vibe.ToolOutput.limit_text(mode: :tail, full_output_path: state.output_path)
+    |> Vibe.Tool.Output.limit_text(mode: :tail, full_output_path: state.output_path)
   end
 
   defp append_output(state, data) do

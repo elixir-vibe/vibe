@@ -11,7 +11,7 @@ defmodule Vibe.Plugin do
   """
 
   alias Vibe.Plugin.API
-  alias Vibe.UI.Document
+  alias Vibe.Presentation.Document
 
   @type event :: %{required(:type) => atom(), optional(atom()) => term()}
   @type context :: map()
@@ -93,7 +93,7 @@ defmodule Vibe.Plugin do
       def children(state, _context), do: children(state)
 
       @impl Vibe.Plugin
-      def ui_document(_state), do: Vibe.UI.Document.empty()
+      def ui_document(_state), do: Vibe.Presentation.Document.empty()
 
       @impl Vibe.Plugin
       def shutdown(_state), do: :ok

@@ -229,7 +229,7 @@ defmodule Vibe.Session.Store.Codec do
       |> decode_tool_event_values()
       |> decode_tool_content_parts()
 
-    struct(Vibe.UI.ToolEvent, tool_data)
+    struct(Vibe.Tool.Event, tool_data)
   end
 
   defp decode_ui_event_data(%{effort: effort} = data, :effort_selected) when is_binary(effort) do

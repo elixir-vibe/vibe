@@ -18,9 +18,9 @@ defmodule Vibe.Files do
         image_result(path, absolute, content, stat, opts)
       else
         limit =
-          Vibe.ToolOutput.limit_content(content,
+          Vibe.Tool.Output.limit_content(content,
             limit_lines: Keyword.get(opts, :limit_lines, @read_limit_lines),
-            limit_bytes: Keyword.get(opts, :limit_bytes, Vibe.ToolOutput.default_max_bytes())
+            limit_bytes: Keyword.get(opts, :limit_bytes, Vibe.Tool.Output.default_max_bytes())
           )
 
         {:ok,

@@ -3,8 +3,10 @@ defmodule Vibe.TUI.ToolWidget do
   Behaviour and dispatcher for built-in tool widgets.
   """
 
-  alias Vibe.Tool.Display
+  alias Vibe.Presentation.Presentable
+  alias Vibe.Tool.Presentation, as: Display
   alias Vibe.TUI
+  alias Vibe.TUI.Presentation.ToolBlock
 
   alias Vibe.TUI.{
     Lines,
@@ -12,7 +14,6 @@ defmodule Vibe.TUI.ToolWidget do
     TextTruncation,
     Theme,
     ToolCard,
-    ToolOutputBlock,
     ValueFormat,
     Widget
   }
@@ -24,7 +25,7 @@ defmodule Vibe.TUI.ToolWidget do
   def render(%Display{} = display, width, theme), do: render_display(display, width, theme)
 
   def render(tool, width, theme) when is_map(tool) do
-    tool |> Display.from_tool() |> render_display(width, theme)
+    tool |> Presentable.present() |> render_display(width, theme)
   end
 
   def render_display(%Display{} = display, width, theme) do
@@ -36,7 +37,7 @@ defmodule Vibe.TUI.ToolWidget do
       summary: display.summary,
       meta: display.meta,
       summary_style: display.summary_style,
-      output_lines: ToolOutputBlock.display_body_lines(display, max(width - 2, 1), theme),
+      output_lines: ToolBlock.display_body_lines(display, max(width - 2, 1), theme),
       params?: false,
       truncation: :tail
     )

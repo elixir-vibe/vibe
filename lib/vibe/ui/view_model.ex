@@ -174,7 +174,7 @@ defmodule Vibe.UI.ViewModel do
     widgets
     |> Enum.sort_by(fn {id, _widget} -> to_string(id) end)
     |> Enum.map(fn {_id, widget} ->
-      widget = Vibe.UI.Widget.normalize(widget)
+      widget = Vibe.Presentation.Widget.normalize(widget)
 
       %PluginWidget{
         id: widget.id,

@@ -2,7 +2,7 @@ defmodule Vibe.Web.Plugins.Components do
   @moduledoc "Components for rendering plugin-owned UI documents."
   use Phoenix.Component
 
-  attr(:widget, Vibe.UI.Widget, required: true)
+  attr(:widget, Vibe.Presentation.Widget, required: true)
 
   def plugin_ui_widget(%{widget: %{type: :markdown}} = assigns) do
     assigns = assign(assigns, :content, get_in(assigns.widget.props, [:content]) || "")

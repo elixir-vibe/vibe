@@ -115,14 +115,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.UI.ToolEvent.started(id: "tool-1", name: "eval")
+          Vibe.Tool.Event.started(id: "tool-1", name: "eval")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.UI.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.UI.ToolEvent.finished(id: "tool-1", status: :ok)
+          Vibe.Tool.Event.finished(id: "tool-1", status: :ok)
         )
       )
 
@@ -140,7 +140,7 @@ defmodule Vibe.UI.ReducerTest do
       Vibe.UI.Event.new(
         :tool_updated,
         "s1",
-        Vibe.UI.ToolEvent.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
+        Vibe.Tool.Event.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
       )
 
     state = Vibe.UI.Reducer.apply_event(state, event)
@@ -160,7 +160,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_updated,
           "s1",
-          Vibe.UI.ToolEvent.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
+          Vibe.Tool.Event.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
         )
       )
 
@@ -170,7 +170,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_started,
           "s1",
-          Vibe.UI.ToolEvent.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
+          Vibe.Tool.Event.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
         )
       )
 
@@ -187,7 +187,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_started,
           "s1",
-          Vibe.UI.ToolEvent.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
+          Vibe.Tool.Event.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
         )
       )
 
@@ -197,7 +197,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_finished,
           "s1",
-          Vibe.UI.ToolEvent.finished(id: "call-1", name: :eval, output: "ok")
+          Vibe.Tool.Event.finished(id: "call-1", name: :eval, output: "ok")
         )
       )
 
@@ -274,14 +274,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.UI.ToolEvent.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
+          Vibe.Tool.Event.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.UI.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.UI.ToolEvent.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
+          Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
         )
       )
 
@@ -326,14 +326,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.UI.ToolEvent.started(id: "tool-1", name: "eval")
+          Vibe.Tool.Event.started(id: "tool-1", name: "eval")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.UI.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.UI.ToolEvent.finished(id: "tool-1", name: "eval", output: "ok")
+          Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: "ok")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
@@ -354,14 +354,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.UI.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.UI.ToolEvent.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
+          Vibe.Tool.Event.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.UI.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.UI.ToolEvent.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
+          Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(

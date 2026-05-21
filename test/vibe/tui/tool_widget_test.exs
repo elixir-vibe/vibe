@@ -275,10 +275,10 @@ defmodule Vibe.TUI.ToolWidgetTest do
     code = ~S|"line 1\nline 2\nline 3"|
 
     assert {:ok, action_result} =
-             Vibe.Tools.Eval.run(%{code: code}, %{session_id: "tui-string-eval"})
+             Vibe.Tool.Builtin.Eval.run(%{code: code}, %{session_id: "tui-string-eval"})
 
     lines =
-      Vibe.UI.ToolEvent.finished(
+      Vibe.Tool.Event.finished(
         id: "eval-1",
         name: :eval,
         args: %{code: code},
@@ -302,10 +302,10 @@ defmodule Vibe.TUI.ToolWidgetTest do
       ~S|%{answer: 42, elixir: System.version(), example_struct: %URI{scheme: "https", host: "example.com"}}|
 
     assert {:ok, action_result} =
-             Vibe.Tools.Eval.run(%{code: code}, %{session_id: "tui-color-eval"})
+             Vibe.Tool.Builtin.Eval.run(%{code: code}, %{session_id: "tui-color-eval"})
 
     lines =
-      Vibe.UI.ToolEvent.finished(
+      Vibe.Tool.Event.finished(
         id: "eval-1",
         name: :eval,
         args: %{code: code},

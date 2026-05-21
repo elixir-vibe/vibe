@@ -4,7 +4,7 @@ defmodule Vibe.Agent.Streaming.Plugin do
 
   ReAct runtime delta events are preferred over derived `ai.llm.delta` signals
   because runtime events include sequence metadata. Tool lifecycle signals are
-  converted into `Vibe.UI.ToolEvent` values for the TUI/session reducer.
+  converted into `Vibe.Tool.Event` values for the TUI/session reducer.
   """
 
   use Jido.Plugin,
@@ -21,7 +21,7 @@ defmodule Vibe.Agent.Streaming.Plugin do
     ]
 
   alias ReqLLM.StreamChunk
-  alias Vibe.UI.ToolEvent
+  alias Vibe.Tool.Event, as: ToolEvent
 
   require Vibe.Debug
 

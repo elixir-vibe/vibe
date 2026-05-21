@@ -167,7 +167,10 @@ defmodule Vibe.Web.PluginsLive do
         commands: plugin_capability(module, :commands),
         actions: plugin_capability(module, :actions),
         ui_document:
-          safe_manager_call(fn -> Manager.ui_document(module) end, Vibe.UI.Document.empty())
+          safe_manager_call(
+            fn -> Manager.ui_document(module) end,
+            Vibe.Presentation.Document.empty()
+          )
       }
     end)
   end
@@ -199,7 +202,7 @@ defmodule Vibe.Web.PluginsLive do
       apis: [],
       commands: [],
       actions: [],
-      ui_document: Vibe.UI.Document.empty()
+      ui_document: Vibe.Presentation.Document.empty()
     }
   end
 

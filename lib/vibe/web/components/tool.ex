@@ -4,7 +4,7 @@ defmodule Vibe.Web.Components.Tool do
 
   alias Vibe.Files.{Artifacts, ImageRef}
   alias Vibe.Model.Content
-  alias Vibe.Tool.Display
+  alias Vibe.Presentation.Presentable
   alias Vibe.Web.Components.Code
 
   defmodule Body do
@@ -26,7 +26,7 @@ defmodule Vibe.Web.Components.Tool do
   attr(:tool, :map, required: true)
 
   def tool_card(assigns) do
-    assigns = assign(assigns, :display, Display.from_tool(assigns.tool))
+    assigns = assign(assigns, :display, Presentable.present(assigns.tool))
 
     ~H"""
     <article class="overflow-hidden rounded-lg border border-vibe-accent/15 bg-vibe-surface/70">

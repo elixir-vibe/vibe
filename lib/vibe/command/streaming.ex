@@ -1,6 +1,7 @@
 defmodule Vibe.Command.Streaming do
   @moduledoc "Streaming output capture for long-running commands."
-  alias Vibe.UI.{Event, ToolEvent}
+  alias Vibe.Tool.Event, as: ToolEvent
+  alias Vibe.UI.Event
 
   @process_key :vibe_eval_command_stream_session_id
   @table __MODULE__

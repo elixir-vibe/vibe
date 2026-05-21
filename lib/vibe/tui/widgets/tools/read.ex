@@ -47,7 +47,7 @@ defmodule Vibe.TUI.Widgets.Tools.Read do
       |> TextTruncation.lines(enabled?: Map.get(tool, :truncate?, true), limit: 8)
 
     content_lines =
-      if Vibe.Tool.Display.Util.markdown?(result) do
+      if Vibe.Tool.Presentation.Util.markdown?(result) do
         truncation.lines
         |> Enum.join("\n")
         |> Markdown.render(max(width - 2, 1), theme)
@@ -82,7 +82,7 @@ defmodule Vibe.TUI.Widgets.Tools.Read do
   defp maybe_append_file_limit_footer(lines, %{truncated?: true}, _result, _theme), do: lines
 
   defp maybe_append_file_limit_footer(lines, _truncation, result, theme) do
-    if Vibe.Tool.Display.Util.read_limit_truncated?(result) do
+    if Vibe.Tool.Presentation.Util.read_limit_truncated?(result) do
       lines
       |> Lines.join([""])
       |> Lines.join([read_limit_footer(theme)])

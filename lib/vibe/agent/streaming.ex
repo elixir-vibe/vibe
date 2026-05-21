@@ -11,7 +11,7 @@ defmodule Vibe.Agent.Streaming do
   use GenServer
 
   alias ReqLLM.StreamChunk
-  alias Vibe.UI.ToolEvent
+  alias Vibe.Tool.Event, as: ToolEvent
 
   require Vibe.Debug
 

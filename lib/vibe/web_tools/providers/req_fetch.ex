@@ -20,7 +20,7 @@ defmodule Vibe.WebTools.Providers.ReqFetch do
       redirects: true,
       pdf: false,
       max_response_size: @max_response_size,
-      max_output_bytes: Vibe.ToolOutput.default_max_bytes()
+      max_output_bytes: Vibe.Tool.Output.default_max_bytes()
     }
   end
 
@@ -178,7 +178,7 @@ defmodule Vibe.WebTools.Providers.ReqFetch do
   defp convert(body, _content_type, :html), do: {:ok, body, :html}
 
   defp truncate(text) do
-    limited = Vibe.ToolOutput.limit_text(text)
+    limited = Vibe.Tool.Output.limit_text(text)
     {limited, byte_size(limited) != byte_size(text), String.length(text)}
   end
 

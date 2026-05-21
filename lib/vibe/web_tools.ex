@@ -77,7 +77,7 @@ defmodule Vibe.WebTools do
   def truncate(%FetchResult{} = result, opts) do
     limit = truncate_limit(opts)
     text = result.text || ""
-    limited = Vibe.ToolOutput.limit_text(text, limit)
+    limited = Vibe.Tool.Output.limit_text(text, limit)
 
     update_fetch_text(result, limited,
       truncated?: byte_size(limited) != byte_size(text),
@@ -86,7 +86,7 @@ defmodule Vibe.WebTools do
   end
 
   def truncate(text, opts) when is_binary(text) do
-    Vibe.ToolOutput.limit_text(text, truncate_limit(opts))
+    Vibe.Tool.Output.limit_text(text, truncate_limit(opts))
   end
 
   @doc "Filters search results to URLs containing a domain substring."
@@ -126,14 +126,14 @@ defmodule Vibe.WebTools do
 
   defp truncate_limit(opts) when is_list(opts) do
     opts
-    |> Keyword.get(:bytes, Keyword.get(opts, :chars, Vibe.ToolOutput.default_max_bytes()))
+    |> Keyword.get(:bytes, Keyword.get(opts, :chars, Vibe.Tool.Output.default_max_bytes()))
     |> normalize_limit()
   end
 
-  defp truncate_limit(_opts), do: Vibe.ToolOutput.default_max_bytes()
+  defp truncate_limit(_opts), do: Vibe.Tool.Output.default_max_bytes()
 
   defp normalize_limit(limit) when is_integer(limit) and limit > 0, do: limit
-  defp normalize_limit(_limit), do: Vibe.ToolOutput.default_max_bytes()
+  defp normalize_limit(_limit), do: Vibe.Tool.Output.default_max_bytes()
 
   defp provider(opts, opt_key, config_key, default) do
     opts

@@ -3,7 +3,8 @@ defmodule Vibe.TUI.StressTest do
 
   alias Vibe.TUI
   alias Vibe.TUI.{TerminalLoop, TerminalPainter, Theme, Widget, Width}
-  alias Vibe.UI.{Event, ToolEvent}
+  alias Vibe.Tool.Event, as: ToolEvent
+  alias Vibe.UI.Event
 
   @width 120
   @height 28
