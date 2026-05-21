@@ -1,6 +1,7 @@
 defmodule Vibe.JSON.Encode do
   @moduledoc "JSON value normalization for Vibe domain encoders."
 
+  alias Vibe.Files.{ImageRef, ReadResult}
   alias Vibe.Model.Content
 
   @spec value(term()) :: term()
@@ -21,6 +22,20 @@ defmodule Vibe.JSON.Encode do
       width: term.width,
       height: term.height
     }
+  end
+
+  def value(%ImageRef{} = term) do
+    term
+    |> Map.from_struct()
+    |> Map.delete(:data)
+    |> value()
+  end
+
+  def value(%ReadResult{} = term) do
+    term
+    |> Map.from_struct()
+    |> Map.delete(:__content_parts__)
+    |> value()
   end
 
   def value(%_{} = term), do: term |> Map.from_struct() |> value()

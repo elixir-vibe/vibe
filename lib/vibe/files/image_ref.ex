@@ -14,13 +14,3 @@ defmodule Vibe.Files.ImageRef do
           data: String.t() | nil
         }
 end
-
-defimpl Jason.Encoder, for: Vibe.Files.ImageRef do
-  def encode(ref, opts) do
-    ref
-    |> Map.from_struct()
-    |> Map.delete(:data)
-    |> Vibe.JSON.Encode.value()
-    |> Jason.Encode.map(opts)
-  end
-end

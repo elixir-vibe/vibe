@@ -82,6 +82,22 @@
          "Jason.decode!",
          "Vibe.Storage.Representation.*"
        ]},
+      {"Vibe.Files.ImageRef",
+       [
+         "Jason.encode",
+         "Jason.encode!",
+         "Jason.decode",
+         "Jason.decode!",
+         "Vibe.Storage.Representation.*"
+       ]},
+      {"Vibe.Files.ReadResult",
+       [
+         "Jason.encode",
+         "Jason.encode!",
+         "Jason.decode",
+         "Jason.decode!",
+         "Vibe.Storage.Representation.*"
+       ]},
       {"Vibe.UI.Error",
        [
          "Jason.encode",

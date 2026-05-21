@@ -45,8 +45,6 @@ end
 defimpl Jason.Encoder, for: Vibe.Files.ReadResult do
   def encode(result, opts) do
     result
-    |> Map.from_struct()
-    |> Map.delete(:__content_parts__)
     |> Vibe.JSON.Encode.value()
     |> Jason.Encode.map(opts)
   end
