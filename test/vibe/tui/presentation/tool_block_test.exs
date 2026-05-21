@@ -1,7 +1,7 @@
 defmodule Vibe.TUI.Presentation.ToolBlockTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.Tool.Presentation, as: Display
+  alias Vibe.Presentation.Tool, as: Display
   alias Vibe.TUI.{Theme, Width}
   alias Vibe.TUI.Presentation.ToolBlock
 

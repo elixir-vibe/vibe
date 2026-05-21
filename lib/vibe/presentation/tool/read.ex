@@ -1,9 +1,9 @@
-defmodule Vibe.Tool.Presentation.Read do
+defmodule Vibe.Presentation.Tool.Read do
   @moduledoc "Semantic display builder for read tool results."
   alias Vibe.Files.ImageRef
   alias Vibe.Model.Content
-  alias Vibe.Tool.Presentation, as: Display
-  alias Vibe.Tool.Presentation.Util
+  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool.Util
 
   @spec from_tool(map()) :: Display.t()
   def from_tool(tool) do

@@ -1,8 +1,8 @@
-defmodule Vibe.Tool.Presentation.LSP do
+defmodule Vibe.Presentation.Tool.LSP do
   @moduledoc "Semantic display document for LSP tool results."
 
-  alias Vibe.Tool.Presentation, as: Display
-  alias Vibe.Tool.Presentation.Util
+  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool.Util
 
   @spec from_tool(map()) :: Display.t()
   def from_tool(tool) do

@@ -4,7 +4,7 @@ defmodule Vibe.Web.Presentation.ToolImageTest do
   import Phoenix.Component
 
   alias Vibe.Files.{Artifacts, ImageRef}
-  alias Vibe.Tool.Presentation, as: Display
+  alias Vibe.Presentation.Tool, as: Display
 
   setup do
     session_dir =

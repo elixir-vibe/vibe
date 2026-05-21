@@ -46,7 +46,7 @@ Add session-level inspectors/tabs:
 First pass:
 
 - Keep transcript as default.
-- Add a tool timeline panel/section using semantic `Vibe.Tool.Presentation.from_tool/1`.
+- Add a tool timeline panel/section using semantic `Vibe.Presentation.Tool.from_tool/1`.
 - Show tool name, status, summary, duration when available, and expandable structured output.
 - Add context inspector later: system prompt, workspace instructions, skills, memory/recall summary.
 

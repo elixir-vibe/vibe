@@ -2,7 +2,7 @@ defmodule Vibe.TUI.Presentation.Tool do
   @moduledoc "Terminal projection for tool presentations."
 
   alias Vibe.Presentation.Presentable
-  alias Vibe.Tool.Presentation, as: Display
+  alias Vibe.Presentation.Tool, as: Display
   alias Vibe.TUI
   alias Vibe.TUI.Presentation.{ToolBlock, ToolCard}
 

@@ -1,8 +1,8 @@
-defmodule Vibe.Tool.Presentation.Generic do
+defmodule Vibe.Presentation.Tool.Generic do
   @moduledoc "Fallback semantic display document for tools without specialized renderers."
 
-  alias Vibe.Tool.Presentation, as: Display
-  alias Vibe.Tool.Presentation.Util
+  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool.Util
 
   @spec from_tool(map()) :: Display.t()
   def from_tool(tool) do

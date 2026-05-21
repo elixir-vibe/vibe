@@ -7,6 +7,8 @@
       "Vibe.Tools.*",
       "Vibe.ToolOutput",
       "Vibe.ToolDisplay",
+      "Vibe.Tool.Presentation",
+      "Vibe.Tool.Presentation.*",
       "Vibe.UI.Event",
       "Vibe.UI.Event.*",
       "Vibe.UI.Bus",
@@ -18,6 +20,8 @@
     forbidden_files: [
       "lib/vibe/actions/**",
       "lib/vibe/tools/**",
+      "lib/vibe/tool/presentation.ex",
+      "lib/vibe/tool/presentation/**",
       "lib/vibe/ui/event.ex",
       "lib/vibe/ui/bus.ex",
       "lib/vibe/session/store/codec.ex",

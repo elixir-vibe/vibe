@@ -9,7 +9,7 @@ String/atom flexibility belongs only at explicit external boundaries. Internal V
 - `Vibe.Session.Store.Codec.atomize_keys/1`
   - Replace broad recursive key conversion with event-type-specific decoders.
   - Keep only known enum-value conversion for fields such as `:role`, `:status`, `:phase`, and `:lifecycle`.
-- `Vibe.Tool.Presentation.Util.arg/2`
+- `Vibe.Presentation.Tool.Util.arg/2`
   - Keep mixed-key access only if it is explicitly documented as a tool-event display boundary.
   - Prefer normalizing tool call args once when converting external tool events into UI state.
 - `Vibe.Skill.metadata`

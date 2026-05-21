@@ -1,4 +1,4 @@
-defmodule Vibe.Tool.Presentation do
+defmodule Vibe.Presentation.Tool do
   @moduledoc "Renderer-neutral presentation for tool lifecycle events and results."
   defstruct name: nil,
             status: nil,
@@ -30,7 +30,7 @@ defmodule Vibe.Tool.Presentation do
           truncate?: boolean()
         }
 
-  alias Vibe.Tool.Presentation.{AST, Eval, FileMutation, Generic, LSP, Read}
+  alias Vibe.Presentation.Tool.{AST, Eval, FileMutation, Generic, LSP, Read}
 
   @spec from_tool(map()) :: t() | {:legacy, map()}
   def from_tool(%__MODULE__{} = display), do: display

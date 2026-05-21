@@ -1,8 +1,8 @@
-defmodule Vibe.Tool.Presentation.AST do
+defmodule Vibe.Presentation.Tool.AST do
   @moduledoc "Semantic display document for AST tool results."
 
-  alias Vibe.Tool.Presentation, as: Display
-  alias Vibe.Tool.Presentation.Util
+  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool.Util
 
   @spec from_tool(map()) :: Display.t()
   def from_tool(tool) do

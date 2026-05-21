@@ -12,10 +12,10 @@ defimpl Vibe.Presentation.Presentable, for: Any do
 end
 
 defimpl Vibe.Presentation.Presentable, for: Map do
-  def present(%{name: _name} = tool), do: Vibe.Tool.Presentation.from_tool(tool)
+  def present(%{name: _name} = tool), do: Vibe.Presentation.Tool.from_tool(tool)
   def present(value), do: value
 end
 
 defimpl Vibe.Presentation.Presentable, for: Vibe.Tool.Event do
-  def present(event), do: Vibe.Tool.Presentation.from_tool(event)
+  def present(event), do: Vibe.Presentation.Tool.from_tool(event)
 end

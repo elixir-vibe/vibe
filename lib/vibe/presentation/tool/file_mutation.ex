@@ -1,8 +1,8 @@
-defmodule Vibe.Tool.Presentation.FileMutation do
+defmodule Vibe.Presentation.Tool.FileMutation do
   @moduledoc "Semantic display document for file mutation tools."
 
-  alias Vibe.Tool.Presentation, as: Display
-  alias Vibe.Tool.Presentation.Util
+  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool.Util
 
   @spec from_tool(map(), :write | :edit) :: Display.t()
   def from_tool(tool, name) when name in [:write, :edit] do

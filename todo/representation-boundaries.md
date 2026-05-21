@@ -167,7 +167,7 @@ Avoid domain-owned presentation modules long term:
 
 ```text
 Avoid: Vibe.SystemAlarms.Presentation
-Avoid: Vibe.Tool.Presentation if it is renderer-neutral presentation
+Done: renderer-neutral tool presentation lives under Vibe.Presentation.Tool
 ```
 
 Use protocol dispatch:
@@ -308,7 +308,7 @@ Vibe.Tool.Output.Window
 Vibe.Tool.Builtin.*
 ```
 
-Consider moving renderer-neutral `Vibe.Tool.Presentation` to `Vibe.Presentation.Tool` later.
+Renderer-neutral tool presentation lives under `Vibe.Presentation.Tool`.
 
 ### Model/content domain
 

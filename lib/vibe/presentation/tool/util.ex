@@ -1,4 +1,4 @@
-defmodule Vibe.Tool.Presentation.Util do
+defmodule Vibe.Presentation.Tool.Util do
   @moduledoc "Renderer-neutral helpers for semantic tool display documents."
 
   @spec tool_output(map()) :: term()
