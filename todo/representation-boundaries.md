@@ -9,9 +9,9 @@
 - Use protocols at boundaries.
 - Domain structs carry meaning only.
 - UI consumes semantic events; it does not own the event model.
-- Storage, presentation, web, and TUI are separate representation/surface boundaries.
+- Storage, presentation, Markdown, web, and TUI are separate representation/surface boundaries.
 
-## Core model
+## Core dimensions
 
 Vibe has these boundary families:
 
@@ -19,20 +19,25 @@ Vibe has these boundary families:
 Domain        Vibe.<Domain>.*
 Event         Vibe.Event.*
 UI            Vibe.UI.*
-Presentation  Vibe.Presentation.* / Vibe.TUI.Presentation.* / Vibe.Web.Presentation.*
+Presentation  Vibe.Presentation.*
+Markdown      Vibe.Presentation.Markdown.* / plugin-owned *.Presentation.Markdown
+Surface       Vibe.TUI.Presentation.* / Vibe.Web.Presentation.*
 Storage       Vibe.Storage.*
 Transport     Vibe.Remote.* / protocol-specific modules
 ```
+
+Markdown is a presentation projection for textual/eval/CLI surfaces. It is not domain logic, storage, transport, web, or TUI.
 
 Protocol-first rule:
 
 ```elixir
 Vibe.Presentation.Presentable
+Vibe.Presentation.Markdown.Renderable # target; current Vibe.Markdown is transitional
 Vibe.Storage.Persistable
 Vibe.Storage.Restorable
 ```
 
-Potential later transport protocols should only be introduced after storage and presentation boundaries are clean.
+Potential later transport protocols should only be introduced after storage, presentation, and Markdown boundaries are clean.
 
 ## Semantic events
 
@@ -151,7 +156,7 @@ Vibe.Presentation.Widget
 Vibe.Presentation.Presentable
 ```
 
-Surfaces:
+Surface projections:
 
 ```elixir
 Vibe.TUI.Presentation.*
@@ -181,6 +186,63 @@ Vibe.Goals.Goal         -> Vibe.Presentation.Goal or Widget
 
 Web/TUI render presentation values, not domain values directly.
 
+## Markdown projection
+
+Markdown is a presentation projection for textual/eval/CLI surfaces.
+
+Target namespace:
+
+```elixir
+Vibe.Presentation.Markdown
+Vibe.Presentation.Markdown.Renderable
+Vibe.Presentation.Markdown.CommandResult
+Vibe.Presentation.Markdown.CodeASTResult
+Vibe.Presentation.Markdown.Image
+Vibe.Presentation.Markdown.StorageSearchResult
+Vibe.Presentation.Markdown.ToolEvent
+Vibe.Presentation.Markdown.Subagents
+```
+
+Plugin-owned Markdown projections must make the dimension explicit:
+
+```elixir
+Vibe.Plugins.WebSearch.Presentation.Markdown
+```
+
+Current `Vibe.Markdown` remains transitional, but implementation files should move out of domain folders. Long-term flow:
+
+```elixir
+value
+|> Vibe.Presentation.present()
+|> Vibe.Presentation.Markdown.render()
+```
+
+Avoid long-term direct domain Markdown implementation paths:
+
+```text
+lib/vibe/command/markdown.ex
+lib/vibe/code/ast/markdown.ex
+lib/vibe/image/markdown.ex
+lib/vibe/storage/search/markdown.ex
+lib/vibe/tool/markdown.ex
+lib/vibe/subagents/markdown.ex
+lib/vibe/plugins/web_search/markdown.ex
+```
+
+Move them to dimension-explicit paths:
+
+```text
+lib/vibe/presentation/markdown/command_result.ex
+lib/vibe/presentation/markdown/code_ast_result.ex
+lib/vibe/presentation/markdown/image.ex
+lib/vibe/presentation/markdown/storage_search_result.ex
+lib/vibe/presentation/markdown/tool_event.ex
+lib/vibe/presentation/markdown/subagents.ex
+lib/vibe/plugins/web_search/presentation/markdown.ex
+```
+
+`Vibe.MD` can remain the user-facing eval helper, but it should call the Markdown presentation boundary rather than becoming another representation location.
+
 ## Storage layer
 
 Protocols:
@@ -195,6 +257,7 @@ Storage representation structs:
 ```elixir
 Vibe.Storage.Representation.Event
 Vibe.Storage.Representation.Trajectory
+Vibe.Storage.Representation.SessionLog
 Vibe.Storage.Representation.EvalSnapshot
 Vibe.Storage.Representation.Goal
 Vibe.Storage.Representation.ToolEvent
@@ -302,9 +365,7 @@ Vibe.Subagents.Schedule
 
 ## Web search namespace
 
-`lib/vibe/web_search` should not be a top-level parallel domain if web search is plugin-owned.
-
-Target: move the whole search/fetch capability under the bundled plugin:
+Web search is plugin-owned. The whole search/fetch capability lives under the bundled plugin:
 
 ```elixir
 Vibe.Plugins.WebSearch
@@ -315,16 +376,16 @@ Vibe.Plugins.WebSearch.Provider.ReqFetch
 Vibe.Plugins.WebSearch.SearchResult
 Vibe.Plugins.WebSearch.SearchItem
 Vibe.Plugins.WebSearch.FetchResult
-Vibe.Plugins.WebSearch.Presentation
+Vibe.Plugins.WebSearch.Presentation.Markdown
 ```
 
-Remove:
+Removed namespace:
 
 ```elixir
-Vibe.Plugins.WebSearch.*
+Vibe.WebTools.*
 ```
 
-No compatibility aliases. Eval alias `Web` can point to `Vibe.Plugins.WebSearch`.
+No compatibility aliases. Eval alias `Web` points to `Vibe.Plugins.WebSearch`.
 
 ## Implementation phases
 
@@ -389,9 +450,13 @@ Order:
 
 ### Phase 5: move web search
 
-Move `Vibe.Plugins.WebSearch.*` into `Vibe.Plugins.WebSearch.*`. Delete old namespace with no aliases.
+Move `Vibe.WebTools.*` into `Vibe.Plugins.WebSearch.*`. Delete old namespace with no aliases.
 
-### Phase 6: presentation cleanup
+### Phase 6: markdown projection cleanup
+
+Move Markdown implementations out of domain folders into `Vibe.Presentation.Markdown.*` or plugin-owned `*.Presentation.Markdown` paths. Keep `Vibe.Markdown` only as a transitional facade/protocol until renderer-neutral presentation structs can become the Markdown input.
+
+### Phase 7: presentation cleanup
 
 Move domain-owned presentation modules into `Vibe.Presentation.*` and surface modules into `Vibe.TUI.Presentation.*` / `Vibe.Web.Presentation.*`.
 
@@ -422,6 +487,7 @@ layers: [
     "Vibe.Goals",
     "Vibe.Command",
     "Vibe.Plugin.*",
+    "Vibe.Plugins.*",
     "Vibe.Subagents.*"
   ],
   storage: [
@@ -430,7 +496,8 @@ layers: [
     "Vibe.Telemetry",
     "Vibe.Session.Store*"
   ],
-  presentation: "Vibe.Presentation.*",
+  presentation: ["Vibe.Presentation.*", "Vibe.Plugins.*.Presentation.*"],
+  markdown: ["Vibe.Presentation.Markdown.*", "Vibe.Plugins.*.Presentation.Markdown"],
   tui: "Vibe.TUI.*",
   web: "Vibe.Web.*",
   transport: "Vibe.Remote.*"
@@ -444,15 +511,20 @@ deps: [
   forbidden: [
     {:domain, :storage},
     {:domain, :presentation},
+    {:domain, :markdown},
     {:domain, :tui},
     {:domain, :web},
     {:domain, :transport},
     {:storage, :presentation},
+    {:storage, :markdown},
     {:storage, :tui},
     {:storage, :web},
     {:presentation, :storage},
     {:presentation, :tui},
     {:presentation, :web},
+    {:markdown, :storage},
+    {:markdown, :tui},
+    {:markdown, :web},
     {:tui, :storage},
     {:web, :storage}
   ]
@@ -464,12 +536,13 @@ Call-level rules should ban random representation calls:
 ```elixir
 calls: [
   forbidden: [
-    {"Vibe.SystemAlarms.*", ["Jason.encode", "Jason.encode!", "Jason.decode", "Jason.decode!", "Vibe.Storage.*", "Vibe.Presentation.*"]},
-    {"Vibe.Tool.*", ["Jason.encode", "Jason.encode!", "Jason.decode", "Jason.decode!", "Vibe.Storage.Representation.*"]},
+    {"Vibe.SystemAlarms.*", ["Jason.encode", "Jason.encode!", "Jason.decode", "Jason.decode!", "Vibe.Storage.*", "Vibe.Markdown.*", "Vibe.Presentation.Markdown.*"]},
+    {"Vibe.Tool.*", ["Jason.encode", "Jason.encode!", "Jason.decode", "Jason.decode!", "Vibe.Storage.Representation.*", "Vibe.Markdown.*", "Vibe.Presentation.Markdown.*"]},
+    {"Vibe.Command.*", ["Vibe.Markdown.*", "Vibe.Presentation.Markdown.*"]},
     {"Vibe.UI.*", ["Vibe.Storage.Representation.*", "Vibe.Storage.Persistable.*", "Vibe.Storage.Restorable.*"]},
     {"Vibe.Web.*", ["Vibe.Storage.Representation.*", "Vibe.Storage.Persistable.*", "Vibe.Storage.Restorable.*"]},
     {"Vibe.TUI.*", ["Vibe.Storage.Representation.*", "Vibe.Storage.Persistable.*", "Vibe.Storage.Restorable.*"]},
-    {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.TUI.*", "Vibe.Web.*"]}
+    {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.Markdown.*", "Vibe.TUI.*", "Vibe.Web.*"]}
   ]
 ]
 ```
@@ -482,8 +555,9 @@ source: [
     "Vibe.UI.Event",
     "Vibe.UI.Event.*",
     "Vibe.UI.Bus",
-    "Vibe.Plugins.WebSearch",
-    "Vibe.Plugins.WebSearch.*",
+    "Vibe.WebTools",
+    "Vibe.WebTools.*",
+    "Vibe.Plugins.WebSearch.API",
     "Vibe.Session.Store.Codec",
     "Vibe.Actions.*",
     "Vibe.Tools.*",
@@ -491,8 +565,9 @@ source: [
     "Vibe.ToolDisplay"
   ],
   forbidden_files: [
-    "lib/vibe/web_search.ex",
-    "lib/vibe/web_search/**",
+    "lib/vibe/web_tools.ex",
+    "lib/vibe/web_tools/**",
+    "lib/vibe/plugins/web_search/api.ex",
     "lib/vibe/session/store/codec.ex"
   ]
 ]
@@ -507,7 +582,8 @@ boundaries: [
     "Vibe.Event.Bus",
     "Vibe.Storage",
     "Vibe.Storage.Events",
-    "Vibe.Presentation"
+    "Vibe.Presentation",
+    "Vibe.Presentation.Markdown"
   ],
   internal: [
     "Vibe.Storage.Representation.*"
@@ -522,7 +598,7 @@ Initial `.reach.exs` may start with call/source/internal-boundary rules while ex
 
 ## Test hierarchy rule
 
-Tests must mirror the production hierarchy. When modules move from generic or UI-owned namespaces into semantic/event, storage, or presentation namespaces, tests move with them.
+Tests must mirror the production hierarchy. When modules move from generic or UI-owned namespaces into semantic/event, storage, presentation, Markdown, or plugin namespaces, tests move with them.
 
 Examples:
 
@@ -536,17 +612,23 @@ lib/vibe/storage/representation/runtime_alert.ex
 lib/vibe/presentation/runtime_alert.ex
   -> test/vibe/presentation/runtime_alert_test.exs
 
+lib/vibe/presentation/markdown/command_result.ex
+  -> test/vibe/presentation/markdown/command_result_test.exs
+
+lib/vibe/plugins/web_search/presentation/markdown.ex
+  -> test/vibe/plugins/web_search/presentation/markdown_test.exs
+
 lib/vibe/plugins/web_search/search_result.ex
   -> test/vibe/plugins/web_search/search_result_test.exs
 ```
 
-Avoid leaving tests under old conceptual locations such as `test/vibe/ui/*` when they are testing semantic event behavior, storage representation behavior, or plugin-owned web search behavior.
+Avoid leaving tests under old conceptual locations such as `test/vibe/ui/*` when they are testing semantic event behavior, storage representation behavior, Markdown projection behavior, or plugin-owned web search behavior.
 
 Reducer tests can stay under `test/vibe/ui/*` only when they test UI state derivation from semantic events.
 
 Storage protocol tests should assert protocol dispatch and restored typed structs, not raw map shapes except at the explicit storage JSON boundary.
 
-Presentation tests should assert renderer-neutral presentation values under `test/vibe/presentation/*`; TUI/Web tests should only assert surface projection under `test/vibe/tui/presentation/*` and `test/vibe/web/presentation/*`.
+Presentation tests should assert renderer-neutral presentation values under `test/vibe/presentation/*`; Markdown projection tests should live under `test/vibe/presentation/markdown/*` or plugin-owned `test/vibe/plugins/*/presentation/*`; TUI/Web tests should only assert surface projection under `test/vibe/tui/presentation/*` and `test/vibe/web/presentation/*`.
 
 ## Validation targets
 
