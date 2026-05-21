@@ -40,18 +40,18 @@ defmodule Mix.Tasks.Vibe do
 
   ## Options
 
-    * `--model <provider:model>` - ReqLLM/Jido model.
+    * `--model <provider:model>` - Model identifier passed to ReqLLM.
       Defaults to `VIBE_MODEL` or `openai_codex:gpt-5.5`.
     * `--api-key <key>` - API key for OpenAI-compatible requests.
     * `--system-prompt <text>` - Override system prompt for direct TUI/`--direct` calls.
     * `--mode <text|json>` - Output mode. Defaults to `text`.
     * `--print`, `-p` - Non-interactive mode: process prompt and exit.
-    * `--direct` - Use direct ReqLLM call instead of the tool-capable Jido.AI agent.
+    * `--direct` - Use a direct ReqLLM call instead of the tool-capable agent runtime.
     * `--stream` - Stream direct ReqLLM calls. Default for `--direct`.
     * `--no-stream` - Disable direct ReqLLM streaming.
     * `--eval <code>` - Evaluate Elixir code through `Vibe.Eval`.
     * `--compact` - Compact stored trajectory context.
-    * `--web` - Start the prototype Phoenix LiveView web interface.
+    * `--web` - Ensure the server is running and open the Phoenix LiveView web console.
     * `--port <port>` - Port for `--web`. Defaults to 4321.
     * `--keep-recent <n>` - Events to keep when compacting. Defaults to `12`.
     * `--checks` - Run Vibe validation gates.
