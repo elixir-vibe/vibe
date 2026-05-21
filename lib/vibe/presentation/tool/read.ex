@@ -30,6 +30,8 @@ defmodule Vibe.Presentation.Tool.Read do
     Enum.map(parts, fn
       %Content.Text{text: text} -> {:text, text, []}
       %Content.Image{} = image -> {:image, image, []}
+      %{type: "text", text: text} when is_binary(text) -> {:text, text, []}
+      %{type: "image"} = image -> {:image, image, []}
       part -> {:inspect, inspect(part, pretty: true), []}
     end)
   end

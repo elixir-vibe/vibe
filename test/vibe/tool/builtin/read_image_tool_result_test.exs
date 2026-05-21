@@ -20,6 +20,8 @@ defmodule Vibe.Tool.Builtin.ReadImageToolResultTest do
       assert {:ok, result} =
                Vibe.Tool.Builtin.Read.run(%{"path" => Path.join(dir, "tiny.png")}, %{})
 
+      assert %{content_type: :image, parts: [%{type: "text"}, %{type: "image"}]} = result
+
       assert [
                %ContentPart{type: :text},
                %ContentPart{type: :image_url} = image

@@ -52,7 +52,10 @@ defmodule Vibe.Tool.Builtin.Read do
 
   defp tool_result(%Vibe.Files.ReadResult{} = result) do
     result
-    |> Vibe.JSON.Encode.value()
+    |> Map.from_struct()
+    |> Map.delete(:__content_parts__)
+    |> Map.new(fn {key, value} -> {key, Vibe.JSON.Encode.value(value)} end)
+    |> Map.put(:content_type, result.content_type)
     |> Map.put(:__content_parts__, result.__content_parts__)
   end
 end
