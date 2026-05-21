@@ -109,25 +109,3 @@ defmodule Vibe.Model.Content do
 
   defp dimensions(_image), do: nil
 end
-
-defimpl Jason.Encoder, for: Vibe.Model.Content.Text do
-  def encode(content, opts) do
-    Jason.Encode.map(%{type: "text", text: content.text}, opts)
-  end
-end
-
-defimpl Jason.Encoder, for: Vibe.Model.Content.Image do
-  def encode(content, opts) do
-    Jason.Encode.map(
-      %{
-        type: "image",
-        data: content.data,
-        mime_type: content.mime_type,
-        filename: content.filename,
-        width: content.width,
-        height: content.height
-      },
-      opts
-    )
-  end
-end

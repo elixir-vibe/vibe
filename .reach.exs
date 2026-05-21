@@ -65,6 +65,14 @@
          "Jason.decode!",
          "Vibe.Storage.Representation.*"
        ]},
+      {"Vibe.Model.Content.*",
+       [
+         "Jason.encode",
+         "Jason.encode!",
+         "Jason.decode",
+         "Jason.decode!",
+         "Vibe.Storage.Representation.*"
+       ]},
       {"Vibe.UI.*",
        [
          "Vibe.Storage.Representation.*",
