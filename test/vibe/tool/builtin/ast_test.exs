@@ -24,7 +24,7 @@ defmodule Vibe.Tool.Builtin.ASTTest do
 
     assert diff =~ "-  def add(left, right), do: left - right"
     assert diff =~ "+  def add(left, right), do: left + right"
-    assert Jason.encode!(%{result: [{path, 1}]})
+    assert Jason.encode!(Vibe.Tool.Transport.JSON.value(%{result: [{path, 1}]}))
 
     File.rm_rf!(dir)
   end

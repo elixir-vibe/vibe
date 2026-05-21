@@ -63,7 +63,7 @@ defmodule Vibe.Files.ArtifactsTest do
       assert_receive {:telemetry_event, [:vibe, :image, :artifact, :stored],
                       %{bytes: 5, count: 1}, %{mime_type: "image/png"}}
 
-      encoded = Jason.encode!(ref)
+      encoded = ref |> Vibe.Tool.Transport.JSON.value() |> Jason.encode!()
       assert encoded =~ ref.path
       refute encoded =~ image.data
     after
