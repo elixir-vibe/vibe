@@ -81,6 +81,13 @@
          "Jason.decode!",
          "Vibe.Storage.Representation.*"
        ]},
+      {"Vibe.UI.Error",
+       [
+         "Jason.encode",
+         "Jason.encode!",
+         "Jason.decode",
+         "Jason.decode!"
+       ]},
       {"Vibe.UI.*",
        [
          "Vibe.Storage.Representation.*",

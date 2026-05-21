@@ -53,12 +53,3 @@ defmodule Vibe.UI.Error do
   def detail(%{"detail" => detail}) when is_binary(detail), do: detail
   def detail(_error), do: nil
 end
-
-defimpl Jason.Encoder, for: Vibe.UI.Error do
-  def encode(error, opts) do
-    error
-    |> Map.from_struct()
-    |> Vibe.JSON.Encode.value()
-    |> Jason.Encode.map(opts)
-  end
-end
