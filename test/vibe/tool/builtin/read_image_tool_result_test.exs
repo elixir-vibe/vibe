@@ -17,7 +17,8 @@ defmodule Vibe.Tool.Builtin.ReadImageToolResultTest do
     File.write!(Path.join(dir, "tiny.png"), png)
 
     try do
-      assert {:ok, result} = Vibe.Files.read_file("tiny.png", root: dir)
+      assert {:ok, result} =
+               Vibe.Tool.Builtin.Read.run(%{"path" => Path.join(dir, "tiny.png")}, %{})
 
       assert [
                %ContentPart{type: :text},

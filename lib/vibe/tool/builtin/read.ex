@@ -36,14 +36,23 @@ defmodule Vibe.Tool.Builtin.Read do
     Vibe.Tool.AdapterResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
 
-      Vibe.Files.read_file(params.path,
-        limit_lines: Map.get(params, :limit_lines, @default_limit_lines),
-        limit_bytes: Map.get(params, :limit_bytes, Vibe.Tool.Output.default_max_bytes()),
-        resize?: Map.get(params, :resize_images, false),
-        max_width: Map.get(params, :max_width, 2_000),
-        max_height: Map.get(params, :max_height, 2_000),
-        max_bytes: Map.get(params, :max_bytes, 4_500_000)
-      )
+      case Vibe.Files.read_file(params.path,
+             limit_lines: Map.get(params, :limit_lines, @default_limit_lines),
+             limit_bytes: Map.get(params, :limit_bytes, Vibe.Tool.Output.default_max_bytes()),
+             resize?: Map.get(params, :resize_images, false),
+             max_width: Map.get(params, :max_width, 2_000),
+             max_height: Map.get(params, :max_height, 2_000),
+             max_bytes: Map.get(params, :max_bytes, 4_500_000)
+           ) do
+        {:ok, %Vibe.Files.ReadResult{} = result} -> {:ok, tool_result(result)}
+        other -> other
+      end
     end)
+  end
+
+  defp tool_result(%Vibe.Files.ReadResult{} = result) do
+    result
+    |> Vibe.JSON.Encode.value()
+    |> Map.put(:__content_parts__, result.__content_parts__)
   end
 end

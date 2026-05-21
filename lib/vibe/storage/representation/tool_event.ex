@@ -115,7 +115,7 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Tool.Event do
       id: event.id,
       name: event.name,
       args: event.args,
-      output: event.output,
+      output: strip_transient_content_parts(event.output),
       output_format: event.output_format,
       output_parts: event.output_parts,
       output_truncation: event.output_truncation,
@@ -123,6 +123,14 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Tool.Event do
       phase: event.phase
     }
   end
+
+  defp strip_transient_content_parts(%{} = output) do
+    output
+    |> Map.delete(:__content_parts__)
+    |> Map.delete("__content_parts__")
+  end
+
+  defp strip_transient_content_parts(output), do: output
 end
 
 defimpl Vibe.Storage.Restorable, for: Vibe.Storage.Representation.ToolEvent do
