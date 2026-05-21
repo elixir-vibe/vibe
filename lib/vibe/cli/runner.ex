@@ -104,7 +104,7 @@ defmodule Vibe.CLI.Runner do
     Vibe.Application.configure_dependency_logging()
 
     runtime_opts =
-      [session_id: session_id(opts), model: Vibe.Model.Config.resolve(opts)]
+      [session_id: session_id(opts), model: Vibe.Model.Selection.resolve(opts)]
       |> maybe_put(:trace_dir, trace_dir(opts))
       |> maybe_put(:cast, cast_path(opts))
       |> maybe_put(:remote_node, opts[:remote_node])
@@ -129,7 +129,7 @@ defmodule Vibe.CLI.Runner do
       ReqLLM.put_key(:openai_api_key, key)
     end
 
-    model = Vibe.Model.Config.resolve(opts)
+    model = Vibe.Model.Selection.resolve(opts)
 
     case Vibe.Auth.Provider.for_model(model) do
       {module, _prefix, _model_id} -> module.ensure_fresh()

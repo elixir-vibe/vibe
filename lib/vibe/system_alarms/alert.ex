@@ -1,4 +1,4 @@
-defmodule Vibe.Runtime.Alert do
+defmodule Vibe.SystemAlarms.Alert do
   @moduledoc """
   Renderer-neutral runtime alert surfaced by Vibe system services.
 
@@ -150,10 +150,10 @@ defmodule Vibe.Runtime.Alert do
   defp atom_value(_value), do: :unknown
 end
 
-defimpl Jason.Encoder, for: Vibe.Runtime.Alert do
+defimpl Jason.Encoder, for: Vibe.SystemAlarms.Alert do
   def encode(alert, opts) do
     alert
-    |> Vibe.Runtime.Alert.to_map()
+    |> Vibe.SystemAlarms.Alert.to_map()
     |> Vibe.JSON.Encode.value()
     |> Jason.Encode.map(opts)
   end

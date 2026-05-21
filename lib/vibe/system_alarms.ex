@@ -10,7 +10,7 @@ defmodule Vibe.SystemAlarms do
 
   use GenServer
 
-  alias Vibe.Runtime.Alert
+  alias Vibe.SystemAlarms.Alert
 
   require Logger
 

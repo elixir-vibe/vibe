@@ -93,7 +93,7 @@ defmodule Vibe.CLI.Commands.Default do
     Vibe.Application.configure_dependency_logging()
 
     session_id = Vibe.Session.Store.new_id()
-    model = Vibe.Model.Config.resolve(opts)
+    model = Vibe.Model.Selection.resolve(opts)
 
     case Vibe.Session.start(session_id: session_id, cwd: File.cwd!(), model: model) do
       {:ok, session} ->

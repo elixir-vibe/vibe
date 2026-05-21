@@ -58,14 +58,14 @@ defmodule Vibe.Agent.Options do
     Application.put_env(
       :jido_ai,
       :model_aliases,
-      Map.put(current, :vibe, Vibe.Model.Config.resolve(opts))
+      Map.put(current, :vibe, Vibe.Model.Selection.resolve(opts))
     )
   end
 
   @spec ensure_provider_credentials(keyword()) :: :ok | {:error, term()}
   def ensure_provider_credentials(opts) do
     opts
-    |> Vibe.Model.Config.resolve()
+    |> Vibe.Model.Selection.resolve()
     |> to_string()
     |> String.split(":", parts: 2)
     |> hd()
@@ -128,7 +128,7 @@ defmodule Vibe.Agent.Options do
   end
 
   defp put_provider_options(opts) do
-    model = Keyword.get(opts, :model) || Vibe.Model.Config.default()
+    model = Keyword.get(opts, :model) || Vibe.Model.Selection.default()
     provider = model |> to_string() |> String.split(":", parts: 2) |> hd()
 
     provider_options =

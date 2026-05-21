@@ -40,7 +40,7 @@ defmodule Vibe.Model.Direct do
   end
 
   defp request(prompt, opts) do
-    model = Vibe.Model.Config.resolve(opts)
+    model = Vibe.Model.Selection.resolve(opts)
     system = Keyword.get_lazy(opts, :system, &Vibe.Prompts.system/0)
 
     messages = [

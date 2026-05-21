@@ -106,7 +106,7 @@ defmodule Vibe.CLI.Sessions do
   defp session_opts(opts) do
     opts
     |> Keyword.take([:model, :role, :system])
-    |> Keyword.put_new_lazy(:model, fn -> Vibe.Model.Config.resolve(opts) end)
+    |> Keyword.put_new_lazy(:model, fn -> Vibe.Model.Selection.resolve(opts) end)
   end
 
   defp server_call(fun) do

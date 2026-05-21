@@ -81,7 +81,7 @@ defmodule Vibe.Model.Resolver do
   end
 
   defp search_catalog(query) do
-    Vibe.Model.Config.available_providers()
+    Vibe.Model.Selection.available_providers()
     |> Enum.find_value(fn provider ->
       spec = "#{provider}:#{query}"
 

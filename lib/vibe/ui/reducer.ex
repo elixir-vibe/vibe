@@ -4,7 +4,7 @@ defmodule Vibe.UI.Reducer do
   """
 
   alias Vibe.Model.Usage
-  alias Vibe.Runtime.Alert
+  alias Vibe.SystemAlarms.Alert
   alias Vibe.Support.Lists
   alias Vibe.UI.{Event, Message, Notification, Selector, State, ToolEvent}
 

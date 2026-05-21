@@ -56,7 +56,7 @@ defmodule Vibe.UI.State do
           status: atom(),
           overlays: [map()],
           notifications: [Notification.t()],
-          runtime_alerts: %{String.t() => Vibe.Runtime.Alert.t()},
+          runtime_alerts: %{String.t() => Vibe.SystemAlarms.Alert.t()},
           plugin_statuses: map(),
           active_sessions: non_neg_integer() | nil,
           plugin_widgets: map(),

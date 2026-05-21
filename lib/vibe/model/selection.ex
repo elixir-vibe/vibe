@@ -1,4 +1,4 @@
-defmodule Vibe.Model.Config do
+defmodule Vibe.Model.Selection do
   @moduledoc """
   Model selection and provider discovery.
 
