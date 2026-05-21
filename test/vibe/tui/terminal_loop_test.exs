@@ -760,6 +760,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok = TerminalLoop.input(loop, "hello")
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
     assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 1_000
+    wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "Working") end))
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :escape})
 
     plain =

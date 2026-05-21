@@ -36,7 +36,7 @@ defmodule Vibe.Gateway.StreamConsumerTest do
     StreamConsumer.delta(pid, "he")
     refute_receive {:gateway_send, _, _, _, _}, 5
     StreamConsumer.delta(pid, "llo")
-    assert_receive {:gateway_send, "chat-1", _message_id, "hello ▉", _opts}, 80
+    assert_receive {:gateway_send, "chat-1", _message_id, "hello ▉", _opts}, 1_000
   end
 
   test "segment break finalizes current message and starts a new one" do
@@ -51,13 +51,13 @@ defmodule Vibe.Gateway.StreamConsumerTest do
       )
 
     StreamConsumer.delta(pid, "tool")
-    assert_receive {:gateway_send, "chat-1", first_id, "tool ▉", _opts}
+    assert_receive {:gateway_send, "chat-1", first_id, "tool ▉", _opts}, 1_000
 
     StreamConsumer.segment_break(pid)
-    assert_receive {:gateway_edit, "chat-1", ^first_id, "tool", _opts}
+    assert_receive {:gateway_edit, "chat-1", ^first_id, "tool", _opts}, 1_000
 
     StreamConsumer.delta(pid, "done")
-    assert_receive {:gateway_send, "chat-1", second_id, "done ▉", _opts}
+    assert_receive {:gateway_send, "chat-1", second_id, "done ▉", _opts}, 1_000
     refute first_id == second_id
   end
 

@@ -161,6 +161,10 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{type: :goal_continuation_started}) do
+    %{state | status: :working}
+  end
+
   defp reduce(state, %Event{type: :goal_cleared, at: at}) do
     %{
       state

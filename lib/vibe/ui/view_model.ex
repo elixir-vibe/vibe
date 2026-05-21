@@ -47,7 +47,8 @@ defmodule Vibe.UI.ViewModel do
         usage: visible_usage(state),
         active_sessions: state.active_sessions,
         runtime_alerts: Map.values(state.runtime_alerts),
-        plugin_statuses: state.plugin_statuses
+        plugin_statuses: state.plugin_statuses,
+        goal: state.goal
       },
       overlays: Enum.map(state.overlays, &%Overlay{kind: &1.kind, data: &1}),
       notifications: notification_block(state.notifications),

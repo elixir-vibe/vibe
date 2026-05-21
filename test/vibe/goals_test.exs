@@ -43,6 +43,51 @@ defmodule Vibe.GoalsTest do
     assert prompt =~ "Keep working until the docs are done"
   end
 
+  test "active goals can continue after idle turns" do
+    parent = self()
+    assert {:ok, _goal} = Vibe.Goals.set("continuing-goal", "Finish the queued work")
+
+    ask_fun = fn prompt, _opts ->
+      send(parent, {:prompt, prompt})
+
+      if String.starts_with?(prompt, "Continue the active goal.") do
+        assert {:ok, _goal} = Vibe.Goals.complete("continuing-goal")
+      end
+
+      {:ok, "ok"}
+    end
+
+    {:ok, session} =
+      Vibe.Session.start_link(
+        session_id: "continuing-goal",
+        persist?: true,
+        goal_continuation?: true,
+        ask_fun: ask_fun
+      )
+
+    assert :ok = Vibe.Session.dispatch(session, {:submit_prompt, %{text: "Start"}})
+    assert_receive {:prompt, "Start" <> _context}, 1_000
+    assert_receive {:prompt, "Continue the active goal." <> _context}, 1_000
+    assert_goal_status("continuing-goal", :complete)
+  end
+
+  defp assert_goal_status(
+         session_id,
+         status,
+         deadline \\ System.monotonic_time(:millisecond) + 1_000
+       ) do
+    if Vibe.Goals.get(session_id).status == status do
+      :ok
+    else
+      if System.monotonic_time(:millisecond) < deadline do
+        Process.sleep(10)
+        assert_goal_status(session_id, status, deadline)
+      else
+        assert Vibe.Goals.get(session_id).status == status
+      end
+    end
+  end
+
   test "slash command stores goal through session events" do
     {:ok, session} =
       Vibe.Session.start_link(

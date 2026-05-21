@@ -104,6 +104,7 @@ defmodule Vibe.Session do
   def init(opts) do
     persist? = Keyword.get(opts, :persist?, true)
     restoring? = Keyword.get(opts, :restoring?, false)
+    custom_ask? = Keyword.has_key?(opts, :ask_fun)
     {state, event_seq, events_tail} = restore_state(State.new(opts), persist?, restoring?)
     state = maybe_load_goal(state, persist?)
 
@@ -124,7 +125,7 @@ defmodule Vibe.Session do
        state: state,
        ask_fun: Keyword.get(opts, :ask_fun, &Vibe.UI.PromptRunner.default_ask/2),
        llm_opts: PromptLifecycle.llm_opts(opts),
-       streaming?: Keyword.get(opts, :streaming?, not Keyword.has_key?(opts, :ask_fun)),
+       streaming?: Keyword.get(opts, :streaming?, not custom_ask?),
        locked_by_job: Keyword.get(opts, :locked_by_job),
        lock_owner: Keyword.get(opts, :lock_owner),
        subscribers: %{},
@@ -135,7 +136,9 @@ defmodule Vibe.Session do
        events_tail: events_tail,
        persist?: persist?,
        persistence_failed?: false,
-       last_user_prompt: nil
+       last_user_prompt: nil,
+       goal_continuation?: Keyword.get(opts, :goal_continuation?, not custom_ask?),
+       goal_continuation_timer: nil
      }}
   end
 
@@ -204,7 +207,18 @@ defmodule Vibe.Session do
   def handle_info({:prompt_result, ref, result}, %{prompt_ref: ref} = state) do
     state = %{state | prompt_task: nil, prompt_ref: nil, active_agent: nil}
     state = PromptLifecycle.record_result(state, result, &emit/2)
-    {:noreply, state}
+    {:noreply, maybe_schedule_goal_continuation(state)}
+  end
+
+  def handle_info(:continue_goal_if_idle, state) do
+    state = %{state | goal_continuation_timer: nil}
+
+    if continue_goal?(state) do
+      state = emit(state, Event.new(:goal_continuation_started, state.state.session_id, %{}))
+      {:noreply, PromptLifecycle.submit(state, "Continue the active goal.", &emit/2)}
+    else
+      {:noreply, state}
+    end
   end
 
   def handle_info({:prompt_result, _ref, _result}, state), do: {:noreply, state}
@@ -608,6 +622,25 @@ defmodule Vibe.Session do
   defp token_text(nil), do: ""
   defp token_text(value) when is_binary(value), do: value
   defp token_text(value), do: inspect(value, limit: 20)
+
+  defp maybe_schedule_goal_continuation(%{goal_continuation?: false} = state), do: state
+
+  defp maybe_schedule_goal_continuation(%{goal_continuation_timer: timer} = state)
+       when not is_nil(timer),
+       do: state
+
+  defp maybe_schedule_goal_continuation(state) do
+    if Vibe.Goals.Goal.active?(Vibe.Goals.get(state.state.session_id)) do
+      timer = Process.send_after(self(), :continue_goal_if_idle, 100)
+      %{state | goal_continuation_timer: timer}
+    else
+      state
+    end
+  end
+
+  defp continue_goal?(state) do
+    is_nil(state.prompt_task) and Vibe.Goals.Goal.active?(Vibe.Goals.get(state.state.session_id))
+  end
 
   defp maybe_load_goal(state, false), do: state
   defp maybe_load_goal(state, true), do: %{state | goal: Vibe.Goals.get(state.session_id)}

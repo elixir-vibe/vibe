@@ -104,6 +104,30 @@ defmodule Vibe.Goals do
   def resume(session_id \\ Vibe.Command.Streaming.current_session_id()),
     do: update_status(session_id, :active)
 
+  @spec add_usage(String.t(), map() | nil) :: {:ok, Goal.t()} | :ok | {:error, term()}
+  def add_usage(_session_id, nil), do: :ok
+
+  def add_usage(session_id, usage) when is_binary(session_id) and is_map(usage) do
+    case row(session_id) do
+      %GoalRow{} = row ->
+        input = Map.get(usage, :input_tokens, 0) || 0
+        output = Map.get(usage, :output_tokens, 0) || 0
+        updated_at = now()
+        tokens_used = row.tokens_used + input + output
+
+        row
+        |> Ecto.Changeset.change(tokens_used: tokens_used, updated_at: updated_at)
+        |> Repo.update()
+        |> case do
+          {:ok, _row} -> {:ok, get(session_id)}
+          {:error, reason} -> {:error, reason}
+        end
+
+      nil ->
+        :ok
+    end
+  end
+
   @spec clear(String.t() | nil) :: :ok | {:error, term()}
   def clear(session_id \\ Vibe.Command.Streaming.current_session_id())
   def clear(nil), do: {:error, :missing_session_id}

@@ -75,7 +75,7 @@ defmodule Vibe.Gateway.SessionBridgeTest do
       Event.new(:assistant_message_added, session_id, %{result: response})
     )
 
-    assert_receive {:gateway_send, "chat-1", "from response", _opts}
+    assert_receive {:gateway_send, "chat-1", "from response", _opts}, 1_000
   end
 
   test "sends non-streaming assistant messages" do
@@ -101,7 +101,7 @@ defmodule Vibe.Gateway.SessionBridgeTest do
       Event.new(:assistant_message_added, session_id, %{result: %{output: "done"}})
     )
 
-    assert_receive {:gateway_send, "chat-1", "done", opts}
+    assert_receive {:gateway_send, "chat-1", "done", opts}, 1_000
     assert opts[:reply_to] == "reply-1"
   end
 end

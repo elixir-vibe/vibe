@@ -60,7 +60,8 @@ defmodule Vibe.UI.Block do
       :usage,
       :active_sessions,
       runtime_alerts: [],
-      plugin_statuses: %{}
+      plugin_statuses: %{},
+      goal: nil
     ]
 
     @type t :: %__MODULE__{}

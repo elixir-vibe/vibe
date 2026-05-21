@@ -34,6 +34,7 @@ defmodule Vibe.TUI.Widgets.Footer do
     footer = Theme.fg(theme, :dim, Widget.join_sides(left, right, width))
 
     [footer]
+    |> append_optional(goal_line(Map.get(props, :goal), width, theme))
     |> append_optional(runtime_alerts_line(Map.get(props, :runtime_alerts, []), width, theme))
     |> append_optional(plugin_status_line(Map.get(props, :plugin_statuses, %{}), width, theme))
   end
@@ -65,6 +66,14 @@ defmodule Vibe.TUI.Widgets.Footer do
 
   defp append_optional(lines, nil), do: lines
   defp append_optional(lines, line), do: [line | Enum.reverse(lines)] |> Enum.reverse()
+
+  defp goal_line(nil, _width, _theme), do: nil
+
+  defp goal_line(goal, width, theme) do
+    status = goal.status |> Atom.to_string() |> String.replace("_", " ")
+    line = "Goal #{status}: #{goal.objective}" |> Widget.fit_line(width)
+    Theme.fg(theme, :accent, line)
+  end
 
   defp runtime_alerts_line([], _width, _theme), do: nil
 

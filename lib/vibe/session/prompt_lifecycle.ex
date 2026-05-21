@@ -60,7 +60,7 @@ defmodule Vibe.Session.PromptLifecycle do
 
     case Usage.from_response(response) do
       nil -> state
-      usage -> emit.(state, Event.new(:usage_updated, state.state.session_id, usage))
+      usage -> record_usage(state, usage, emit)
     end
   end
 
@@ -187,6 +187,19 @@ defmodule Vibe.Session.PromptLifecycle do
 
   defp record_successful_response(state, response, emit) do
     emit.(state, Event.new(:assistant_message_added, state.state.session_id, %{result: response}))
+  end
+
+  defp record_usage(state, usage, emit) do
+    state =
+      case Vibe.Goals.add_usage(state.state.session_id, usage) do
+        {:ok, goal} ->
+          emit.(state, Event.new(:goal_updated, state.state.session_id, %{goal: goal}))
+
+        _result ->
+          state
+      end
+
+    emit.(state, Event.new(:usage_updated, state.state.session_id, usage))
   end
 
   defp response_text(response) when is_binary(response), do: response
