@@ -41,11 +41,13 @@ defmodule Vibe.Storage.Representation.EventTest do
       Alert.from_alarm(:set, {:disk_almost_full, ~c"/tmp"}, [], at: ~U[2026-05-20 12:00:00Z])
 
     event =
-      Event.new(:runtime_alert_set, "session-1", %{alert: alert}, at: ~U[2026-05-20 12:00:01Z])
+      Event.new(:runtime_alert_set, "session-1", Vibe.Event.RuntimeAlert.set(alert),
+        at: ~U[2026-05-20 12:00:01Z]
+      )
 
     encoded = EventRepresentation.encode(event, 8)
 
     assert {:ok, {8, decoded}} = EventRepresentation.decode_map(encoded)
-    assert %Event{data: %{alert: ^alert}} = decoded
+    assert %Event{data: %Vibe.Event.RuntimeAlert.Set{alert: ^alert}} = decoded
   end
 end

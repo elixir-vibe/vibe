@@ -211,7 +211,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.State.new(session_id: "ui-test")
       |> Vibe.UI.Reducer.apply_event(
-        Vibe.Event.new(:runtime_alert_set, "ui-test", %{alert: alert})
+        Vibe.Event.new(:runtime_alert_set, "ui-test", Vibe.Event.RuntimeAlert.set(alert))
       )
 
     assert [%Vibe.SystemAlarms.Alert{type: :disk_almost_full}] = Map.values(state.runtime_alerts)
@@ -223,7 +223,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.Event.new(:runtime_alert_clear, "ui-test", %{alert: clear})
+        Vibe.Event.new(:runtime_alert_clear, "ui-test", Vibe.Event.RuntimeAlert.cleared(clear))
       )
 
     assert state.runtime_alerts == %{}

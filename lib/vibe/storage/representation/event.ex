@@ -129,9 +129,12 @@ defmodule Vibe.Storage.Representation.Event do
     %{data | goal: decode_goal(goal)}
   end
 
-  defp decode_event_data(%{alert: alert} = data, type)
-       when type in [:runtime_alert_set, :runtime_alert_clear] do
-    %{data | alert: decode_runtime_alert(alert)}
+  defp decode_event_data(%{alert: alert}, :runtime_alert_set) do
+    alert |> decode_runtime_alert() |> Vibe.Event.RuntimeAlert.set()
+  end
+
+  defp decode_event_data(%{alert: alert}, :runtime_alert_clear) do
+    alert |> decode_runtime_alert() |> Vibe.Event.RuntimeAlert.cleared()
   end
 
   defp decode_event_data(%{level: level} = data, :notification_added) when is_binary(level),
@@ -225,6 +228,14 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
   defp persist_data(type, %{goal: %Vibe.Goals.Goal{} = goal} = data)
        when type in [:goal_set, :goal_updated] do
     %{data | goal: Vibe.Storage.Persistable.persist(goal)}
+  end
+
+  defp persist_data(:runtime_alert_set, %Vibe.Event.RuntimeAlert.Set{alert: alert}) do
+    %{alert: Vibe.Storage.Persistable.persist(alert)}
+  end
+
+  defp persist_data(:runtime_alert_clear, %Vibe.Event.RuntimeAlert.Cleared{alert: alert}) do
+    %{alert: Vibe.Storage.Persistable.persist(alert)}
   end
 
   defp persist_data(type, %{alert: %Vibe.SystemAlarms.Alert{} = alert})

@@ -319,20 +319,26 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{
+         type: :runtime_alert_set,
+         data: %Vibe.Event.RuntimeAlert.Set{alert: %Alert{} = alert}
+       }) do
+    set_runtime_alert(state, alert)
+  end
+
   defp reduce(state, %Event{type: :runtime_alert_set, data: %{alert: %Alert{} = alert}}) do
-    %{
-      state
-      | runtime_alerts: Map.put(state.runtime_alerts, alert.id, alert),
-        notifications: Lists.append(state.notifications, runtime_alert_notification(alert))
-    }
+    set_runtime_alert(state, alert)
+  end
+
+  defp reduce(state, %Event{
+         type: :runtime_alert_clear,
+         data: %Vibe.Event.RuntimeAlert.Cleared{alert: %Alert{} = alert}
+       }) do
+    clear_runtime_alert(state, alert)
   end
 
   defp reduce(state, %Event{type: :runtime_alert_clear, data: %{alert: %Alert{} = alert}}) do
-    %{
-      state
-      | runtime_alerts: Map.delete(state.runtime_alerts, alert.id),
-        notifications: Lists.append(state.notifications, runtime_alert_notification(alert))
-    }
+    clear_runtime_alert(state, alert)
   end
 
   defp reduce(state, %Event{type: :notification_expired, data: %{id: id}}) do
@@ -468,6 +474,22 @@ defmodule Vibe.UI.Reducer do
       overlay ->
         overlay
     end)
+  end
+
+  defp set_runtime_alert(state, %Alert{} = alert) do
+    %{
+      state
+      | runtime_alerts: Map.put(state.runtime_alerts, alert.id, alert),
+        notifications: Lists.append(state.notifications, runtime_alert_notification(alert))
+    }
+  end
+
+  defp clear_runtime_alert(state, %Alert{} = alert) do
+    %{
+      state
+      | runtime_alerts: Map.delete(state.runtime_alerts, alert.id),
+        notifications: Lists.append(state.notifications, runtime_alert_notification(alert))
+    }
   end
 
   defp runtime_alert_notification(%Alert{} = alert) do
