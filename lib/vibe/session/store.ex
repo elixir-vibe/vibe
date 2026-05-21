@@ -6,7 +6,8 @@ defmodule Vibe.Session.Store do
   import Ecto.Query
 
   alias Vibe.Repo
-  alias Vibe.Session.Store.{Codec, Listing, Summary}
+  alias Vibe.Session.Store.{Listing, Summary}
+  alias Vibe.Storage.Representation.SessionLog
   alias Vibe.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent, UIEventFTS}
   alias Vibe.Trajectory
   alias Vibe.UI.Event
@@ -62,7 +63,7 @@ defmodule Vibe.Session.Store do
   def append(%Trajectory{} = event) do
     Vibe.Storage.ensure!()
     ensure_session(event.session_id, event.at)
-    encoded = Codec.encode_trajectory(event)
+    encoded = SessionLog.encode_trajectory(event)
 
     %TrajectoryEvent{}
     |> Map.merge(%{
@@ -201,7 +202,7 @@ defmodule Vibe.Session.Store do
 
     case Vibe.Repo.get(EvalState, session_id) do
       %EvalState{state: state} ->
-        case Codec.decode_eval_state_binary(state) do
+        case SessionLog.decode_eval_state_binary(state) do
           {:ok, decoded} -> decoded
           :error -> nil
         end
@@ -280,7 +281,7 @@ defmodule Vibe.Session.Store do
       |> Enum.flat_map(&decode_ui_event_record/1)
 
     case events do
-      [] -> session_id |> events() |> Codec.project_trajectory_events()
+      [] -> session_id |> events() |> SessionLog.project_trajectory_events()
       events -> events
     end
   end
@@ -323,7 +324,7 @@ defmodule Vibe.Session.Store do
   defp present_attrs(attrs), do: Enum.reject(attrs, fn {_key, value} -> is_nil(value) end)
 
   defp ui_event_row(%Event{} = event, seq) do
-    encoded = Codec.encode_ui_event(event, seq)
+    encoded = SessionLog.encode_ui_event(event, seq)
 
     %{
       session_id: event.session_id,
@@ -357,7 +358,7 @@ defmodule Vibe.Session.Store do
       "at" => DateTime.to_iso8601(event.at),
       "data" => event.data
     }
-    |> Codec.decode_ui_event_map()
+    |> SessionLog.decode_ui_event_map()
     |> case do
       {:ok, event} -> [event]
       :error -> []
@@ -372,7 +373,7 @@ defmodule Vibe.Session.Store do
       "at" => DateTime.to_iso8601(event.at),
       "data" => event.data
     }
-    |> Codec.decode_trajectory_map()
+    |> SessionLog.decode_trajectory_map()
     |> case do
       {:ok, event} -> [event]
       :error -> []

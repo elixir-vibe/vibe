@@ -90,12 +90,3 @@ defmodule Vibe.Tool.Event do
 
   defp output_truncation(_result), do: nil
 end
-
-defimpl Jason.Encoder, for: Vibe.Tool.Event do
-  def encode(event, opts) do
-    event
-    |> Map.from_struct()
-    |> Vibe.JSON.Encode.value()
-    |> Jason.Encode.map(opts)
-  end
-end

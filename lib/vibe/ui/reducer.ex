@@ -318,23 +318,19 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :runtime_alert_set, data: %{alert: alert}}) do
-    alert = Alert.normalize(alert)
-
+  defp reduce(state, %Event{type: :runtime_alert_set, data: %{alert: %Alert{} = alert}}) do
     %{
       state
       | runtime_alerts: Map.put(state.runtime_alerts, alert.id, alert),
-        notifications: Lists.append(state.notifications, Alert.to_notification(alert))
+        notifications: Lists.append(state.notifications, runtime_alert_notification(alert))
     }
   end
 
-  defp reduce(state, %Event{type: :runtime_alert_clear, data: data}) do
-    alert = data |> Map.get(:alert) |> Alert.normalize()
-
+  defp reduce(state, %Event{type: :runtime_alert_clear, data: %{alert: %Alert{} = alert}}) do
     %{
       state
       | runtime_alerts: Map.delete(state.runtime_alerts, alert.id),
-        notifications: Lists.append(state.notifications, Alert.to_notification(alert))
+        notifications: Lists.append(state.notifications, runtime_alert_notification(alert))
     }
   end
 
@@ -471,6 +467,12 @@ defmodule Vibe.UI.Reducer do
       overlay ->
         overlay
     end)
+  end
+
+  defp runtime_alert_notification(%Alert{} = alert) do
+    alert
+    |> Vibe.Presentation.Presentable.present()
+    |> Vibe.Presentation.RuntimeAlert.notification()
   end
 
   defp notification_id(%Notification{id: id}), do: id

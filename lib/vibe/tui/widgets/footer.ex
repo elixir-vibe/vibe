@@ -85,9 +85,12 @@ defmodule Vibe.TUI.Widgets.Footer do
     Theme.fg(theme, :warning, line)
   end
 
-  defp alert_label(%{type: :disk_almost_full, message: message}), do: "disk low: #{message}"
-  defp alert_label(%{type: :system_memory_high_watermark}), do: "memory pressure"
-  defp alert_label(%{title: title}), do: title
+  defp alert_label(%Vibe.SystemAlarms.Alert{} = alert) do
+    alert
+    |> Vibe.Presentation.Presentable.present()
+    |> Map.get(:footer_label)
+  end
+
   defp alert_label(alert), do: inspect(alert)
 
   defp plugin_status_line(statuses, _width, _theme) when map_size(statuses) == 0, do: nil

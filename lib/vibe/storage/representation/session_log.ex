@@ -1,14 +1,18 @@
-defmodule Vibe.Session.Store.Codec do
-  @moduledoc "JSON codec for session event serialization and deserialization."
+defmodule Vibe.Storage.Representation.SessionLog do
+  @moduledoc "Current storage representation boundary for persisted session log entries."
   alias Vibe.Trajectory
   alias Vibe.UI.Event
 
   @json_atom_keys MapSet.new([
+                    "alert",
                     "args",
+                    "at",
                     "content",
+                    "context",
                     "created_at",
                     "cwd",
                     "data",
+                    "detail",
                     "error",
                     "filename",
                     "goal",
@@ -40,7 +44,9 @@ defmodule Vibe.Session.Store.Codec do
                     "selector_kind",
                     "session_id",
                     "seq",
+                    "severity",
                     "size_bytes",
+                    "source",
                     "status",
                     "text",
                     "time_used_seconds",
@@ -66,9 +72,10 @@ defmodule Vibe.Session.Store.Codec do
   @spec encode_ui_event(Event.t(), non_neg_integer()) :: map()
   def encode_ui_event(%Event{} = event, seq) do
     event
+    |> Vibe.Storage.Persistable.persist()
+    |> Map.put(:seq, seq)
     |> Jason.encode!()
     |> Jason.decode!()
-    |> Map.put("seq", seq)
   end
 
   @spec eval_state_entry(String.t(), Code.binding(), Macro.Env.t()) ::
@@ -223,13 +230,9 @@ defmodule Vibe.Session.Store.Codec do
 
   defp decode_ui_event_data(data, type)
        when type in [:tool_started, :tool_updated, :tool_finished] and is_map(data) do
-    tool_data =
-      data
-      |> Map.take([:id, :name, :args, :output, :output_format, :output_parts, :status, :phase])
-      |> decode_tool_event_values()
-      |> decode_tool_content_parts()
-
-    struct(Vibe.Tool.Event, tool_data)
+    data
+    |> Vibe.Storage.Representation.ToolEvent.decode!()
+    |> Vibe.Storage.Restorable.restore()
   end
 
   defp decode_ui_event_data(%{effort: effort} = data, :effort_selected) when is_binary(effort) do
@@ -246,93 +249,31 @@ defmodule Vibe.Session.Store.Codec do
     %{data | goal: decode_goal(goal)}
   end
 
+  defp decode_ui_event_data(%{alert: alert} = data, type)
+       when type in [:runtime_alert_set, :runtime_alert_clear] do
+    %{data | alert: decode_runtime_alert(alert)}
+  end
+
   defp decode_ui_event_data(%{level: level} = data, :notification_added) when is_binary(level),
     do: %{data | level: existing_atom_or_string(level)}
 
   defp decode_ui_event_data(data, _type), do: data
 
-  defp decode_goal(%{status: status} = goal) do
-    {:ok, status} = Vibe.Goals.Goal.status(status)
-
-    struct(
-      Vibe.Goals.Goal,
-      goal
-      |> Map.put(:status, status)
-      |> Map.update(:created_at, nil, &decode_datetime/1)
-      |> Map.update(:updated_at, nil, &decode_datetime/1)
-    )
+  defp decode_goal(goal) when is_map(goal) do
+    goal
+    |> Vibe.Storage.Representation.Goal.decode!()
+    |> Vibe.Storage.Restorable.restore()
   end
 
   defp decode_goal(goal), do: goal
 
-  defp decode_datetime(%DateTime{} = datetime), do: datetime
-
-  defp decode_datetime(value) when is_binary(value) do
-    case DateTime.from_iso8601(value) do
-      {:ok, datetime, _offset} -> datetime
-      _error -> value
-    end
+  defp decode_runtime_alert(alert) when is_map(alert) do
+    alert
+    |> Vibe.Storage.Representation.RuntimeAlert.decode!()
+    |> Vibe.Storage.Restorable.restore()
   end
 
-  defp decode_datetime(value), do: value
-
-  defp decode_tool_event_values(%{name: name} = data) when is_binary(name),
-    do: %{data | name: existing_atom_or_string(name)}
-
-  defp decode_tool_event_values(data), do: data
-
-  defp decode_tool_content_parts(%{output: output} = data) when is_map(output),
-    do: %{data | output: decode_tool_output_content_parts(output)}
-
-  defp decode_tool_content_parts(data), do: data
-
-  defp decode_tool_output_content_parts(%{parts: parts} = output) when is_list(parts) do
-    output
-    |> Map.update(:image, nil, &decode_image_ref/1)
-    |> Map.update!(:parts, fn _parts -> Enum.map(parts, &decode_content_part/1) end)
-  end
-
-  defp decode_tool_output_content_parts(output), do: output
-
-  defp decode_content_part(%{type: "text", text: text}) when is_binary(text),
-    do: Vibe.Model.Content.text(text)
-
-  defp decode_content_part(%{type: :text, text: text}) when is_binary(text),
-    do: Vibe.Model.Content.text(text)
-
-  defp decode_content_part(%{type: "image", data: data, mime_type: mime_type} = part)
-       when is_binary(data) and is_binary(mime_type) do
-    Vibe.Model.Content.image(
-      data: data,
-      mime_type: mime_type,
-      filename: Map.get(part, :filename),
-      width: Map.get(part, :width),
-      height: Map.get(part, :height)
-    )
-  end
-
-  defp decode_content_part(%{type: :image, data: data, mime_type: mime_type} = part)
-       when is_binary(data) and is_binary(mime_type) do
-    Vibe.Model.Content.image(
-      data: data,
-      mime_type: mime_type,
-      filename: Map.get(part, :filename),
-      width: Map.get(part, :width),
-      height: Map.get(part, :height)
-    )
-  end
-
-  defp decode_content_part(part), do: part
-
-  defp decode_image_ref(%{path: path, mime_type: mime_type} = image)
-       when is_binary(path) and is_binary(mime_type) do
-    struct(
-      Vibe.Files.ImageRef,
-      Map.take(image, [:path, :mime_type, :filename, :size_bytes, :width, :height])
-    )
-  end
-
-  defp decode_image_ref(image), do: image
+  defp decode_runtime_alert(alert), do: alert
 
   defp decode_event_type(type), do: decode_existing_atom(type)
   defp decode_trajectory_type(type), do: decode_existing_atom(type)

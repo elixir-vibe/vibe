@@ -206,9 +206,7 @@ defmodule Vibe.UI.ReducerTest do
   end
 
   test "tracks runtime alerts as active UI state and notifications" do
-    alert =
-      Vibe.SystemAlarms.Alert.from_alarm(:set, {:disk_almost_full, ~c"/tmp"}, [])
-      |> Vibe.SystemAlarms.Alert.to_map()
+    alert = Vibe.SystemAlarms.Alert.from_alarm(:set, {:disk_almost_full, ~c"/tmp"}, [])
 
     state =
       Vibe.UI.State.new(session_id: "ui-test")
@@ -225,9 +223,7 @@ defmodule Vibe.UI.ReducerTest do
     state =
       Vibe.UI.Reducer.apply_event(
         state,
-        Vibe.UI.Event.new(:runtime_alert_clear, "ui-test", %{
-          alert: Vibe.SystemAlarms.Alert.to_map(clear)
-        })
+        Vibe.UI.Event.new(:runtime_alert_clear, "ui-test", %{alert: clear})
       )
 
     assert state.runtime_alerts == %{}

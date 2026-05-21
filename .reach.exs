@@ -1,0 +1,118 @@
+[
+  layers: [],
+  deps: [forbidden: []],
+  source: [
+    forbidden_modules: [
+      "Vibe.Actions.*",
+      "Vibe.Tools.*",
+      "Vibe.ToolOutput",
+      "Vibe.ToolDisplay",
+      "Vibe.Session.Store.Codec"
+    ],
+    forbidden_files: [
+      "lib/vibe/actions/**",
+      "lib/vibe/tools/**",
+      "lib/vibe/session/store/codec.ex"
+    ]
+  ],
+  calls: [
+    forbidden: [
+      {"Vibe.SystemAlarms.*",
+       [
+         "Jason.encode",
+         "Jason.encode!",
+         "Jason.decode",
+         "Jason.decode!",
+         "Vibe.Storage.Representation.*"
+       ]},
+      {"Vibe.Tool.*",
+       [
+         "Jason.encode",
+         "Jason.encode!",
+         "Jason.decode",
+         "Jason.decode!",
+         "Vibe.Storage.Representation.*"
+       ]},
+      {"Vibe.UI.*",
+       [
+         "Vibe.Storage.Representation.*",
+         "Vibe.Storage.Persistable.*",
+         "Vibe.Storage.Restorable.*"
+       ]},
+      {"Vibe.Web.*",
+       [
+         "Vibe.Storage.Representation.*",
+         "Vibe.Storage.Persistable.*",
+         "Vibe.Storage.Restorable.*"
+       ]},
+      {"Vibe.TUI.*",
+       [
+         "Vibe.Storage.Representation.*",
+         "Vibe.Storage.Persistable.*",
+         "Vibe.Storage.Restorable.*"
+       ]},
+      {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.TUI.*", "Vibe.Web.*"]}
+    ]
+  ],
+  effects: [
+    allowed: []
+  ],
+  boundaries: [
+    public: [],
+    internal: [
+      "Vibe.Storage.Representation.*"
+    ],
+    internal_callers: [
+      {"Vibe.Storage.Representation.*", ["Vibe.Storage.*", "Vibe.Session.Store*"]}
+    ]
+  ],
+  risk: [
+    changed: [
+      many_direct_callers: 5,
+      wide_transitive_callers: 10,
+      branch_heavy: 8,
+      high_risk_reason_count: 3
+    ]
+  ],
+  candidates: [
+    thresholds: [
+      mixed_effect_count: 2,
+      branchy_function_branches: 8,
+      high_risk_direct_callers: 4
+    ],
+    limits: [
+      per_kind: 20,
+      representative_calls: 10,
+      representative_calls_per_edge: 3
+    ]
+  ],
+  clone_analysis: [
+    provider: :ex_dna,
+    min_mass: 30,
+    min_similarity: 1.0,
+    max_clones: 50
+  ],
+  smells: [
+    fixed_shape_map: [
+      min_keys: 3,
+      min_occurrences: 3,
+      evidence_limit: 10
+    ],
+    behaviour_candidate: [
+      min_modules: 3,
+      min_callbacks: 3,
+      module_display_limit: 8,
+      callback_display_limit: 8
+    ]
+  ],
+  tests: [
+    hints: [
+      {"lib/vibe/storage/representation/**", ["test/vibe/storage/representation"]},
+      {"lib/vibe/presentation/**",
+       ["test/vibe/presentation", "test/vibe/tui/presentation", "test/vibe/web/presentation"]},
+      {"lib/vibe/event/**", ["test/vibe/event"]},
+      {"lib/vibe/plugins/web_search/**",
+       ["test/vibe/plugins/web_search_test.exs", "test/vibe/plugins/web_search"]}
+    ]
+  ]
+]

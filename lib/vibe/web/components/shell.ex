@@ -80,7 +80,7 @@ defmodule Vibe.Web.Components.Shell do
   def runtime_alerts(assigns) do
     ~H"""
     <div :if={@alerts != []} class="mb-4 space-y-2">
-      <div :for={alert <- @alerts} class={[
+      <div :for={alert <- Enum.map(@alerts, &Vibe.Presentation.Presentable.present/1)} class={[
         "rounded-xl border p-3 text-sm shadow-lg",
         alert_classes(alert.severity)
       ]}>

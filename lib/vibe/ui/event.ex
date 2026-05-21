@@ -33,17 +33,3 @@ defmodule Vibe.UI.Event do
     12 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
   end
 end
-
-defimpl Jason.Encoder, for: Vibe.UI.Event do
-  def encode(event, opts) do
-    %{
-      id: event.id,
-      session_id: event.session_id,
-      type: event.type,
-      at: event.at,
-      data: event.data
-    }
-    |> Vibe.JSON.Encode.value()
-    |> Jason.Encode.map(opts)
-  end
-end

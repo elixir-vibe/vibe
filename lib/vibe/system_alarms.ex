@@ -25,9 +25,6 @@ defmodule Vibe.SystemAlarms do
   @spec active() :: [Alert.t()]
   def active, do: GenServer.call(__MODULE__, :active)
 
-  @spec active_notifications() :: [Vibe.UI.Notification.t()]
-  def active_notifications, do: Enum.map(active(), &Alert.to_notification/1)
-
   @spec alarms() :: {:ok, [term()]} | {:error, term()}
   def alarms do
     {:ok, :alarm_handler.get_alarms()}
@@ -106,7 +103,7 @@ defmodule Vibe.SystemAlarms do
 
   defp emit_runtime_alert(action, alert) do
     type = if action == :set, do: :runtime_alert_set, else: :runtime_alert_clear
-    Vibe.UI.Bus.emit_all(type, %{alert: Alert.to_map(alert)})
+    Vibe.UI.Bus.emit_all(type, %{alert: alert})
   rescue
     exception -> Logger.debug("Runtime alert UI emission failed: #{Exception.message(exception)}")
   catch

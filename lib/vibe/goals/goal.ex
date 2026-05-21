@@ -53,22 +53,3 @@ defmodule Vibe.Goals.Goal do
   def active?(%__MODULE__{status: :active}), do: true
   def active?(_goal), do: false
 end
-
-defimpl Jason.Encoder, for: Vibe.Goals.Goal do
-  def encode(goal, opts) do
-    Jason.Encode.map(
-      %{
-        session_id: goal.session_id,
-        goal_id: goal.goal_id,
-        objective: goal.objective,
-        status: goal.status,
-        token_budget: goal.token_budget,
-        tokens_used: goal.tokens_used,
-        time_used_seconds: goal.time_used_seconds,
-        created_at: goal.created_at,
-        updated_at: goal.updated_at
-      },
-      opts
-    )
-  end
-end
