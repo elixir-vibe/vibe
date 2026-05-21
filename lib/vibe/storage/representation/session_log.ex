@@ -1,6 +1,5 @@
 defmodule Vibe.Storage.Representation.SessionLog do
   @moduledoc "Current storage representation boundary for persisted session log entries."
-  alias Vibe.Trajectory
   alias Vibe.Event
 
   @json_atom_keys MapSet.new([
@@ -62,13 +61,6 @@ defmodule Vibe.Storage.Representation.SessionLog do
                     "width"
                   ])
 
-  @spec encode_trajectory(Trajectory.t()) :: map()
-  def encode_trajectory(%Trajectory{} = event) do
-    event
-    |> Jason.encode!()
-    |> Jason.decode!()
-  end
-
   @spec encode_ui_event(Event.t(), non_neg_integer()) :: map()
   def encode_ui_event(%Event{} = event, seq) do
     event
@@ -91,28 +83,6 @@ defmodule Vibe.Storage.Representation.SessionLog do
     end
   end
 
-  @spec decode_trajectory_map(map()) :: {:ok, Trajectory.t()} | :error
-  def decode_trajectory_map(map), do: decode_trajectory(map)
-
-  @spec decode_trajectory_line(String.t()) :: [Trajectory.t()]
-  def decode_trajectory_line(line) do
-    with {:ok, map} <- Jason.decode(line),
-         true <- Map.get(map, "entry_type", "trajectory") == "trajectory",
-         {:ok, event} <- decode_trajectory(map) do
-      [event]
-    else
-      _ -> []
-    end
-  end
-
-  @spec project_trajectory_events([Trajectory.t()]) :: [{pos_integer(), Event.t()}]
-  def project_trajectory_events(events) do
-    events
-    |> Enum.flat_map(&project_trajectory_event/1)
-    |> Enum.with_index(1)
-    |> Enum.map(fn {event, seq} -> {seq, event} end)
-  end
-
   defp decode_ui_event(map) do
     with {:ok, at, _offset} <- DateTime.from_iso8601(map["at"]),
          {:ok, type} <- decode_event_type(map["type"]) do
@@ -128,56 +98,6 @@ defmodule Vibe.Storage.Representation.SessionLog do
   rescue
     _exception -> :error
   end
-
-  defp decode_trajectory(map) do
-    with {:ok, at, _offset} <- DateTime.from_iso8601(map["at"]),
-         {:ok, type} <- decode_trajectory_type(map["type"]) do
-      {:ok,
-       Trajectory.new(type, atomize_keys(map["data"] || %{}),
-         id: map["id"],
-         session_id: map["session_id"],
-         at: at
-       )}
-    end
-  rescue
-    _exception -> :error
-  end
-
-  defp project_trajectory_event(%Trajectory{
-         type: :user_message,
-         session_id: session_id,
-         at: at,
-         data: data
-       }) do
-    text = Map.get(data, :prompt, "")
-    [Event.new(:user_message_added, session_id, %{text: text}, at: at)]
-  end
-
-  defp project_trajectory_event(%Trajectory{
-         type: :assistant_message,
-         session_id: session_id,
-         at: at,
-         data: data
-       }) do
-    payload =
-      case Map.fetch(data, :error) do
-        {:ok, error} -> %{error: error}
-        :error -> %{result: Map.get(data, :result) || data}
-      end
-
-    [Event.new(:assistant_message_added, session_id, payload, at: at)]
-  end
-
-  defp project_trajectory_event(%Trajectory{
-         type: :llm_usage,
-         session_id: session_id,
-         at: at,
-         data: data
-       }) do
-    [Event.new(:usage_updated, session_id, data, at: at)]
-  end
-
-  defp project_trajectory_event(_event), do: []
 
   defp decode_ui_event_data(data, type)
        when type in [:tool_started, :tool_updated, :tool_finished] and is_map(data) do
@@ -227,7 +147,6 @@ defmodule Vibe.Storage.Representation.SessionLog do
   defp decode_runtime_alert(alert), do: alert
 
   defp decode_event_type(type), do: decode_existing_atom(type)
-  defp decode_trajectory_type(type), do: decode_existing_atom(type)
 
   defp decode_existing_atom(type) when is_binary(type) do
     {:ok, String.to_existing_atom(type)}

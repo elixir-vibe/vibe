@@ -8,6 +8,7 @@ defmodule Vibe.Session.Store do
   alias Vibe.Repo
   alias Vibe.Session.Store.{Listing, Summary}
   alias Vibe.Storage.Representation.{EvalSnapshot, SessionLog}
+  alias Vibe.Storage.Representation.Trajectory, as: TrajectoryRepresentation
   alias Vibe.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent, UIEventFTS}
   alias Vibe.Trajectory
   alias Vibe.Event
@@ -63,7 +64,7 @@ defmodule Vibe.Session.Store do
   def append(%Trajectory{} = event) do
     Vibe.Storage.ensure!()
     ensure_session(event.session_id, event.at)
-    encoded = SessionLog.encode_trajectory(event)
+    encoded = TrajectoryRepresentation.encode(event)
 
     %TrajectoryEvent{}
     |> Map.merge(%{
@@ -281,7 +282,7 @@ defmodule Vibe.Session.Store do
       |> Enum.flat_map(&decode_ui_event_record/1)
 
     case events do
-      [] -> session_id |> events() |> SessionLog.project_trajectory_events()
+      [] -> session_id |> events() |> TrajectoryRepresentation.project_events()
       events -> events
     end
   end
@@ -373,7 +374,7 @@ defmodule Vibe.Session.Store do
       "at" => DateTime.to_iso8601(event.at),
       "data" => event.data
     }
-    |> SessionLog.decode_trajectory_map()
+    |> TrajectoryRepresentation.decode_map()
     |> case do
       {:ok, event} -> [event]
       :error -> []
