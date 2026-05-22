@@ -1,5 +1,5 @@
 defmodule Vibe.Code.Checks.RunnerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Vibe.Code.Checks.Runner
   alias Vibe.Code.Checks.Result
