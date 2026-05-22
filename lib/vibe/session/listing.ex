@@ -100,6 +100,6 @@ defmodule Vibe.Session.Listing do
 
   defp stored?(id) do
     not is_nil(Store.info(id)) or File.exists?(Store.path(id)) or
-      File.exists?(Store.ui_events_path(id))
+      File.exists?(Store.events_path(id))
   end
 end

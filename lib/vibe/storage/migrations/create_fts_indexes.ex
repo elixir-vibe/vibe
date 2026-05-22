@@ -5,7 +5,7 @@ defmodule Vibe.Storage.Migrations.CreateFTSIndexes do
   import Vibe.Storage.FTS.Migration
 
   def up do
-    create_fts5(:ui_events_fts,
+    create_fts5(:session_events_fts,
       unindexed: [:session_id, :event_id, :seq, :role, :at],
       indexed: [:text],
       tokenize: "unicode61"
@@ -19,7 +19,7 @@ defmodule Vibe.Storage.Migrations.CreateFTSIndexes do
   end
 
   def down do
-    drop_fts5(:ui_events_fts)
+    drop_fts5(:session_events_fts)
     drop_fts5(:memories_fts)
   end
 end

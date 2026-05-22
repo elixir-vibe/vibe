@@ -177,7 +177,7 @@ defmodule Vibe.Session.PromptLifecycle do
     text = response_text(response)
 
     Vibe.Debug.run do
-      Vibe.Agent.Streaming.Trace.record(:ui_stream_finished, %{
+      Vibe.Agent.Streaming.Trace.record(:surface_stream_finished, %{
         session_id: state.state.session_id,
         text: text
       })

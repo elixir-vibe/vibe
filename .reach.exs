@@ -12,6 +12,8 @@
       "Vibe.UI.Event",
       "Vibe.UI.Event.*",
       "Vibe.UI.Bus",
+      "Vibe.Storage.Schema.UIEvent",
+      "Vibe.Storage.Schema.UIEventFTS",
       "Vibe.Session.Store.Codec",
       "Vibe.Storage.Representation.SessionLog",
       "Vibe.JSON.Encode",
@@ -26,6 +28,8 @@
       "lib/vibe/tool/presentation/**",
       "lib/vibe/ui/event.ex",
       "lib/vibe/ui/bus.ex",
+      "lib/vibe/storage/schema/ui_event.ex",
+      "lib/vibe/storage/schema/ui_event_fts.ex",
       "lib/vibe/session/store/codec.ex",
       "lib/vibe/storage/representation/session_log.ex",
       "lib/vibe/web_tools.ex",
@@ -125,7 +129,16 @@
          "Vibe.Storage.Persistable.*",
          "Vibe.Storage.Restorable.*"
        ]},
-      {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.TUI.*", "Vibe.Web.*"]}
+      {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.TUI.*", "Vibe.Web.*"]},
+      {"Vibe.*",
+       [
+         "Vibe.Session.Store.ui_events_path",
+         "Vibe.Session.Store.append_ui_event",
+         "Vibe.Session.Store.append_ui_events",
+         "Vibe.Session.Store.ui_events",
+         "Vibe.Session.Store.ui_events_after",
+         "Vibe.Plugin.Manager.ui_document"
+       ]}
     ]
   ],
   effects: [

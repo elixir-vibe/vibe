@@ -1,8 +1,8 @@
-defmodule Vibe.Storage.Schema.UIEvent do
-  @moduledoc "Ecto schema: session UI events."
+defmodule Vibe.Storage.Schema.SessionEvent do
+  @moduledoc "Ecto schema: session events."
   use Ecto.Schema
 
-  schema "ui_events" do
+  schema "session_events" do
     field(:session_id, :string)
     field(:seq, :integer)
     field(:event_id, :string)

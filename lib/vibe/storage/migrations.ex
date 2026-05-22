@@ -1,8 +1,8 @@
 defmodule Vibe.Storage.Migrations do
   @moduledoc "Ecto migration runner for the local SQLite database."
-  @create_storage_tables_version 20_260_426_104_000
-  @create_fts_indexes_version 20_260_426_121_000
-  @create_goals_version 20_260_521_160_000
+  @create_storage_tables_version 20_260_522_001_000
+  @create_fts_indexes_version 20_260_522_002_000
+  @create_goals_version 20_260_522_003_000
 
   @migrations [
     {@create_storage_tables_version, Vibe.Storage.Migrations.CreateStorageTables},

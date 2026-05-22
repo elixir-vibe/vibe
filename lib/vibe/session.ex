@@ -118,7 +118,7 @@ defmodule Vibe.Session do
         )
 
     maybe_register_in_registry(state.session_id)
-    maybe_register_ui_bus(state.session_id)
+    maybe_register_event_bus(state.session_id)
     broadcast_session_change(state.session_id)
     unless restoring?, do: PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
 
@@ -242,7 +242,7 @@ defmodule Vibe.Session do
 
   def handle_info({:assistant_delta, text}, state) do
     Vibe.Debug.run do
-      Vibe.Agent.Streaming.Trace.record(:ui_assistant_delta, %{
+      Vibe.Agent.Streaming.Trace.record(:surface_assistant_delta, %{
         session_id: state.state.session_id,
         text: text
       })
@@ -443,17 +443,17 @@ defmodule Vibe.Session do
       Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
     end)
 
-    ui_state =
-      Enum.reduce(events, state.state, fn {_seq, event}, ui_state ->
-        Reducer.apply_event(ui_state, event)
+    session_state =
+      Enum.reduce(events, state.state, fn {_seq, event}, session_state ->
+        Reducer.apply_event(session_state, event)
       end)
 
-    Enum.each(events, fn {_seq, event} -> PluginBridge.dispatch(ui_state, event) end)
+    Enum.each(events, fn {_seq, event} -> PluginBridge.dispatch(session_state, event) end)
     if session_list_relevant?(event), do: broadcast_session_change(state.state.session_id)
 
     %{
       state
-      | state: ui_state,
+      | state: session_state,
         event_seq: event_seq + length(events) - 1,
         events_tail:
           Enum.reduce(events, state.events_tail, fn {seq, event}, tail ->
@@ -493,7 +493,7 @@ defmodule Vibe.Session do
   end
 
   defp events_with_persistence_status(state, event, event_seq, true) do
-    case Vibe.Session.Store.append_ui_event(event, event_seq) do
+    case Vibe.Session.Store.append_event(event, event_seq) do
       :ok ->
         {[{event_seq, event}], state.persistence_failed?}
 
@@ -677,15 +677,15 @@ defmodule Vibe.Session do
   defp restore_state(state, false, _restoring?), do: {state, 0, []}
 
   defp restore_state(state, true, restoring?) do
-    events = Vibe.Session.Store.ui_events(state.session_id)
+    events = Vibe.Session.Store.session_events(state.session_id)
 
-    ui_state =
+    session_state =
       state
       |> Reducer.apply_events(Enum.map(events, fn {_seq, event} -> event end))
       |> finalize_restored_state(restoring?)
 
     event_seq = events |> last_event({0, nil}) |> elem(0)
-    {ui_state, event_seq, Enum.take(events, -200)}
+    {session_state, event_seq, Enum.take(events, -200)}
   end
 
   defp finalize_restored_state(state, false), do: state
@@ -704,7 +704,7 @@ defmodule Vibe.Session do
   defp replay_events(state, replay_after, pid) do
     events =
       if durable_replay?(state, replay_after) do
-        Vibe.Session.Store.ui_events_after(state.state.session_id, replay_after)
+        Vibe.Session.Store.session_events_after(state.state.session_id, replay_after)
       else
         Enum.filter(state.events_tail, fn {seq, _event} -> seq > replay_after end)
       end
@@ -735,7 +735,7 @@ defmodule Vibe.Session do
     :ok
   end
 
-  defp maybe_register_ui_bus(session_id) do
+  defp maybe_register_event_bus(session_id) do
     if Process.whereis(Vibe.Event.Bus), do: Vibe.Event.Bus.register(session_id, self()), else: :ok
   end
 

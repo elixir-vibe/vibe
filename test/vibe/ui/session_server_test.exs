@@ -23,7 +23,7 @@ defmodule Vibe.SessionProcessTest do
     assert state.usage.total_tokens == 10
   end
 
-  test "semantic prompt content is preserved in UI events" do
+  test "semantic prompt content is preserved in session events" do
     prompt = [
       Vibe.Model.Content.text("describe"),
       Vibe.Model.Content.image(data: Base.encode64(<<1, 2, 3>>), mime_type: "image/png")
@@ -47,9 +47,9 @@ defmodule Vibe.SessionProcessTest do
              Vibe.Session.state(server).messages
   end
 
-  test "restores snapshot from durable UI events" do
+  test "restores snapshot from durable session events" do
     session_id = "restore-session-#{System.unique_integer([:positive])}"
-    path = Vibe.Session.Store.ui_events_path(session_id)
+    path = Vibe.Session.Store.events_path(session_id)
     on_exit(fn -> File.rm(path) end)
 
     {:ok, server} =
@@ -75,7 +75,7 @@ defmodule Vibe.SessionProcessTest do
         {index, Vibe.Event.new(:overlay_opened, session_id, %{id: index, kind: :test_overlay})}
       end
 
-    :ok = Vibe.Session.Store.append_ui_events(events)
+    :ok = Vibe.Session.Store.append_events(events)
 
     {:ok, server} =
       Vibe.Session.start_link(session_id: session_id, ask_fun: fn _text, _opts -> {:ok, "ok"} end)

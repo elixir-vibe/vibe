@@ -6,7 +6,7 @@ defmodule Vibe.TUI.AppTest do
   @long_prompt_sleep_ms 5_000
   @migration_assert_timeout_ms 5_000
 
-  test "coordinates editor submit and ui events" do
+  test "coordinates editor submit and session events" do
     ask = fn text, opts ->
       if opts[:on_result] do
         opts[:on_result].("streamed ")
@@ -31,7 +31,7 @@ defmodule Vibe.TUI.AppTest do
     assert snapshot.width == 80
   end
 
-  test "routes slash commands into semantic UI events" do
+  test "routes slash commands into semantic session events" do
     {:ok, app} = App.start_link()
 
     :ok = App.key(app, {:insert, "/model"})

@@ -33,7 +33,7 @@ defmodule Vibe.Web.SessionLive do
 
   @impl true
   def handle_info({Vibe.Session, :event, event}, socket) do
-    state = Reducer.apply_event(socket.assigns.ui_state, event)
+    state = Reducer.apply_event(socket.assigns.session_state, event)
 
     socket =
       socket
@@ -46,7 +46,7 @@ defmodule Vibe.Web.SessionLive do
   def handle_info(_message, socket), do: {:noreply, socket}
 
   defp submit_prompt_command(prompt, socket) do
-    root = socket.assigns.ui_state.cwd || File.cwd!()
+    root = socket.assigns.session_state.cwd || File.cwd!()
 
     case Vibe.Prompt.Attachments.expand(prompt, root: root) do
       expanded when is_list(expanded) -> {:submit_prompt, %{text: prompt, content: expanded}}
@@ -76,7 +76,7 @@ defmodule Vibe.Web.SessionLive do
     ~H"""
     <.app_shell current={:sessions} title="Session workbench" subtitle={@session_id}>
       <:actions>
-        <button :if={Status.working?(@ui_state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-3 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60 sm:px-4">
+        <button :if={Status.working?(@session_state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-3 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60 sm:px-4">
           <.icon name="lucide:circle-stop" class="size-4" />
           <span>Stop</span>
         </button>
@@ -87,16 +87,16 @@ defmodule Vibe.Web.SessionLive do
         <span>Sessions</span>
       </.link>
 
-      <.status_strip state={@ui_state} />
+      <.status_strip state={@session_state} />
 
       <section class="overflow-hidden rounded-xl border border-vibe-border/50 bg-vibe-bg-soft/80">
-        <.transcript state={@ui_state} final_assistant_messages={@final_assistant_messages} />
-        <.composer state={@ui_state} prompt={@prompt} />
+        <.transcript state={@session_state} final_assistant_messages={@final_assistant_messages} />
+        <.composer state={@session_state} prompt={@prompt} />
       </section>
 
       <section class="mt-4 grid gap-4 md:grid-cols-2">
-        <.runtime_inspector state={@ui_state} cursor={@cursor} />
-        <.tool_timeline state={@ui_state} />
+        <.runtime_inspector state={@session_state} cursor={@cursor} />
+        <.tool_timeline state={@session_state} />
       </section>
     </.app_shell>
     """
@@ -133,6 +133,6 @@ defmodule Vibe.Web.SessionLive do
   defp assign_final_assistant_message(socket, _event), do: socket
 
   defp assign_state(socket, state, cursor) do
-    assign(socket, ui_state: state, view_model: ViewModel.from_state(state), cursor: cursor)
+    assign(socket, session_state: state, view_model: ViewModel.from_state(state), cursor: cursor)
   end
 end

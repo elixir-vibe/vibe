@@ -91,18 +91,21 @@ defmodule Vibe.CLI.Storage do
     do:
       IO.puts(
         :stderr,
-        "fts: rebuilding #{event.ui_events} ui events and #{event.memories} memories"
+        "fts: rebuilding #{event.events} session events and #{event.memories} memories"
       )
 
-  defp print_progress(%{phase: :fts_ui_events, indexed: indexed}),
-    do: IO.puts(:stderr, "fts: indexed #{indexed} ui events")
+  defp print_progress(%{phase: :fts_events, indexed: indexed}),
+    do: IO.puts(:stderr, "fts: indexed #{indexed} session events")
 
   defp print_progress(%{phase: :fts_memories, indexed: indexed}),
     do: IO.puts(:stderr, "fts: indexed #{indexed} memories")
 
   defp print_progress(%{phase: :fts_rebuild_done} = event),
     do:
-      IO.puts(:stderr, "fts: rebuilt #{event.ui_events} ui events and #{event.memories} memories")
+      IO.puts(
+        :stderr,
+        "fts: rebuilt #{event.events} session events and #{event.memories} memories"
+      )
 
   defp print_progress(%{phase: :done} = event),
     do:

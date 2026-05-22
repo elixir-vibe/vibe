@@ -100,7 +100,7 @@ defmodule Vibe.Storage.Representation.Event do
 
   @spec decode_line(String.t()) :: [{non_neg_integer(), Vibe.Event.t()}]
   def decode_line(line) do
-    with {:ok, %{"entry_type" => "ui_event"} = map} <- Jason.decode(line),
+    with {:ok, %{"entry_type" => "session_event"} = map} <- Jason.decode(line),
          {:ok, event} <- decode_map(map) do
       [event]
     else

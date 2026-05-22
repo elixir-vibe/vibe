@@ -74,10 +74,10 @@ defmodule Vibe.Test.PluginManagerFixtures.PluginCommand do
   def spec, do: %{name: "fixture", description: "Fixture plugin command"}
 
   @impl true
-  def run(_args, ui_state) do
+  def run(_args, state) do
     {:events,
      [
-       Vibe.Event.new(:notification_added, ui_state.session_id, %{
+       Vibe.Event.new(:notification_added, state.session_id, %{
          level: :info,
          text: "fixture command"
        })

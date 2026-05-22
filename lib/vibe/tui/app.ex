@@ -39,7 +39,7 @@ defmodule Vibe.TUI.App do
   def init(opts) do
     {:ok, ui} = session_server(opts)
     {:ok, editor} = editor_server(opts)
-    {:ok, ui_snapshot, _cursor} = Session.attach(ui, self())
+    {:ok, session_snapshot, _cursor} = Session.attach(ui, self())
     remote_node = Keyword.get(opts, :remote_node)
     active_sessions_timer = Process.send_after(self(), :active_sessions_tick, 0)
     server_migration_timer = maybe_schedule_server_migration(opts)
@@ -48,7 +48,7 @@ defmodule Vibe.TUI.App do
     {:ok,
      %{
        ui: ui,
-       ui_snapshot: ui_snapshot,
+       session_snapshot: session_snapshot,
        editor: editor,
        width: Keyword.get(opts, :width, 100),
        height: Keyword.get(opts, :height, 30),
@@ -79,7 +79,7 @@ defmodule Vibe.TUI.App do
 
   def handle_call(:snapshot, _from, state) do
     snapshot = %{
-      ui: state.ui_snapshot,
+      ui: state.session_snapshot,
       editor: EditorServer.state(state.editor),
       autocomplete: state.autocomplete,
       width: state.width,
@@ -164,12 +164,12 @@ defmodule Vibe.TUI.App do
     do: state
 
   defp maybe_migrate_to_remote_session(state) do
-    current = state.ui_snapshot
+    current = state.session_snapshot
 
     with true <- startup_session?(state),
          {:ok, node, _session_id, remote_session} <- state.server_migration_fun.(current),
          :ok <- Session.detach(state.ui, self()),
-         {:ok, ui_snapshot, _cursor} <- Session.attach(remote_session, self()) do
+         {:ok, session_snapshot, _cursor} <- Session.attach(remote_session, self()) do
       Session.dispatch(
         remote_session,
         Command.new(:notification_added, %{level: :info, text: "attached to background server"})
@@ -178,7 +178,7 @@ defmodule Vibe.TUI.App do
       %{
         state
         | ui: remote_session,
-          ui_snapshot: ui_snapshot,
+          session_snapshot: session_snapshot,
           remote_node: node,
           autocomplete: nil,
           server_migration_timer: nil
@@ -196,7 +196,8 @@ defmodule Vibe.TUI.App do
   defp startup_session?(state) do
     editor = EditorServer.state(state.editor)
 
-    state.ui_snapshot.status == :idle and state.ui_snapshot.messages == [] and editor.text == ""
+    state.session_snapshot.status == :idle and state.session_snapshot.messages == [] and
+      editor.text == ""
   end
 
   defp default_server_migration(current) do
@@ -219,18 +220,18 @@ defmodule Vibe.TUI.App do
   defp switch_session(state, session_id) do
     with {:ok, session} <- lookup_session(state, session_id),
          :ok <- Session.detach(state.ui, self()),
-         {:ok, ui_snapshot, _cursor} <- Session.attach(session, self()) do
-      {:ok, %{state | ui: session, ui_snapshot: ui_snapshot, autocomplete: nil}}
+         {:ok, session_snapshot, _cursor} <- Session.attach(session, self()) do
+      {:ok, %{state | ui: session, session_snapshot: session_snapshot, autocomplete: nil}}
     end
   end
 
   defp start_new_session(state) do
-    current = state.ui_snapshot
+    current = state.session_snapshot
 
     with {:ok, session} <- start_session(state, cwd: current.cwd, model: current.model),
          :ok <- Session.detach(state.ui, self()),
-         {:ok, ui_snapshot, _cursor} <- Session.attach(session, self()) do
-      {:ok, %{state | ui: session, ui_snapshot: ui_snapshot, autocomplete: nil}}
+         {:ok, session_snapshot, _cursor} <- Session.attach(session, self()) do
+      {:ok, %{state | ui: session, session_snapshot: session_snapshot, autocomplete: nil}}
     end
   end
 
@@ -283,7 +284,7 @@ defmodule Vibe.TUI.App do
 
     Session.emit_transient_event(
       state.ui,
-      Vibe.Event.new(:active_sessions_updated, state.ui_snapshot.session_id, %{count: count})
+      Vibe.Event.new(:active_sessions_updated, state.session_snapshot.session_id, %{count: count})
     )
 
     state
@@ -312,7 +313,7 @@ defmodule Vibe.TUI.App do
   defp remember_event(state, event) do
     %{
       state
-      | ui_snapshot: Reducer.apply_event(state.ui_snapshot, event),
+      | session_snapshot: Reducer.apply_event(state.session_snapshot, event),
         events: [event | state.events]
     }
   end

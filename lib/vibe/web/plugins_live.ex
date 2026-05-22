@@ -40,13 +40,13 @@ defmodule Vibe.Web.PluginsLive do
           </.panel>
 
           <.panel title="Plugin UI">
-            <div :if={@plugin.ui_document.sections == []} class="text-sm text-vibe-dim">No plugin-owned presentation exposed.</div>
-            <div :if={@plugin.ui_document.sections != []} class="space-y-3">
-              <article :for={section <- @plugin.ui_document.sections} class="rounded-lg border border-vibe-border/40 bg-vibe-bg/55 p-4">
+            <div :if={@plugin.presentation_document.sections == []} class="text-sm text-vibe-dim">No plugin-owned presentation exposed.</div>
+            <div :if={@plugin.presentation_document.sections != []} class="space-y-3">
+              <article :for={section <- @plugin.presentation_document.sections} class="rounded-lg border border-vibe-border/40 bg-vibe-bg/55 p-4">
                 <h2 class="text-base font-semibold text-vibe-fg-strong">{section.title}</h2>
                 <p :if={section.description} class="mt-1 text-sm leading-6 text-vibe-muted">{section.description}</p>
                 <div class="mt-3 space-y-2">
-                  <.plugin_ui_widget :for={widget <- section.widgets} widget={widget} />
+                  <.plugin_presentation_widget :for={widget <- section.widgets} widget={widget} />
                 </div>
               </article>
             </div>
@@ -166,9 +166,9 @@ defmodule Vibe.Web.PluginsLive do
         apis: plugin_apis(module),
         commands: plugin_capability(module, :commands),
         actions: plugin_capability(module, :actions),
-        ui_document:
+        presentation_document:
           safe_manager_call(
-            fn -> Manager.ui_document(module) end,
+            fn -> Manager.presentation_document(module) end,
             Vibe.Presentation.Document.empty()
           )
       }
@@ -202,7 +202,7 @@ defmodule Vibe.Web.PluginsLive do
       apis: [],
       commands: [],
       actions: [],
-      ui_document: Vibe.Presentation.Document.empty()
+      presentation_document: Vibe.Presentation.Document.empty()
     }
   end
 

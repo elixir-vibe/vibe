@@ -4,7 +4,7 @@ defmodule Vibe.Web.Plugins.Components do
 
   attr(:widget, Vibe.Presentation.Widget, required: true)
 
-  def plugin_ui_widget(%{widget: %{type: :markdown}} = assigns) do
+  def plugin_presentation_widget(%{widget: %{type: :markdown}} = assigns) do
     assigns = assign(assigns, :content, get_in(assigns.widget.props, [:content]) || "")
 
     ~H"""
@@ -12,7 +12,7 @@ defmodule Vibe.Web.Plugins.Components do
     """
   end
 
-  def plugin_ui_widget(%{widget: %{type: :lines}} = assigns) do
+  def plugin_presentation_widget(%{widget: %{type: :lines}} = assigns) do
     assigns =
       assign(assigns, :content, assigns.widget.props |> Map.get(:content, []) |> Enum.join("\n"))
 
@@ -21,7 +21,7 @@ defmodule Vibe.Web.Plugins.Components do
     """
   end
 
-  def plugin_ui_widget(%{widget: %{type: :progress}} = assigns) do
+  def plugin_presentation_widget(%{widget: %{type: :progress}} = assigns) do
     assigns = assign(assigns, :props, assigns.widget.props)
 
     ~H"""
@@ -35,7 +35,7 @@ defmodule Vibe.Web.Plugins.Components do
     """
   end
 
-  def plugin_ui_widget(assigns) do
+  def plugin_presentation_widget(assigns) do
     assigns = assign(assigns, :text, inspect(assigns.widget.props, pretty: true, limit: 40))
 
     ~H"""

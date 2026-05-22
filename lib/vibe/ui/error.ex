@@ -1,5 +1,5 @@
 defmodule Vibe.UI.Error do
-  @moduledoc "Semantic error payload shared by TUI, Web, previews, and persisted UI events."
+  @moduledoc "Semantic error payload shared by TUI, Web, previews, and persisted session events."
 
   @enforce_keys [:message]
   defstruct [:kind, :message, :hint, :detail, :provider, retryable?: false]

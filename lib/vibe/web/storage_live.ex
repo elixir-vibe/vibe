@@ -21,7 +21,7 @@ defmodule Vibe.Web.StorageLive do
         <div class="grid gap-px border-b border-vibe-border/50 bg-vibe-surface-muted sm:grid-cols-4">
           <.metric_tile label="Sessions" value={@session_count} />
           <.metric_tile label="Memory" value={@memory_count} />
-          <.metric_tile label="UI events" value={table_count(@storage_status, "ui_events")} />
+          <.metric_tile label="session events" value={table_count(@storage_status, "session_events")} />
           <.metric_tile label="Artifacts" value={artifact_summary_text(@artifact_summary)} />
         </div>
 
@@ -36,7 +36,7 @@ defmodule Vibe.Web.StorageLive do
         <%= cond do %>
           <% @query == "" -> %>
             <div class="rounded-xl border border-dashed border-vibe-border/60 p-10 text-center text-sm leading-6 text-vibe-dim">
-              <p>Search indexed sessions, UI events, and curated memory.</p>
+              <p>Search indexed sessions, session events, and curated memory.</p>
               <p class="mt-2">Try <span class="font-mono text-vibe-muted">markdown</span>, <span class="font-mono text-vibe-muted">eval</span>, <span class="font-mono text-vibe-muted">storage</span>, or <span class="font-mono text-vibe-muted">session</span>.</p>
             </div>
           <% @error -> %>

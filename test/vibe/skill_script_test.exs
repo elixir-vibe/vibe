@@ -82,7 +82,7 @@ defmodule Vibe.SkillScriptTest do
       Vibe.Event.new(:user_message_added, session_id, %{text: "Debug reusable workflow"},
         at: ~U[2026-01-01 00:00:01Z]
       )
-      |> Vibe.Session.Store.append_ui_event(1)
+      |> Vibe.Session.Store.append_event(1)
 
     assert {:ok, path} = Vibe.Skill.create_from_session(session_id, "debug-workflow")
     assert String.ends_with?(path, "debug-workflow/skill.exs")

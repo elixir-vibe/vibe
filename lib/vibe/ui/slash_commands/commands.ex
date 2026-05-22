@@ -18,7 +18,7 @@ defmodule Vibe.UI.SlashCommands.Commands do
   def command_selector, do: :command_palette
 
   @impl true
-  def run(_args, ui_state) do
+  def run(_args, session_state) do
     selector = %Selector{
       kind: :command_palette,
       title: "Commands",
@@ -27,11 +27,11 @@ defmodule Vibe.UI.SlashCommands.Commands do
       limit: 8
     }
 
-    {:events, [Event.new(:selector_opened, ui_state.session_id, selector)]}
+    {:events, [Event.new(:selector_opened, session_state.session_id, selector)]}
   end
 
   @impl true
-  def selector_action("/" <> command, _ui_state), do: {:command, command}
-  def selector_action(command, _ui_state) when is_binary(command), do: {:command, command}
-  def selector_action(_item, _ui_state), do: :ignore
+  def selector_action("/" <> command, _session_state), do: {:command, command}
+  def selector_action(command, _session_state) when is_binary(command), do: {:command, command}
+  def selector_action(_item, _session_state), do: :ignore
 end

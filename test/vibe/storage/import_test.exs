@@ -8,7 +8,7 @@ defmodule Vibe.Storage.ImportTest do
     :ok
   end
 
-  test "imports Pi JSONL sessions into SQLite UI events" do
+  test "imports Pi JSONL sessions into SQLite session events" do
     dir = Path.join(System.tmp_dir!(), "vibe-pi-import-#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
     file = Path.join(dir, "session.jsonl")
@@ -52,7 +52,7 @@ defmodule Vibe.Storage.ImportTest do
              {1, %{type: :user_message_added, data: %{text: "hello"}}},
              {2, %{type: :assistant_message_added, data: %{text: "hi"}}},
              {3, %{type: :model_selected, data: %{model: "openai:gpt-4o"}}}
-           ] = Vibe.Session.Store.ui_events("pi-session")
+           ] = Vibe.Session.Store.session_events("pi-session")
 
     assert [%{id: "pi-session", message_count: 2, first_message: "hello", cwd: ^dir}] =
              Vibe.Session.Store.list()

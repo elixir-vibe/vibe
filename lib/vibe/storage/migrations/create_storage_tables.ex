@@ -24,7 +24,7 @@ defmodule Vibe.Storage.Migrations.CreateStorageTables do
     create_if_not_exists(index(:sessions, [:updated_at]))
     create_if_not_exists(index(:sessions, [:status]))
 
-    create_if_not_exists table(:ui_events) do
+    create_if_not_exists table(:session_events) do
       add(:session_id, :text, null: false)
       add(:seq, :integer, null: false)
       add(:event_id, :text, null: false)
@@ -33,9 +33,9 @@ defmodule Vibe.Storage.Migrations.CreateStorageTables do
       add(:data, :map, null: false)
     end
 
-    create_if_not_exists(unique_index(:ui_events, [:session_id, :seq]))
-    create_if_not_exists(index(:ui_events, [:session_id, :at]))
-    create_if_not_exists(index(:ui_events, [:type]))
+    create_if_not_exists(unique_index(:session_events, [:session_id, :seq]))
+    create_if_not_exists(index(:session_events, [:session_id, :at]))
+    create_if_not_exists(index(:session_events, [:type]))
 
     create_if_not_exists table(:trajectory_events) do
       add(:session_id, :text)

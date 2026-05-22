@@ -10,7 +10,7 @@ defmodule Vibe.TUI.InputControllerTest do
     state = %{
       editor: editor,
       ui: self(),
-      ui_snapshot: %State{},
+      session_snapshot: %State{},
       autocomplete: %Autocomplete{items: [%{value: "/model"}, %{value: "/help"}], selected: 0}
     }
 
@@ -26,7 +26,7 @@ defmodule Vibe.TUI.InputControllerTest do
     state = %{
       editor: editor,
       ui: self(),
-      ui_snapshot: %State{},
+      session_snapshot: %State{},
       autocomplete: %Autocomplete{items: [%{value: "/model"}], selected: 0, replace_from: 4}
     }
 
@@ -44,9 +44,9 @@ defmodule Vibe.TUI.InputControllerTest do
     selector = %Selector{kind: :model, items: [%{label: "a"}], selected: 0}
     snapshot = %{snapshot | selector: selector}
 
-    state = %{editor: editor, ui: session, ui_snapshot: snapshot, autocomplete: nil}
+    state = %{editor: editor, ui: session, session_snapshot: snapshot, autocomplete: nil}
     state = InputController.handle_key(:cancel, state)
 
-    assert state.ui_snapshot.selector == nil
+    assert state.session_snapshot.selector == nil
   end
 end

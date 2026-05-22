@@ -9,7 +9,7 @@ defmodule Vibe.UI.SlashCommands.Effort do
   def spec, do: %Spec{name: "effort", description: "Choose effort", selectors: []}
 
   @impl true
-  def run(args, _ui_state) when is_binary(args) do
+  def run(args, _session_state) when is_binary(args) do
     case String.trim(args) do
       "" ->
         {:command, :open_effort_selector}

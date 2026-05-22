@@ -15,7 +15,7 @@ defmodule Vibe.Storage.SearchTest do
       Event.new(:user_message_added, session_id, %{text: "Need SQLite full text search"},
         at: ~U[2026-01-01 00:00:00Z]
       )
-      |> Vibe.Session.Store.append_ui_event(1)
+      |> Vibe.Session.Store.append_event(1)
 
     assert [result] = Vibe.Session.search("full text", session_id: session_id)
     assert result.source == :session
@@ -34,7 +34,7 @@ defmodule Vibe.Storage.SearchTest do
     )
 
     :ok =
-      Vibe.Session.Store.append_ui_events([
+      Vibe.Session.Store.append_events([
         {1,
          Event.new(:assistant_message_added, "project-a", %{text: "needle conversation"},
            at: ~U[2026-01-01 00:00:01Z]
@@ -70,7 +70,7 @@ defmodule Vibe.Storage.SearchTest do
         %{text: "Use the blue Figma token for primary buttons"},
         at: ~U[2026-01-01 00:00:01Z]
       )
-      |> Vibe.Session.Store.append_ui_event(1)
+      |> Vibe.Session.Store.append_event(1)
 
     block = Vibe.Context.recall("Figma token", cwd: "recall-project", limit: 1)
 
@@ -83,7 +83,7 @@ defmodule Vibe.Storage.SearchTest do
     assert {:ok, memory} = Vibe.Memory.add(:global, "Run mix ci before commits")
 
     Vibe.Storage.FTS.clear()
-    assert %{memories: 0, ui_events: 0} = Vibe.Storage.FTS.status()
+    assert %{memories: 0, events: 0} = Vibe.Storage.FTS.status()
 
     assert :ok = Vibe.Storage.FTS.rebuild()
 

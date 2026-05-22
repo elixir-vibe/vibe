@@ -67,7 +67,7 @@ defmodule Vibe.TUI.InputController do
     state.editor |> EditorServer.state() |> Map.get(:text, "") |> String.trim() == ""
   end
 
-  defp selector_open?(state), do: not is_nil(state.ui_snapshot.selector)
+  defp selector_open?(state), do: not is_nil(state.session_snapshot.selector)
 
   defp handle_selector_key(:up, state) do
     Session.dispatch(state.ui, Command.new(:selector_moved, %{direction: -1}))
@@ -80,7 +80,7 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp handle_selector_key(:submit, state) do
-    selector = state.ui_snapshot.selector
+    selector = state.session_snapshot.selector
     item = selector |> Map.get(:items, []) |> Enum.at(Map.get(selector, :selected, 0))
     data = %{selector: Map.get(selector, :kind), item: item}
 
@@ -88,7 +88,7 @@ defmodule Vibe.TUI.InputController do
 
     apply_local_event(
       state,
-      Vibe.Event.new(:selector_confirmed, state.ui_snapshot.session_id, data)
+      Vibe.Event.new(:selector_confirmed, state.session_snapshot.session_id, data)
     )
   end
 
@@ -97,7 +97,7 @@ defmodule Vibe.TUI.InputController do
 
     apply_local_event(
       state,
-      Vibe.Event.new(:selector_closed, state.ui_snapshot.session_id, %{})
+      Vibe.Event.new(:selector_closed, state.session_snapshot.session_id, %{})
     )
   end
 
@@ -182,7 +182,7 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp apply_local_event(state, event) do
-    %{state | ui_snapshot: Reducer.apply_event(state.ui_snapshot, event)}
+    %{state | session_snapshot: Reducer.apply_event(state.session_snapshot, event)}
   end
 
   defp handle_editor_command({:submit, text}, state) do
@@ -205,11 +205,11 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp handle_editor_command(:paste_image, state) do
-    session_id = state.ui_snapshot.session_id
+    session_id = state.session_snapshot.session_id
 
     case Vibe.Prompt.ClipboardImage.save(session_id: session_id) do
       {:ok, path} ->
-        marker = " @#{Path.relative_to(path, state.ui_snapshot.cwd || File.cwd!())}"
+        marker = " @#{Path.relative_to(path, state.session_snapshot.cwd || File.cwd!())}"
         :ok = EditorServer.insert(state.editor, marker)
         refresh_autocomplete(state)
 
@@ -243,7 +243,7 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp submit_prompt_command(text, state) do
-    case Vibe.Prompt.Attachments.expand(text, root: state.ui_snapshot.cwd || File.cwd!()) do
+    case Vibe.Prompt.Attachments.expand(text, root: state.session_snapshot.cwd || File.cwd!()) do
       expanded when is_list(expanded) ->
         Command.new(:submit_prompt, %{text: text, content: expanded})
 

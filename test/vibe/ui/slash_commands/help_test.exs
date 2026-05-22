@@ -9,9 +9,9 @@ defmodule Vibe.UI.SlashCommands.HelpTest do
   end
 
   test "returns notification event with docs markdown" do
-    ui_state = %State{session_id: "help-test"}
+    session_state = %State{session_id: "help-test"}
 
-    assert {:events, [event]} = SlashCommands.Help.run(["eval"], ui_state)
+    assert {:events, [event]} = SlashCommands.Help.run(["eval"], session_state)
     assert event.type == :notification_added
     assert event.session_id == "help-test"
     assert event.data.text =~ "# Eval"

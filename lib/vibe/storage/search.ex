@@ -8,7 +8,7 @@ defmodule Vibe.Storage.Search do
   """
   import Ecto.Query
 
-  alias Vibe.Storage.Schema.{MemoryFTS, Session, UIEventFTS}
+  alias Vibe.Storage.Schema.{MemoryFTS, Session, SessionEventFTS}
   alias Vibe.Storage.Search.Result
 
   @spec query(String.t(), keyword()) :: {:ok, [Result.t()]} | {:error, term()}
@@ -87,9 +87,9 @@ defmodule Vibe.Storage.Search do
       |> Keyword.get(:roles, default_roles(opts))
       |> Enum.map(&to_string/1)
 
-    UIEventFTS
+    SessionEventFTS
     |> join(:inner, [row], session in Session, on: session.id == row.session_id)
-    |> where([row, _session], fragment("ui_events_fts MATCH ?", ^fts_query))
+    |> where([row, _session], fragment("session_events_fts MATCH ?", ^fts_query))
     |> where([row, _session], row.role in ^roles)
     |> where_session(session_id)
     |> where_not_session(exclude_session_id)
@@ -104,8 +104,9 @@ defmodule Vibe.Storage.Search do
       cwd: session.cwd,
       at: row.at,
       text: row.text,
-      rank: selected_as(fragment("bm25(ui_events_fts)"), :rank),
-      snippet: fragment("snippet(ui_events_fts, 5, ?, ?, ?, ?)", "<mark>", "</mark>", "…", 32)
+      rank: selected_as(fragment("bm25(session_events_fts)"), :rank),
+      snippet:
+        fragment("snippet(session_events_fts, 5, ?, ?, ?, ?)", "<mark>", "</mark>", "…", 32)
     })
     |> Vibe.Repo.all()
     |> Enum.map(&session_result/1)

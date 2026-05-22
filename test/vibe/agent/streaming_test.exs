@@ -71,7 +71,7 @@ defmodule Vibe.Agent.StreamingTest do
              runtime_text: "program",
              runtime_arrival_text: "program",
              derived_text: "",
-             ui_text: "",
+             surface_text: "",
              final_text: "",
              print_text: ""
            } = Vibe.Agent.Streaming.Trace.compare!(trace_dir)

@@ -110,7 +110,7 @@ defmodule Vibe.FilesTest do
       ]
     }
 
-    Vibe.Session.Store.append_ui_events([
+    Vibe.Session.Store.append_events([
       {1,
        Event.new(
          :tool_finished,
@@ -126,7 +126,7 @@ defmodule Vibe.FilesTest do
        )}
     ])
 
-    assert [{1, event}] = Vibe.Session.Store.ui_events(session_id)
+    assert [{1, event}] = Vibe.Session.Store.session_events(session_id)
 
     assert [%Content.Text{}, %Content.Image{} = image] =
              event.data.event.output.parts

@@ -1,5 +1,5 @@
 defmodule Vibe.Remote.SSH.Attachment do
-  @moduledoc "Long-polling SSH attachment bridge for session UI events."
+  @moduledoc "Long-polling SSH attachment bridge for session events."
 
   use GenServer
 

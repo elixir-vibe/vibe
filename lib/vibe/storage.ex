@@ -4,7 +4,7 @@ defmodule Vibe.Storage do
 
   @schemas [
     sessions: Vibe.Storage.Schema.Session,
-    ui_events: Vibe.Storage.Schema.UIEvent,
+    events: Vibe.Storage.Schema.SessionEvent,
     trajectory_events: Vibe.Storage.Schema.TrajectoryEvent,
     eval_states: Vibe.Storage.Schema.EvalState,
     subagent_jobs: Vibe.Storage.Schema.SubagentJob,

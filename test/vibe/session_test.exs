@@ -23,7 +23,7 @@ defmodule Vibe.SessionTest do
     {:ok, session_dir: session_dir}
   end
 
-  test "SQLite persists trajectory and UI events" do
+  test "SQLite persists trajectory and session events" do
     session_id = "test-session"
 
     Vibe.Session.Store.append_trajectory(:user_message, %{prompt: "hello"},
@@ -36,8 +36,8 @@ defmodule Vibe.SessionTest do
       session_id: session_id
     )
 
-    ui_event = Vibe.Event.new(:user_message_added, session_id, %{text: "hello"})
-    assert :ok = Vibe.Session.Store.append_ui_event(ui_event, 1)
+    session_event = Vibe.Event.new(:user_message_added, session_id, %{text: "hello"})
+    assert :ok = Vibe.Session.Store.append_event(session_event, 1)
 
     assert [%{id: ^session_id, path: path, message_count: 1, first_message: "hello"}] =
              Vibe.Session.Store.list()
@@ -50,7 +50,7 @@ defmodule Vibe.SessionTest do
     assert usage.type == :llm_usage
     assert usage.data.total_tokens == 5
 
-    assert [{1, restored_event}] = Vibe.Session.Store.ui_events(session_id)
+    assert [{1, restored_event}] = Vibe.Session.Store.session_events(session_id)
     assert restored_event.type == :user_message_added
     assert restored_event.data.text == "hello"
   end
@@ -68,11 +68,11 @@ defmodule Vibe.SessionTest do
              Vibe.Session.Store.events(session_id)
   end
 
-  test "restores tool UI events as tool event structs" do
-    session_id = "tool-ui-event-#{System.unique_integer([:positive])}"
+  test "restores tool session events as tool event structs" do
+    session_id = "tool-session-event-#{System.unique_integer([:positive])}"
 
     assert :ok =
-             Vibe.Session.Store.append_ui_event(
+             Vibe.Session.Store.append_event(
                Vibe.Event.new(
                  :tool_started,
                  session_id,
@@ -87,7 +87,7 @@ defmodule Vibe.SessionTest do
              {1,
               %{type: :tool_started, data: %Vibe.Event.Tool.Started{event: %ToolEvent{} = event}}}
            ] =
-             Vibe.Session.Store.ui_events(session_id)
+             Vibe.Session.Store.session_events(session_id)
 
     assert event.id == "tool-1"
     assert event.name == :eval
@@ -108,7 +108,7 @@ defmodule Vibe.SessionTest do
     assert [%{id: ^session_id, message_count: 2, first_message: "old hello"}] =
              Vibe.Session.Store.list()
 
-    assert [{1, user}, {2, assistant}] = Vibe.Session.Store.ui_events(session_id)
+    assert [{1, user}, {2, assistant}] = Vibe.Session.Store.session_events(session_id)
     assert user.type == :user_message_added
     assert user.data.text == "old hello"
     assert assistant.type == :assistant_message_added
@@ -204,7 +204,7 @@ defmodule Vibe.SessionTest do
     File.write!(
       Vibe.Session.Store.path(session_id),
       Jason.encode!(%{
-        "entry_type" => "ui_event",
+        "entry_type" => "session_event",
         "seq" => 1,
         "id" => "bad",
         "session_id" => session_id,
@@ -216,6 +216,6 @@ defmodule Vibe.SessionTest do
       }) <> "\n"
     )
 
-    assert [] = Vibe.Session.Store.ui_events(session_id)
+    assert [] = Vibe.Session.Store.session_events(session_id)
   end
 end

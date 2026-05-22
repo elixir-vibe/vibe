@@ -31,7 +31,7 @@ defmodule Vibe.Plugin do
   @callback apis(term()) :: [API.t() | keyword() | map()]
   @callback children(term()) :: [Supervisor.child_spec() | {module(), term()} | module()]
   @callback children(term(), map()) :: [Supervisor.child_spec() | {module(), term()} | module()]
-  @callback ui_document(term()) :: Document.t() | keyword() | map()
+  @callback presentation_document(term()) :: Document.t() | keyword() | map()
   @callback shutdown(term()) :: :ok
 
   @optional_callbacks system_prompt: 2,
@@ -44,7 +44,7 @@ defmodule Vibe.Plugin do
                       apis: 1,
                       children: 1,
                       children: 2,
-                      ui_document: 1,
+                      presentation_document: 1,
                       shutdown: 1
 
   defmacro __using__(_opts) do
@@ -93,7 +93,7 @@ defmodule Vibe.Plugin do
       def children(state, _context), do: children(state)
 
       @impl Vibe.Plugin
-      def ui_document(_state), do: Vibe.Presentation.Document.empty()
+      def presentation_document(_state), do: Vibe.Presentation.Document.empty()
 
       @impl Vibe.Plugin
       def shutdown(_state), do: :ok
@@ -110,7 +110,7 @@ defmodule Vibe.Plugin do
                      apis: 1,
                      children: 1,
                      children: 2,
-                     ui_document: 1,
+                     presentation_document: 1,
                      shutdown: 1
     end
   end

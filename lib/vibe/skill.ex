@@ -151,7 +151,7 @@ defmodule Vibe.Skill do
   def create_from_session(session_id, name, opts \\ []) do
     with :ok <- validate_name(name) do
       session = Vibe.Session.Store.info(session_id)
-      events = Vibe.Session.Store.ui_events(session_id)
+      events = Vibe.Session.Store.session_events(session_id)
 
       if is_nil(session) or events == [] do
         {:error, "session not found or empty: #{session_id}"}

@@ -77,7 +77,7 @@ defmodule Vibe.Remote.SSH.Protocol do
     timeout_ms = request |> Map.get("timeout_ms", 30_000) |> normalize_timeout()
 
     with {:ok, events} <- Attachment.next_events(attachment_id, timeout_ms) do
-      {:ok, %{"events" => events}}
+      {:ok, %{"session_events" => events}}
     end
   end
 

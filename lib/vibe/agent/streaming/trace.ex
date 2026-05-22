@@ -47,11 +47,11 @@ defmodule Vibe.Agent.Streaming.Trace do
         events |> Enum.filter(&(&1["kind"] == "react_runtime_delta")) |> joined_by_runtime_seq(),
       runtime_arrival_text: joined(events, "react_runtime_delta"),
       derived_text: events |> Enum.reject(& &1["suppressed?"]) |> joined("derived_llm_delta"),
-      ui_text: joined(events, "ui_assistant_delta"),
+      surface_text: joined(events, "surface_assistant_delta"),
       print_text: joined(events, "print_delta"),
       final_text:
         events
-        |> Enum.filter(&(&1["kind"] == "ui_stream_finished"))
+        |> Enum.filter(&(&1["kind"] == "surface_stream_finished"))
         |> List.last()
         |> final_text()
     }

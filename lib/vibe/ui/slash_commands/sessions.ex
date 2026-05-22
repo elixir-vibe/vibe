@@ -23,29 +23,33 @@ defmodule Vibe.UI.SlashCommands.Sessions do
   def session_selector, do: :session_selector
 
   @impl true
-  def run(_args, ui_state) do
+  def run(_args, session_state) do
     selector = %Selector{
       kind: :session_selector,
       title: "Sessions",
-      items: session_items(ui_state),
+      items: session_items(session_state),
       selected: 0,
       limit: 7
     }
 
-    {:events, [Event.new(:selector_opened, ui_state.session_id, selector)]}
+    {:events, [Event.new(:selector_opened, session_state.session_id, selector)]}
   end
 
   @impl true
-  def selector_action(%{value: session_id}, ui_state) when is_binary(session_id),
-    do: {:events, [Event.new(:session_selected, ui_state.session_id, %{session_id: session_id})]}
+  def selector_action(%{value: session_id}, session_state) when is_binary(session_id),
+    do:
+      {:events,
+       [Event.new(:session_selected, session_state.session_id, %{session_id: session_id})]}
 
-  def selector_action(session_id, ui_state) when is_binary(session_id),
-    do: {:events, [Event.new(:session_selected, ui_state.session_id, %{session_id: session_id})]}
+  def selector_action(session_id, session_state) when is_binary(session_id),
+    do:
+      {:events,
+       [Event.new(:session_selected, session_state.session_id, %{session_id: session_id})]}
 
-  def selector_action(_item, _ui_state), do: :ignore
+  def selector_action(_item, _session_state), do: :ignore
 
-  defp session_items(ui_state) do
-    Vibe.Session.list(current_state: ui_state)
+  defp session_items(session_state) do
+    Vibe.Session.list(current_state: session_state)
     |> Enum.map(fn session ->
       %{
         value: session.id,

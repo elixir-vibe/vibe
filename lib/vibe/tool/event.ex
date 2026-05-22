@@ -1,6 +1,6 @@
 defmodule Vibe.Tool.Event do
   @moduledoc """
-  Structured UI event payload for tool lifecycle updates.
+  Structured session event payload for tool lifecycle updates.
   """
 
   @type status :: :running | :ok | :error | atom() | String.t()

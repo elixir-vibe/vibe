@@ -16,10 +16,10 @@ defmodule Vibe.UI.SlashCommands.Clear do
   def confirmation_selector, do: :clear_session_confirmation
 
   @impl true
-  def run(_args, ui_state) do
+  def run(_args, session_state) do
     {:events,
      [
-       Event.new(:confirmation_requested, ui_state.session_id, %{
+       Event.new(:confirmation_requested, session_state.session_id, %{
          kind: :clear_session_confirmation,
          title: "Clear session?",
          message: "This will delete all messages in the current session.",
@@ -30,8 +30,8 @@ defmodule Vibe.UI.SlashCommands.Clear do
   end
 
   @impl true
-  def selector_action("Yes", ui_state),
-    do: {:events, [Event.new(:messages_cleared, ui_state.session_id, %{})]}
+  def selector_action("Yes", session_state),
+    do: {:events, [Event.new(:messages_cleared, session_state.session_id, %{})]}
 
-  def selector_action(_item, _ui_state), do: :ignore
+  def selector_action(_item, _session_state), do: :ignore
 end

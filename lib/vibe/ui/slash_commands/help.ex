@@ -13,13 +13,13 @@ defmodule Vibe.UI.SlashCommands.Help do
   end
 
   @impl true
-  def run(args, ui_state) do
+  def run(args, session_state) do
     topic = args |> List.wrap() |> Enum.join(" ") |> String.trim()
     markdown = Vibe.Docs.render(topic)
 
     {:events,
      [
-       Vibe.Event.new(:notification_added, ui_state.session_id, %{
+       Vibe.Event.new(:notification_added, session_state.session_id, %{
          level: :info,
          title: help_title(topic),
          text: markdown

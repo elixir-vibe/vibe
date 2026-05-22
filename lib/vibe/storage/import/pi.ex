@@ -76,7 +76,7 @@ defmodule Vibe.Storage.Import.Pi do
       Vibe.Session.Store.ensure_session(session_id, at, cwd: header["cwd"])
 
       :ok =
-        Vibe.Session.Store.append_ui_events(Enum.reverse(events),
+        Vibe.Session.Store.append_events(Enum.reverse(events),
           index?: Keyword.get(opts, :index?, true)
         )
 

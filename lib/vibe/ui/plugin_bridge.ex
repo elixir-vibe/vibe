@@ -14,13 +14,13 @@ defmodule Vibe.UI.PluginBridge do
                   ])
 
   @spec dispatch(State.t(), Event.t()) :: :ok
-  def dispatch(ui_state, event) do
+  def dispatch(session_state, event) do
     if plugin_event?(event.type) and Process.whereis(Vibe.Plugin.Manager) do
       context = %{
-        session_id: ui_state.session_id,
-        cwd: ui_state.cwd,
-        model: ui_state.model,
-        effort: ui_state.effort
+        session_id: session_state.session_id,
+        cwd: session_state.cwd,
+        model: session_state.model,
+        effort: session_state.effort
       }
 
       Task.Supervisor.start_child(Vibe.UI.PluginTaskSupervisor, fn ->
@@ -32,9 +32,9 @@ defmodule Vibe.UI.PluginBridge do
   end
 
   @spec dispatch_lifecycle(atom(), map(), State.t(), boolean()) :: :ok
-  def dispatch_lifecycle(type, data, ui_state, enabled? \\ true) do
+  def dispatch_lifecycle(type, data, session_state, enabled? \\ true) do
     if enabled? do
-      dispatch(ui_state, Event.new(type, ui_state.session_id, data))
+      dispatch(session_state, Event.new(type, session_state.session_id, data))
     else
       :ok
     end

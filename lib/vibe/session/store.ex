@@ -10,7 +10,7 @@ defmodule Vibe.Session.Store do
   alias Vibe.Storage.Representation.Event, as: EventRepresentation
   alias Vibe.Storage.Representation.EvalSnapshot
   alias Vibe.Storage.Representation.Trajectory, as: TrajectoryRepresentation
-  alias Vibe.Storage.Schema.{EvalState, Session, TrajectoryEvent, UIEvent, UIEventFTS}
+  alias Vibe.Storage.Schema.{EvalState, Session, TrajectoryEvent, SessionEvent, SessionEventFTS}
   alias Vibe.Trajectory
   alias Vibe.Event
 
@@ -37,8 +37,8 @@ defmodule Vibe.Session.Store do
     Path.join(dir(), safe_session_id(session_id) <> ".log")
   end
 
-  @spec ui_events_path(String.t()) :: String.t()
-  def ui_events_path(session_id) when is_binary(session_id), do: path(session_id)
+  @spec events_path(String.t()) :: String.t()
+  def events_path(session_id) when is_binary(session_id), do: path(session_id)
 
   @spec append_trajectory(atom(), map(), keyword()) :: Trajectory.t()
   def append_trajectory(type, data \\ %{}, opts \\ []) do
@@ -121,7 +121,7 @@ defmodule Vibe.Session.Store do
 
   @spec branch(String.t(), non_neg_integer(), String.t()) :: :ok | {:error, term()}
   def branch(source_session_id, up_to_seq, branch_id) do
-    events = ui_events(source_session_id)
+    events = session_events(source_session_id)
 
     kept = Enum.filter(events, fn {seq, _event} -> seq <= up_to_seq end)
 
@@ -134,7 +134,7 @@ defmodule Vibe.Session.Store do
         end)
 
       ensure_session(branch_id, DateTime.utc_now())
-      append_ui_events(branch_events, index?: true, refresh_summary?: true)
+      append_events(branch_events, index?: true, refresh_summary?: true)
     end
   end
 
@@ -164,9 +164,9 @@ defmodule Vibe.Session.Store do
 
     Enum.each(
       [
-        Vibe.Storage.Schema.UIEventFTS,
+        Vibe.Storage.Schema.SessionEventFTS,
         Vibe.Storage.Schema.MemoryFTS,
-        UIEvent,
+        SessionEvent,
         TrajectoryEvent,
         EvalState,
         Vibe.Storage.Schema.SubagentJob,
@@ -214,20 +214,20 @@ defmodule Vibe.Session.Store do
     end
   end
 
-  @spec append_ui_event(Event.t(), non_neg_integer()) :: :ok | {:error, term()}
-  def append_ui_event(%Event{} = event, seq) do
+  @spec append_event(Event.t(), non_neg_integer()) :: :ok | {:error, term()}
+  def append_event(%Event{} = event, seq) do
     Vibe.Storage.ensure!()
     ensure_session(event.session_id, event.at)
 
-    %UIEvent{}
-    |> Map.merge(ui_event_row(event, seq))
+    %SessionEvent{}
+    |> Map.merge(event_row(event, seq))
     |> Vibe.Repo.insert(
       on_conflict: {:replace, [:event_id, :type, :at, :data]},
       conflict_target: [:session_id, :seq]
     )
     |> case do
       {:ok, stored_event} ->
-        Vibe.Storage.FTS.index_ui_event(stored_event)
+        Vibe.Storage.FTS.index_event(stored_event)
         Summary.refresh(event.session_id)
         :ok
 
@@ -236,28 +236,28 @@ defmodule Vibe.Session.Store do
     end
   end
 
-  @spec append_ui_events([{non_neg_integer(), Event.t()}], keyword()) :: :ok | {:error, term()}
-  def append_ui_events(events, opts \\ [])
-  def append_ui_events([], _opts), do: :ok
+  @spec append_events([{non_neg_integer(), Event.t()}], keyword()) :: :ok | {:error, term()}
+  def append_events(events, opts \\ [])
+  def append_events([], _opts), do: :ok
 
-  def append_ui_events([{_seq, %Event{} = first_event} | _rest] = events, opts) do
+  def append_events([{_seq, %Event{} = first_event} | _rest] = events, opts) do
     Vibe.Storage.ensure!()
     ensure_session(first_event.session_id, first_event.at)
 
-    rows = Enum.map(events, fn {seq, event} -> ui_event_row(event, seq) end)
+    rows = Enum.map(events, fn {seq, event} -> event_row(event, seq) end)
 
     result =
       Vibe.Repo.transaction(fn ->
         rows
         |> Enum.chunk_every(500)
         |> Enum.each(fn chunk ->
-          Vibe.Repo.insert_all(UIEvent, chunk,
+          Vibe.Repo.insert_all(SessionEvent, chunk,
             on_conflict: {:replace, [:event_id, :type, :at, :data]},
             conflict_target: [:session_id, :seq]
           )
         end)
 
-        if Keyword.get(opts, :index?, true), do: Vibe.Storage.FTS.index_ui_event_rows(rows)
+        if Keyword.get(opts, :index?, true), do: Vibe.Storage.FTS.index_event_rows(rows)
 
         if Keyword.get(opts, :refresh_summary?, true),
           do: Summary.refresh(first_event.session_id)
@@ -271,16 +271,16 @@ defmodule Vibe.Session.Store do
     end
   end
 
-  @spec ui_events(String.t()) :: [{non_neg_integer(), Event.t()}]
-  def ui_events(session_id) when is_binary(session_id) do
+  @spec session_events(String.t()) :: [{non_neg_integer(), Event.t()}]
+  def session_events(session_id) when is_binary(session_id) do
     Vibe.Storage.ensure!()
 
     events =
-      UIEvent
+      SessionEvent
       |> where([event], event.session_id == ^session_id)
       |> order_by([event], event.seq)
       |> Vibe.Repo.all()
-      |> Enum.flat_map(&decode_ui_event_record/1)
+      |> Enum.flat_map(&decode_event_record/1)
 
     case events do
       [] -> session_id |> events() |> TrajectoryRepresentation.project_events()
@@ -288,15 +288,15 @@ defmodule Vibe.Session.Store do
     end
   end
 
-  @spec ui_events_after(String.t(), non_neg_integer()) :: [{non_neg_integer(), Event.t()}]
-  def ui_events_after(session_id, seq) when is_binary(session_id) and is_integer(seq) do
+  @spec session_events_after(String.t(), non_neg_integer()) :: [{non_neg_integer(), Event.t()}]
+  def session_events_after(session_id, seq) when is_binary(session_id) and is_integer(seq) do
     Vibe.Storage.ensure!()
 
-    UIEvent
+    SessionEvent
     |> where([event], event.session_id == ^session_id and event.seq > ^seq)
     |> order_by([event], event.seq)
     |> Vibe.Repo.all()
-    |> Enum.flat_map(&decode_ui_event_record/1)
+    |> Enum.flat_map(&decode_event_record/1)
   end
 
   @doc "Intentional facade for the public Vibe API boundary."
@@ -325,7 +325,7 @@ defmodule Vibe.Session.Store do
 
   defp present_attrs(attrs), do: Enum.reject(attrs, fn {_key, value} -> is_nil(value) end)
 
-  defp ui_event_row(%Event{} = event, seq) do
+  defp event_row(%Event{} = event, seq) do
     encoded = EventRepresentation.encode(event, seq)
 
     %{
@@ -351,7 +351,7 @@ defmodule Vibe.Session.Store do
   defp take_trajectory(events, :infinity), do: events
   defp take_trajectory(events, limit), do: Enum.take(events, limit)
 
-  defp decode_ui_event_record(%UIEvent{} = event) do
+  defp decode_event_record(%SessionEvent{} = event) do
     %{
       "seq" => event.seq,
       "id" => event.event_id,
@@ -390,8 +390,8 @@ defmodule Vibe.Session.Store do
   end
 
   defp delete_stored_session(session_id) do
-    Repo.delete_all(from(row in UIEventFTS, where: row.session_id == ^session_id))
-    Repo.delete_all(from(row in UIEvent, where: row.session_id == ^session_id))
+    Repo.delete_all(from(row in SessionEventFTS, where: row.session_id == ^session_id))
+    Repo.delete_all(from(row in SessionEvent, where: row.session_id == ^session_id))
     Repo.delete_all(from(row in TrajectoryEvent, where: row.session_id == ^session_id))
     Repo.delete_all(from(row in EvalState, where: row.session_id == ^session_id))
     Repo.delete_all(from(row in Vibe.Storage.Schema.Goal, where: row.session_id == ^session_id))

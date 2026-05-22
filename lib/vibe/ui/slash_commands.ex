@@ -16,29 +16,29 @@ defmodule Vibe.UI.SlashCommands do
   def autocomplete(_text), do: nil
 
   @spec handle(String.t(), String.t(), map()) :: Vibe.UI.SlashCommands.Command.result()
-  def handle("skill:" <> skill, args, ui_state),
-    do: Vibe.UI.SlashCommands.Skill.run(Enum.join([skill, args], " "), ui_state)
+  def handle("skill:" <> skill, args, session_state),
+    do: Vibe.UI.SlashCommands.Skill.run(Enum.join([skill, args], " "), session_state)
 
-  def handle(command, args, ui_state) do
+  def handle(command, args, session_state) do
     case Registry.find(command) do
-      nil -> unknown_command(command, ui_state)
-      module -> module.run(args, ui_state)
+      nil -> unknown_command(command, session_state)
+      module -> module.run(args, session_state)
     end
   end
 
   @spec selector_action(map(), map()) ::
           Vibe.UI.SlashCommands.Command.result() | {:command, String.t()}
-  def selector_action(%{selector: selector, item: item}, ui_state) do
+  def selector_action(%{selector: selector, item: item}, session_state) do
     case Registry.find_selector(selector) do
       nil -> :ignore
-      module -> run_selector_action(module, item, ui_state)
+      module -> run_selector_action(module, item, session_state)
     end
   end
 
-  def selector_action(_data, _ui_state), do: :ignore
+  def selector_action(_data, _session_state), do: :ignore
 
-  defp run_selector_action(module, item, ui_state) when is_atom(module),
-    do: module.selector_action(item, ui_state)
+  defp run_selector_action(module, item, session_state) when is_atom(module),
+    do: module.selector_action(item, session_state)
 
   defp autocomplete_item(spec) do
     %Item{
@@ -61,10 +61,10 @@ defmodule Vibe.UI.SlashCommands do
     end)
   end
 
-  defp unknown_command(command, ui_state) do
+  defp unknown_command(command, session_state) do
     {:events,
      [
-       Event.new(:notification_added, ui_state.session_id, %{
+       Event.new(:notification_added, session_state.session_id, %{
          level: :warning,
          text: "unknown command: /#{command}"
        })

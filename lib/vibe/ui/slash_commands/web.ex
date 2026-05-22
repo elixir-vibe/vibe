@@ -7,7 +7,7 @@ defmodule Vibe.UI.SlashCommands.Web do
   def spec, do: %Spec{name: "web", description: "Open web console"}
 
   @impl true
-  def run(_args, _ui_state) do
+  def run(_args, _session_state) do
     url = Vibe.Web.Auth.authenticated_url()
     open_browser(url)
     {:events, [notification(:success, "Opened #{url}")]}

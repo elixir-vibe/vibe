@@ -7,7 +7,7 @@ defmodule Vibe.UI.SlashCommands.Model do
   def spec, do: %Spec{name: "model", description: "Choose model", selectors: []}
 
   @impl true
-  def run(args, _ui_state) when is_binary(args) do
+  def run(args, _session_state) when is_binary(args) do
     case String.trim(args) do
       "" ->
         {:command, :open_model_selector}

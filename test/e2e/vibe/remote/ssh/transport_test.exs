@@ -80,7 +80,7 @@ defmodule Vibe.E2E.Remote.SSH.TransportTest do
 
         assert {:ok,
                 %{
-                  "events" => [
+                  "session_events" => [
                     %{"type" => "notification_added", "data" => %{"text" => "hello over ssh"}}
                   ]
                 }} =

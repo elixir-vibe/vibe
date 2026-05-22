@@ -19,7 +19,7 @@ defmodule Vibe.Web.SessionLiveTest do
   test "renders user attachment badge" do
     session_id = "web-user-attachment-session"
 
-    Vibe.Session.Store.append_ui_events([
+    Vibe.Session.Store.append_events([
       {1, Event.new(:user_message_added, session_id, %{text: "describe", image_count: 1})}
     ])
 
@@ -33,7 +33,7 @@ defmodule Vibe.Web.SessionLiveTest do
   test "renders tool calls as structured widgets" do
     session_id = "web-tool-session"
 
-    Vibe.Session.Store.append_ui_events([
+    Vibe.Session.Store.append_events([
       {1,
        Event.new(
          :tool_started,
@@ -68,7 +68,7 @@ defmodule Vibe.Web.SessionLiveTest do
   test "tolerates tool renderers with no output lines" do
     session_id = "web-empty-render-tool-session"
 
-    Vibe.Session.Store.append_ui_events([
+    Vibe.Session.Store.append_events([
       {1,
        Event.new(
          :tool_started,

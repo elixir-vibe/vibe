@@ -3,7 +3,7 @@ defmodule Vibe.Storage.FTS do
   import Ecto.Query
 
   alias Vibe.Repo
-  alias Vibe.Storage.Schema.{Memory, MemoryFTS, UIEvent, UIEventFTS}
+  alias Vibe.Storage.Schema.{Memory, MemoryFTS, SessionEvent, SessionEventFTS}
 
   @rebuild_batch_size 2_000
   @insert_chunk_size 1_000
@@ -13,19 +13,19 @@ defmodule Vibe.Storage.FTS do
     "assistant_message_added" => "assistant"
   }
 
-  @spec index_ui_event(struct()) :: :ok
-  def index_ui_event(%UIEvent{} = event), do: index_ui_event_rows([event])
+  @spec index_event(struct()) :: :ok
+  def index_event(%SessionEvent{} = event), do: index_event_rows([event])
 
-  @spec index_ui_event_rows([map() | struct()]) :: :ok
-  def index_ui_event_rows(rows) when is_list(rows) do
+  @spec index_event_rows([map() | struct()]) :: :ok
+  def index_event_rows(rows) when is_list(rows) do
     rows
-    |> Enum.flat_map(&ui_event_fts_row/1)
-    |> insert_ui_event_fts_rows()
+    |> Enum.flat_map(&session_event_fts_row/1)
+    |> insert_session_event_fts_rows()
   end
 
-  @spec remove_ui_event(String.t()) :: :ok
-  def remove_ui_event(event_id) when is_binary(event_id) do
-    Vibe.Repo.delete_all(from(row in UIEventFTS, where: row.event_id == ^event_id))
+  @spec remove_event(String.t()) :: :ok
+  def remove_event(event_id) when is_binary(event_id) do
+    Vibe.Repo.delete_all(from(row in SessionEventFTS, where: row.event_id == ^event_id))
     :ok
   end
 
@@ -46,7 +46,7 @@ defmodule Vibe.Storage.FTS do
 
   @spec clear() :: :ok
   def clear do
-    Vibe.Repo.delete_all(UIEventFTS)
+    Vibe.Repo.delete_all(SessionEventFTS)
     Vibe.Repo.delete_all(MemoryFTS)
     :ok
   end
@@ -57,25 +57,25 @@ defmodule Vibe.Storage.FTS do
 
     progress(opts, %{
       phase: :fts_rebuild_start,
-      ui_events: Repo.aggregate(UIEvent, :count),
+      events: Repo.aggregate(SessionEvent, :count),
       memories: Repo.aggregate(Memory, :count)
     })
 
-    rebuild_ui_events(0, 0, opts)
+    rebuild_events(0, 0, opts)
     rebuild_memories("", 0, opts)
 
     progress(opts, %{
       phase: :fts_rebuild_done,
-      ui_events: Repo.aggregate(UIEventFTS, :count),
+      events: Repo.aggregate(SessionEventFTS, :count),
       memories: Repo.aggregate(MemoryFTS, :count)
     })
 
     :ok
   end
 
-  defp rebuild_ui_events(last_id, indexed, opts) do
+  defp rebuild_events(last_id, indexed, opts) do
     rows =
-      UIEvent
+      SessionEvent
       |> where([event], event.id > ^last_id)
       |> order_by([event], event.id)
       |> limit(@rebuild_batch_size)
@@ -87,12 +87,12 @@ defmodule Vibe.Storage.FTS do
 
       rows ->
         rows
-        |> Enum.flat_map(&ui_event_fts_row/1)
-        |> insert_ui_event_fts_rows()
+        |> Enum.flat_map(&session_event_fts_row/1)
+        |> insert_session_event_fts_rows()
 
         indexed = indexed + length(rows)
-        progress(opts, %{phase: :fts_ui_events, indexed: indexed})
-        rows |> List.last() |> Map.fetch!(:id) |> rebuild_ui_events(indexed, opts)
+        progress(opts, %{phase: :fts_events, indexed: indexed})
+        rows |> List.last() |> Map.fetch!(:id) |> rebuild_events(indexed, opts)
     end
   end
 
@@ -119,12 +119,12 @@ defmodule Vibe.Storage.FTS do
     end
   end
 
-  defp insert_ui_event_fts_rows([]), do: :ok
+  defp insert_session_event_fts_rows([]), do: :ok
 
-  defp insert_ui_event_fts_rows(rows) do
+  defp insert_session_event_fts_rows(rows) do
     rows
     |> Enum.chunk_every(@insert_chunk_size)
-    |> Enum.each(&Vibe.Repo.insert_all(UIEventFTS, &1))
+    |> Enum.each(&Vibe.Repo.insert_all(SessionEventFTS, &1))
   end
 
   defp insert_memory_fts_rows([]), do: :ok
@@ -156,7 +156,7 @@ defmodule Vibe.Storage.FTS do
   def optimize do
     Ecto.Adapters.SQL.query!(
       Vibe.Repo,
-      "INSERT INTO ui_events_fts(ui_events_fts) VALUES('optimize')",
+      "INSERT INTO session_events_fts(session_events_fts) VALUES('optimize')",
       []
     )
 
@@ -172,7 +172,7 @@ defmodule Vibe.Storage.FTS do
   @spec status() :: map()
   def status do
     %{
-      ui_events: Repo.aggregate(UIEventFTS, :count),
+      events: Repo.aggregate(SessionEventFTS, :count),
       memories: Repo.aggregate(MemoryFTS, :count)
     }
   end
@@ -187,13 +187,13 @@ defmodule Vibe.Storage.FTS do
     |> Enum.join(" ")
   end
 
-  defp ui_event_fts_row(%UIEvent{} = event) do
+  defp session_event_fts_row(%SessionEvent{} = event) do
     event
     |> Map.from_struct()
-    |> ui_event_fts_row()
+    |> session_event_fts_row()
   end
 
-  defp ui_event_fts_row(%{type: type, data: data} = event)
+  defp session_event_fts_row(%{type: type, data: data} = event)
        when is_map_key(@message_types, type) do
     case text_from_data(data) do
       text when is_binary(text) ->
@@ -213,7 +213,7 @@ defmodule Vibe.Storage.FTS do
     end
   end
 
-  defp ui_event_fts_row(_event), do: []
+  defp session_event_fts_row(_event), do: []
 
   defp event_role("assistant_message_added", %{import_role: "tool"}), do: "tool"
   defp event_role("assistant_message_added", %{"import_role" => "tool"}), do: "tool"

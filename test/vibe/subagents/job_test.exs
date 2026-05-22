@@ -43,9 +43,9 @@ defmodule Vibe.Subagents.JobTest do
     assert Enum.any?(state.messages, &(&1[:text] == "hello subagent"))
     assert Enum.any?(state.messages, &(&1[:result] == "child saw: hello subagent"))
 
-    parent_events = Vibe.Session.Store.events(parent_session_id)
-    assert Enum.any?(parent_events, &(&1.type == :subagent_started))
-    assert Enum.any?(parent_events, &(&1.type == :subagent_finished))
+    parent_events = Vibe.Session.Store.session_events(parent_session_id)
+    assert Enum.any?(parent_events, fn {_seq, event} -> event.type == :subagent_started end)
+    assert Enum.any?(parent_events, fn {_seq, event} -> event.type == :subagent_finished end)
   end
 
   test "running subagent child session is read-only for other callers" do

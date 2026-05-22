@@ -56,8 +56,9 @@ defmodule Vibe.Plugin.Manager do
   @spec apis() :: [API.t()]
   def apis, do: GenServer.call(__MODULE__, :apis)
 
-  @spec ui_document(module()) :: Document.t()
-  def ui_document(module), do: GenServer.call(__MODULE__, {:ui_document, module})
+  @spec presentation_document(module()) :: Document.t()
+  def presentation_document(module),
+    do: GenServer.call(__MODULE__, {:presentation_document, module})
 
   @impl true
   def init(opts) do
@@ -141,10 +142,10 @@ defmodule Vibe.Plugin.Manager do
     {:reply, apis, state}
   end
 
-  def handle_call({:ui_document, module}, _from, state) do
+  def handle_call({:presentation_document, module}, _from, state) do
     document =
       case Map.fetch(state.plugins, module) do
-        {:ok, entry} -> plugin_ui_document(module, entry.state)
+        {:ok, entry} -> plugin_presentation_document(module, entry.state)
         :error -> Document.empty()
       end
 
@@ -252,16 +253,16 @@ defmodule Vibe.Plugin.Manager do
       []
   end
 
-  defp plugin_ui_document(module, plugin_state) do
-    if function_exported?(module, :ui_document, 1) do
-      Document.new(module.ui_document(plugin_state))
+  defp plugin_presentation_document(module, plugin_state) do
+    if function_exported?(module, :presentation_document, 1) do
+      Document.new(module.presentation_document(plugin_state))
     else
       Document.empty()
     end
   rescue
     error ->
       Logger.warning(
-        "Plugin #{inspect(module)} ui_document/1 failed: #{Exception.message(error)}"
+        "Plugin #{inspect(module)} presentation_document/1 failed: #{Exception.message(error)}"
       )
 
       Document.empty()

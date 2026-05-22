@@ -7,5 +7,5 @@ defmodule Vibe.UI.SlashCommands.Compact do
   def spec, do: %Spec{name: "compact", description: "Compact context"}
 
   @impl true
-  def run(_args, _ui_state), do: :compact
+  def run(_args, _session_state), do: :compact
 end

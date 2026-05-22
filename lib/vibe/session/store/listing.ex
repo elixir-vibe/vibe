@@ -28,7 +28,7 @@ defmodule Vibe.Session.Store.Listing do
 
   @spec summary(String.t()) :: map() | nil
   def summary(session_id) do
-    events = Vibe.Session.Store.ui_events(session_id)
+    events = Vibe.Session.Store.session_events(session_id)
 
     if events == [] do
       nil
