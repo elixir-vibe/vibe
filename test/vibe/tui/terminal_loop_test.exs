@@ -83,7 +83,11 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
 
     plain =
-      wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "Sessions") end))
+      wait_until_render(
+        loop,
+        &Enum.any?(&1, fn line -> String.contains?(line, "Sessions") end),
+        System.monotonic_time(:millisecond) + 5_000
+      )
 
     assert selector_rendered_once?(plain, "Sessions")
 

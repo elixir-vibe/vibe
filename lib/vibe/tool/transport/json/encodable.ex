@@ -7,9 +7,6 @@ defprotocol Vibe.Tool.Transport.JSON.Encodable do
 end
 
 defimpl Vibe.Tool.Transport.JSON.Encodable, for: Any do
-  def value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  def value(%Date{} = value), do: Date.to_iso8601(value)
-
   def value(%_{} = value) do
     raise ArgumentError,
           "no tool transport JSON projection for #{inspect(value.__struct__)}; add a Vibe.Tool.Transport.JSON.Encodable implementation"

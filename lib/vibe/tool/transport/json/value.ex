@@ -4,8 +4,6 @@ defmodule Vibe.Tool.Transport.JSON.Value do
   @spec value(term()) :: term()
   def value(value) when is_boolean(value) or is_nil(value), do: value
   def value(value) when is_atom(value), do: Atom.to_string(value)
-  def value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  def value(%Date{} = value), do: Date.to_iso8601(value)
 
   def value(%_{} = value) do
     raise ArgumentError,

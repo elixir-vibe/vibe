@@ -9,8 +9,6 @@ end
 defimpl Vibe.Storage.JSON.Encodable, for: Any do
   def value(value) when is_boolean(value) or is_nil(value), do: value
   def value(value) when is_atom(value), do: Atom.to_string(value)
-  def value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  def value(%Date{} = value), do: Date.to_iso8601(value)
 
   def value(%_{} = value) do
     raise ArgumentError,
@@ -22,17 +20,6 @@ defimpl Vibe.Storage.JSON.Encodable, for: Any do
   end
 
   def value(value) when is_number(value), do: value
-
-  def value(value) when is_tuple(value),
-    do: value |> Tuple.to_list() |> Vibe.Storage.JSON.Value.value()
-
-  def value(value) when is_list(value), do: Enum.map(value, &Vibe.Storage.JSON.Value.value/1)
-
-  def value(value) when is_map(value) do
-    Map.new(value, fn {key, value} ->
-      {Vibe.Storage.JSON.Value.key(key), Vibe.Storage.JSON.Value.value(value)}
-    end)
-  end
 
   def value(value) do
     raise ArgumentError,

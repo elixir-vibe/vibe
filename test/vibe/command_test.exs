@@ -15,7 +15,11 @@ defmodule Vibe.CommandTest do
   end
 
   test "run returns a truncated tail with a full output pointer" do
-    result = Command.run(["sh", "-c", "seq 3000"], timeout: @command_timeout_ms)
+    result =
+      Command.run(
+        ["sh", "-c", "i=1; while [ $i -le 3000 ]; do echo $i; i=$((i+1)); done"],
+        timeout: @command_timeout_ms
+      )
 
     assert %Result{status: :ok, exit_status: 0} = result
     assert result.output =~ "3000"
