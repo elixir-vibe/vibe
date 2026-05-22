@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Architecture and rendering
+
+- Tightened Reach architecture policy around storage, event, transport, plugin, CLI, terminal, Markdown, presentation, and UI-state layers.
+- Moved reusable terminal rendering primitives from `Vibe.TUI.*` to `Vibe.Terminal.*` and guarded the old namespaces from returning.
+- Guarded generic CLI code from depending on TUI internals while preserving explicit TUI entrypoints and storybook tooling.
+- Added direct tests for extracted helper boundaries and hardened selector replay, picker presentation, CLI rendering, and Markdown fencing.
+
 ## v0.2.0 - 2026-05-21
 
 ### Highlights
