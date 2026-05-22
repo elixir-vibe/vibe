@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.TerminalText do
+defmodule Vibe.Terminal.Text do
   @moduledoc "ANSI escape and control character sanitizer for display."
   @escape 0x1B
   @bell 0x07

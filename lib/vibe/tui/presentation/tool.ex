@@ -7,13 +7,17 @@ defmodule Vibe.TUI.Presentation.Tool do
   alias Vibe.TUI.Presentation.{ToolBlock, ToolCard}
 
   alias Vibe.TUI.{
-    Lines,
     SourceBlock,
     TextTruncation,
-    Theme,
-    ValueFormat,
-    Widget
+    ValueFormat
   }
+
+  alias Vibe.Terminal.{
+    Lines,
+    Theme
+  }
+
+  alias Vibe.TUI.Widget
 
   @type tool :: map()
 

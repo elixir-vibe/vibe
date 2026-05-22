@@ -8,7 +8,7 @@ defmodule Vibe.TUI.Widgets.PluginWidget do
   def render(%{props: %{type: :markdown, props: props}}, width, theme) do
     props
     |> Map.get(:content, "")
-    |> Vibe.TUI.Markdown.render(width, theme)
+    |> Vibe.Terminal.Markdown.render(width, theme)
   end
 
   def render(%{props: %{type: :progress, props: props}}, width, _theme) do

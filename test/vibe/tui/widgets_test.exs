@@ -5,7 +5,8 @@ defmodule Vibe.TUI.WidgetsTest do
 
   @sample_token_count 1_200
 
-  alias Vibe.TUI.{Theme, Widget, Width}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   test "renders section, status, model info, dialog, and diff widgets" do
     nodes = [

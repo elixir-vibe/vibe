@@ -1,7 +1,7 @@
 defmodule Vibe.TUI.Views.AgentsTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.Theme
+  alias Vibe.Terminal.Theme
   alias Vibe.TUI.Views.Agents
 
   test "new returns a dashboard with sessions" do

@@ -6,14 +6,18 @@ defmodule Vibe.TUI.Presentation.ToolBlock do
 
   alias Vibe.TUI.{
     DiffBlock,
-    Lines,
-    Markdown,
     SourceBlock,
     TextTruncation,
-    Theme,
-    ValueFormat,
-    Widget
+    ValueFormat
   }
+
+  alias Vibe.Terminal.{
+    Lines,
+    Markdown,
+    Theme
+  }
+
+  alias Vibe.TUI.Widget
 
   alias Vibe.TUI.Widgets.Image
 

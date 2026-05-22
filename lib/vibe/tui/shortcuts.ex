@@ -1,6 +1,6 @@
 defmodule Vibe.TUI.Shortcuts do
   @moduledoc "Keybinding-to-action mapping for the TUI."
-  alias Vibe.TUI.Theme
+  alias Vibe.Terminal.Theme
 
   @shortcuts %{
     toggle_truncation: %{key: "ctrl+o", label: "expand"},

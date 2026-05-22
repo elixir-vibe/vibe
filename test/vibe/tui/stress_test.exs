@@ -2,7 +2,9 @@ defmodule Vibe.TUI.StressTest do
   use ExUnit.Case, async: false
 
   alias Vibe.TUI
-  alias Vibe.TUI.{TerminalLoop, TerminalPainter, Theme, Widget, Width}
+  alias Vibe.TUI.{TerminalLoop, TerminalPainter}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
   alias Vibe.Event
 
   @width 120

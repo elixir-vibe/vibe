@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Input do
   @moduledoc "TUI widget: single-line text input."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Theme, Widget, Width}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props}, width, theme) do

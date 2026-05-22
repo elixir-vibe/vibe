@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.Theme do
+defmodule Vibe.Terminal.Theme do
   @moduledoc """
   Semantic ANSI theme for Vibe's terminal UI.
 

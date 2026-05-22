@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.Width do
+defmodule Vibe.Terminal.Width do
   @moduledoc """
   Width helpers for ANSI-styled terminal lines.
   """
@@ -10,7 +10,7 @@ defmodule Vibe.TUI.Width do
   def visible_text(text) do
     text
     |> IO.iodata_to_binary()
-    |> Vibe.TUI.Theme.strip()
+    |> Vibe.Terminal.Theme.strip()
   end
 
   @spec visible_length(IO.chardata()) :: non_neg_integer()

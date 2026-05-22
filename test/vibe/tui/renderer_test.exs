@@ -12,7 +12,7 @@ defmodule Vibe.TUI.RendererTest do
       )
 
     lines = state |> Vibe.UI.ViewModel.from_state() |> Vibe.TUI.Renderer.render(40)
-    plain_lines = Enum.map(lines, &Vibe.TUI.Width.visible_text/1)
+    plain_lines = Enum.map(lines, &Vibe.Terminal.Width.visible_text/1)
 
     assert Enum.all?(plain_lines, &(String.length(&1) <= 40))
     assert Enum.any?(plain_lines, &String.starts_with?(&1, "  hello"))

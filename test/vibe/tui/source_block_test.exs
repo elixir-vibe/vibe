@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.SourceBlockTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{SourceBlock, Theme, Width}
+  alias Vibe.TUI.{SourceBlock}
+  alias Vibe.Terminal.{Theme, Width}
 
   test "renders plain source lines without language" do
     lines = SourceBlock.source_lines(["hello", "world"], nil, 20, Theme.default())

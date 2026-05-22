@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.Widgets.ListPanel do
   @moduledoc "Shared framed list panel used by TUI pickers and autocomplete."
 
-  alias Vibe.TUI.{Theme, Widget, Width}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   @spec render(map(), pos_integer(), Theme.t()) :: [IO.chardata()]
   def render(props, width, theme) do

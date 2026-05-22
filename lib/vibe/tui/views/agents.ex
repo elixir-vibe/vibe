@@ -8,7 +8,8 @@ defmodule Vibe.TUI.Views.Agents do
   """
 
   alias Vibe.Session.Listing
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @type t :: %__MODULE__{
           sessions: [map()],

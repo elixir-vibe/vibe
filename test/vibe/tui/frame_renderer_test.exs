@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.FrameRendererTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{Renderer, RenderState, Theme, Width}
+  alias Vibe.TUI.{Renderer, RenderState}
+  alias Vibe.Terminal.{Theme, Width}
   alias Vibe.UI.State
 
   test "visible frame clips history while keeping editor cursor on screen" do

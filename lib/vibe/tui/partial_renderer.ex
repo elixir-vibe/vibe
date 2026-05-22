@@ -7,10 +7,14 @@ defmodule Vibe.TUI.PartialRenderer do
     RenderContext,
     RenderKey,
     RenderState,
-    RenderTree,
-    Theme,
-    Widget
+    RenderTree
   }
+
+  alias Vibe.Terminal.{
+    Theme
+  }
+
+  alias Vibe.TUI.Widget
 
   @type result :: %{body: [IO.chardata()], state: RenderState.t(), live_keys: [term()]}
 

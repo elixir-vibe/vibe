@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.EditorRenderer do
   @moduledoc "Renders the TUI prompt editor section."
 
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @spec render(map(), Theme.t()) :: [IO.chardata()]
   def render(snapshot, theme) when is_map(snapshot) do

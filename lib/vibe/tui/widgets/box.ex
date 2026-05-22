@@ -2,7 +2,7 @@ defmodule Vibe.TUI.Widgets.Box do
   @moduledoc "TUI widget: bordered box container."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.Lines
+  alias Vibe.Terminal.Lines
   alias Vibe.TUI.Widgets.Frame
 
   @impl true

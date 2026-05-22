@@ -309,7 +309,7 @@ defmodule Vibe.TUI.Runtime do
       show_cursor()
     ]
 
-    [start | rows] |> Vibe.TUI.Lines.append(finish)
+    [start | rows] |> Vibe.Terminal.Lines.append(finish)
   end
 
   defp start_cast(opts, columns, rows) do
@@ -354,7 +354,7 @@ defmodule Vibe.TUI.Runtime do
   defp agents_view(tty, loop, painter, cast) do
     PS.subscribe(Vibe.PubSub, Session.sessions_topic())
     dashboard = AgentsView.new(width: painter.width, height: painter.height)
-    theme = Vibe.TUI.Theme.default()
+    theme = Vibe.Terminal.Theme.default()
     painter = render_agents(dashboard, theme, painter, cast)
     agents_receive(tty, loop, dashboard, theme, painter, cast)
   end

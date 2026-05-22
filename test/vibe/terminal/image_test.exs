@@ -1,8 +1,8 @@
-defmodule Vibe.TUI.ImageTest do
+defmodule Vibe.Terminal.ImageTest do
   use ExUnit.Case, async: false
 
   alias Vibe.Model.Content
-  alias Vibe.TUI.{Image, Theme}
+  alias Vibe.Terminal.{Image, Theme}
   alias Vibe.TUI.Widgets.Image, as: ImageWidget
 
   test "detects kitty-compatible terminals" do

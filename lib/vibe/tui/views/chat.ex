@@ -1,7 +1,9 @@
 defmodule Vibe.TUI.Views.Chat do
   @moduledoc "Default declarative chat TUI view."
 
-  alias Vibe.TUI.{ChatTree, Theme, Widget}
+  alias Vibe.TUI.{ChatTree}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @spec render(map()) :: Vibe.TUI.Node.t()
   def render(assigns \\ %{}) when is_map(assigns) do

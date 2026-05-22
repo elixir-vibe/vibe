@@ -8,7 +8,8 @@ defmodule Vibe.TUI.TerminalLoop do
 
   use GenServer
 
-  alias Vibe.TUI.{App, Keymap, PickerPresenter, Renderer, RenderState, TerminalPainter, Theme}
+  alias Vibe.TUI.{App, Keymap, PickerPresenter, Renderer, RenderState, TerminalPainter}
+  alias Vibe.Terminal.{Theme}
 
   require Vibe.Debug
 

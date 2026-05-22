@@ -1,7 +1,7 @@
-defmodule Vibe.TUI.MarkdownTest do
+defmodule Vibe.Terminal.MarkdownTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{Markdown, Theme, Width}
+  alias Vibe.Terminal.{Markdown, Theme, Width}
 
   test "renders headings, emphasis, code blocks, and tables without markdown fences" do
     lines =

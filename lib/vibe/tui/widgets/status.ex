@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Status do
   @moduledoc "TUI widget: colored status indicator."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props}, width, theme) do

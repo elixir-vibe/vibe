@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.PartialRendererTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{PartialRenderer, Renderer, RenderState, Theme}
+  alias Vibe.TUI.{PartialRenderer, Renderer, RenderState}
+  alias Vibe.Terminal.{Theme}
   alias Vibe.UI.Block.{AssistantMessage, Footer, ToolCall, UserMessage}
   alias Vibe.UI.State
 

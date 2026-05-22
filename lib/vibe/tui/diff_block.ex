@@ -1,7 +1,9 @@
 defmodule Vibe.TUI.DiffBlock do
   @moduledoc "Renders diff-like TUI lines with semantic coloring and intra-line word diff."
 
-  alias Vibe.TUI.{Syntax, Theme, Widget}
+  alias Vibe.TUI.{Syntax}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @spec diff_lines([String.t()], atom() | String.t() | nil, pos_integer(), Theme.t()) :: [
           IO.chardata()

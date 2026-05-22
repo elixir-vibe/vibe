@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.Image do
+defmodule Vibe.Terminal.Image do
   @moduledoc "Terminal image protocol helpers for TUI renderers."
 
   alias Vibe.Model.Content

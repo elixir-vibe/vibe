@@ -1,7 +1,7 @@
 defmodule Vibe.TUI.Views.ChatTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{Theme, Width}
+  alias Vibe.Terminal.{Theme, Width}
   alias Vibe.TUI.Views.Chat
   alias Vibe.Event
   alias Vibe.UI.{Reducer, State, ViewModel}

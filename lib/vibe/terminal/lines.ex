@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.Lines do
+defmodule Vibe.Terminal.Lines do
   @moduledoc "Line list manipulation helpers for TUI rendering."
   alias Vibe.Support.Lists
 

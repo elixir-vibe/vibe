@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.ImageStorybookSnapshotTest do
+defmodule Vibe.Terminal.ImageStorybookSnapshotTest do
   use ExUnit.Case, async: true
 
   alias Vibe.TUI.Storybook

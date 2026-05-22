@@ -3,7 +3,9 @@ defmodule Vibe.TUI.Widgets.Image do
   @behaviour Vibe.TUI.Widget
 
   alias Vibe.Model.Content
-  alias Vibe.TUI.{Image, Node, Theme, Widget}
+  alias Vibe.TUI.{Node}
+  alias Vibe.Terminal.{Image, Theme}
+  alias Vibe.TUI.Widget
 
   defstruct [:image, max_width_cells: 80]
 

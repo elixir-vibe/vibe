@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.Cursor do
   @moduledoc "Calculates terminal cursor coordinates for rendered TUI frames."
 
-  alias Vibe.TUI.{Widget, Width}
+  alias Vibe.Terminal.{Width}
+  alias Vibe.TUI.Widget
 
   @spec editor_position(map(), non_neg_integer()) :: {pos_integer(), pos_integer()}
   def editor_position(snapshot, editor_start_row) when is_map(snapshot) do

@@ -3,7 +3,8 @@ defmodule Vibe.TUI.SelectionTest do
 
   alias Vibe.TUI
 
-  alias Vibe.TUI.{Theme, Widget, Width}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   test "renders windowed select list without scrollbars" do
     lines =

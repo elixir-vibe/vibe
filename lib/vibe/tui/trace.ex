@@ -1,6 +1,6 @@
 defmodule Vibe.TUI.Trace do
   @moduledoc "Compile-time-gated TUI frame trace recording."
-  alias Vibe.TUI.Width
+  alias Vibe.Terminal.Width
 
   defstruct [:dir, :started_at, seq: 0]
 

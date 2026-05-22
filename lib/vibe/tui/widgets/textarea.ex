@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Textarea do
   @moduledoc "TUI widget: multiline text editor display."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
   alias Vibe.TUI.Widgets.Frame
 
   @impl true
@@ -23,8 +24,8 @@ defmodule Vibe.TUI.Widgets.Textarea do
       |> Enum.map(&Frame.line(&1, width, theme))
 
     [Frame.border(theme, width, :dialog_top_left, :dialog_top_right, title)]
-    |> Vibe.TUI.Lines.join(body)
-    |> Vibe.TUI.Lines.append(
+    |> Vibe.Terminal.Lines.join(body)
+    |> Vibe.Terminal.Lines.append(
       Frame.border(theme, width, :dialog_bottom_left, :dialog_bottom_right)
     )
   end
@@ -65,6 +66,6 @@ defmodule Vibe.TUI.Widgets.Textarea do
 
   defp pad_rows(lines, min_rows, max_rows) do
     rows = Enum.take(lines, max_rows)
-    Vibe.TUI.Lines.join(rows, List.duplicate("", max(min_rows - length(rows), 0)))
+    Vibe.Terminal.Lines.join(rows, List.duplicate("", max(min_rows - length(rows), 0)))
   end
 end

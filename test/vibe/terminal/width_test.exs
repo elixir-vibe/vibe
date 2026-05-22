@@ -1,7 +1,7 @@
-defmodule Vibe.TUI.WidthTest do
+defmodule Vibe.Terminal.WidthTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.Width
+  alias Vibe.Terminal.Width
 
   test "counts terminal cells, not graphemes" do
     assert Width.visible_length("a") == 1

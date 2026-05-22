@@ -1,10 +1,10 @@
 defmodule Vibe.TUI.Widgets.ModelInfo.PartsTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.Width
+  alias Vibe.Terminal.Width
   alias Vibe.TUI.Widgets.ModelInfo.Parts
 
-  @theme Vibe.TUI.Theme.default()
+  @theme Vibe.Terminal.Theme.default()
 
   test "model segment includes model and provider" do
     text = Parts.model(%{model: "provider:model", provider: "provider"}, @theme) |> visible()

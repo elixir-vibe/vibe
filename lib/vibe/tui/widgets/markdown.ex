@@ -2,7 +2,7 @@ defmodule Vibe.TUI.Widgets.Markdown do
   @moduledoc "TUI widget: rendered Markdown content block."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.Markdown
+  alias Vibe.Terminal.Markdown
 
   @impl true
   def render(%{children: [content | _]}, width, theme) do

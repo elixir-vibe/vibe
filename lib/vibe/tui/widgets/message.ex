@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Message do
   @moduledoc "TUI widget: chat message bubble with role styling."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Markdown, Theme, Widget}
+  alias Vibe.Terminal.{Markdown, Theme}
+  alias Vibe.TUI.Widget
   alias Vibe.TUI.Widgets.Loader
   alias Vibe.UI.Error
 

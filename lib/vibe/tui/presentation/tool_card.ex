@@ -1,7 +1,9 @@
 defmodule Vibe.TUI.Presentation.ToolCard do
   @moduledoc "Renders the shared card shell and title for TUI tool output."
 
-  alias Vibe.TUI.{Syntax, Theme, Widget, Width}
+  alias Vibe.TUI.{Syntax}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   @type tool :: map()
 

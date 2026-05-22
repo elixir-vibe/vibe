@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Diff do
   @moduledoc "TUI widget: colored unified diff display."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props}, width, theme) do

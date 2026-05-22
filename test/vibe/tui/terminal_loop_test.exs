@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.TerminalLoopTest do
   use ExUnit.Case, async: false
 
-  alias Vibe.TUI.{TerminalLoop, Width}
+  alias Vibe.TUI.TerminalLoop
+  alias Vibe.Terminal.Width
 
   @render_wait_timeout_ms 2_000
   @long_command_timeout_ms 120_000

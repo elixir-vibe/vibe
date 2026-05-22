@@ -1,9 +1,10 @@
-defmodule Vibe.TUI.Markdown do
+defmodule Vibe.Terminal.Markdown do
   @moduledoc """
   Terminal renderer for Markdown, including MDEx streaming documents.
   """
 
-  alias Vibe.TUI.{Markdown.Mermaid, Theme, Widget, Width}
+  alias Vibe.Terminal.Markdown.Mermaid
+  alias Vibe.Terminal.{Layout, Theme, Width}
 
   @mdex_options [extension: [table: true, strikethrough: true, tasklist: true, autolink: true]]
 
@@ -46,16 +47,16 @@ defmodule Vibe.TUI.Markdown do
     underline =
       Theme.fg(theme, :border, String.duplicate(Theme.symbol(theme, :section_line), width))
 
-    Widget.wrap(title, width) |> join_lines([underline, ""])
+    Layout.wrap(title, width) |> join_lines([underline, ""])
   end
 
   defp block(%MDEx.Heading{nodes: nodes}, width, theme, _opts) do
     title = theme |> Theme.fg(:accent, inline(nodes, theme)) |> Theme.bold()
-    Widget.wrap(title, width) |> append_blank()
+    Layout.wrap(title, width) |> append_blank()
   end
 
   defp block(%MDEx.Paragraph{nodes: nodes}, width, theme, _opts),
-    do: inline(nodes, theme) |> Widget.wrap(width) |> append_blank()
+    do: inline(nodes, theme) |> Layout.wrap(width) |> append_blank()
 
   defp block(%MDEx.CodeBlock{literal: literal, info: info}, width, theme, _opts) do
     language = if info in [nil, ""], do: nil, else: String.trim(info)
@@ -98,7 +99,7 @@ defmodule Vibe.TUI.Markdown do
     do: Enum.flat_map(nodes, &block(&1, width, theme, opts))
 
   defp block(%{literal: literal}, width, theme, _opts) when is_binary(literal),
-    do: Widget.wrap(literal, width) |> Enum.map(&Theme.fg(theme, :text, &1))
+    do: Layout.wrap(literal, width) |> Enum.map(&Theme.fg(theme, :text, &1))
 
   defp block(_node, _width, _theme, _opts), do: []
 
@@ -122,7 +123,7 @@ defmodule Vibe.TUI.Markdown do
       |> IO.iodata_to_binary()
       |> String.split("\n")
       |> Enum.flat_map(fn line ->
-        Widget.wrap(["  ", line], width)
+        Layout.wrap(["  ", line], width)
       end)
 
     header |> join_lines(body) |> join_lines([border]) |> append_blank()
@@ -160,7 +161,7 @@ defmodule Vibe.TUI.Markdown do
 
   defp render_list_item(nodes, bullet, width, theme, opts) do
     prefix = [Theme.fg(theme, :accent, bullet), " "]
-    indent = Widget.spaces(Width.visible_length(prefix))
+    indent = Layout.spaces(Width.visible_length(prefix))
 
     lines =
       nodes
@@ -175,7 +176,7 @@ defmodule Vibe.TUI.Markdown do
   end
 
   defp maybe_keep_list_item_margin(lines, nodes) do
-    if complex_list_item?(nodes), do: Vibe.TUI.Lines.append(lines, ""), else: lines
+    if complex_list_item?(nodes), do: Vibe.Terminal.Lines.append(lines, ""), else: lines
   end
 
   defp complex_list_item?([%MDEx.Paragraph{}]), do: false
@@ -195,7 +196,7 @@ defmodule Vibe.TUI.Markdown do
         lines = table_lines(row, widths, theme, index == 0)
 
         if index == 0 do
-          Vibe.TUI.Lines.append(lines, table_separator(widths, theme))
+          Vibe.Terminal.Lines.append(lines, table_separator(widths, theme))
         else
           lines
         end
@@ -203,7 +204,7 @@ defmodule Vibe.TUI.Markdown do
 
     rows
     |> then(&[table_top(widths, theme) | &1])
-    |> Vibe.TUI.Lines.append(table_bottom(widths, theme))
+    |> Vibe.Terminal.Lines.append(table_bottom(widths, theme))
   end
 
   defp table_row(%MDEx.TableRow{nodes: cells}, theme),
@@ -273,7 +274,7 @@ defmodule Vibe.TUI.Markdown do
         |> Enum.map(&:array.from_list/1)
         |> Enum.zip(widths)
         |> Enum.map(fn {cell, width} ->
-          array_get(cell, line_index, Widget.pad_line("", width))
+          array_get(cell, line_index, Layout.pad_line("", width))
         end)
         |> Enum.intersperse(Theme.fg(theme, :border, " │ "))
 
@@ -287,9 +288,9 @@ defmodule Vibe.TUI.Markdown do
 
   defp table_cell_lines(cell, width, theme, header?) do
     cell
-    |> Widget.wrap(width)
+    |> Layout.wrap(width)
     |> Enum.map(fn line ->
-      padded = Widget.pad_line(line, width)
+      padded = Layout.pad_line(line, width)
       if header?, do: Theme.bold(Theme.fg(theme, :accent, padded)), else: padded
     end)
   end
@@ -334,15 +335,15 @@ defmodule Vibe.TUI.Markdown do
   defp inline(%{literal: literal}, _theme) when is_binary(literal), do: literal
   defp inline(_node, _theme), do: ""
 
-  defp join_lines(left, right), do: Vibe.TUI.Lines.join(left, right)
-  defp append_blank(lines), do: Vibe.TUI.Lines.append(lines, "")
+  defp join_lines(left, right), do: Vibe.Terminal.Lines.join(left, right)
+  defp append_blank(lines), do: Vibe.Terminal.Lines.append(lines, "")
 
   defp trim_trailing_blank(lines),
     do: Enum.reverse(lines) |> Enum.drop_while(&(&1 == "")) |> Enum.reverse()
 
   defp hyperlinks? do
     case Application.get_env(:vibe, :tui_hyperlinks) do
-      nil -> Vibe.TUI.Image.capabilities().hyperlinks?
+      nil -> Vibe.Terminal.Image.capabilities().hyperlinks?
       value -> value
     end
   end

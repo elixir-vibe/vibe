@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Footer do
   @moduledoc "TUI widget: status bar with model, usage, and session info."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props}, width, theme) do

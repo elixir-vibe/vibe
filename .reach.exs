@@ -114,6 +114,12 @@
       {:remote_transport, :storage},
       {:tool_transport, :storage},
       {:presentation, :storage},
+      {:cli, :tui,
+       except_edges: [
+         {"Vibe.CLI.Runner", "Vibe.TUI.Runtime"},
+         {"Vibe.CLI.Commands.TUITrace", "Vibe.TUI.Trace"},
+         {"Mix.Tasks.Vibe.Tui.Storybook", "Vibe.TUI.Storybook"}
+       ]},
       {:tui, :storage, except_edges: [{"Vibe.TUI.Storybook", "Vibe.Session.Store"}]}
     ]
   ],

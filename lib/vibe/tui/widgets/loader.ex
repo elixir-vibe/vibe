@@ -2,7 +2,7 @@ defmodule Vibe.TUI.Widgets.Loader do
   @moduledoc "TUI widget: animated working/thinking indicator."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.Theme
+  alias Vibe.Terminal.Theme
 
   @default_label "Thinking"
   @frames ["✦", "⋰", "⋱", "✧"]

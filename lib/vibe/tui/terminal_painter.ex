@@ -176,14 +176,14 @@ defmodule Vibe.TUI.TerminalPainter do
 
   defp pad_to_height(lines, height) do
     padding = max(height - length(lines), 0)
-    Vibe.TUI.Lines.join(List.duplicate("", padding), lines)
+    Vibe.Terminal.Lines.join(List.duplicate("", padding), lines)
   end
 
   defp shift_cursor({row, col}, offset), do: {row + offset, col}
 
   defp slice_with_padding(lines, start, count) do
     slice = Enum.slice(lines, start, count)
-    Vibe.TUI.Lines.join(slice, List.duplicate("", count - length(slice)))
+    Vibe.Terminal.Lines.join(slice, List.duplicate("", count - length(slice)))
   end
 
   # -- Diff -------------------------------------------------------------------

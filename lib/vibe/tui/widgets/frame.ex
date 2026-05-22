@@ -1,6 +1,8 @@
 defmodule Vibe.TUI.Widgets.Frame do
   @moduledoc "TUI widget: titled frame with optional border."
-  alias Vibe.TUI.{Node, Theme, Widget, Width}
+  alias Vibe.TUI.{Node}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   @spec border(Theme.t(), pos_integer(), atom(), atom(), IO.chardata() | nil) :: IO.chardata()
   def border(theme, width, left_key, right_key, title \\ nil) do

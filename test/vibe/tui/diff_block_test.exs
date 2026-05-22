@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.DiffBlockTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{DiffBlock, Theme, Width}
+  alias Vibe.TUI.{DiffBlock}
+  alias Vibe.Terminal.{Theme, Width}
 
   test "colors added and removed diff lines" do
     rendered =

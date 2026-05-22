@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Section do
   @moduledoc "TUI widget: labeled collapsible section."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Theme, Widget, Width}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: %{title: title}, children: children}, width, theme) do

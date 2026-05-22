@@ -1,7 +1,9 @@
 defmodule Vibe.TUI.SourceBlock do
   @moduledoc "Renders source-like TUI lines with block-level syntax highlighting."
 
-  alias Vibe.TUI.{Syntax, Theme, Widget}
+  alias Vibe.TUI.{Syntax}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @spec source_lines([String.t()], atom() | String.t() | nil, pos_integer(), Theme.t()) :: [
           IO.chardata()

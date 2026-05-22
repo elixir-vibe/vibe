@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Padding do
   @moduledoc "TUI widget: padding wrapper."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Lines, Widget}
+  alias Vibe.Terminal.{Lines}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props, children: children}, width, theme) do

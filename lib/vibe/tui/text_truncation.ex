@@ -1,6 +1,8 @@
 defmodule Vibe.TUI.TextTruncation do
   @moduledoc "Line truncation with omission hints for tool output."
-  alias Vibe.TUI.{Shortcuts, Theme, Widget}
+  alias Vibe.TUI.{Shortcuts}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   defstruct lines: [], omitted: 0, truncated?: false
 

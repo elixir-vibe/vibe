@@ -3,7 +3,8 @@ defmodule Vibe.TUI.FooterPluginStatusTest do
 
   alias Vibe.TUI
 
-  alias Vibe.TUI.{Theme, Widget, Width}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   test "footer renders local session label before server active count is known" do
     plain =

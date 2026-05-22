@@ -1,7 +1,7 @@
 defmodule Vibe.TUI.Widgets.ModelInfo.Parts do
   @moduledoc false
 
-  alias Vibe.TUI.Theme
+  alias Vibe.Terminal.Theme
 
   @thousand_tokens 1_000
   @million_tokens 1_000_000

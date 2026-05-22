@@ -3,7 +3,8 @@ defmodule Vibe.TUI.Widgets.Confirmation do
   @behaviour Vibe.TUI.Widget
 
   alias Vibe.Support.Lists
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props}, width, theme) do

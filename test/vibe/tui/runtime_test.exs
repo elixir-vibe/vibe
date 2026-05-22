@@ -74,7 +74,7 @@ defmodule Vibe.TUI.RuntimeTest do
     assert resized.lines == []
 
     lines = TerminalLoop.render_full(loop)
-    assert Enum.max(Enum.map(lines, &Vibe.TUI.Width.visible_length/1)) <= 60
+    assert Enum.max(Enum.map(lines, &Vibe.Terminal.Width.visible_length/1)) <= 60
   end
 
   test "runtime supervisor preserves caller-provided live session server" do

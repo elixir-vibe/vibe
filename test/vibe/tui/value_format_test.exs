@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.ValueFormatTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.TUI.{Theme, ValueFormat, Width}
+  alias Vibe.TUI.{ValueFormat}
+  alias Vibe.Terminal.{Theme, Width}
 
   test "summarizes values as single lines" do
     assert ValueFormat.summarize("hello\nworld", :infinity) == "hello world"

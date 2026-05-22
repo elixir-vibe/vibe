@@ -1,7 +1,9 @@
 defmodule Vibe.TUI.ValueFormat do
   @moduledoc "Formats generic values for TUI tool output."
 
-  alias Vibe.TUI.{Syntax, Theme, Widget}
+  alias Vibe.TUI.{Syntax}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @spec summarize(term(), non_neg_integer() | :infinity) :: String.t()
   def summarize(value, :infinity) when is_binary(value), do: single_line(value)

@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Vibe.Tui.Storybook do
       )
 
     width = opts[:width] || terminal_width()
-    theme = Vibe.TUI.Theme.named(opts[:theme])
+    theme = Vibe.Terminal.Theme.named(opts[:theme])
 
     stories =
       if opts[:story],

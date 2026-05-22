@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.FrameRenderer do
   @moduledoc "Composes full TUI render frames from semantic snapshots."
 
-  alias Vibe.TUI.{Cursor, EditorRenderer, Lines, PartialRenderer, RenderFrame, RenderState, Theme}
+  alias Vibe.TUI.{Cursor, EditorRenderer, PartialRenderer, RenderFrame, RenderState}
+  alias Vibe.Terminal.{Lines, Theme}
   alias Vibe.UI.ViewModel
 
   @spec render(map(), Theme.t(), RenderState.t(), keyword()) :: RenderFrame.t()

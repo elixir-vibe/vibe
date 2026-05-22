@@ -3,7 +3,8 @@ defmodule Vibe.TUI.Widgets.Overlay do
   @behaviour Vibe.TUI.Widget
 
   alias Vibe.TUI
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: %{kind: :selector} = props}, width, theme) do

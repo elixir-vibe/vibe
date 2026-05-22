@@ -141,7 +141,7 @@ defmodule Vibe.CLI.Output.Renderer do
 
   defp render_markdown(text) do
     text
-    |> Vibe.TUI.Markdown.render(terminal_width(), Vibe.TUI.Theme.default())
+    |> Vibe.Terminal.Markdown.render(terminal_width(), Vibe.Terminal.Theme.default())
     |> Enum.map_join("\n", &IO.iodata_to_binary/1)
   end
 

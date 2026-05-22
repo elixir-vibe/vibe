@@ -1,7 +1,8 @@
 defmodule Vibe.TUI.RenderContext do
   @moduledoc "Context passed to TUI renderable protocol implementations."
 
-  alias Vibe.TUI.{RenderState, Theme}
+  alias Vibe.TUI.{RenderState}
+  alias Vibe.Terminal.{Theme}
 
   defstruct [:width, :theme, :state, opts: []]
 

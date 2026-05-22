@@ -1,4 +1,4 @@
-defmodule Vibe.TUI.Markdown.Mermaid do
+defmodule Vibe.Terminal.Markdown.Mermaid do
   @moduledoc "Mermaid diagram detection and fallback rendering."
 
   @edge_with_label ~r/^\s*(.+?)\s+--\s+(.+?)\s+-->\s+(.+?)\s*$/

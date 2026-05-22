@@ -2,7 +2,7 @@ defmodule Vibe.TUI.Widgets.Dialog do
   @moduledoc "TUI widget: modal dialog with message and actions."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Lines, Theme}
+  alias Vibe.Terminal.{Lines, Theme}
   alias Vibe.TUI.Widgets.Frame
 
   @impl true

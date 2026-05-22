@@ -3,7 +3,8 @@ defmodule Vibe.TUI.Presentation.ToolTest do
 
   alias Vibe.Code.AST.Result
   alias Vibe.TUI
-  alias Vibe.TUI.{Theme, Widget, Width}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
 
   @long_command_timeout_ms 120_000
   @expanded_command_timeout_ms 10_000

@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Text do
   @moduledoc "TUI widget: styled text block."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Theme, Widget}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props, children: [content]}, width, theme) do

@@ -2,7 +2,7 @@ defmodule Vibe.TUI.Presentation.ToolBlockTest do
   use ExUnit.Case, async: true
 
   alias Vibe.Presentation.Tool.Display
-  alias Vibe.TUI.{Theme, Width}
+  alias Vibe.Terminal.{Theme, Width}
   alias Vibe.TUI.Presentation.ToolBlock
 
   test "renders text, inspect, source, diff, markdown, and lines blocks" do

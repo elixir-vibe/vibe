@@ -6,7 +6,8 @@ defmodule Vibe.TUI.Renderer do
   lines. Semantic state lives in `Vibe.UI`.
   """
 
-  alias Vibe.TUI.{FrameRenderer, RenderFrame, RenderState, Theme, Views.Chat}
+  alias Vibe.TUI.{FrameRenderer, RenderFrame, RenderState, Views.Chat}
+  alias Vibe.Terminal.{Theme}
   alias Vibe.UI.ViewModel
 
   @type line :: IO.chardata()

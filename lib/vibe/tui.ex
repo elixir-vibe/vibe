@@ -3,7 +3,9 @@ defmodule Vibe.TUI do
   Declarative terminal UI helpers and constructors for Vibe's TUI node tree.
   """
 
-  alias Vibe.TUI.{Node, Theme, Widget}
+  alias Vibe.TUI.{Node}
+  alias Vibe.Terminal.{Theme}
+  alias Vibe.TUI.Widget
   alias Vibe.UI.Autocomplete
   alias Vibe.UI.Block.{NotificationList, PluginWidget}
 
@@ -12,7 +14,9 @@ defmodule Vibe.TUI do
   defmacro __using__(_opts) do
     quote do
       import Vibe.TUI
-      alias Vibe.TUI.{Node, Theme, Widget}
+      alias Vibe.TUI.{Node}
+      alias Vibe.Terminal.{Theme}
+      alias Vibe.TUI.Widget
     end
   end
 

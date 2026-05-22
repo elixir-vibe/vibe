@@ -8,7 +8,9 @@ defmodule Vibe.TUI.Storybook do
   alias Vibe.Code.AST.Result
   alias Vibe.Model.Content
   alias Vibe.TUI
-  alias Vibe.TUI.{Node, Theme, Widget, Width}
+  alias Vibe.TUI.{Node}
+  alias Vibe.Terminal.{Theme, Width}
+  alias Vibe.TUI.Widget
   alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
   alias Vibe.UI.{Reducer, State, ViewModel}
@@ -551,8 +553,8 @@ end|,
 
   def story(:markdown_streaming) do
     document =
-      Vibe.TUI.Markdown.new_stream()
-      |> Vibe.TUI.Markdown.put_chunk("## Partial stream\n\nThis has **bo")
+      Vibe.Terminal.Markdown.new_stream()
+      |> Vibe.Terminal.Markdown.put_chunk("## Partial stream\n\nThis has **bo")
 
     TUI.markdown(MDEx.to_markdown!(MDEx.Document.run(document)))
   end
@@ -632,7 +634,7 @@ end|,
   end
 
   defp render_theme_story(%Node{children: [dark, light]}, width) do
-    Vibe.TUI.Lines.join(
+    Vibe.Terminal.Lines.join(
       Widget.render(dark, width, Theme.dark()),
       Widget.render(light, width, Theme.light())
     )

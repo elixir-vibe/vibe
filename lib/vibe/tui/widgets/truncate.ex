@@ -2,7 +2,8 @@ defmodule Vibe.TUI.Widgets.Truncate do
   @moduledoc "TUI widget: content truncation with expand hint."
   @behaviour Vibe.TUI.Widget
 
-  alias Vibe.TUI.{Widget, Width}
+  alias Vibe.Terminal.{Width}
+  alias Vibe.TUI.Widget
 
   @impl true
   def render(%{props: props, children: [content | _]}, width, _theme) do
