@@ -56,17 +56,30 @@ Useful first slash commands:
 /web         Open the web console
 ```
 
+## Why Vibe?
+
+Vibe is an experiment in making an agent feel native to the BEAM instead of wrapping a chat loop around shell commands.
+
+A few things this makes possible:
+
+- **Elixir eval as the control plane.** The agent can use stateful Elixir APIs for commands, Markdown rendering, storage, search, telemetry, goals, web fetches, and custom helpers. This keeps the model-facing tool surface small while still giving the agent a composable interface.
+- **Stateful work, closer to Livebook.** Eval sessions can keep intermediate values around, so the agent can compute something once, inspect it, transform it, and refer back to it later.
+- **OTP supervision for agent work.** Sessions, command jobs, plugin workers, subagents, telemetry, UI state, and storage are supervised processes. They can be monitored, cancelled, resumed, and inspected with normal OTP tools.
+- **Agents can launch other agents.** Subagents get their own sessions and supervised lifecycle, which makes parallel research, background work, and longer workflows easier to model.
+- **Remote workflows are part of the design.** Vibe can use SSH and Erlang distribution so agents can attach to remote nodes and coordinate across machines.
+- **The system is meant to be customized.** Plugins, skills, gateways, semantic events, and eval helpers are extension points. During development, Vibe can run checks, patch code, and hot-reload modules; tools like Reach help keep those changes inside clear boundaries.
+
 ## What Vibe is for
 
-Vibe is useful when you want an agent that can:
+Vibe is currently most useful for hands-on Elixir/OTP development work where runtime context matters:
 
-- inspect and call Elixir APIs from a running BEAM;
-- keep durable local sessions, eval state, memory, telemetry, goals, jobs, and tool output in SQLite;
-- attach multiple TUI/web clients to the same session;
-- run commands and subagents as supervised work that can be monitored, cancelled, and resumed;
-- use Elixir helper APIs through `eval` instead of exposing many narrow model-facing tools.
+- debugging a running application and checking what processes, supervisors, storage, and configuration are doing;
+- long refactoring sessions where the agent should keep context, notes, command output, and intermediate findings around;
+- project maintenance work that benefits from repeatable checks, local search, session history, and saved tool output;
+- trying agent workflows that continue in the background or split into smaller research/code tasks;
+- experimenting with custom skills, plugins, gateways, or project-specific helper APIs.
 
-Good fit: Elixir/OTP projects, long debugging/refactoring sessions, runtime introspection, local memory/search, and agent workflows that benefit from OTP supervision.
+Good fit: Elixir/OTP projects, long debugging/refactoring sessions, runtime introspection, local memory/search, and experimental agent workflows.
 
 Less ideal: quick one-off prompting, production automation, or environments where local SQLite-backed state and command execution are not acceptable.
 
