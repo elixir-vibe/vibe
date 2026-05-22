@@ -30,8 +30,15 @@
       "Vibe.Tool.Result"
     ],
     transport: ["Vibe.Transport*", "Vibe.Remote.Transport*", "Vibe.Tool.Transport*"],
-    presentation: "Vibe.Presentation*",
-    markdown: ["Vibe.Markdown", "Vibe.MD"],
+    presentation: [
+      "Vibe.Presentation.Document",
+      "Vibe.Presentation.Presentable",
+      "Vibe.Presentation.RuntimeAlert",
+      "Vibe.Presentation.Section",
+      "Vibe.Presentation.Tool*",
+      "Vibe.Presentation.Widget"
+    ],
+    markdown: ["Vibe.Markdown", "Vibe.MD", "Vibe.Presentation.Markdown*"],
     surface: [
       "Vibe.UI.Autocomplete*",
       "Vibe.UI.Block*",
