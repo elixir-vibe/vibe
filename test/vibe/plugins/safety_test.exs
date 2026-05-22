@@ -1,5 +1,5 @@
 defmodule Vibe.Plugins.SafetyTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Vibe.Plugins.Safety.Patterns, as: Safety
 
@@ -52,7 +52,7 @@ defmodule Vibe.Plugins.SafetyTest do
         )
       end)
 
-    Process.sleep(50)
+    wait_until(fn -> Vibe.Session.state(session).selector && true end)
 
     Vibe.Plugins.Safety.handle_event(
       %{type: :selector_confirmed, data: %{selector: :safety_confirmation, item: "Yes, proceed"}},
@@ -77,7 +77,7 @@ defmodule Vibe.Plugins.SafetyTest do
         )
       end)
 
-    Process.sleep(50)
+    wait_until(fn -> Vibe.Session.state(session).selector && true end)
 
     Vibe.Plugins.Safety.handle_event(
       %{type: :selector_closed},
@@ -89,8 +89,44 @@ defmodule Vibe.Plugins.SafetyTest do
     GenServer.stop(session)
   end
 
+  test "manager confirmation path does not deadlock" do
+    session_id = "safety-manager-confirm-#{System.unique_integer([:positive])}"
+    {:ok, session} = Vibe.Session.start_link(session_id: session_id, persist?: false)
+
+    task =
+      Task.async(fn ->
+        Vibe.Plugin.Manager.before_command("gh pr create --title fix", %{session_id: session_id})
+      end)
+
+    wait_until(fn -> Vibe.Session.state(session).selector && true end)
+
+    assert {:ok, results} =
+             Vibe.Plugin.Manager.dispatch(
+               :selector_confirmed,
+               %{selector: :safety_confirmation, item: "Yes, proceed"},
+               %{session_id: session_id}
+             )
+
+    assert Enum.all?(results, &(&1 == :ok))
+
+    assert :ok = Task.await(task)
+    GenServer.stop(session)
+  end
+
   test "safe commands pass through without blocking" do
     assert {:ok, _state} =
              Vibe.Plugins.Safety.before_command("mix test", %{session_id: "x"}, %{})
+  end
+
+  defp wait_until(fun, attempts \\ 100)
+  defp wait_until(_fun, 0), do: flunk("condition was not met")
+
+  defp wait_until(fun, attempts) do
+    if fun.() do
+      :ok
+    else
+      Process.sleep(10)
+      wait_until(fun, attempts - 1)
+    end
   end
 end

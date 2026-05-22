@@ -119,9 +119,18 @@ defmodule Vibe.Plugin.Manager do
     {:reply, blocks, state}
   end
 
-  def handle_call({:before_command, command, context}, _from, state) do
-    {result, state} = run_before_command(state, command, context)
-    {:reply, result, state}
+  def handle_call({:before_command, command, context}, from, state) do
+    caller = self()
+    plugins = Map.to_list(state.plugins)
+
+    {:ok, _pid} =
+      Task.start(fn ->
+        {result, plugin_states} = run_before_command(plugins, command, context)
+        GenServer.reply(from, result)
+        send(caller, {:plugin_states_updated, plugin_states})
+      end)
+
+    {:noreply, state}
   end
 
   def handle_call(:commands, _from, state) do
@@ -159,6 +168,11 @@ defmodule Vibe.Plugin.Manager do
       end)
 
     {:reply, result, state}
+  end
+
+  @impl true
+  def handle_info({:plugin_states_updated, plugin_states}, state) do
+    {:noreply, apply_plugin_state_changes(state, plugin_states)}
   end
 
   defp dispatch_metadata(event, context) do
@@ -276,6 +290,16 @@ defmodule Vibe.Plugin.Manager do
     update_in(state.plugins[module].state, fn _old_state -> plugin_state end)
   end
 
+  defp apply_plugin_state_changes(state, plugin_states) do
+    Enum.reduce(plugin_states, state, fn {module, plugin_state}, state ->
+      if Map.has_key?(state.plugins, module) do
+        put_plugin_state(state, module, plugin_state)
+      else
+        state
+      end
+    end)
+  end
+
   defp unload_plugin(%__MODULE__{} = state, module) do
     case Map.pop(state.plugins, module) do
       {nil, plugins} ->
@@ -322,31 +346,31 @@ defmodule Vibe.Plugin.Manager do
       {blocks, state}
   end
 
-  defp run_before_command(state, command, context) do
-    Enum.reduce_while(Map.to_list(state.plugins), {:ok, state}, fn {module, entry}, acc ->
+  defp run_before_command(plugins, command, context) do
+    Enum.reduce_while(plugins, {:ok, []}, fn {module, entry}, acc ->
       safe_before_command(module, entry, command, context, acc)
     end)
     |> then(fn
-      {:ok, state} -> {:ok, state}
-      {{:warn, label}, state} -> {{:warn, label}, state}
-      {{:block, reason}, state} -> {{:block, reason}, state}
+      {:ok, plugin_states} -> {:ok, plugin_states}
+      {{:warn, label}, plugin_states} -> {{:warn, label}, plugin_states}
+      {{:block, reason}, plugin_states} -> {{:block, reason}, plugin_states}
     end)
   end
 
-  defp safe_before_command(module, entry, command, context, {:ok, state}) do
+  defp safe_before_command(module, entry, command, context, {result, plugin_states}) do
     if function_exported?(module, :before_command, 3) do
       case module.before_command(command, context, entry.state) do
         {:ok, new_state} ->
-          {:cont, {:ok, put_plugin_state(state, module, new_state)}}
+          {:cont, {result, [{module, new_state} | plugin_states]}}
 
         {:warn, label, new_state} ->
-          {:cont, {{:warn, label}, put_plugin_state(state, module, new_state)}}
+          {:cont, {{:warn, label}, [{module, new_state} | plugin_states]}}
 
         {:block, reason, new_state} ->
-          {:halt, {{:block, reason}, put_plugin_state(state, module, new_state)}}
+          {:halt, {{:block, reason}, [{module, new_state} | plugin_states]}}
       end
     else
-      {:cont, {:ok, state}}
+      {:cont, {result, plugin_states}}
     end
   rescue
     error ->
@@ -354,7 +378,7 @@ defmodule Vibe.Plugin.Manager do
         "Plugin #{inspect(module)} before_command/3 failed: #{Exception.message(error)}"
       )
 
-      {:cont, {:ok, state}}
+      {:cont, {result, plugin_states}}
   end
 
   defp pipeline_callback(callback, args, state) do

@@ -38,11 +38,16 @@ defmodule Vibe.Plugins.Safety do
         %{session_id: session_id},
         state
       ) do
-    case Vibe.Plugin.Waiters.pop(@table, session_id) do
-      {:ok, pid} -> send(pid, {:safety_confirmed, answer == "Yes, proceed"})
-      :error -> :ok
-    end
+    confirm_waiter(session_id, answer)
+    {:ok, state}
+  end
 
+  def handle_event(
+        %{type: :selector_confirmed, selector: :safety_confirmation, item: answer},
+        %{session_id: session_id},
+        state
+      ) do
+    confirm_waiter(session_id, answer)
     {:ok, state}
   end
 
@@ -51,15 +56,25 @@ defmodule Vibe.Plugins.Safety do
         %{session_id: session_id},
         state
       ) do
-    case Vibe.Plugin.Waiters.pop(@table, session_id) do
-      {:ok, pid} -> send(pid, {:safety_confirmed, false})
-      :error -> :ok
-    end
-
+    reject_waiter(session_id)
     {:ok, state}
   end
 
   def handle_event(_event, _context, state), do: {:ok, state}
+
+  defp confirm_waiter(session_id, answer) do
+    case Vibe.Plugin.Waiters.pop(@table, session_id) do
+      {:ok, pid} -> send(pid, {:safety_confirmed, answer == "Yes, proceed"})
+      :error -> :ok
+    end
+  end
+
+  defp reject_waiter(session_id) do
+    case Vibe.Plugin.Waiters.pop(@table, session_id) do
+      {:ok, pid} -> send(pid, {:safety_confirmed, false})
+      :error -> :ok
+    end
+  end
 
   defp confirm_or_block(session_id, label, command, state) do
     case Session.lookup(session_id) do
