@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## v0.2.1 - 2026-05-22
+
+### Fixes and performance
+
+- Fixed `mix vibe` startup stalls caused by stale server metadata, occupied default server nodes, and web endpoint port conflicts.
+- Fixed TUI prompt repaint alignment so typed text, the prompt editor, and the cursor stay in sync.
+- Improved TUI typing responsiveness by reusing cached body rendering for editor-only input.
+- Removed expensive skill scans from normal slash-command autocomplete and cached command/skill autocomplete items.
+- Reduced prompt submit latency by deferring context preparation out of the Enter keypress path.
+- Simplified the Reach CI gate to use strict architecture and smell checks without a separate cycle wrapper script.
+
 ### Architecture and rendering
 
 - Tightened Reach architecture policy around storage, event, transport, plugin, CLI, terminal, Markdown, presentation, and UI-state layers.
