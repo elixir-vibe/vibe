@@ -5,6 +5,7 @@ defmodule Vibe.Plugin.Manager do
   require Logger
 
   alias Vibe.Plugin.API
+  alias Vibe.Plugin.Manager.Collections
   alias Vibe.Presentation.Document
 
   defstruct plugins: %{}, order: []
@@ -134,33 +135,15 @@ defmodule Vibe.Plugin.Manager do
   end
 
   def handle_call(:commands, _from, state) do
-    commands =
-      state
-      |> ordered_plugins()
-      |> Enum.flat_map(fn {module, entry} -> plugin_commands(module, entry.state) end)
-      |> Enum.uniq()
-
-    {:reply, commands, state}
+    {:reply, Collections.commands(ordered_plugins(state)), state}
   end
 
   def handle_call(:apis, _from, state) do
-    apis =
-      state
-      |> ordered_plugins()
-      |> Enum.flat_map(fn {module, entry} -> plugin_apis(module, entry.state) end)
-      |> Enum.uniq_by(&{&1.alias, &1.module})
-
-    {:reply, apis, state}
+    {:reply, Collections.apis(ordered_plugins(state)), state}
   end
 
   def handle_call({:presentation_document, module}, _from, state) do
-    document =
-      case Map.fetch(state.plugins, module) do
-        {:ok, entry} -> plugin_presentation_document(module, entry.state)
-        :error -> Document.empty()
-      end
-
-    {:reply, document, state}
+    {:reply, Collections.presentation_document(state.plugins, module), state}
   end
 
   def handle_call({:dispatch, event, context}, _from, state) do
@@ -259,45 +242,6 @@ defmodule Vibe.Plugin.Manager do
     end
   end
 
-  defp plugin_commands(module, plugin_state) do
-    with true <- function_exported?(module, :commands, 1),
-         {:ok, commands} <- Vibe.Plugin.Manager.Callback.call(module, :commands, [plugin_state]) do
-      commands
-    else
-      false -> []
-      {:error, reason} -> Vibe.Plugin.Manager.Callback.log_failure(module, :commands, reason, [])
-    end
-  end
-
-  defp plugin_apis(module, plugin_state) do
-    with true <- function_exported?(module, :apis, 1),
-         {:ok, apis} <- Vibe.Plugin.Manager.Callback.call(module, :apis, [plugin_state]) do
-      Enum.map(apis, &Vibe.Plugin.API.new/1)
-    else
-      false -> []
-      {:error, reason} -> Vibe.Plugin.Manager.Callback.log_failure(module, :apis, reason, [])
-    end
-  end
-
-  defp plugin_presentation_document(module, plugin_state) do
-    with true <- function_exported?(module, :presentation_document, 1),
-         {:ok, document} <-
-           Vibe.Plugin.Manager.Callback.call(module, :presentation_document, [plugin_state]) do
-      Document.new(document)
-    else
-      false ->
-        Document.empty()
-
-      {:error, reason} ->
-        Vibe.Plugin.Manager.Callback.log_failure(
-          module,
-          :presentation_document,
-          reason,
-          Document.empty()
-        )
-    end
-  end
-
   defp put_plugin(%__MODULE__{} = state, module, entry) do
     %{state | plugins: Map.put(state.plugins, module, entry), order: state.order ++ [module]}
   end
@@ -335,31 +279,7 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp collect_system_prompts(state, context) do
-    Enum.reduce(ordered_plugins(state), {[], state}, fn {module, entry}, {blocks, state} ->
-      safe_system_prompt(module, entry, context, blocks, state)
-    end)
-    |> then(fn {blocks, state} -> {Enum.reverse(blocks), state} end)
-  end
-
-  defp safe_system_prompt(module, entry, context, blocks, state) do
-    with true <- function_exported?(module, :system_prompt, 2),
-         {:ok, result} <-
-           Vibe.Plugin.Manager.Callback.call(module, :system_prompt, [context, entry.state]) do
-      case result do
-        {text, new_state} when is_binary(text) and text != "" ->
-          {[text | blocks], put_plugin_state(state, module, new_state)}
-
-        {_nil_or_empty, new_state} ->
-          {blocks, put_plugin_state(state, module, new_state)}
-      end
-    else
-      false ->
-        {blocks, state}
-
-      {:error, reason} ->
-        Vibe.Plugin.Manager.Callback.log_failure(module, :system_prompt, reason, nil)
-        {blocks, state}
-    end
+    Collections.system_prompt_blocks(ordered_plugins(state), context, state, &put_plugin_state/3)
   end
 
   defp run_before_command(plugins, command, context) do

@@ -238,7 +238,8 @@
       "Vibe.Session.CommandHandler",
       "Vibe.Session.EventEmitter",
       "Vibe.Plugin.Manager.Pipeline",
-      "Vibe.Plugin.Manager.Callback"
+      "Vibe.Plugin.Manager.Callback",
+      "Vibe.Plugin.Manager.Collections"
     ],
     internal_callers: [
       {"Vibe.Storage.Representation.*",
@@ -248,7 +249,9 @@
       {"Vibe.Session.CommandHandler", ["Vibe.Session"]},
       {"Vibe.Session.EventEmitter", ["Vibe.Session"]},
       {"Vibe.Plugin.Manager.Pipeline", ["Vibe.Plugin.Manager"]},
-      {"Vibe.Plugin.Manager.Callback", ["Vibe.Plugin.Manager", "Vibe.Plugin.Manager.Pipeline"]}
+      {"Vibe.Plugin.Manager.Callback",
+       ["Vibe.Plugin.Manager", "Vibe.Plugin.Manager.Pipeline", "Vibe.Plugin.Manager.Collections"]},
+      {"Vibe.Plugin.Manager.Collections", ["Vibe.Plugin.Manager"]}
     ]
   ],
   risk: [
