@@ -3,6 +3,7 @@ defmodule Vibe.CLI.Commands.Connect do
   @behaviour Vibe.CLI.Command
 
   alias Vibe.CLI.Output
+  alias Vibe.CLI.Commands.Connect.{Dispatch, KnownNodesView}
   alias Vibe.Remote.KnownNodes
   alias Vibe.Remote.Transport.{Distribution, SSH}
 
@@ -10,38 +11,24 @@ defmodule Vibe.CLI.Commands.Connect do
   def names, do: ["connect"]
 
   @impl true
-  def run(["connect", "--ssh", target], opts), do: connect_ssh(target, opts)
-  def run(["connect", "--dist", target], opts), do: run(["connect", target], opts)
-
-  def run(["connect", target], opts) do
-    if opts[:ssh] do
-      connect_ssh(target, opts)
-    else
-      connect_distribution(target)
-    end
+  def run(args, opts) do
+    args
+    |> Dispatch.action(opts)
+    |> execute()
   end
 
-  def run(["connect"], _opts) do
-    nodes = KnownNodes.list()
+  defp execute({:ssh, target, opts}), do: connect_ssh(target, opts)
+  defp execute({:distribution, target}), do: connect_distribution(target)
 
-    if nodes == [] do
-      IO.puts(
-        "No known nodes. Usage: vibe connect --ssh host:port | vibe connect --dist node@host"
-      )
-    else
-      IO.puts("Known nodes:")
-
-      Enum.each(nodes, fn entry ->
-        label = if entry["label"], do: " (#{entry["label"]})", else: ""
-        transport = entry["transport"] || "distribution"
-        IO.puts("  #{entry["node"]} [#{transport}]#{label}")
-      end)
-    end
+  defp execute({:list_known_nodes}) do
+    KnownNodes.list()
+    |> KnownNodesView.render()
+    |> IO.puts()
 
     :ok
   end
 
-  def run(_args, _opts) do
+  defp execute({:invalid}) do
     Output.error("Usage: vibe connect --ssh <host:port> | vibe connect --dist <node@host>")
     {:error, :invalid_connect_command}
   end
