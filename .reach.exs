@@ -29,7 +29,9 @@
       "Vibe.Tool.PluginResult",
       "Vibe.Tool.Result"
     ],
-    transport: ["Vibe.Transport*", "Vibe.Remote.Transport*", "Vibe.Tool.Transport*"],
+    transport_json: "Vibe.Transport*",
+    remote_transport: "Vibe.Remote.Transport*",
+    tool_transport: "Vibe.Tool.Transport*",
     presentation: [
       "Vibe.Presentation.Document",
       "Vibe.Presentation.Presentable",
@@ -84,7 +86,9 @@
       {:json_value, :command},
       {:json_value, :cli},
       {:json_value, :tool},
-      {:json_value, :transport},
+      {:json_value, :transport_json},
+      {:json_value, :remote_transport},
+      {:json_value, :tool_transport},
       {:json_value, :presentation},
       {:json_value, :markdown},
       {:json_value, :eval_api},
@@ -104,7 +108,9 @@
       {:event, :plugin_core},
       {:event, :plugin_impl},
       {:event, :plugin_presentation},
-      {:transport, :storage},
+      {:transport_json, :storage},
+      {:remote_transport, :storage},
+      {:tool_transport, :storage},
       {:presentation, :storage},
       {:tui, :storage, except_edges: [{"Vibe.TUI.Storybook", "Vibe.Session.Store"}]}
     ]
