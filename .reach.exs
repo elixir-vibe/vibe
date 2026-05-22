@@ -24,6 +24,8 @@
       "Vibe.Tool.Builtin*",
       "Vibe.Tool.Event",
       "Vibe.Tool.Output*",
+      "Vibe.Tool.PluginCall",
+      "Vibe.Tool.PluginResult",
       "Vibe.Tool.Result"
     ],
     transport: ["Vibe.Transport*", "Vibe.Remote.Transport*", "Vibe.Tool.Transport*"],

@@ -5,12 +5,12 @@ defmodule Vibe.Tool.PluginHooksTest do
     use Vibe.Plugin
 
     @impl true
-    def tool_call(%{args: args} = call, _context, state) do
+    def tool_call(%Vibe.Tool.PluginCall{args: args} = call, _context, state) do
       {:ok, %{call | args: Map.put(args, :path, "modified.txt")}, state}
     end
 
     @impl true
-    def tool_result(_result, _context, state) do
+    def tool_result(%Vibe.Tool.PluginResult{}, _context, state) do
       {:ok, %{result: %{path: "from-plugin"}}, state}
     end
   end

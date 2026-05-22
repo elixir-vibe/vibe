@@ -1,7 +1,7 @@
 defmodule Vibe.Tool.PluginHooks do
   @moduledoc "Applies plugin tool-call and tool-result hooks around model-facing tools."
 
-  alias Vibe.Tool.AdapterResult
+  alias Vibe.Tool.{AdapterResult, PluginCall, PluginResult}
 
   @spec run(atom(), term(), term(), (term() -> AdapterResult.raw_result())) ::
           AdapterResult.tool_result()
@@ -20,7 +20,7 @@ defmodule Vibe.Tool.PluginHooks do
   end
 
   defp prepare_call(name, params, context) do
-    call = %{name: name, args: params}
+    call = PluginCall.new(name, params)
 
     case tool_call(call, context) do
       :ok -> {:ok, params}
@@ -31,7 +31,7 @@ defmodule Vibe.Tool.PluginHooks do
   end
 
   defp apply_result_hook(result, name, context) do
-    result_payload = %{name: name, result: result_output(result), raw_result: result}
+    result_payload = PluginResult.new(name, result_output(result), result)
 
     case tool_result(result_payload, context) do
       :ok -> result
