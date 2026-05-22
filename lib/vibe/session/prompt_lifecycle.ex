@@ -21,7 +21,13 @@ defmodule Vibe.Session.PromptLifecycle do
     session_id = state.state.session_id
     event_data = prompt_event_data(prompt, text)
     state = emit.(state, Event.new(:prompt_submitted, session_id, event_data))
-    state = emit.(state, Event.new(:user_message_added, session_id, event_data))
+
+    state =
+      emit.(
+        state,
+        Event.new(:user_message_added, session_id, Vibe.Event.Message.user_added(event_data))
+      )
+
     ask_fun = state.ask_fun
     parent = self()
     ref = make_ref()
@@ -81,12 +87,20 @@ defmodule Vibe.Session.PromptLifecycle do
 
     emit.(
       state,
-      Event.new(:assistant_message_added, state.state.session_id, %{error: error})
+      Event.new(
+        :assistant_message_added,
+        state.state.session_id,
+        Vibe.Event.Message.assistant_added(error: error)
+      )
     )
   end
 
   defp ask_options(%{streaming?: true} = state, parent, ref, session_id, emit) do
-    state = emit.(state, Event.new(:assistant_stream_started, session_id, %{}))
+    state =
+      emit.(
+        state,
+        Event.new(:assistant_stream_started, session_id, Vibe.Event.AssistantStream.started())
+      )
 
     ask_opts =
       state
@@ -183,11 +197,25 @@ defmodule Vibe.Session.PromptLifecycle do
       })
     end
 
-    emit.(state, Event.new(:assistant_stream_finished, state.state.session_id, %{text: text}))
+    emit.(
+      state,
+      Event.new(
+        :assistant_stream_finished,
+        state.state.session_id,
+        Vibe.Event.AssistantStream.finished(text)
+      )
+    )
   end
 
   defp record_successful_response(state, response, emit) do
-    emit.(state, Event.new(:assistant_message_added, state.state.session_id, %{result: response}))
+    emit.(
+      state,
+      Event.new(
+        :assistant_message_added,
+        state.state.session_id,
+        Vibe.Event.Message.assistant_added(result: response)
+      )
+    )
   end
 
   defp record_usage(state, usage, emit) do

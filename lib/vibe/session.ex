@@ -202,7 +202,13 @@ defmodule Vibe.Session do
   end
 
   def handle_info({:notification_expired, id}, state) do
-    event = Event.new(:notification_expired, state.state.session_id, %{id: id})
+    event =
+      Event.new(
+        :notification_expired,
+        state.state.session_id,
+        Vibe.Event.Notification.expired(id)
+      )
+
     {:noreply, emit(state, event, persist?: false)}
   end
 
@@ -248,12 +254,23 @@ defmodule Vibe.Session do
       })
     end
 
-    {:noreply, emit(state, Event.new(:assistant_delta, state.state.session_id, %{text: text}))}
+    {:noreply,
+     emit(
+       state,
+       Event.new(:assistant_delta, state.state.session_id, Vibe.Event.AssistantStream.delta(text))
+     )}
   end
 
   def handle_info({:assistant_thinking_delta, text}, state) do
     {:noreply,
-     emit(state, Event.new(:assistant_thinking_delta, state.state.session_id, %{text: text}))}
+     emit(
+       state,
+       Event.new(
+         :assistant_thinking_delta,
+         state.state.session_id,
+         Vibe.Event.AssistantStream.thinking_delta(text)
+       )
+     )}
   end
 
   def handle_info({:tool_preparing, %ToolEvent{} = data}, state) do
@@ -333,7 +350,11 @@ defmodule Vibe.Session do
   end
 
   defp handle_command(%Command{type: :background_session}, state) do
-    emit(state, Event.new(:session_backgrounded, state.state.session_id, %{}), persist?: false)
+    emit(
+      state,
+      Event.new(:session_backgrounded, state.state.session_id, Vibe.Event.Session.backgrounded()),
+      persist?: false
+    )
   end
 
   defp handle_command(%Command{type: :branch_session, data: %{seq: seq}}, state) do
@@ -463,8 +484,14 @@ defmodule Vibe.Session do
     }
   end
 
+  defp prepare_transient_event(
+         %Event{type: :notification_added, data: %Vibe.Event.Notification.Added{} = data} = event
+       ) do
+    %{event | data: %{data | id: event.id}}
+  end
+
   defp prepare_transient_event(%Event{type: :notification_added} = event) do
-    data = Map.put_new(event.data, :id, event.id)
+    data = Map.put(event.data, :id, event.id)
     %{event | data: data}
   end
 
@@ -477,6 +504,7 @@ defmodule Vibe.Session do
   defp persist_event?(state, _event), do: state.persist?
 
   defp schedule_notification_expiry(%Event{type: :notification_added, data: data}) do
+    data = event_payload_map(data)
     ttl_ms = Map.get(data, :ttl_ms, @notification_ttl_ms)
 
     if is_integer(ttl_ms) and ttl_ms > 0 do
@@ -621,17 +649,32 @@ defmodule Vibe.Session do
     state =
       emit(
         state,
-        Event.new(:context_compaction_started, session_id, %{tokens_before: tokens_before})
+        Event.new(
+          :context_compaction_started,
+          session_id,
+          Vibe.Event.ContextCompaction.started(tokens_before)
+        )
       )
 
     case Vibe.Context.compact(session_id: session_id) do
       {:ok, %{summary: summary}} ->
-        emit(state, Event.new(:context_compaction_finished, session_id, %{summary: summary}))
+        emit(
+          state,
+          Event.new(
+            :context_compaction_finished,
+            session_id,
+            Vibe.Event.ContextCompaction.finished(summary)
+          )
+        )
 
       {:error, reason} ->
         emit(
           state,
-          Event.new(:context_compaction_failed, session_id, %{reason: inspect(reason)})
+          Event.new(
+            :context_compaction_failed,
+            session_id,
+            Vibe.Event.ContextCompaction.failed(inspect(reason))
+          )
         )
     end
   end
@@ -717,6 +760,15 @@ defmodule Vibe.Session do
 
   defp durable_replay?(%{events_tail: [{oldest_seq, _event} | _events]}, replay_after),
     do: replay_after < oldest_seq
+
+  defp event_payload_map(%struct{} = payload) when is_atom(struct) do
+    payload
+    |> Map.from_struct()
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
+  end
+
+  defp event_payload_map(payload) when is_map(payload), do: payload
 
   defp remember_event(events, seq, event),
     do: events |> Vibe.Support.Lists.append({seq, event}) |> Enum.take(-200)

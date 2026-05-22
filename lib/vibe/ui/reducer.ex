@@ -21,6 +21,7 @@ defmodule Vibe.UI.Reducer do
   def apply_events(%State{} = state, events), do: Enum.reduce(events, state, &apply_event(&2, &1))
 
   defp reduce(state, %Event{type: :user_message_added, at: at, data: data}) do
+    data = event_payload_map(data)
     text = Map.fetch!(data, :text)
 
     message =
@@ -37,7 +38,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_message_added, at: at, data: data}) do
-    message = struct(Message, Map.merge(%{role: :assistant, at: at}, data))
+    message = struct(Message, Map.merge(%{role: :assistant, at: at}, event_payload_map(data)))
 
     %{
       state
@@ -56,23 +57,30 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :assistant_delta, at: at, data: %{text: text}}) do
+  defp reduce(state, %Event{type: :assistant_delta, at: at, data: data}) do
+    %{text: text} = event_payload_map(data)
+
     state
     |> append_streaming_delta(:text, text, at)
     |> update_usage_preview(:output_tokens, estimate_tokens(text))
   end
 
-  defp reduce(state, %Event{type: :assistant_thinking_delta, at: at, data: %{text: text}}) do
+  defp reduce(state, %Event{type: :assistant_thinking_delta, at: at, data: data}) do
+    %{text: text} = event_payload_map(data)
     append_streaming_delta(state, :thinking, text, at)
   end
 
   defp reduce(state, %Event{type: :assistant_stream_finished, at: at, data: data}) do
+    data = event_payload_map(data)
+
     state
     |> finalize_streaming_text(Map.get(data, :text), at)
     |> Map.merge(%{streaming_message: nil, status: :idle})
   end
 
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
+    data = event_payload_map(data)
+
     messages =
       if Map.get(data, :notify?, true) do
         Lists.append(state.messages, %Message{
@@ -253,7 +261,8 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :session_selected, data: %{session_id: session_id}}) do
+  defp reduce(state, %Event{type: :session_selected, data: data}) do
+    %{session_id: session_id} = event_payload_map(data)
     %{state | session_id: session_id}
   end
 
@@ -269,6 +278,8 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :context_compaction_started, data: data}) do
+    data = event_payload_map(data)
+
     widget =
       Vibe.Presentation.Widget.progress(:context_compaction,
         title: "Compacting context",
@@ -286,6 +297,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :context_compaction_failed, data: data}) do
+    data = event_payload_map(data)
     notice = %{level: :error, text: Map.get(data, :reason, "context compaction failed")}
 
     %{
@@ -297,6 +309,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :context_compaction_finished, data: data}) do
+    data = event_payload_map(data)
     summary = Map.get(data, :summary, "context compacted")
     notice = %{level: :success, text: summary}
 
@@ -318,7 +331,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :overlay_opened, data: data}) do
-    %{state | overlays: Lists.append(state.overlays, data)}
+    %{state | overlays: Lists.append(state.overlays, event_payload_map(data))}
   end
 
   defp reduce(state, %Event{type: :overlay_closed}) do
@@ -326,6 +339,8 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :notification_added, id: event_id, data: data}) do
+    data = event_payload_map(data)
+
     %{
       state
       | notifications:
@@ -347,11 +362,13 @@ defmodule Vibe.UI.Reducer do
     clear_runtime_alert(state, alert)
   end
 
-  defp reduce(state, %Event{type: :notification_expired, data: %{id: id}}) do
+  defp reduce(state, %Event{type: :notification_expired, data: data}) do
+    %{id: id} = event_payload_map(data)
     %{state | notifications: Enum.reject(state.notifications, &(notification_id(&1) == id))}
   end
 
   defp reduce(state, %Event{type: :subagent_started, at: at, data: data}) do
+    data = event_payload_map(data)
     child_session_id = Map.get(data, :child_session_id)
     role = Map.get(data, :role) || "subagent"
     text = "#{role} started" <> attach_hint(child_session_id)
@@ -366,6 +383,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :subagent_finished, at: at, data: data}) do
+    data = event_payload_map(data)
     child_session_id = Map.get(data, :child_session_id)
     status = Map.get(data, :status, :finished)
     role = Map.get(data, :role) || "subagent"
@@ -380,7 +398,8 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :active_sessions_updated, data: %{count: count}}) do
+  defp reduce(state, %Event{type: :active_sessions_updated, data: data}) do
+    %{count: count} = event_payload_map(data)
     %{state | active_sessions: count}
   end
 
@@ -413,6 +432,13 @@ defmodule Vibe.UI.Reducer do
     %{state | title: title}
   end
 
+  defp reduce(state, %Event{
+         type: :selector_opened,
+         data: %Vibe.Event.Selector.Opened{selector: selector}
+       }) do
+    open_selector(state, selector)
+  end
+
   defp reduce(state, %Event{type: :selector_opened, data: data}) do
     open_selector(state, data)
   end
@@ -429,7 +455,9 @@ defmodule Vibe.UI.Reducer do
     )
   end
 
-  defp reduce(state, %Event{type: :selector_moved, data: %{direction: direction}}) do
+  defp reduce(state, %Event{type: :selector_moved, data: data}) do
+    %{direction: direction} = event_payload_map(data)
+
     %{
       state
       | selector: move_selector(state.selector, direction),
@@ -560,6 +588,15 @@ defmodule Vibe.UI.Reducer do
 
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp event_payload_map(%struct{} = payload) when is_atom(struct) do
+    payload
+    |> Map.from_struct()
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
+  end
+
+  defp event_payload_map(payload) when is_map(payload), do: payload
 
   defp drop_trailing_session_marker(messages, marker) do
     case List.pop_at(messages, -1) do

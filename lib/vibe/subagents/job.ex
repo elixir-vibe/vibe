@@ -172,9 +172,21 @@ defmodule Vibe.Subagents.Job do
 
   defp emit_parent_event(%{parent_session_id: nil}, _type, _data), do: :ok
 
-  defp emit_parent_event(job, type, data) do
+  defp emit_parent_event(job, :subagent_started, data) do
     with {:ok, parent} <- Session.lookup(job.parent_session_id) do
-      Session.emit_event(parent, Event.new(type, job.parent_session_id, data))
+      Session.emit_event(
+        parent,
+        Event.new(:subagent_started, job.parent_session_id, Vibe.Event.Subagent.started(data))
+      )
+    end
+  end
+
+  defp emit_parent_event(job, :subagent_finished, data) do
+    with {:ok, parent} <- Session.lookup(job.parent_session_id) do
+      Session.emit_event(
+        parent,
+        Event.new(:subagent_finished, job.parent_session_id, Vibe.Event.Subagent.finished(data))
+      )
     end
   end
 

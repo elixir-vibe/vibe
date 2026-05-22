@@ -31,7 +31,10 @@ defimpl Vibe.Storage.JSON.Encodable, for: Any do
     end)
   end
 
-  def value(value), do: inspect(value, limit: 50)
+  def value(value) do
+    raise ArgumentError,
+          "no storage JSON projection for #{inspect(value)}; add a Vibe.Storage.JSON.Encodable implementation"
+  end
 end
 
 defimpl Vibe.Storage.JSON.Encodable, for: Vibe.Model.Content.Text do

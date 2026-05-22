@@ -23,6 +23,7 @@ defmodule Vibe.Storage.Representation.Event do
                     "cwd",
                     "data",
                     "detail",
+                    "direction",
                     "error",
                     "filename",
                     "goal",
@@ -126,6 +127,65 @@ defmodule Vibe.Storage.Representation.Event do
     |> Vibe.Event.Tool.finished()
   end
 
+  defp decode_event_data(data, :user_message_added), do: Vibe.Event.Message.user_added(data)
+
+  defp decode_event_data(data, :assistant_message_added),
+    do: Vibe.Event.Message.assistant_added(data)
+
+  defp decode_event_data(_data, :messages_cleared), do: Vibe.Event.Message.cleared()
+
+  defp decode_event_data(_data, :assistant_stream_started),
+    do: Vibe.Event.AssistantStream.started()
+
+  defp decode_event_data(%{text: text}, :assistant_delta),
+    do: Vibe.Event.AssistantStream.delta(text)
+
+  defp decode_event_data(%{text: text}, :assistant_thinking_delta),
+    do: Vibe.Event.AssistantStream.thinking_delta(text)
+
+  defp decode_event_data(data, :assistant_stream_finished) do
+    data |> Map.get(:text) |> Vibe.Event.AssistantStream.finished()
+  end
+
+  defp decode_event_data(data, :assistant_aborted), do: Vibe.Event.AssistantStream.aborted(data)
+
+  defp decode_event_data(data, :notification_added), do: Vibe.Event.Notification.added(data)
+
+  defp decode_event_data(%{id: id}, :notification_expired),
+    do: Vibe.Event.Notification.expired(id)
+
+  defp decode_event_data(%{session_id: session_id}, :session_selected),
+    do: Vibe.Event.Session.selected(session_id)
+
+  defp decode_event_data(_data, :session_new_requested), do: Vibe.Event.Session.new_requested()
+
+  defp decode_event_data(_data, :session_backgrounded), do: Vibe.Event.Session.backgrounded()
+
+  defp decode_event_data(%{count: count}, :active_sessions_updated),
+    do: Vibe.Event.Session.active_count_updated(count)
+
+  defp decode_event_data(data, :selector_opened), do: Vibe.Event.Selector.opened(data)
+
+  defp decode_event_data(%{direction: direction}, :selector_moved),
+    do: Vibe.Event.Selector.moved(direction)
+
+  defp decode_event_data(_data, :selector_closed), do: Vibe.Event.Selector.closed()
+
+  defp decode_event_data(data, :selector_confirmed), do: Vibe.Event.Selector.confirmed(data)
+
+  defp decode_event_data(%{tokens_before: tokens_before}, :context_compaction_started),
+    do: Vibe.Event.ContextCompaction.started(tokens_before)
+
+  defp decode_event_data(%{summary: summary}, :context_compaction_finished),
+    do: Vibe.Event.ContextCompaction.finished(summary)
+
+  defp decode_event_data(%{reason: reason}, :context_compaction_failed),
+    do: Vibe.Event.ContextCompaction.failed(reason)
+
+  defp decode_event_data(data, :subagent_started), do: Vibe.Event.Subagent.started(data)
+
+  defp decode_event_data(data, :subagent_finished), do: Vibe.Event.Subagent.finished(data)
+
   defp decode_event_data(%{effort: effort} = data, :effort_selected) when is_binary(effort) do
     case Vibe.Model.Effort.from_string(effort) do
       {:ok, effort} -> %{data | effort: effort}
@@ -156,9 +216,6 @@ defmodule Vibe.Storage.Representation.Event do
   defp decode_event_data(%{alert: alert}, :runtime_alert_clear) do
     alert |> decode_runtime_alert() |> Vibe.Event.RuntimeAlert.cleared()
   end
-
-  defp decode_event_data(%{level: level} = data, :notification_added) when is_binary(level),
-    do: %{data | level: existing_atom_or_string(level)}
 
   defp decode_event_data(data, _type), do: data
 
@@ -276,6 +333,21 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
 
   defp persist_data(:runtime_alert_clear, %Vibe.Event.RuntimeAlert.Cleared{alert: alert}) do
     %{alert: Vibe.Storage.Persistable.persist(alert)}
+  end
+
+  defp persist_data(:subagent_finished, %Vibe.Event.Subagent.Finished{} = data) do
+    data
+    |> Map.from_struct()
+    |> Map.drop([:pid])
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
+  end
+
+  defp persist_data(_type, %struct{} = data) when is_atom(struct) do
+    data
+    |> Map.from_struct()
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
   end
 
   defp persist_data(_type, data), do: data

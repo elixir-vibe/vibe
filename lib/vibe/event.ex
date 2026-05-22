@@ -14,12 +14,12 @@ defmodule Vibe.Event do
           type: atom(),
           session_id: String.t(),
           at: DateTime.t(),
-          data: map()
+          data: term()
         }
 
-  @spec new(atom(), String.t(), map(), keyword()) :: t()
+  @spec new(atom(), String.t(), term(), keyword()) :: t()
   def new(type, session_id, data \\ %{}, opts \\ [])
-      when is_atom(type) and is_binary(session_id) and is_map(data) do
+      when is_atom(type) and is_binary(session_id) do
     %__MODULE__{
       id: Keyword.get_lazy(opts, :id, &new_id/0),
       type: type,
