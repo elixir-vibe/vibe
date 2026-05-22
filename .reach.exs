@@ -118,6 +118,8 @@
       "lib/vibe/command/markdown.ex",
       "lib/vibe/code/ast/markdown.ex",
       "lib/vibe/image/markdown.ex",
+      "lib/vibe/storage/json/presentation_encoders.ex",
+      "lib/vibe/storage/json/surface_encoders.ex",
       "lib/vibe/storage/search/markdown.ex",
       "lib/vibe/subagents/markdown.ex",
       "lib/vibe/tool/markdown.ex",

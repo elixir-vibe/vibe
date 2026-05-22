@@ -398,6 +398,11 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
     data
     |> event_struct_map()
     |> Map.delete(:result)
+    |> update_storage_payload(:error)
+  end
+
+  defp persist_data(:selector_opened, %Vibe.Event.Selector.Opened{selector: selector}) do
+    %{selector: storage_payload(selector)}
   end
 
   defp persist_data(:plugin_widget_updated, %Vibe.Event.Plugin.WidgetUpdated{widget: widget}) do
@@ -415,6 +420,16 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
   defp persist_data(_type, %struct{} = data) when is_atom(struct), do: event_struct_map(data)
 
   defp persist_data(_type, data), do: data
+
+  defp update_storage_payload(data, key) do
+    case Map.fetch(data, key) do
+      {:ok, value} -> Map.put(data, key, storage_payload(value))
+      :error -> data
+    end
+  end
+
+  defp storage_payload(%struct{} = data) when is_atom(struct), do: event_struct_map(data)
+  defp storage_payload(data), do: data
 
   defp event_struct_map(%struct{} = data) when is_atom(struct) do
     data
