@@ -8,7 +8,6 @@ defmodule Vibe.Event.Bus do
 
   use GenServer
 
-  alias Vibe.Session
   alias Vibe.Event
   alias Vibe.UI.Command
 
@@ -30,14 +29,14 @@ defmodule Vibe.Event.Bus do
   @spec dispatch(String.t(), Command.t() | atom() | {atom(), map()}) :: :ok | {:error, :not_found}
   def dispatch(session_id, command) do
     with {:ok, server} <- server(session_id) do
-      Session.dispatch(server, command)
+      GenServer.call(server, {:dispatch, command})
     end
   end
 
   @spec emit(String.t(), atom(), term()) :: :ok | {:error, :not_found}
   def emit(session_id, type, data \\ %{}) when is_atom(type) do
     with {:ok, server} <- server(session_id) do
-      Session.emit_event(server, Event.new(type, session_id, data))
+      GenServer.call(server, {:emit_event, Event.new(type, session_id, data)})
     end
   end
 
@@ -128,8 +127,8 @@ defmodule Vibe.Event.Bus do
   defp safe_emit(server, event, persist?) do
     if Process.alive?(server) do
       if persist?,
-        do: Session.emit_event(server, event),
-        else: Session.emit_transient_event(server, event)
+        do: GenServer.call(server, {:emit_event, event}),
+        else: GenServer.call(server, {:emit_transient_event, event})
 
       :ok
     else

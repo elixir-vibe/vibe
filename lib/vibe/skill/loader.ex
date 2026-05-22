@@ -47,7 +47,7 @@ defmodule Vibe.Skill.Loader do
   @spec discover(keyword()) :: [Executable.t()]
   def discover(opts \\ []) do
     opts
-    |> Keyword.get(:paths, Vibe.Skill.script_paths())
+    |> Keyword.get(:paths, Vibe.Skill.Paths.script_paths())
     |> Enum.flat_map(fn dir ->
       case load_dir(dir) do
         {:ok, skills} -> skills

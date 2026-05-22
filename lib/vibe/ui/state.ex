@@ -77,14 +77,7 @@ defmodule Vibe.UI.State do
       cwd: Keyword.get_lazy(opts, :cwd, fn -> File.cwd!() end),
       model: Keyword.get_lazy(opts, :model, &Vibe.Agent.Profile.default_model/0),
       effort: Keyword.get_lazy(opts, :effort, &Vibe.Agent.Profile.default_effort/0),
-      runtime_alerts: active_runtime_alerts()
+      runtime_alerts: Keyword.get(opts, :runtime_alerts, %{})
     }
-  end
-
-  defp active_runtime_alerts do
-    Vibe.SystemAlarms.active()
-    |> Map.new(&{&1.id, &1})
-  catch
-    :exit, _reason -> %{}
   end
 end

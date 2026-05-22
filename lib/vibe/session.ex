@@ -32,7 +32,7 @@ defmodule Vibe.Session do
     id = Keyword.get_lazy(opts, :session_id, &Vibe.Session.Store.new_id/0)
     opts = Keyword.put(opts, :session_id, id)
 
-    child_opts = Keyword.put(opts, :name, Vibe.Session.Listing.via(id))
+    child_opts = Keyword.put(opts, :name, Vibe.Session.Registry.via(id))
 
     child_spec =
       Supervisor.child_spec({__MODULE__, child_opts}, id: {__MODULE__, id}, restart: :temporary)
@@ -44,7 +44,7 @@ defmodule Vibe.Session do
   def lookup(id) do
     case Registry.lookup(Vibe.Registry, {:session, id}) do
       [{pid, _value}] -> {:ok, pid}
-      [] -> Vibe.Session.Listing.start_stored(id)
+      [] -> start_stored(id)
     end
   end
 
@@ -58,6 +58,17 @@ defmodule Vibe.Session do
 
   @spec search(String.t(), keyword()) :: [Search.Result.t()]
   def search(query, opts \\ []), do: Search.sessions(query, opts)
+
+  defp start_stored(id) do
+    if stored?(id),
+      do: start(session_id: id, restoring?: true),
+      else: {:error, :not_found}
+  end
+
+  defp stored?(id) do
+    not is_nil(Vibe.Session.Store.info(id)) or File.exists?(Vibe.Session.Store.path(id)) or
+      File.exists?(Vibe.Session.Store.events_path(id))
+  end
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -108,6 +119,7 @@ defmodule Vibe.Session do
     persist? = Keyword.get(opts, :persist?, true)
     restoring? = Keyword.get(opts, :restoring?, false)
     custom_ask? = Keyword.has_key?(opts, :ask_fun)
+    opts = Keyword.put_new_lazy(opts, :runtime_alerts, &active_runtime_alerts/0)
     {state, event_seq, events_tail} = restore_state(State.new(opts), persist?, restoring?)
     state = maybe_load_goal(state, persist?)
 
@@ -736,6 +748,12 @@ defmodule Vibe.Session do
 
   defp continue_goal?(state) do
     is_nil(state.prompt_task) and Vibe.Goals.Goal.active?(Vibe.Goals.get(state.state.session_id))
+  end
+
+  defp active_runtime_alerts do
+    Vibe.SystemAlarms.Active.map()
+  catch
+    :exit, _reason -> %{}
   end
 
   defp maybe_load_goal(state, false), do: state

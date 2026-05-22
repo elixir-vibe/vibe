@@ -118,7 +118,7 @@ defmodule Vibe.Command.Worker do
   def handle_info(_message, state), do: {:noreply, state}
 
   defp finish(state) do
-    Vibe.Command.Streaming.untrack(state.eval_session_id, self())
+    Vibe.Command.Processes.untrack(state.eval_session_id, self())
     result = result(state)
 
     state

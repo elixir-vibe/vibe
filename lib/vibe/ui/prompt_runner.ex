@@ -47,7 +47,7 @@ defmodule Vibe.UI.PromptRunner do
         :session_id
       ])
 
-    ask_opts = opts |> Vibe.Session.agent_ask_opts() |> Keyword.delete(:stream_owner)
+    ask_opts = opts |> Keyword.drop([:model, :effort]) |> Keyword.delete(:stream_owner)
 
     with {:ok, agent} <- Vibe.start_link(agent_opts) do
       notify_stream_owner(opts[:stream_owner], agent)

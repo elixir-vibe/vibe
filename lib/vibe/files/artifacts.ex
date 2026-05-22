@@ -1,7 +1,7 @@
 defmodule Vibe.Files.Artifacts do
   @moduledoc "Stores large tool artifacts outside inline session JSON payloads."
 
-  alias Vibe.Files.ImageRef
+  alias Vibe.Files.{ArtifactPath, ImageRef}
   alias Vibe.Image
   alias Vibe.Paths
 
@@ -20,37 +20,19 @@ defmodule Vibe.Files.Artifacts do
   end
 
   @spec session_artifact_dir(String.t()) :: Path.t()
-  def session_artifact_dir(session_id) when is_binary(session_id),
-    do: Path.join([Paths.sessions_dir(), session_id, "artifacts"])
+  def session_artifact_dir(session_id),
+    do: ArtifactPath.session_artifact_dir(session_id) |> artifact_path()
 
   @spec resolve_session_artifact(String.t(), Path.t()) :: {:ok, Path.t()} | {:error, term()}
-  def resolve_session_artifact(session_id, relative_path)
-      when is_binary(session_id) and is_binary(relative_path) do
-    root = session_artifact_dir(session_id) |> Path.expand()
-    path = Path.expand(Path.join(root, relative_path))
-
-    if path == root or String.starts_with?(path, root <> "/") do
-      {:ok, path}
-    else
-      {:error, :invalid_artifact_path}
+  def resolve_session_artifact(session_id, relative_path) do
+    case ArtifactPath.resolve_session_artifact(session_id, relative_path) do
+      {:ok, path} -> {:ok, artifact_path(path)}
+      error -> error
     end
   end
 
   @spec public_path(ImageRef.t()) :: String.t() | nil
-  def public_path(%ImageRef{path: path}) when is_binary(path) do
-    sessions_dir = Paths.sessions_dir() |> Path.expand()
-    expanded = Path.expand(path)
-
-    with true <- String.starts_with?(expanded, sessions_dir <> "/"),
-         relative <- Path.relative_to(expanded, sessions_dir),
-         [session_id, "artifacts" | artifact_parts] <- Path.split(relative) do
-      "/sessions/#{URI.encode(session_id)}/artifacts/#{Enum.map_join(artifact_parts, "/", &URI.encode/1)}"
-    else
-      _ -> nil
-    end
-  end
-
-  def public_path(_ref), do: nil
+  def public_path(ref), do: ArtifactPath.public_path(ref) |> public_artifact_path()
 
   @spec store_image(Image.t(), keyword()) :: {:ok, ImageRef.t()} | {:error, term()}
   def store_image(%Image{} = image, opts \\ []) do
@@ -105,6 +87,9 @@ defmodule Vibe.Files.Artifacts do
     |> session_artifact_dir()
     |> artifact_summary()
   end
+
+  defp artifact_path(path), do: path
+  defp public_artifact_path(path), do: path
 
   defp artifact_summary(dir) do
     dir

@@ -77,16 +77,9 @@ defmodule Vibe.Skill do
   end
 
   @spec script_paths() :: [String.t()]
-  def script_paths do
-    [
-      Application.app_dir(:vibe, "priv/skills"),
-      Path.join(File.cwd!(), "skills"),
-      Path.join([File.cwd!(), ".vibe", "skills"]),
-      dir()
-    ]
-    |> Enum.map(&Path.expand/1)
-    |> Enum.uniq()
-  end
+  def script_paths, do: Vibe.Skill.Paths.script_paths() |> skill_paths()
+
+  defp skill_paths(paths), do: paths
 
   @spec executable() :: [Executable.t()]
   def executable, do: Loader.discover()

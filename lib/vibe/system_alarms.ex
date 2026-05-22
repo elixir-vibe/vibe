@@ -10,7 +10,7 @@ defmodule Vibe.SystemAlarms do
 
   use GenServer
 
-  alias Vibe.SystemAlarms.Alert
+  alias Vibe.SystemAlarms.{Active, Alert}
 
   require Logger
 
@@ -23,7 +23,7 @@ defmodule Vibe.SystemAlarms do
   def installed?, do: GenServer.call(__MODULE__, :installed?)
 
   @spec active() :: [Alert.t()]
-  def active, do: GenServer.call(__MODULE__, :active)
+  def active, do: Active.active() |> active_alerts()
 
   @spec alarms() :: {:ok, [term()]} | {:error, term()}
   def alarms do
@@ -36,15 +36,12 @@ defmodule Vibe.SystemAlarms do
 
   @impl true
   def init(_opts) do
-    {:ok, %{installed?: install_handler(), active: %{}}}
+    Active.reset()
+    {:ok, %{installed?: install_handler()}}
   end
 
   @impl true
   def handle_call(:installed?, _from, state), do: {:reply, state.installed?, state}
-
-  def handle_call(:active, _from, state) do
-    {:reply, state.active |> Map.values() |> Enum.sort_by(& &1.id), state}
-  end
 
   @impl true
   def handle_info({:system_alarm, action, alarm_id, description}, state) do
@@ -68,6 +65,8 @@ defmodule Vibe.SystemAlarms do
   end
 
   def terminate(_reason, _state), do: :ok
+
+  defp active_alerts(alerts), do: alerts
 
   defp install_handler do
     case Application.ensure_all_started(:sasl) do
@@ -94,11 +93,13 @@ defmodule Vibe.SystemAlarms do
   end
 
   defp update_active_alerts(state, :set, alert) do
-    %{state | active: Map.put(state.active, alert.id, alert)}
+    Active.put(alert)
+    state
   end
 
   defp update_active_alerts(state, :clear, alert) do
-    %{state | active: Map.delete(state.active, alert.id)}
+    Active.delete(alert)
+    state
   end
 
   defp emit_runtime_alert(action, alert) do

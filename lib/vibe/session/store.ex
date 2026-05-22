@@ -6,7 +6,7 @@ defmodule Vibe.Session.Store do
   import Ecto.Query
 
   alias Vibe.Repo
-  alias Vibe.Session.Store.{Listing, Summary}
+  alias Vibe.Session.Store.{EventLog, Listing, Summary}
   alias Vibe.Storage.Representation.Event, as: EventRepresentation
   alias Vibe.Storage.Representation.EvalSnapshot
   alias Vibe.Storage.Representation.Trajectory, as: TrajectoryRepresentation
@@ -78,7 +78,7 @@ defmodule Vibe.Session.Store do
     |> Vibe.Repo.insert(on_conflict: :nothing, conflict_target: :event_id)
     |> case do
       {:ok, _event} ->
-        Summary.refresh(event.session_id)
+        refresh_summary_from_events(event.session_id)
         :ok
 
       {:error, reason} ->
@@ -273,31 +273,14 @@ defmodule Vibe.Session.Store do
 
   @spec session_events(String.t()) :: [{non_neg_integer(), Event.t()}]
   def session_events(session_id) when is_binary(session_id) do
-    Vibe.Storage.ensure!()
-
-    events =
-      SessionEvent
-      |> where([event], event.session_id == ^session_id)
-      |> order_by([event], event.seq)
-      |> Vibe.Repo.all()
-      |> Enum.flat_map(&decode_event_record/1)
-
-    case events do
-      [] -> session_id |> events() |> TrajectoryRepresentation.project_events()
-      events -> events
-    end
+    EventLog.session_events(session_id, fn ->
+      session_id |> events() |> TrajectoryRepresentation.project_events()
+    end)
   end
 
   @spec session_events_after(String.t(), non_neg_integer()) :: [{non_neg_integer(), Event.t()}]
-  def session_events_after(session_id, seq) when is_binary(session_id) and is_integer(seq) do
-    Vibe.Storage.ensure!()
-
-    SessionEvent
-    |> where([event], event.session_id == ^session_id and event.seq > ^seq)
-    |> order_by([event], event.seq)
-    |> Vibe.Repo.all()
-    |> Enum.flat_map(&decode_event_record/1)
-  end
+  def session_events_after(session_id, seq),
+    do: session_id |> EventLog.session_events_after(seq) |> event_log_entries()
 
   @doc "Intentional facade for the public Vibe API boundary."
   @spec info(String.t()) :: map() | nil
@@ -325,6 +308,14 @@ defmodule Vibe.Session.Store do
 
   defp present_attrs(attrs), do: Enum.reject(attrs, fn {_key, value} -> is_nil(value) end)
 
+  defp event_log_entries(entries), do: entries
+
+  defp refresh_summary_from_events(session_id) do
+    Summary.refresh(session_id, fn ->
+      session_id |> events() |> TrajectoryRepresentation.project_events()
+    end)
+  end
+
   defp event_row(%Event{} = event, seq) do
     encoded = EventRepresentation.encode(event, seq)
 
@@ -350,22 +341,6 @@ defmodule Vibe.Session.Store do
 
   defp take_trajectory(events, :infinity), do: events
   defp take_trajectory(events, limit), do: Enum.take(events, limit)
-
-  defp decode_event_record(%SessionEvent{} = event) do
-    %{
-      "seq" => event.seq,
-      "id" => event.event_id,
-      "session_id" => event.session_id,
-      "type" => event.type,
-      "at" => DateTime.to_iso8601(event.at),
-      "data" => event.data
-    }
-    |> EventRepresentation.decode_map()
-    |> case do
-      {:ok, event} -> [event]
-      :error -> []
-    end
-  end
 
   defp decode_trajectory_record(%TrajectoryEvent{} = event) do
     %{
@@ -399,7 +374,7 @@ defmodule Vibe.Session.Store do
 
     session_id |> path() |> File.rm() |> ignore_missing_file()
     session_id |> log_path() |> File.rm() |> ignore_missing_file()
-    session_id |> Vibe.Files.Artifacts.session_artifact_dir() |> File.rm_rf()
+    session_id |> Vibe.Files.ArtifactPath.session_artifact_dir() |> File.rm_rf()
   end
 
   defp ignore_missing_file(:ok), do: :ok

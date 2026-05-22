@@ -10,7 +10,7 @@ defmodule Vibe.Goals do
   @max_objective_chars 8_000
 
   @spec get(String.t() | nil) :: Goal.t() | nil
-  def get(session_id \\ Vibe.Command.Streaming.current_session_id())
+  def get(session_id \\ Vibe.Session.Current.session_id())
   def get(nil), do: nil
 
   def get(session_id) when is_binary(session_id) do
@@ -67,7 +67,7 @@ defmodule Vibe.Goals do
 
   @spec update_status(String.t() | nil, Goal.status() | String.t()) ::
           {:ok, Goal.t()} | {:error, term()}
-  def update_status(session_id \\ Vibe.Command.Streaming.current_session_id(), status)
+  def update_status(session_id \\ Vibe.Session.Current.session_id(), status)
   def update_status(nil, _status), do: {:error, :missing_session_id}
 
   def update_status(session_id, status) when is_binary(session_id) do
@@ -89,19 +89,19 @@ defmodule Vibe.Goals do
   end
 
   @spec complete(String.t() | nil) :: {:ok, Goal.t()} | {:error, term()}
-  def complete(session_id \\ Vibe.Command.Streaming.current_session_id()),
+  def complete(session_id \\ Vibe.Session.Current.session_id()),
     do: update_status(session_id, :complete)
 
   @spec blocked(String.t() | nil) :: {:ok, Goal.t()} | {:error, term()}
-  def blocked(session_id \\ Vibe.Command.Streaming.current_session_id()),
+  def blocked(session_id \\ Vibe.Session.Current.session_id()),
     do: update_status(session_id, :blocked)
 
   @spec pause(String.t() | nil) :: {:ok, Goal.t()} | {:error, term()}
-  def pause(session_id \\ Vibe.Command.Streaming.current_session_id()),
+  def pause(session_id \\ Vibe.Session.Current.session_id()),
     do: update_status(session_id, :paused)
 
   @spec resume(String.t() | nil) :: {:ok, Goal.t()} | {:error, term()}
-  def resume(session_id \\ Vibe.Command.Streaming.current_session_id()),
+  def resume(session_id \\ Vibe.Session.Current.session_id()),
     do: update_status(session_id, :active)
 
   @spec add_usage(String.t(), map() | nil) :: {:ok, Goal.t()} | :ok | {:error, term()}
@@ -129,7 +129,7 @@ defmodule Vibe.Goals do
   end
 
   @spec clear(String.t() | nil) :: :ok | {:error, term()}
-  def clear(session_id \\ Vibe.Command.Streaming.current_session_id())
+  def clear(session_id \\ Vibe.Session.Current.session_id())
   def clear(nil), do: {:error, :missing_session_id}
 
   def clear(session_id) when is_binary(session_id) do
