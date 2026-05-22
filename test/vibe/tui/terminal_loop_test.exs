@@ -1,5 +1,5 @@
 defmodule Vibe.TUI.TerminalLoopTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Vibe.TUI.{TerminalLoop, Width}
 
@@ -89,6 +89,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         System.monotonic_time(:millisecond) + 5_000
       )
 
+    assert_picker_title!(plain, "Sessions")
     assert selector_rendered_once?(plain, "Sessions")
 
     if Enum.any?(plain, &String.contains?(&1, "No matches")) do
