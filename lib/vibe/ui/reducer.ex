@@ -8,8 +8,8 @@ defmodule Vibe.UI.Reducer do
   alias Vibe.SystemAlarms.Alert
   alias Vibe.Support.Lists
   alias Vibe.Tool.Event, as: ToolEvent
-  alias Vibe.UI.Reducer.RestoredPayload
-  alias Vibe.UI.{Message, Notification, Selector, State}
+  alias Vibe.UI.Reducer.{RestoredPayload, Selector}
+  alias Vibe.UI.{Message, Notification, State}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
   def apply_event(%State{} = state, %Event{} = event) do
@@ -533,41 +533,41 @@ defmodule Vibe.UI.Reducer do
          type: :selector_opened,
          data: %Vibe.Event.Selector.Opened{selector: selector}
        }) do
-    open_selector(state, selector)
+    Selector.open(state, selector)
   end
 
   defp reduce(state, %Event{type: :selector_opened, data: data}) do
-    open_selector(state, data)
+    Selector.open(state, data)
   end
 
   defp reduce(state, %Event{
          type: :confirmation_requested,
          data: %Vibe.Event.Surface.ConfirmationRequested{confirmation: confirmation}
        }) do
-    open_confirmation_selector(state, confirmation)
+    Selector.open_confirmation(state, confirmation)
   end
 
   defp reduce(state, %Event{type: :confirmation_requested, data: data}) do
-    open_confirmation_selector(state, data)
+    Selector.open_confirmation(state, data)
   end
 
   defp reduce(state, %Event{
          type: :selector_moved,
          data: %Vibe.Event.Selector.Moved{direction: direction}
        }) do
-    move_active_selector(state, direction)
+    Selector.move(state, direction)
   end
 
   defp reduce(state, %Event{type: :selector_moved, data: data}) do
-    move_active_selector(state, RestoredPayload.direction(data))
+    Selector.move(state, RestoredPayload.direction(data))
   end
 
   defp reduce(state, %Event{type: :selector_closed}) do
-    %{state | selector: nil, overlays: Enum.reject(state.overlays, &selector_overlay?/1)}
+    Selector.close(state)
   end
 
   defp reduce(state, %Event{type: :selector_confirmed}) do
-    %{state | selector: nil, overlays: Enum.reject(state.overlays, &selector_overlay?/1)}
+    Selector.close(state)
   end
 
   defp reduce(state, _event), do: state
@@ -682,14 +682,6 @@ defmodule Vibe.UI.Reducer do
     %{state | plugin_widgets: Map.delete(state.plugin_widgets, key)}
   end
 
-  defp move_active_selector(state, direction) do
-    %{
-      state
-      | selector: move_selector(state.selector, direction),
-        overlays: update_selector_overlay(state.overlays, direction)
-    }
-  end
-
   defp append_user_message(state, text, at, content, image_count) do
     message =
       %Message{role: :user, text: text, at: at}
@@ -747,53 +739,6 @@ defmodule Vibe.UI.Reducer do
         status: :idle,
         usage_preview: empty_usage_preview()
     }
-  end
-
-  defp open_confirmation_selector(state, data) do
-    open_selector(
-      state,
-      data
-      |> Map.put_new(:kind, :confirmation)
-      |> Map.put(:overlay_kind, :confirmation)
-      |> Map.put_new(:items, [Map.get(data, :confirm, "Yes"), Map.get(data, :cancel, "No")])
-      |> Map.put_new(:selected, 0)
-      |> Map.put_new(:limit, 2)
-    )
-  end
-
-  defp open_selector(state, data) do
-    selector = Selector.new(data)
-
-    %{
-      state
-      | selector: selector,
-        overlays: Lists.append(state.overlays, Selector.overlay(selector))
-    }
-  end
-
-  defp selector_overlay?(%{kind: kind}) when kind in [:selector, :confirmation], do: true
-  defp selector_overlay?(_overlay), do: false
-
-  defp move_selector(nil, _direction), do: nil
-
-  defp move_selector(%Selector{} = selector, direction), do: Selector.move(selector, direction)
-
-  defp move_selector(selector, direction),
-    do: selector |> Selector.new() |> Selector.move(direction)
-
-  defp update_selector_overlay(overlays, direction) do
-    Enum.map(overlays, fn
-      %{kind: kind} = overlay when kind in [:selector, :confirmation] ->
-        overlay
-        |> Map.put(:kind, Map.get(overlay, :selector_kind, kind))
-        |> Map.put(:overlay_kind, kind)
-        |> Selector.new()
-        |> Selector.move(direction)
-        |> Selector.overlay()
-
-      overlay ->
-        overlay
-    end)
   end
 
   defp set_runtime_alert(state, %Alert{} = alert) do
