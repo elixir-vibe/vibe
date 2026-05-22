@@ -18,6 +18,7 @@
       "Vibe.Session.Registry"
     ],
     command: "Vibe.Command*",
+    cli: ["Vibe.CLI*", "Mix.Tasks.Vibe*"],
     tool: [
       "Vibe.Tool",
       "Vibe.Tool.AdapterResult",
@@ -54,6 +55,7 @@
       {:json_value, :event},
       {:json_value, :session},
       {:json_value, :command},
+      {:json_value, :cli},
       {:json_value, :tool},
       {:json_value, :transport},
       {:json_value, :presentation},
