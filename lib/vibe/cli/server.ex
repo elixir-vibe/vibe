@@ -44,9 +44,18 @@ defmodule Vibe.CLI.Server do
   @spec ensure_running(non_neg_integer(), keyword()) :: :ok | {:error, term()}
   def ensure_running(timeout_ms \\ @default_start_timeout_ms, opts \\ []) do
     case Vibe.Remote.connect() do
-      {:ok, _node} -> :ok
-      {:error, {:stale_server, _metadata}} -> restart_background(timeout_ms, opts)
-      {:error, _reason} -> start_background(timeout_ms, opts)
+      {:ok, _node} ->
+        :ok
+
+      {:error, {:stale_server, _metadata}} ->
+        restart_background(timeout_ms, opts)
+
+      {:error, :enoent} ->
+        _ = Vibe.Server.stop()
+        start_background(timeout_ms, opts)
+
+      {:error, _reason} ->
+        start_background(timeout_ms, opts)
     end
   end
 

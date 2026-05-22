@@ -49,9 +49,20 @@ defmodule Vibe.Application do
   defp web_children do
     if Application.get_env(:vibe, :web, true) do
       port = Application.get_env(:vibe, :web_port, 4321)
-      Application.put_env(:vibe, Vibe.Web.Endpoint, Vibe.Web.endpoint_config(port))
-      Vibe.Web.Assets.ensure_built!()
-      [Vibe.Web.Endpoint]
+
+      if web_port_available?(port) do
+        Application.put_env(:vibe, Vibe.Web.Endpoint, Vibe.Web.endpoint_config(port))
+        Vibe.Web.Assets.ensure_built!()
+        [Vibe.Web.Endpoint]
+      else
+        require Logger
+
+        Logger.warning(
+          "Web console port #{port} is already in use; starting Vibe without the web endpoint"
+        )
+
+        []
+      end
     else
       []
     end
@@ -60,6 +71,17 @@ defmodule Vibe.Application do
       require Logger
       Logger.warning("Failed to start web console: #{Exception.message(error)}")
       []
+  end
+
+  defp web_port_available?(port) do
+    case :gen_tcp.listen(port, [:binary, {:ip, {127, 0, 0, 1}}, {:active, false}]) do
+      {:ok, socket} ->
+        :gen_tcp.close(socket)
+        true
+
+      {:error, _reason} ->
+        false
+    end
   end
 
   defp gateway_children do
