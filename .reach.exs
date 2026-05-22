@@ -38,7 +38,8 @@
       "Vibe.Presentation.Tool*",
       "Vibe.Presentation.Widget"
     ],
-    markdown: ["Vibe.Markdown", "Vibe.MD", "Vibe.Presentation.Markdown*"],
+    markdown: ["Vibe.Markdown", "Vibe.Presentation.Markdown*"],
+    eval_api: ["Vibe.MD", "Vibe.MD.*"],
     ui_state: [
       "Vibe.UI.Autocomplete*",
       "Vibe.UI.Block*",
@@ -86,6 +87,7 @@
       {:json_value, :transport},
       {:json_value, :presentation},
       {:json_value, :markdown},
+      {:json_value, :eval_api},
       {:json_value, :ui_state},
       {:json_value, :tui},
       {:json_value, :web},
