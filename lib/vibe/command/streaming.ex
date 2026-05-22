@@ -48,17 +48,20 @@ defmodule Vibe.Command.Streaming do
   end
 
   defp should_flush?(session_id) do
-    key = {:vibe_eval_command_stream_last_flush, session_id}
+    key = flush_key(session_id)
     now = System.monotonic_time(:millisecond)
-    previous = Process.get(key)
 
-    if is_nil(previous) or now - previous >= @flush_ms do
+    if flush_due?(Process.get(key), now) do
       Process.put(key, now)
       true
     else
       false
     end
   end
+
+  defp flush_key(session_id), do: {:vibe_eval_command_stream_last_flush, session_id}
+  defp flush_due?(nil, _now), do: true
+  defp flush_due?(previous, now), do: now - previous >= @flush_ms
 
   defp emit(session_id, output) do
     with {:ok, session} <- Vibe.Event.Bus.server(session_id),

@@ -27,12 +27,22 @@ defmodule Vibe.Command.Processes do
 
     session_id
     |> tracked_pids()
-    |> Enum.each(fn pid ->
-      if cancellable_pid?(pid), do: GenServer.call(pid, :cancel)
-      untrack(session_id, pid)
-    end)
+    |> Enum.map(&cancel_action(session_id, &1))
+    |> Enum.each(&run_cancel_action/1)
 
     :ok
+  end
+
+  defp cancel_action(session_id, pid),
+    do: %{session_id: session_id, pid: pid, cancel?: cancellable_pid?(pid)}
+
+  defp run_cancel_action(%{pid: pid, cancel?: true} = action) do
+    GenServer.call(pid, :cancel)
+    untrack(action.session_id, pid)
+  end
+
+  defp run_cancel_action(%{pid: pid, cancel?: false} = action) do
+    untrack(action.session_id, pid)
   end
 
   defp tracked_pids(session_id) do
@@ -44,9 +54,20 @@ defmodule Vibe.Command.Processes do
   defp cancellable_pid?(pid), do: is_pid(pid) and Process.alive?(pid)
 
   defp ensure_table do
-    case :ets.info(@table) do
-      :undefined -> :ets.new(@table, [:named_table, :public, read_concurrency: true])
-      _info -> @table
+    case table_status() do
+      :missing -> create_table()
+      :present -> @table
     end
+  end
+
+  defp table_status do
+    case :ets.info(@table) do
+      :undefined -> :missing
+      _info -> :present
+    end
+  end
+
+  defp create_table do
+    :ets.new(@table, [:named_table, :public, read_concurrency: true])
   end
 end

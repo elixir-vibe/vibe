@@ -48,24 +48,38 @@ defmodule Vibe.CLI.Escript do
   end
 
   defp extract_priv_dirs(path) do
-    with {:ok, sections} <- :escript.extract(to_charlist(path), []),
-         {:archive, archive} <- List.keyfind(sections, :archive, 0) do
+    with {:ok, archive} <- escript_archive(path) do
       root = cache_root(path)
-      marker = Path.join(root, ".complete")
-
-      unless File.exists?(marker) do
-        File.rm_rf!(root)
-        File.mkdir_p!(root)
-        {:ok, _} = :zip.extract(archive, cwd: to_charlist(root))
-        File.write!(marker, @version)
-      end
-
+      ensure_extracted_archive!(archive, root)
       add_code_paths(root)
       configure_extracted_priv(root)
-      :ok
-    else
-      _ -> :ok
     end
+
+    :ok
+  end
+
+  defp escript_archive(path) do
+    with {:ok, sections} <- :escript.extract(to_charlist(path), []),
+         {:archive, archive} <- List.keyfind(sections, :archive, 0) do
+      {:ok, archive}
+    else
+      _ -> :error
+    end
+  end
+
+  defp ensure_extracted_archive!(archive, root) do
+    unless extracted?(root) do
+      extract_archive!(archive, root)
+    end
+  end
+
+  defp extracted?(root), do: File.exists?(Path.join(root, ".complete"))
+
+  defp extract_archive!(archive, root) do
+    File.rm_rf!(root)
+    File.mkdir_p!(root)
+    {:ok, _} = :zip.extract(archive, cwd: to_charlist(root))
+    File.write!(Path.join(root, ".complete"), @version)
   end
 
   defp cache_root(path) do
@@ -82,11 +96,18 @@ defmodule Vibe.CLI.Escript do
 
   defp add_code_paths(root) do
     root
+    |> ebin_paths()
+    |> Enum.each(&add_code_path/1)
+  end
+
+  defp ebin_paths(root) do
+    root
     |> File.ls!()
     |> Enum.map(&Path.join([root, &1, "ebin"]))
     |> Enum.filter(&File.dir?/1)
-    |> Enum.each(&:code.add_patha(to_charlist(&1)))
   end
+
+  defp add_code_path(path), do: :code.add_patha(to_charlist(path))
 
   defp configure_extracted_priv(root) do
     Application.put_env(:tzdata, :data_dir, Path.join([root, "tzdata", "priv"]))
