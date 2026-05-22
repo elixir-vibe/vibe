@@ -5,11 +5,17 @@ defmodule Vibe.Session.Command do
   alias Vibe.Event
   alias Vibe.Session.Command.Registry
 
+  @skill_autocomplete_cache_key {__MODULE__, :skill_autocomplete_items}
+  @skill_autocomplete_cache_ttl_ms 30_000
+
   @spec autocomplete(String.t()) :: Autocomplete.t() | nil
   def autocomplete("/" <> text) do
     query = text |> String.split(~r/\s+/, parts: 2) |> hd()
 
-    items = (Registry.specs() |> Enum.map(&autocomplete_item/1)) ++ skill_autocomplete_items()
+    items =
+      (Registry.specs() |> Enum.map(&autocomplete_item/1)) ++
+        skill_autocomplete_items_for_query(query)
+
     Autocomplete.filter(items, query, title: "Commands", limit: 7)
   end
 
@@ -47,6 +53,30 @@ defmodule Vibe.Session.Command do
       detail: Map.get(spec, :description),
       group: :slash_command
     }
+  end
+
+  defp skill_autocomplete_items_for_query("skill" <> _suffix),
+    do: cached_skill_autocomplete_items()
+
+  defp skill_autocomplete_items_for_query(_query), do: []
+
+  defp cached_skill_autocomplete_items do
+    now = System.monotonic_time(:millisecond)
+
+    case :persistent_term.get(@skill_autocomplete_cache_key, nil) do
+      {expires_at, items} when expires_at > now ->
+        items
+
+      _stale ->
+        items = skill_autocomplete_items()
+
+        :persistent_term.put(
+          @skill_autocomplete_cache_key,
+          {now + @skill_autocomplete_cache_ttl_ms, items}
+        )
+
+        items
+    end
   end
 
   defp skill_autocomplete_items do
