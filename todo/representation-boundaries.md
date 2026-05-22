@@ -392,7 +392,7 @@ Completed since this plan was written:
 
 - Deleted old compatibility namespaces including `Vibe.UI.Event`, `Vibe.UI.Bus`, `Vibe.UI.SlashCommands.*`, `Vibe.WebTools.*`, `Vibe.Session.Store.Codec`, and broad JSON/codec escape hatches.
 - Added typed `Vibe.Event.*` payload modules and storage/transport JSON boundary protocols.
-- Enforced architecture, smell, JSON-value, and cycle gates through `.reach.exs` and `scripts/check_reach_cycles.exs`.
+- Enforced architecture, smell, and JSON-value gates through `.reach.exs` and strict Reach checks.
 - Removed `Vibe.Event.Bus -> Vibe.Plugin.UI` upward dependency.
 - Moved session command intents from `Vibe.UI.Command` to `Vibe.Session.Command.Intent`.
 - Enforced plugin tool hooks at the built-in tool execution boundary with typed `Vibe.Tool.PluginCall` and `Vibe.Tool.PluginResult` payloads.
