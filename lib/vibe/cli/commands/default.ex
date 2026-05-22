@@ -1,67 +1,50 @@
 defmodule Vibe.CLI.Commands.Default do
   @moduledoc "Default CLI entrypoint: prompt, TUI, eval, and flag dispatch."
   alias Vibe.CLI.{Output, Runner, Server, Sessions}
+  alias Vibe.CLI.Commands.Default.Dispatch
 
   @version Mix.Project.config()[:version]
-  @default_eval_timeout_ms 30_000
 
   @spec run([String.t()], keyword()) :: :ok | {:error, term()}
   def run(args, opts) do
-    cond do
-      opts[:help] ->
-        Mix.Tasks.Help.run(["vibe"])
-        :ok
-
-      opts[:version] ->
-        IO.puts(@version)
-        :ok
-
-      opts[:login] ->
-        Vibe.Auth.login(opts[:login])
-
-      opts[:web] ->
-        web(opts)
-
-      code = opts[:eval] ->
-        Output.print(
-          Vibe.Eval.once(code, timeout: opts[:timeout] || @default_eval_timeout_ms),
-          opts
-        )
-
-      opts[:compact] ->
-        compact(opts)
-
-      opts[:checks] ->
-        Output.print(Vibe.Code.Checks.run_all(), opts)
-
-      opts[:codex_usage] ->
-        Output.print(Vibe.Auth.Codex.usage_limits(), opts)
-
-      opts[:sessions] ->
-        Output.print({:ok, Vibe.Session.Store.list()}, opts)
-
-      opts[:bg] == true and args != [] ->
-        prompt = Enum.join(args, " ")
-        background(prompt, opts)
-
-      opts[:print] == true or args != [] ->
-        {file_args, message_args} = split_file_args(args)
-
-        opts = Keyword.put(opts, :file_args, file_args)
-
-        message_args
-        |> Enum.join(" ")
-        |> Runner.ask(opts)
-
-      true ->
-        Sessions.attach_default(opts)
-    end
+    args
+    |> Dispatch.action(opts)
+    |> execute(opts)
   end
 
-  defp split_file_args(args) do
-    {files, messages} = Enum.split_with(args, &String.starts_with?(&1, "@"))
-    {Enum.map(files, &String.replace_prefix(&1, "@", "")), messages}
+  defp execute({:help}, _opts) do
+    Mix.Tasks.Help.run(["vibe"])
+    :ok
   end
+
+  defp execute({:version}, _opts) do
+    IO.puts(@version)
+    :ok
+  end
+
+  defp execute({:login, provider}, _opts), do: Vibe.Auth.login(provider)
+  defp execute({:web}, opts), do: web(opts)
+
+  defp execute({:eval, code, timeout}, opts) do
+    Output.print(Vibe.Eval.once(code, timeout: timeout), opts)
+  end
+
+  defp execute({:compact}, opts), do: compact(opts)
+  defp execute({:checks}, opts), do: Output.print(Vibe.Code.Checks.run_all(), opts)
+  defp execute({:codex_usage}, opts), do: Output.print(Vibe.Auth.Codex.usage_limits(), opts)
+  defp execute({:sessions}, opts), do: Output.print({:ok, Vibe.Session.Store.list()}, opts)
+
+  defp execute({:background, prompt}, opts), do: background(prompt, opts)
+
+  defp execute({:ask, {file_args, message_args}}, opts) do
+    opts = Keyword.put(opts, :file_args, file_args)
+
+    message_args
+    |> Enum.join(" ")
+    |> Runner.ask(opts)
+  end
+
+  defp execute({:attach_default}, opts), do: Sessions.attach_default(opts)
 
   defp web(opts) do
     _ = Server.ensure_running(20_000, opts)
