@@ -3,6 +3,16 @@ defmodule Vibe.PluginManagerTest do
 
   alias Vibe.Presentation.Widget
 
+  defmodule ManagerCallingToolPlugin do
+    use Vibe.Plugin
+
+    @impl true
+    def tool_call(_call, _context, state) do
+      Vibe.Plugin.Manager.plugins()
+      {:ok, state}
+    end
+  end
+
   alias Vibe.Test.PluginManagerFixtures.{
     APIPlugin,
     BackgroundPlugin,
@@ -123,6 +133,20 @@ defmodule Vibe.PluginManagerTest do
     assert :ok = Vibe.Plugin.Manager.unload(ToolPipelinePluginB)
   end
 
+  test "plugin pipeline callbacks cannot deadlock the manager" do
+    previous_timeout = Application.get_env(:vibe, :plugin_callback_timeout_ms)
+    Application.put_env(:vibe, :plugin_callback_timeout_ms, 20)
+
+    on_exit(fn ->
+      restore_env(:plugin_callback_timeout_ms, previous_timeout)
+      Vibe.Plugin.Manager.unload(ManagerCallingToolPlugin)
+    end)
+
+    assert :ok = Vibe.Plugin.Manager.load(ManagerCallingToolPlugin)
+    assert :ok = Vibe.Plugin.Manager.tool_call(%{}, %{})
+    assert ManagerCallingToolPlugin in Vibe.Plugin.Manager.plugins()
+  end
+
   test "plugin pipeline can block tool calls" do
     assert :ok = Vibe.Plugin.Manager.load(ToolBlockPlugin)
 
@@ -169,4 +193,7 @@ defmodule Vibe.PluginManagerTest do
     assert Vibe.Session.state(server).plugin_statuses["prompt"] == "prompt: hello"
     assert :ok = Vibe.Plugin.Manager.unload(EventPlugin)
   end
+
+  defp restore_env(key, nil), do: Application.delete_env(:vibe, key)
+  defp restore_env(key, value), do: Application.put_env(:vibe, key, value)
 end

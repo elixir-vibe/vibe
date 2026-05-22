@@ -7,6 +7,8 @@ defmodule Vibe.Plugin.Manager do
   alias Vibe.Plugin.API
   alias Vibe.Presentation.Document
 
+  @default_plugin_callback_timeout_ms 5_000
+
   defstruct plugins: %{}, order: []
 
   @type plugin_entry :: %{state: term(), children: [pid()]}
@@ -243,54 +245,53 @@ defmodule Vibe.Plugin.Manager do
     do: {{:ok, Enum.reverse(results)}, state}
 
   defp do_dispatch([{module, entry} | rest], event, context, state, results) do
-    case module.handle_event(event, context, entry.state) do
-      {{:halt, reason}, new_plugin_state} ->
+    case call_plugin(module, :handle_event, [event, context, entry.state]) do
+      {:ok, {{:halt, reason}, new_plugin_state}} ->
         {{:halt, reason}, put_plugin_state(state, module, new_plugin_state)}
 
-      {{:error, reason}, new_plugin_state} ->
+      {:ok, {{:error, reason}, new_plugin_state}} ->
         {{:error, {module, reason}}, put_plugin_state(state, module, new_plugin_state)}
 
-      {result, new_plugin_state} ->
+      {:ok, {result, new_plugin_state}} ->
         state = put_plugin_state(state, module, new_plugin_state)
         do_dispatch(rest, event, context, state, [result | results])
+
+      {:error, reason} ->
+        {{:error, {module, reason}}, state}
     end
-  rescue
-    exception -> {{:error, {module, exception}}, state}
   end
 
   defp plugin_commands(module, plugin_state) do
-    if function_exported?(module, :commands, 1), do: module.commands(plugin_state), else: []
-  rescue
-    error ->
-      Logger.warning("Plugin #{inspect(module)} commands/1 failed: #{Exception.message(error)}")
-      []
+    with true <- function_exported?(module, :commands, 1),
+         {:ok, commands} <- call_plugin(module, :commands, [plugin_state]) do
+      commands
+    else
+      false -> []
+      {:error, reason} -> log_plugin_failure(module, :commands, reason, [])
+    end
   end
 
   defp plugin_apis(module, plugin_state) do
-    if function_exported?(module, :apis, 1) do
-      Enum.map(module.apis(plugin_state), &Vibe.Plugin.API.new/1)
+    with true <- function_exported?(module, :apis, 1),
+         {:ok, apis} <- call_plugin(module, :apis, [plugin_state]) do
+      Enum.map(apis, &Vibe.Plugin.API.new/1)
     else
-      []
+      false -> []
+      {:error, reason} -> log_plugin_failure(module, :apis, reason, [])
     end
-  rescue
-    error ->
-      Logger.warning("Plugin #{inspect(module)} apis/1 failed: #{Exception.message(error)}")
-      []
   end
 
   defp plugin_presentation_document(module, plugin_state) do
-    if function_exported?(module, :presentation_document, 1) do
-      Document.new(module.presentation_document(plugin_state))
+    with true <- function_exported?(module, :presentation_document, 1),
+         {:ok, document} <- call_plugin(module, :presentation_document, [plugin_state]) do
+      Document.new(document)
     else
-      Document.empty()
-    end
-  rescue
-    error ->
-      Logger.warning(
-        "Plugin #{inspect(module)} presentation_document/1 failed: #{Exception.message(error)}"
-      )
+      false ->
+        Document.empty()
 
-      Document.empty()
+      {:error, reason} ->
+        log_plugin_failure(module, :presentation_document, reason, Document.empty())
+    end
   end
 
   defp put_plugin(%__MODULE__{} = state, module, entry) do
@@ -337,8 +338,9 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp safe_system_prompt(module, entry, context, blocks, state) do
-    if function_exported?(module, :system_prompt, 2) do
-      case module.system_prompt(context, entry.state) do
+    with true <- function_exported?(module, :system_prompt, 2),
+         {:ok, result} <- call_plugin(module, :system_prompt, [context, entry.state]) do
+      case result do
         {text, new_state} when is_binary(text) and text != "" ->
           {[text | blocks], put_plugin_state(state, module, new_state)}
 
@@ -346,15 +348,13 @@ defmodule Vibe.Plugin.Manager do
           {blocks, put_plugin_state(state, module, new_state)}
       end
     else
-      {blocks, state}
-    end
-  rescue
-    error ->
-      Logger.warning(
-        "Plugin #{inspect(module)} system_prompt/2 failed: #{Exception.message(error)}"
-      )
+      false ->
+        {blocks, state}
 
-      {blocks, state}
+      {:error, reason} ->
+        log_plugin_failure(module, :system_prompt, reason, nil)
+        {blocks, state}
+    end
   end
 
   defp run_before_command(plugins, command, context) do
@@ -369,8 +369,9 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp safe_before_command(module, entry, command, context, {result, plugin_states}) do
-    if function_exported?(module, :before_command, 3) do
-      case module.before_command(command, context, entry.state) do
+    with true <- function_exported?(module, :before_command, 3),
+         {:ok, reply} <- call_plugin(module, :before_command, [command, context, entry.state]) do
+      case reply do
         {:ok, new_state} ->
           {:cont, {result, [{module, new_state} | plugin_states]}}
 
@@ -381,15 +382,13 @@ defmodule Vibe.Plugin.Manager do
           {:halt, {{:block, reason}, [{module, new_state} | plugin_states]}}
       end
     else
-      {:cont, {result, plugin_states}}
-    end
-  rescue
-    error ->
-      Logger.warning(
-        "Plugin #{inspect(module)} before_command/3 failed: #{Exception.message(error)}"
-      )
+      false ->
+        {:cont, {result, plugin_states}}
 
-      {:cont, {result, plugin_states}}
+      {:error, reason} ->
+        log_plugin_failure(module, :before_command, reason, nil)
+        {:cont, {result, plugin_states}}
+    end
   end
 
   defp pipeline_callback(callback, initial_value, context, state) do
@@ -402,8 +401,9 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp safe_pipeline_step(module, entry, callback, context, {:ok, value, changed?, state}) do
-    if function_exported?(module, callback, 3) do
-      case apply(module, callback, [value, context, entry.state]) do
+    with true <- function_exported?(module, callback, 3),
+         {:ok, reply} <- call_plugin(module, callback, [value, context, entry.state]) do
+      case reply do
         {:ok, new_state} ->
           {:cont, {:ok, value, changed?, put_plugin_state(state, module, new_state)}}
 
@@ -414,12 +414,13 @@ defmodule Vibe.Plugin.Manager do
           {:halt, {{:block, reason}, put_plugin_state(state, module, new_state)}}
       end
     else
-      {:cont, {:ok, value, changed?, state}}
+      false ->
+        {:cont, {:ok, value, changed?, state}}
+
+      {:error, reason} ->
+        log_plugin_failure(module, callback, reason, nil)
+        {:cont, {:ok, value, changed?, state}}
     end
-  rescue
-    error ->
-      Logger.warning("Plugin #{inspect(module)} #{callback} failed: #{Exception.message(error)}")
-      {:cont, {:ok, value, changed?, state}}
   end
 
   defp pipeline_reply({:ok, _value, false, state}), do: {:ok, state}
@@ -427,10 +428,40 @@ defmodule Vibe.Plugin.Manager do
   defp pipeline_reply({{:block, reason}, state}), do: {{:block, reason}, state}
 
   defp safe_shutdown(module, plugin_state) do
-    if function_exported?(module, :shutdown, 1), do: module.shutdown(plugin_state), else: :ok
-  rescue
-    error ->
-      Logger.warning("Plugin #{inspect(module)} shutdown/1 failed: #{Exception.message(error)}")
+    with true <- function_exported?(module, :shutdown, 1),
+         {:ok, _result} <- call_plugin(module, :shutdown, [plugin_state]) do
       :ok
+    else
+      false -> :ok
+      {:error, reason} -> log_plugin_failure(module, :shutdown, reason, :ok)
+    end
   end
+
+  defp call_plugin(module, callback, args) do
+    task =
+      Task.Supervisor.async_nolink(Vibe.TaskSupervisor, fn -> apply(module, callback, args) end)
+
+    case Task.yield(task, plugin_callback_timeout_ms()) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, reason}
+      nil -> {:error, :timeout}
+    end
+  rescue
+    error -> {:error, error}
+  end
+
+  defp plugin_callback_timeout_ms do
+    Application.get_env(:vibe, :plugin_callback_timeout_ms, @default_plugin_callback_timeout_ms)
+  end
+
+  defp log_plugin_failure(module, callback, reason, fallback) do
+    Logger.warning(
+      "Plugin #{inspect(module)} #{callback} failed: #{format_plugin_failure(reason)}"
+    )
+
+    fallback
+  end
+
+  defp format_plugin_failure(%{__struct__: _} = error), do: Exception.message(error)
+  defp format_plugin_failure(reason), do: inspect(reason)
 end
