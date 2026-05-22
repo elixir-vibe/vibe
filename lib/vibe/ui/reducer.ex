@@ -20,33 +20,40 @@ defmodule Vibe.UI.Reducer do
   @spec apply_events(State.t(), [Event.t()]) :: State.t()
   def apply_events(%State{} = state, events), do: Enum.reduce(events, state, &apply_event(&2, &1))
 
+  defp reduce(state, %Event{
+         type: :user_message_added,
+         at: at,
+         data: %Vibe.Event.Message.UserAdded{
+           text: text,
+           content: content,
+           image_count: image_count
+         }
+       }) do
+    append_user_message(state, text, at, content, image_count)
+  end
+
   defp reduce(state, %Event{type: :user_message_added, at: at, data: data}) do
     data = event_payload_map(data)
-    text = Map.fetch!(data, :text)
 
-    message =
-      %Message{role: :user, text: text, at: at}
-      |> maybe_put(:content, Map.get(data, :content))
-      |> maybe_put(:image_count, Map.get(data, :image_count))
+    append_user_message(
+      state,
+      Map.fetch!(data, :text),
+      at,
+      Map.get(data, :content),
+      Map.get(data, :image_count)
+    )
+  end
 
-    %{
-      state
-      | messages: Lists.append(state.messages, message),
-        status: :working,
-        usage_preview: usage_preview(input_tokens: estimate_tokens(text), output_tokens: 0)
-    }
+  defp reduce(state, %Event{
+         type: :assistant_message_added,
+         at: at,
+         data: %Vibe.Event.Message.AssistantAdded{} = data
+       }) do
+    append_assistant_message(state, data, at)
   end
 
   defp reduce(state, %Event{type: :assistant_message_added, at: at, data: data}) do
-    message = struct(Message, Map.merge(%{role: :assistant, at: at}, event_payload_map(data)))
-
-    %{
-      state
-      | messages: Lists.append(state.messages, message),
-        status: :idle,
-        streaming_message: nil,
-        usage_preview: empty_usage_preview()
-    }
+    append_assistant_message(state, event_payload_map(data), at)
   end
 
   defp reduce(state, %Event{type: :assistant_stream_started}) do
@@ -57,12 +64,25 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{
+         type: :assistant_delta,
+         at: at,
+         data: %Vibe.Event.AssistantStream.Delta{text: text}
+       }) do
+    apply_assistant_delta(state, text, at)
+  end
+
   defp reduce(state, %Event{type: :assistant_delta, at: at, data: data}) do
     %{text: text} = event_payload_map(data)
+    apply_assistant_delta(state, text, at)
+  end
 
-    state
-    |> append_streaming_delta(:text, text, at)
-    |> update_usage_preview(:output_tokens, estimate_tokens(text))
+  defp reduce(state, %Event{
+         type: :assistant_thinking_delta,
+         at: at,
+         data: %Vibe.Event.AssistantStream.ThinkingDelta{text: text}
+       }) do
+    append_streaming_delta(state, :thinking, text, at)
   end
 
   defp reduce(state, %Event{type: :assistant_thinking_delta, at: at, data: data}) do
@@ -70,35 +90,29 @@ defmodule Vibe.UI.Reducer do
     append_streaming_delta(state, :thinking, text, at)
   end
 
+  defp reduce(state, %Event{
+         type: :assistant_stream_finished,
+         at: at,
+         data: %Vibe.Event.AssistantStream.Finished{text: text}
+       }) do
+    finish_assistant_stream(state, text, at)
+  end
+
   defp reduce(state, %Event{type: :assistant_stream_finished, at: at, data: data}) do
     data = event_payload_map(data)
+    finish_assistant_stream(state, Map.get(data, :text), at)
+  end
 
-    state
-    |> finalize_streaming_text(Map.get(data, :text), at)
-    |> Map.merge(%{streaming_message: nil, status: :idle})
+  defp reduce(state, %Event{
+         type: :assistant_aborted,
+         data: %Vibe.Event.AssistantStream.Aborted{reason: reason, notify?: notify?}
+       }) do
+    abort_assistant(state, reason, notify?)
   end
 
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
     data = event_payload_map(data)
-
-    messages =
-      if Map.get(data, :notify?, true) do
-        Lists.append(state.messages, %Message{
-          role: :assistant,
-          text: Map.get(data, :reason, "Cancelled."),
-          at: DateTime.utc_now()
-        })
-      else
-        state.messages
-      end
-
-    %{
-      state
-      | messages: messages,
-        streaming_message: nil,
-        status: :idle,
-        usage_preview: empty_usage_preview()
-    }
+    abort_assistant(state, Map.get(data, :reason, "Cancelled."), Map.get(data, :notify?, true))
   end
 
   defp reduce(state, %Event{
@@ -201,21 +215,24 @@ defmodule Vibe.UI.Reducer do
     %{state | truncate?: !state.truncate?}
   end
 
+  defp reduce(state, %Event{type: :tool_toggled, data: %Vibe.Event.Surface.ToolToggled{id: id}}) do
+    toggle_tool(state, id)
+  end
+
   defp reduce(state, %Event{type: :tool_toggled, data: data}) do
     %{id: id} = event_payload_map(data)
+    toggle_tool(state, id)
+  end
 
-    pending_tools =
-      Map.update(state.pending_tools, id, nil, fn
-        nil -> nil
-        tool -> Map.update(tool, :expanded?, true, &(!&1))
-      end)
-
-    %{state | pending_tools: pending_tools}
+  defp reduce(state, %Event{
+         type: :patch_confirmation_requested,
+         data: %Vibe.Event.Command.PatchConfirmationRequested{} = data
+       }) do
+    open_patch_confirmation(state, event_payload_map(data))
   end
 
   defp reduce(state, %Event{type: :patch_confirmation_requested, data: data}) do
-    data = event_payload_map(data)
-    %{state | overlays: Lists.append(state.overlays, Map.put(data, :kind, :patch_confirmation))}
+    open_patch_confirmation(state, event_payload_map(data))
   end
 
   defp reduce(state, %Event{type: :usage_updated, data: usage}) do
@@ -316,57 +333,40 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{
+         type: :context_compaction_started,
+         data: %Vibe.Event.ContextCompaction.Started{tokens_before: tokens_before}
+       }) do
+    start_context_compaction(state, tokens_before)
+  end
+
   defp reduce(state, %Event{type: :context_compaction_started, data: data}) do
     data = event_payload_map(data)
+    start_context_compaction(state, Map.get(data, :tokens_before, 0))
+  end
 
-    widget =
-      Vibe.Presentation.Widget.progress(:context_compaction,
-        title: "Compacting context",
-        current: Map.get(data, :tokens_before, 0),
-        total: Map.get(data, :tokens_before, 0),
-        message: "Summarizing conversation history",
-        placement: :above_editor
-      )
-
-    %{
-      state
-      | status: :compacting,
-        plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)
-    }
+  defp reduce(state, %Event{
+         type: :context_compaction_failed,
+         data: %Vibe.Event.ContextCompaction.Failed{reason: reason}
+       }) do
+    fail_context_compaction(state, reason)
   end
 
   defp reduce(state, %Event{type: :context_compaction_failed, data: data}) do
     data = event_payload_map(data)
-    notice = %{level: :error, text: Map.get(data, :reason, "context compaction failed")}
+    fail_context_compaction(state, Map.get(data, :reason, "context compaction failed"))
+  end
 
-    %{
-      state
-      | notifications: Lists.append(state.notifications, notice),
-        status: :idle,
-        plugin_widgets: Map.delete(state.plugin_widgets, "context_compaction")
-    }
+  defp reduce(state, %Event{
+         type: :context_compaction_finished,
+         data: %Vibe.Event.ContextCompaction.Finished{summary: summary}
+       }) do
+    finish_context_compaction(state, summary)
   end
 
   defp reduce(state, %Event{type: :context_compaction_finished, data: data}) do
     data = event_payload_map(data)
-    summary = Map.get(data, :summary, "context compacted")
-    notice = %{level: :success, text: summary}
-
-    widget =
-      Vibe.Presentation.Widget.markdown(:context_compaction_summary, summary,
-        placement: :above_editor,
-        version: System.unique_integer([:positive])
-      )
-
-    %{
-      state
-      | notifications: Lists.append(state.notifications, notice),
-        status: :idle,
-        plugin_widgets:
-          state.plugin_widgets
-          |> Map.delete("context_compaction")
-          |> Map.put(widget.id, widget)
-    }
+    finish_context_compaction(state, Map.get(data, :summary, "context compacted"))
   end
 
   defp reduce(state, %Event{
@@ -384,14 +384,16 @@ defmodule Vibe.UI.Reducer do
     %{state | overlays: Enum.drop(state.overlays, -1)}
   end
 
-  defp reduce(state, %Event{type: :notification_added, id: event_id, data: data}) do
-    data = event_payload_map(data)
+  defp reduce(state, %Event{
+         type: :notification_added,
+         id: event_id,
+         data: %Vibe.Event.Notification.Added{} = data
+       }) do
+    add_notification(state, event_payload_map(data), event_id)
+  end
 
-    %{
-      state
-      | notifications:
-          Lists.append(state.notifications, Notification.new(Map.put_new(data, :id, event_id)))
-    }
+  defp reduce(state, %Event{type: :notification_added, id: event_id, data: data}) do
+    add_notification(state, event_payload_map(data), event_id)
   end
 
   defp reduce(state, %Event{
@@ -408,40 +410,40 @@ defmodule Vibe.UI.Reducer do
     clear_runtime_alert(state, alert)
   end
 
+  defp reduce(state, %Event{
+         type: :notification_expired,
+         data: %Vibe.Event.Notification.Expired{id: id}
+       }) do
+    expire_notification(state, id)
+  end
+
   defp reduce(state, %Event{type: :notification_expired, data: data}) do
     %{id: id} = event_payload_map(data)
-    %{state | notifications: Enum.reject(state.notifications, &(notification_id(&1) == id))}
+    expire_notification(state, id)
+  end
+
+  defp reduce(state, %Event{
+         type: :subagent_started,
+         at: at,
+         data: %Vibe.Event.Subagent.Started{} = data
+       }) do
+    add_subagent_lifecycle(state, event_payload_map(data), :started, at)
   end
 
   defp reduce(state, %Event{type: :subagent_started, at: at, data: data}) do
-    data = event_payload_map(data)
-    child_session_id = Map.get(data, :child_session_id)
-    role = Map.get(data, :role) || "subagent"
-    text = "#{role} started" <> attach_hint(child_session_id)
-    message = Map.merge(data, %{role: :subagent, role_name: role, lifecycle: :started, at: at})
+    add_subagent_lifecycle(state, event_payload_map(data), :started, at)
+  end
 
-    %{
-      state
-      | messages: Lists.append(state.messages, message),
-        notifications:
-          Lists.append(state.notifications, Notification.new(%{level: :info, text: text}))
-    }
+  defp reduce(state, %Event{
+         type: :subagent_finished,
+         at: at,
+         data: %Vibe.Event.Subagent.Finished{} = data
+       }) do
+    add_subagent_lifecycle(state, event_payload_map(data), :finished, at)
   end
 
   defp reduce(state, %Event{type: :subagent_finished, at: at, data: data}) do
-    data = event_payload_map(data)
-    child_session_id = Map.get(data, :child_session_id)
-    status = Map.get(data, :status, :finished)
-    role = Map.get(data, :role) || "subagent"
-    text = "#{role} finished: #{status}" <> attach_hint(child_session_id)
-    message = Map.merge(data, %{role: :subagent, role_name: role, lifecycle: :finished, at: at})
-
-    %{
-      state
-      | messages: Lists.append(state.messages, message),
-        notifications:
-          Lists.append(state.notifications, Notification.new(%{level: :info, text: text}))
-    }
+    add_subagent_lifecycle(state, event_payload_map(data), :finished, at)
   end
 
   defp reduce(state, %Event{
@@ -456,25 +458,52 @@ defmodule Vibe.UI.Reducer do
     %{state | active_sessions: count}
   end
 
+  defp reduce(state, %Event{
+         type: :plugin_status_updated,
+         data: %Vibe.Event.Plugin.StatusUpdated{key: key, text: text}
+       }) do
+    put_plugin_status(state, key, text)
+  end
+
   defp reduce(state, %Event{type: :plugin_status_updated, data: data}) do
     %{key: key, text: text} = event_payload_map(data)
-    %{state | plugin_statuses: Map.put(state.plugin_statuses, key, text)}
+    put_plugin_status(state, key, text)
+  end
+
+  defp reduce(state, %Event{
+         type: :plugin_status_cleared,
+         data: %Vibe.Event.Plugin.StatusCleared{key: key}
+       }) do
+    clear_plugin_status(state, key)
   end
 
   defp reduce(state, %Event{type: :plugin_status_cleared, data: data}) do
     %{key: key} = event_payload_map(data)
-    %{state | plugin_statuses: Map.delete(state.plugin_statuses, key)}
+    clear_plugin_status(state, key)
+  end
+
+  defp reduce(state, %Event{
+         type: :plugin_widget_updated,
+         data: %Vibe.Event.Plugin.WidgetUpdated{widget: widget}
+       }) do
+    put_plugin_widget(state, widget)
   end
 
   defp reduce(state, %Event{type: :plugin_widget_updated, data: data}) do
     %{widget: widget} = event_payload_map(data)
-    widget = Vibe.Presentation.Widget.normalize(widget)
-    %{state | plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)}
+    put_plugin_widget(state, widget)
+  end
+
+  defp reduce(state, %Event{
+         type: :plugin_widget_cleared,
+         data: %Vibe.Event.Plugin.WidgetCleared{key: key}
+       }) do
+    clear_plugin_widget(state, key)
   end
 
   defp reduce(state, %Event{type: :plugin_widget_cleared, data: data}) do
     %{key: key} = event_payload_map(data)
-    %{state | plugin_widgets: Map.delete(state.plugin_widgets, key)}
+    clear_plugin_widget(state, key)
   end
 
   defp reduce(state, %Event{
@@ -535,14 +564,16 @@ defmodule Vibe.UI.Reducer do
     open_confirmation_selector(state, data)
   end
 
+  defp reduce(state, %Event{
+         type: :selector_moved,
+         data: %Vibe.Event.Selector.Moved{direction: direction}
+       }) do
+    move_active_selector(state, direction)
+  end
+
   defp reduce(state, %Event{type: :selector_moved, data: data}) do
     %{direction: direction} = event_payload_map(data)
-
-    %{
-      state
-      | selector: move_selector(state.selector, direction),
-        overlays: update_selector_overlay(state.overlays, direction)
-    }
+    move_active_selector(state, direction)
   end
 
   defp reduce(state, %Event{type: :selector_closed}) do
@@ -554,6 +585,183 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, _event), do: state
+
+  defp toggle_tool(state, id) do
+    pending_tools =
+      Map.update(state.pending_tools, id, nil, fn
+        nil -> nil
+        tool -> Map.update(tool, :expanded?, true, &(!&1))
+      end)
+
+    %{state | pending_tools: pending_tools}
+  end
+
+  defp open_patch_confirmation(state, data) do
+    %{state | overlays: Lists.append(state.overlays, Map.put(data, :kind, :patch_confirmation))}
+  end
+
+  defp start_context_compaction(state, tokens_before) do
+    widget =
+      Vibe.Presentation.Widget.progress(:context_compaction,
+        title: "Compacting context",
+        current: tokens_before,
+        total: tokens_before,
+        message: "Summarizing conversation history",
+        placement: :above_editor
+      )
+
+    %{
+      state
+      | status: :compacting,
+        plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)
+    }
+  end
+
+  defp fail_context_compaction(state, reason) do
+    %{
+      state
+      | notifications: Lists.append(state.notifications, %{level: :error, text: reason}),
+        status: :idle,
+        plugin_widgets: Map.delete(state.plugin_widgets, "context_compaction")
+    }
+  end
+
+  defp finish_context_compaction(state, summary) do
+    widget =
+      Vibe.Presentation.Widget.markdown(:context_compaction_summary, summary,
+        placement: :above_editor,
+        version: System.unique_integer([:positive])
+      )
+
+    %{
+      state
+      | notifications: Lists.append(state.notifications, %{level: :success, text: summary}),
+        status: :idle,
+        plugin_widgets:
+          state.plugin_widgets
+          |> Map.delete("context_compaction")
+          |> Map.put(widget.id, widget)
+    }
+  end
+
+  defp add_notification(state, data, event_id) do
+    %{
+      state
+      | notifications:
+          Lists.append(state.notifications, Notification.new(Map.put_new(data, :id, event_id)))
+    }
+  end
+
+  defp expire_notification(state, id) do
+    %{state | notifications: Enum.reject(state.notifications, &(notification_id(&1) == id))}
+  end
+
+  defp add_subagent_lifecycle(state, data, lifecycle, at) do
+    child_session_id = Map.get(data, :child_session_id)
+    role = Map.get(data, :role) || "subagent"
+    status = Map.get(data, :status, lifecycle)
+    text = subagent_lifecycle_text(role, lifecycle, status, child_session_id)
+    message = Map.merge(data, %{role: :subagent, role_name: role, lifecycle: lifecycle, at: at})
+
+    %{
+      state
+      | messages: Lists.append(state.messages, message),
+        notifications:
+          Lists.append(state.notifications, Notification.new(%{level: :info, text: text}))
+    }
+  end
+
+  defp subagent_lifecycle_text(role, :started, _status, child_session_id) do
+    "#{role} started" <> attach_hint(child_session_id)
+  end
+
+  defp subagent_lifecycle_text(role, :finished, status, child_session_id) do
+    "#{role} finished: #{status}" <> attach_hint(child_session_id)
+  end
+
+  defp put_plugin_status(state, key, text) do
+    %{state | plugin_statuses: Map.put(state.plugin_statuses, key, text)}
+  end
+
+  defp clear_plugin_status(state, key) do
+    %{state | plugin_statuses: Map.delete(state.plugin_statuses, key)}
+  end
+
+  defp put_plugin_widget(state, widget) do
+    widget = Vibe.Presentation.Widget.normalize(widget)
+    %{state | plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)}
+  end
+
+  defp clear_plugin_widget(state, key) do
+    %{state | plugin_widgets: Map.delete(state.plugin_widgets, key)}
+  end
+
+  defp move_active_selector(state, direction) do
+    %{
+      state
+      | selector: move_selector(state.selector, direction),
+        overlays: update_selector_overlay(state.overlays, direction)
+    }
+  end
+
+  defp append_user_message(state, text, at, content, image_count) do
+    message =
+      %Message{role: :user, text: text, at: at}
+      |> maybe_put(:content, content)
+      |> maybe_put(:image_count, image_count)
+
+    %{
+      state
+      | messages: Lists.append(state.messages, message),
+        status: :working,
+        usage_preview: usage_preview(input_tokens: estimate_tokens(text), output_tokens: 0)
+    }
+  end
+
+  defp append_assistant_message(state, data, at) do
+    message = struct(Message, Map.merge(%{role: :assistant, at: at}, event_payload_map(data)))
+
+    %{
+      state
+      | messages: Lists.append(state.messages, message),
+        status: :idle,
+        streaming_message: nil,
+        usage_preview: empty_usage_preview()
+    }
+  end
+
+  defp apply_assistant_delta(state, text, at) do
+    state
+    |> append_streaming_delta(:text, text, at)
+    |> update_usage_preview(:output_tokens, estimate_tokens(text))
+  end
+
+  defp finish_assistant_stream(state, text, at) do
+    state
+    |> finalize_streaming_text(text, at)
+    |> Map.merge(%{streaming_message: nil, status: :idle})
+  end
+
+  defp abort_assistant(state, reason, notify?) do
+    messages =
+      if notify? do
+        Lists.append(state.messages, %Message{
+          role: :assistant,
+          text: reason,
+          at: DateTime.utc_now()
+        })
+      else
+        state.messages
+      end
+
+    %{
+      state
+      | messages: messages,
+        streaming_message: nil,
+        status: :idle,
+        usage_preview: empty_usage_preview()
+    }
+  end
 
   defp open_confirmation_selector(state, data) do
     open_selector(

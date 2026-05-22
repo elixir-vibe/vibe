@@ -58,7 +58,7 @@ defmodule Vibe.CLI.Sessions do
         attach(session_id, Keyword.put(opts, :remote_node, node))
 
       {:error, _reason} ->
-        case Server.ensure_running() do
+        case Server.ensure_running(server_start_timeout_ms(opts), opts) do
           :ok ->
             case Vibe.Remote.connect() do
               {:ok, node} ->
@@ -102,6 +102,8 @@ defmodule Vibe.CLI.Sessions do
         Output.print({:error, reason}, opts)
     end
   end
+
+  defp server_start_timeout_ms(opts), do: Keyword.get(opts, :server_start_timeout_ms, 20_000)
 
   defp session_opts(opts) do
     opts

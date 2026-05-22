@@ -37,15 +37,6 @@ defmodule Vibe.Session.NotificationTest do
     assert Session.state(restored).notifications == []
   end
 
-  defp wait_for_notifications(session) do
-    wait_until(fn ->
-      case Session.state(session).notifications do
-        [] -> false
-        notifications -> notifications
-      end
-    end)
-  end
-
   defp wait_until(fun, attempts \\ 50)
   defp wait_until(_fun, 0), do: flunk("condition was not met")
 

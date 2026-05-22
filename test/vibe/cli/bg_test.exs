@@ -15,6 +15,9 @@ defmodule Vibe.CLI.BgTest do
   end
 
   test "--bg without prompt falls through to TUI" do
-    assert Vibe.CLI.Commands.Default.run([], bg: true) != :ok or true
+    capture_io(:stderr, fn ->
+      assert {:error, {:server_not_running, _reason}} =
+               Vibe.CLI.Commands.Default.run([], bg: true, server_start_timeout_ms: 0)
+    end)
   end
 end

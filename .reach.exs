@@ -1,5 +1,10 @@
 [
   layers: [
+    json_value: [
+      "Vibe.Storage.JSON.Value",
+      "Vibe.Transport.JSON.Value",
+      "Vibe.Tool.Transport.JSON.Value"
+    ],
     storage: ["Vibe.Repo", "Vibe.Storage*", "Vibe.Session.Store*"],
     event: ["Vibe.Event", "Vibe.Event.*"],
     session: [
@@ -44,6 +49,18 @@
   ],
   deps: [
     forbidden: [
+      {:json_value, :storage},
+      {:json_value, :event},
+      {:json_value, :session},
+      {:json_value, :command},
+      {:json_value, :tool},
+      {:json_value, :transport},
+      {:json_value, :presentation},
+      {:json_value, :markdown},
+      {:json_value, :surface},
+      {:json_value, :tui},
+      {:json_value, :web},
+      {:json_value, :plugin},
       {:storage, :presentation},
       {:storage, :tui},
       {:storage, :web},
