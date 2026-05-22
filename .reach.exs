@@ -137,6 +137,13 @@
       "Vibe.UI.Bus",
       "Vibe.UI.SlashCommands",
       "Vibe.UI.SlashCommands.*",
+      "Vibe.TUI.Theme",
+      "Vibe.TUI.Width",
+      "Vibe.TUI.Lines",
+      "Vibe.TUI.Image",
+      "Vibe.TUI.Markdown",
+      "Vibe.TUI.Markdown.*",
+      "Vibe.TUI.TerminalText",
       "Vibe.Storage.Schema.UIEvent",
       "Vibe.Storage.Schema.UIEventFTS",
       "Vibe.Session.Store.Codec",
@@ -156,6 +163,13 @@
       "lib/vibe/ui/bus.ex",
       "lib/vibe/ui/slash_commands.ex",
       "lib/vibe/ui/slash_commands/**",
+      "lib/vibe/tui/theme.ex",
+      "lib/vibe/tui/width.ex",
+      "lib/vibe/tui/lines.ex",
+      "lib/vibe/tui/image.ex",
+      "lib/vibe/tui/markdown.ex",
+      "lib/vibe/tui/markdown/**",
+      "lib/vibe/tui/terminal_text.ex",
       "lib/vibe/storage/schema/ui_event.ex",
       "lib/vibe/storage/schema/ui_event_fts.ex",
       "lib/vibe/session/store/codec.ex",
@@ -299,6 +313,7 @@
       "Vibe.TUI.Widgets.ModelInfo.Parts",
       "Vibe.Plugins.WebSearch.Presentation.FetchBody",
       "Vibe.Presentation.Markdown.Fence",
+      "Vibe.Terminal.Layout",
       "Vibe.Agent.Streaming.Registry"
     ],
     internal_callers: [
@@ -328,6 +343,7 @@
          "Vibe.Plugins.WebSearch.Presentation.FetchBody",
          "Vibe.Plugins.WebSearch.SearchItemRenderer"
        ]},
+      {"Vibe.Terminal.Layout", ["Vibe.Terminal.Markdown"]},
       {"Vibe.Agent.Streaming.Registry", ["Vibe.Agent.Streaming"]}
     ]
   ],
