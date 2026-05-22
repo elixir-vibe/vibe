@@ -32,11 +32,7 @@ defmodule Vibe.Code.Checks do
 
   @spec run_all(keyword()) :: {:ok, [check_result()]} | {:error, [check_result()]}
   def run_all(opts \\ []) do
-    checks = Keyword.get(opts, :checks, [:format, :compile, :test, :credo, :dialyzer, :ex_dna])
-    cwd = Keyword.get(opts, :cwd, File.cwd!())
-    results = File.cd!(cwd, fn -> Enum.map(checks, &run(&1, opts)) end)
-
-    if Enum.all?(results, &(&1.status == :ok)), do: {:ok, results}, else: {:error, results}
+    Vibe.Code.Checks.Runner.run_all(opts, &run/2)
   end
 
   @spec run(atom()) :: check_result()
