@@ -6,7 +6,7 @@ defmodule Vibe.Event.Selector do
     @enforce_keys [:selector]
     defstruct [:selector]
 
-    @type t :: %__MODULE__{selector: map()}
+    @type t :: %__MODULE__{selector: term()}
   end
 
   defmodule Moved do
@@ -31,8 +31,8 @@ defmodule Vibe.Event.Selector do
     @type t :: %__MODULE__{selector: term(), item: term()}
   end
 
-  @spec opened(map()) :: Opened.t()
-  def opened(selector) when is_map(selector), do: %Opened{selector: selector}
+  @spec opened(term()) :: Opened.t()
+  def opened(selector), do: %Opened{selector: selector}
 
   @spec moved(integer()) :: Moved.t()
   def moved(direction) when is_integer(direction), do: %Moved{direction: direction}

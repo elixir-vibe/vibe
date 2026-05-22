@@ -21,7 +21,8 @@ defmodule Vibe.Session.Command.Skill do
       limit: 8
     }
 
-    {:events, [Event.new(:selector_opened, session_state.session_id, selector)]}
+    {:events,
+     [Event.new(:selector_opened, session_state.session_id, Vibe.Event.Selector.opened(selector))]}
   end
 
   def run(args, session_state) do

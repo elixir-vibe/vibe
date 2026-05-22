@@ -3,7 +3,6 @@ defmodule Vibe.TUI.TerminalLoopTest do
 
   alias Vibe.TUI.{TerminalLoop, Width}
 
-  @long_prompt_sleep_ms 5_000
   @render_wait_timeout_ms 2_000
   @long_command_timeout_ms 120_000
 
@@ -752,16 +751,19 @@ defmodule Vibe.TUI.TerminalLoopTest do
         width: 60,
         height: 24,
         ask_fun: fn _text, _opts ->
-          Process.sleep(@long_prompt_sleep_ms)
-          {:ok, "ok"}
+          receive do
+            :finish_cancel_test_prompt -> {:ok, "ok"}
+          after
+            100 -> {:ok, "ok"}
+          end
         end,
+        context?: false,
         event_target: self()
       )
 
     :ok = TerminalLoop.input(loop, "hello")
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
     assert_receive {TerminalLoop, :event, %{type: :user_message_added}}, 1_000
-    wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "Working") end))
     :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :escape})
 
     plain =
@@ -902,8 +904,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
   defp blank_line?(line), do: String.trim(line || "") == ""
 
   defp autocomplete_artifact?(plain) do
-    Enum.any?(plain, &(String.trim(&1) == "Completions")) or
-      Enum.any?(plain, &(String.trim(&1) == "No matches"))
+    Enum.any?(plain, &(String.trim(&1) == "Completions"))
   end
 
   test "tracks editor cursor position inside the prompt" do

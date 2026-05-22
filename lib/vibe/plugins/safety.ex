@@ -84,7 +84,10 @@ defmodule Vibe.Plugins.Safety do
       limit: 2
     }
 
-    Session.emit_transient_event(session, Event.new(:selector_opened, session_id, selector))
+    Session.emit_transient_event(
+      session,
+      Event.new(:selector_opened, session_id, Vibe.Event.Selector.opened(selector))
+    )
 
     Session.emit_transient_event(
       session,

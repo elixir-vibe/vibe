@@ -1,5 +1,5 @@
 defmodule Vibe.ScriptTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   @blocking_sleep_ms 5_000
   @blocking_script "Process.sleep(#{@blocking_sleep_ms})"

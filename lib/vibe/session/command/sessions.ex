@@ -32,7 +32,8 @@ defmodule Vibe.Session.Command.Sessions do
       limit: 7
     }
 
-    {:events, [Event.new(:selector_opened, session_state.session_id, selector)]}
+    {:events,
+     [Event.new(:selector_opened, session_state.session_id, Vibe.Event.Selector.opened(selector))]}
   end
 
   @impl true

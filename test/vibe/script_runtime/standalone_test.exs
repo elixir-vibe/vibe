@@ -1,13 +1,13 @@
 defmodule Vibe.ScriptRuntime.StandaloneTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   @blocking_sleep_ms 5_000
   @blocking_eval_code "Process.sleep(#{@blocking_sleep_ms})"
   @post_timeout_eval_ms 1_000
 
-  setup_all do
+  setup do
     assert {:ok, runtime} = Vibe.ScriptRuntime.Standalone.start_link()
-    on_exit(fn -> Vibe.ScriptRuntime.Standalone.stop(runtime) end)
+    on_exit(fn -> if Process.alive?(runtime), do: Vibe.ScriptRuntime.Standalone.stop(runtime) end)
     {:ok, runtime: runtime}
   end
 

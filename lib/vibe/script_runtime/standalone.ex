@@ -234,15 +234,23 @@ defmodule Vibe.ScriptRuntime.Standalone do
   end
 
   defp open_port(runtime) do
-    Port.open({:spawn_executable, runtime.executable}, [
+    port_options(runtime)
+    |> then(&Port.open({:spawn_executable, runtime.executable}, &1))
+  end
+
+  defp port_options(runtime) do
+    [
       :binary,
       :exit_status,
       {:packet, 4},
       args: child_args(),
-      cd: runtime.cwd,
-      env: normalize_env(runtime.env)
-    ])
+      cd: runtime.cwd
+    ]
+    |> maybe_put_env(runtime.env)
   end
+
+  defp maybe_put_env(options, env) when env in [%{}, []], do: options
+  defp maybe_put_env(options, env), do: Keyword.put(options, :env, normalize_env(env))
 
   defp close_port(state) do
     if Port.info(state.port), do: Port.close(state.port)

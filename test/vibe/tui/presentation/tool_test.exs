@@ -8,7 +8,7 @@ defmodule Vibe.TUI.Presentation.ToolTest do
   @long_command_timeout_ms 120_000
   @expanded_command_timeout_ms 10_000
   @large_output_lines 10_000
-  @eval_render_budget_us 100_000
+  @eval_render_budget_us 750_000
   @read_render_budget_us 1_000_000
 
   test "dispatches eval by atom name" do

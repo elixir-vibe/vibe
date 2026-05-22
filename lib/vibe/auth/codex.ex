@@ -52,8 +52,7 @@ defmodule Vibe.Auth.Codex do
 
     with {:ok, server} <- CallbackServer.start_link(state) do
       maybe_open_browser(url, opts)
-      IO.puts("Open this URL to sign in with ChatGPT/Codex:\n\n#{url}\n")
-      IO.puts("Waiting on #{@redirect_uri} ...")
+      print_login_instructions(url, opts)
 
       code =
         CallbackServer.wait_for_code(
@@ -77,6 +76,13 @@ defmodule Vibe.Auth.Codex do
           IO.puts(:stderr, "ChatGPT/Codex sign-in failed: #{format_error(reason)}")
           error
       end
+    end
+  end
+
+  defp print_login_instructions(url, opts) do
+    unless Keyword.get(opts, :quiet, false) do
+      IO.puts("Open this URL to sign in with ChatGPT/Codex:\n\n#{url}\n")
+      IO.puts("Waiting on #{@redirect_uri} ...")
     end
   end
 

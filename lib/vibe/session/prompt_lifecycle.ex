@@ -38,8 +38,8 @@ defmodule Vibe.Session.PromptLifecycle do
     ref = make_ref()
     context = %{session_id: session_id, cwd: state.state.cwd}
     Vibe.Memory.Manager.on_turn_start(length(state.state.messages), text, context)
-    prompt_text = prompt_with_memory(text, context)
-    dispatch_context_plugins(state.state.messages, context)
+    prompt_text = maybe_prompt_with_context(state, text, context)
+    maybe_dispatch_context_plugins(state, context)
 
     {ask_opts, state} = ask_options(state, parent, ref, session_id, emit)
     ask_opts = maybe_put_semantic_content(ask_opts, prompt)
@@ -175,6 +175,9 @@ defmodule Vibe.Session.PromptLifecycle do
 
   defp prompt_event_data(_prompt, text), do: %{text: text}
 
+  defp maybe_prompt_with_context(%{context?: false}, text, _context), do: text
+  defp maybe_prompt_with_context(_state, text, context), do: prompt_with_memory(text, context)
+
   defp prompt_with_memory(text, context) do
     [
       text,
@@ -251,6 +254,11 @@ defmodule Vibe.Session.PromptLifecycle do
   defp response_text(response) when is_binary(response), do: response
   defp response_text(%{output: output}) when is_binary(output), do: output
   defp response_text(response), do: inspect(response)
+
+  defp maybe_dispatch_context_plugins(%{context?: false}, _context), do: :ok
+
+  defp maybe_dispatch_context_plugins(state, context),
+    do: dispatch_context_plugins(state.state.messages, context)
 
   defp dispatch_context_plugins(messages, context) do
     if Process.whereis(Vibe.Plugin.Manager) do

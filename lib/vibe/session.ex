@@ -141,6 +141,7 @@ defmodule Vibe.Session do
        ask_fun: Keyword.get(opts, :ask_fun, &Vibe.UI.PromptRunner.default_ask/2),
        llm_opts: PromptLifecycle.llm_opts(opts),
        streaming?: Keyword.get(opts, :streaming?, not custom_ask?),
+       context?: Keyword.get(opts, :context?, true),
        locked_by_job: Keyword.get(opts, :locked_by_job),
        lock_owner: Keyword.get(opts, :lock_owner),
        subscribers: %{},
@@ -692,7 +693,10 @@ defmodule Vibe.Session do
       limit: 8
     }
 
-    emit(state, Event.new(:selector_opened, state.state.session_id, selector))
+    emit(
+      state,
+      Event.new(:selector_opened, state.state.session_id, Vibe.Event.Selector.opened(selector))
+    )
   end
 
   defp open_effort_selector(state) do
@@ -708,7 +712,10 @@ defmodule Vibe.Session do
       limit: 6
     }
 
-    emit(state, Event.new(:selector_opened, state.state.session_id, selector))
+    emit(
+      state,
+      Event.new(:selector_opened, state.state.session_id, Vibe.Event.Selector.opened(selector))
+    )
   end
 
   defp selected_index(items, current) do

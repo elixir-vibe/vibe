@@ -195,7 +195,7 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp handle_editor_command({:submit, text}, state) do
-    dispatch_async(state.ui, submit_prompt_command(text, state))
+    Session.dispatch(state.ui, submit_prompt_command(text, state))
   end
 
   defp handle_editor_command({:slash_command, command, args}, state) do
@@ -206,7 +206,7 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp handle_editor_command(:cancel, state) do
-    dispatch_async(state.ui, Command.new(:cancel_stream))
+    Session.dispatch(state.ui, Command.new(:cancel_stream))
   end
 
   defp handle_editor_command(:toggle_truncation, state) do
