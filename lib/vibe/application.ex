@@ -25,6 +25,7 @@ defmodule Vibe.Application do
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Terminal.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Eval.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Plugin.Supervisor},
+      Vibe.Plugin.Waiters,
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Gateway.BridgeSupervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.SessionSupervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Remote.SSH.AttachmentSupervisor},

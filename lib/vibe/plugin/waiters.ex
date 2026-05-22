@@ -1,12 +1,26 @@
 defmodule Vibe.Plugin.Waiters do
   @moduledoc "ETS-backed session waiter registry for interactive plugins."
+  use GenServer
+
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+
+  @impl true
+  def init(_opts), do: {:ok, %{tables: MapSet.new()}}
+
+  @impl true
+  def handle_call({:ensure_table, table}, _from, state) do
+    create_table(table)
+    {:reply, :ok, %{state | tables: MapSet.put(state.tables, table)}}
+  end
 
   @spec ensure_table!(atom()) :: :ok
   def ensure_table!(table) when is_atom(table) do
-    unless table?(table), do: :ets.new(table, [:named_table, :public, :set])
-    :ok
-  rescue
-    ArgumentError -> :ok
+    if table?(table) do
+      :ok
+    else
+      ensure_owned_table!(table)
+    end
   end
 
   @spec register(atom(), String.t(), pid()) :: :ok
@@ -41,4 +55,19 @@ defmodule Vibe.Plugin.Waiters do
 
   @spec table?(atom()) :: boolean()
   def table?(table) when is_atom(table), do: :ets.info(table) != :undefined
+
+  defp ensure_owned_table!(table) do
+    if Process.whereis(__MODULE__) do
+      GenServer.call(__MODULE__, {:ensure_table, table})
+    else
+      raise "#{inspect(__MODULE__)} is not running"
+    end
+  end
+
+  defp create_table(table) do
+    case :ets.info(table) do
+      :undefined -> :ets.new(table, [:named_table, :public, :set])
+      _info -> table
+    end
+  end
 end
