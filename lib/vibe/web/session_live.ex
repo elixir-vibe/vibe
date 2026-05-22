@@ -3,7 +3,7 @@ defmodule Vibe.Web.SessionLive do
   use Vibe.Web, :live_view
 
   alias Vibe.UI.{Reducer, ViewModel}
-  alias Vibe.Web.Session.{Messages, Status}
+  alias Vibe.Web.Session.{Activity, Messages}
 
   @impl true
   def mount(%{"id" => session_id}, _session, socket) do
@@ -76,7 +76,7 @@ defmodule Vibe.Web.SessionLive do
     ~H"""
     <.app_shell current={:sessions} title="Session workbench" subtitle={@session_id}>
       <:actions>
-        <button :if={Status.working?(@session_state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-3 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60 sm:px-4">
+        <button :if={Activity.working?(@session_state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-3 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60 sm:px-4">
           <.icon name="lucide:circle-stop" class="size-4" />
           <span>Stop</span>
         </button>

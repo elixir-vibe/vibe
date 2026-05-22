@@ -2,7 +2,7 @@ defmodule Vibe.Web.Session.Components do
   @moduledoc "Components specific to the session workbench."
   use Phoenix.Component
 
-  alias Vibe.Web.Session.{Messages, Status}
+  alias Vibe.Web.Session.{Activity, Messages}
 
   import PhoenixIconify, only: [icon: 1]
   import Vibe.Web.Presentation.Tool, only: [tool_card: 1]
@@ -34,11 +34,11 @@ defmodule Vibe.Web.Session.Components do
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
           <div class="flex items-center gap-2 text-sm font-medium text-vibe-fg-strong">
-            <.icon :if={Status.working?(@state)} name="lucide:loader-circle" class="size-4 animate-spin text-vibe-accent" />
-            <.icon :if={!Status.working?(@state)} name="lucide:circle-check" class="size-4 text-vibe-success" />
-            <span>{if Status.working?(@state), do: "Working…", else: "Idle"}</span>
+            <.icon :if={Activity.working?(@state)} name="lucide:loader-circle" class="size-4 animate-spin text-vibe-accent" />
+            <.icon :if={!Activity.working?(@state)} name="lucide:circle-check" class="size-4 text-vibe-success" />
+            <span>{if Activity.working?(@state), do: "Working…", else: "Idle"}</span>
           </div>
-          <p :if={Status.activity_label(@state)} class="mt-1 truncate text-xs text-vibe-dim">{Status.activity_label(@state)}</p>
+          <p :if={Activity.activity_label(@state)} class="mt-1 truncate text-xs text-vibe-dim">{Activity.activity_label(@state)}</p>
           <p :if={@state.goal} class="mt-1 truncate text-xs text-vibe-dim">
             Goal: <span class="text-vibe-fg">{@state.goal.objective}</span>
           </p>
@@ -111,11 +111,11 @@ defmodule Vibe.Web.Session.Components do
           <div class="rounded-xl border border-dashed border-vibe-border/60 p-8 text-center text-sm text-vibe-dim">No messages yet. Start with the composer below.</div>
         <% end %>
 
-        <%= for message <- Messages.display(@state.messages, @final_assistant_messages, Status.visible_stream?(@state)) do %>
+        <%= for message <- Messages.display(@state.messages, @final_assistant_messages, Activity.visible_stream?(@state)) do %>
           <Vibe.Web.Components.Message.message_card message={message} />
         <% end %>
 
-        <.activity_row :if={Status.working?(@state) and !Status.visible_stream?(@state)} label={Status.activity_label(@state) || "Thinking…"} />
+        <.activity_row :if={Activity.working?(@state) and !Activity.visible_stream?(@state)} label={Activity.activity_label(@state) || "Thinking…"} />
       </div>
     </div>
     """
@@ -131,16 +131,16 @@ defmodule Vibe.Web.Session.Components do
       <textarea id="session-prompt" name="prompt" value={@prompt} rows="2" autocomplete="off" placeholder="Ask Vibe anything. Use /help, /model, /sessions, or plain language…" class="min-h-16 w-full resize-y rounded-lg border border-vibe-border/50 bg-vibe-bg/85 px-3 py-2 text-sm leading-6 text-vibe-fg-strong ring-vibe-accent/20 placeholder:text-vibe-dim focus:border-vibe-accent focus:outline-none focus:ring-4 sm:min-h-20"></textarea>
       <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="inline-flex items-center gap-1.5 text-xs leading-5 text-vibe-dim">
-          <.icon :if={Status.working?(@state)} name="lucide:loader-circle" class="size-3.5 animate-spin" />
-          <.icon :if={!Status.working?(@state)} name="lucide:keyboard" class="size-3.5" />
-          <span>{if Status.working?(@state), do: Status.activity_label(@state) || "Working…", else: "Ready · Cmd+Enter to send"}</span>
+          <.icon :if={Activity.working?(@state)} name="lucide:loader-circle" class="size-3.5 animate-spin" />
+          <.icon :if={!Activity.working?(@state)} name="lucide:keyboard" class="size-3.5" />
+          <span>{if Activity.working?(@state), do: Activity.activity_label(@state) || "Working…", else: "Ready · Cmd+Enter to send"}</span>
         </p>
         <div class="flex justify-end gap-2">
-          <button :if={Status.working?(@state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-4 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60">
+          <button :if={Activity.working?(@state)} type="button" phx-click="cancel" class="inline-flex items-center gap-1.5 rounded-lg border border-vibe-error/30 bg-vibe-error/10 px-4 py-2 text-sm font-medium text-vibe-error transition-colors hover:border-vibe-error/60 hover:bg-vibe-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-error/60">
             <.icon name="lucide:circle-stop" class="size-4" />
             <span>Stop</span>
           </button>
-          <button :if={!Status.working?(@state)} class="inline-flex items-center gap-1.5 rounded-lg bg-vibe-accent px-5 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">
+          <button :if={!Activity.working?(@state)} class="inline-flex items-center gap-1.5 rounded-lg bg-vibe-accent px-5 py-2 text-sm font-semibold text-vibe-accent-contrast shadow-lg shadow-vibe-accent/20 transition-colors hover:bg-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70">
             <.icon name="lucide:send" class="size-4" />
             <span>Send</span>
           </button>
