@@ -1,20 +1,20 @@
-defmodule Vibe.UI.SlashCommands.Registry do
+defmodule Vibe.Session.Command.Registry do
   @moduledoc "Slash command registry: discovery and dispatch."
   @builtin [
-    Vibe.UI.SlashCommands.Sessions,
-    Vibe.UI.SlashCommands.New,
-    Vibe.UI.SlashCommands.Attach,
-    Vibe.UI.SlashCommands.Model,
-    Vibe.UI.SlashCommands.Effort,
-    Vibe.UI.SlashCommands.Skill,
-    Vibe.UI.SlashCommands.Goal,
-    Vibe.UI.SlashCommands.Clear,
-    Vibe.UI.SlashCommands.Compact,
-    Vibe.UI.SlashCommands.Background,
-    Vibe.UI.SlashCommands.Branch,
-    Vibe.UI.SlashCommands.Web,
-    Vibe.UI.SlashCommands.Commands,
-    Vibe.UI.SlashCommands.Help
+    Vibe.Session.Command.Sessions,
+    Vibe.Session.Command.New,
+    Vibe.Session.Command.Attach,
+    Vibe.Session.Command.Model,
+    Vibe.Session.Command.Effort,
+    Vibe.Session.Command.Skill,
+    Vibe.Session.Command.Goal,
+    Vibe.Session.Command.Clear,
+    Vibe.Session.Command.Compact,
+    Vibe.Session.Command.Background,
+    Vibe.Session.Command.Branch,
+    Vibe.Session.Command.Web,
+    Vibe.Session.Command.Commands,
+    Vibe.Session.Command.Help
   ]
 
   @spec commands() :: [module()]

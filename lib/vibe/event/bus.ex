@@ -34,15 +34,15 @@ defmodule Vibe.Event.Bus do
     end
   end
 
-  @spec emit(String.t(), atom(), map()) :: :ok | {:error, :not_found}
-  def emit(session_id, type, data \\ %{}) when is_atom(type) and is_map(data) do
+  @spec emit(String.t(), atom(), term()) :: :ok | {:error, :not_found}
+  def emit(session_id, type, data \\ %{}) when is_atom(type) do
     with {:ok, server} <- server(session_id) do
       Session.emit_event(server, Event.new(type, session_id, data))
     end
   end
 
-  @spec emit_all(atom(), map(), keyword()) :: :ok
-  def emit_all(type, data \\ %{}, opts \\ []) when is_atom(type) and is_map(data) do
+  @spec emit_all(atom(), term(), keyword()) :: :ok
+  def emit_all(type, data \\ %{}, opts \\ []) when is_atom(type) do
     GenServer.call(__MODULE__, {:emit_all, type, data, Keyword.get(opts, :persist?, false)})
   end
 

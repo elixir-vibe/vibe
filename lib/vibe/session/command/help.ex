@@ -1,6 +1,6 @@
-defmodule Vibe.UI.SlashCommands.Help do
+defmodule Vibe.Session.Command.Help do
   @moduledoc "Slash command: /help — show built-in help topics."
-  @behaviour Vibe.UI.SlashCommands.Command
+  @behaviour Vibe.Session.Command.Command
 
   @impl true
   def spec do

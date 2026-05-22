@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.Background do
+defmodule Vibe.Session.Command.Background do
   @moduledoc "Slash command: /bg — background the current session."
-  @behaviour Vibe.UI.SlashCommands.Command
-  alias Vibe.UI.SlashCommands.Spec
+  @behaviour Vibe.Session.Command.Command
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec, do: %Spec{name: "bg", aliases: ["background"], description: "Background session"}

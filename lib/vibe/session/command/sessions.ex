@@ -1,10 +1,10 @@
-defmodule Vibe.UI.SlashCommands.Sessions do
+defmodule Vibe.Session.Command.Sessions do
   @moduledoc "Slash command: /sessions — list active sessions."
-  @behaviour Vibe.UI.SlashCommands.Command
+  @behaviour Vibe.Session.Command.Command
 
   alias Vibe.Event
   alias Vibe.UI.Selector
-  alias Vibe.UI.SlashCommands.Spec
+  alias Vibe.Session.Command.Spec
 
   @seconds_per_minute 60
   @seconds_per_hour 3_600

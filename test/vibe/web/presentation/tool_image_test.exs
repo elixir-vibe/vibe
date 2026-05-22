@@ -4,7 +4,8 @@ defmodule Vibe.Web.Presentation.ToolImageTest do
   import Phoenix.Component
 
   alias Vibe.Files.{Artifacts, ImageRef}
-  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool
+  alias Vibe.Presentation.Tool.Display
 
   setup do
     session_dir =
@@ -45,7 +46,7 @@ defmodule Vibe.Web.Presentation.ToolImageTest do
       }
     }
 
-    assert %Display{body: [{:image_ref, ref, []}]} = Display.from_tool(tool)
+    assert %Display{body: [{:image_ref, ref, []}]} = Tool.from_tool(tool)
     assert Artifacts.public_path(ref) == "/sessions/session-1/artifacts/images/tiny.png"
 
     assigns = %{block: {:image_ref, ref, []}}

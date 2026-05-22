@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.Compact do
+defmodule Vibe.Session.Command.Compact do
   @moduledoc "Slash command: /compact — trigger context compaction."
-  @behaviour Vibe.UI.SlashCommands.Command
-  alias Vibe.UI.SlashCommands.Spec
+  @behaviour Vibe.Session.Command.Command
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec, do: %Spec{name: "compact", description: "Compact context"}

@@ -7,6 +7,40 @@ defmodule Vibe.Storage.JSON.Value do
   def value(%DateTime{} = value), do: DateTime.to_iso8601(value)
   def value(%Date{} = value), do: Date.to_iso8601(value)
 
+  def value(%Vibe.Storage.Representation.Event{} = value),
+    do: value |> Map.from_struct() |> value()
+
+  def value(%Vibe.Storage.Representation.Goal{} = value),
+    do: value |> Map.from_struct() |> value()
+
+  def value(%Vibe.Storage.Representation.RuntimeAlert{} = value),
+    do: value |> Map.from_struct() |> value()
+
+  def value(%Vibe.Storage.Representation.ToolEvent{} = value),
+    do: value |> Map.from_struct() |> value()
+
+  def value(%Vibe.Presentation.Widget{} = value), do: value |> Map.from_struct() |> value()
+  def value(%Vibe.UI.Selector{} = value), do: value |> Map.from_struct() |> value()
+
+  def value(%Vibe.Model.Content.Text{} = value), do: %{type: "text", text: value.text}
+
+  def value(%Vibe.Model.Content.Image{} = value) do
+    %{
+      type: "image",
+      data: value.data,
+      mime_type: value.mime_type,
+      filename: value.filename,
+      width: value.width,
+      height: value.height
+    }
+  end
+
+  def value(%Vibe.Files.ImageRef{} = value),
+    do: value |> Map.from_struct() |> Map.delete(:data) |> value()
+
+  def value(%Vibe.Files.ReadResult{} = value),
+    do: value |> Map.from_struct() |> Map.delete(:__content_parts__) |> value()
+
   def value(%_{} = value) do
     raise ArgumentError,
           "no storage JSON projection for #{inspect(value.__struct__)}; add a Vibe.Storage.JSON.Encodable implementation"

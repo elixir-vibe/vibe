@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.ModelTest do
+defmodule Vibe.Session.Command.ModelTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.UI.SlashCommands.Model
+  alias Vibe.Session.Command.Model
   alias Vibe.UI.State
 
   test "opens selector through semantic command" do

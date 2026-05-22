@@ -222,14 +222,18 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :usage_updated, data: usage}) do
+    usage = event_payload_map(usage)
     %{state | usage: Usage.summarize([state.usage, usage]), usage_preview: empty_usage_preview()}
   end
 
-  defp reduce(state, %Event{type: :status_changed, data: %{status: status}}) do
+  defp reduce(state, %Event{type: :status_changed, data: data}) do
+    %{status: status} = event_payload_map(data)
     %{state | status: status}
   end
 
-  defp reduce(state, %Event{type: :model_selected, at: at, data: %{model: model}}) do
+  defp reduce(state, %Event{type: :model_selected, at: at, data: data}) do
+    %{model: model} = event_payload_map(data)
+
     %{
       state
       | model: model,
@@ -246,8 +250,9 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :effort_selected, at: at, data: %{effort: effort}})
-       when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
+  defp reduce(state, %Event{type: :effort_selected, at: at, data: data}) do
+    %{effort: effort} = event_payload_map(data)
+
     %{
       state
       | effort: effort,
@@ -330,6 +335,13 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{
+         type: :overlay_opened,
+         data: %Vibe.Event.Surface.OverlayOpened{overlay: overlay}
+       }) do
+    %{state | overlays: Lists.append(state.overlays, overlay)}
+  end
+
   defp reduce(state, %Event{type: :overlay_opened, data: data}) do
     %{state | overlays: Lists.append(state.overlays, event_payload_map(data))}
   end
@@ -403,32 +415,39 @@ defmodule Vibe.UI.Reducer do
     %{state | active_sessions: count}
   end
 
-  defp reduce(state, %Event{type: :plugin_status_updated, data: %{key: key, text: text}}) do
+  defp reduce(state, %Event{type: :plugin_status_updated, data: data}) do
+    %{key: key, text: text} = event_payload_map(data)
     %{state | plugin_statuses: Map.put(state.plugin_statuses, key, text)}
   end
 
-  defp reduce(state, %Event{type: :plugin_status_cleared, data: %{key: key}}) do
+  defp reduce(state, %Event{type: :plugin_status_cleared, data: data}) do
+    %{key: key} = event_payload_map(data)
     %{state | plugin_statuses: Map.delete(state.plugin_statuses, key)}
   end
 
-  defp reduce(state, %Event{type: :plugin_widget_updated, data: %{widget: widget}}) do
+  defp reduce(state, %Event{type: :plugin_widget_updated, data: data}) do
+    %{widget: widget} = event_payload_map(data)
     widget = Vibe.Presentation.Widget.normalize(widget)
     %{state | plugin_widgets: Map.put(state.plugin_widgets, widget.id, widget)}
   end
 
-  defp reduce(state, %Event{type: :plugin_widget_cleared, data: %{key: key}}) do
+  defp reduce(state, %Event{type: :plugin_widget_cleared, data: data}) do
+    %{key: key} = event_payload_map(data)
     %{state | plugin_widgets: Map.delete(state.plugin_widgets, key)}
   end
 
-  defp reduce(state, %Event{type: :working_message_updated, data: %{message: message}}) do
+  defp reduce(state, %Event{type: :working_message_updated, data: data}) do
+    %{message: message} = event_payload_map(data)
     %{state | working_message: message}
   end
 
-  defp reduce(state, %Event{type: :hidden_thinking_label_updated, data: %{label: label}}) do
+  defp reduce(state, %Event{type: :hidden_thinking_label_updated, data: data}) do
+    %{label: label} = event_payload_map(data)
     %{state | hidden_thinking_label: label}
   end
 
-  defp reduce(state, %Event{type: :title_updated, data: %{title: title}}) do
+  defp reduce(state, %Event{type: :title_updated, data: data}) do
+    %{title: title} = event_payload_map(data)
     %{state | title: title}
   end
 
@@ -443,16 +462,15 @@ defmodule Vibe.UI.Reducer do
     open_selector(state, data)
   end
 
+  defp reduce(state, %Event{
+         type: :confirmation_requested,
+         data: %Vibe.Event.Surface.ConfirmationRequested{confirmation: confirmation}
+       }) do
+    open_confirmation_selector(state, confirmation)
+  end
+
   defp reduce(state, %Event{type: :confirmation_requested, data: data}) do
-    open_selector(
-      state,
-      data
-      |> Map.put_new(:kind, :confirmation)
-      |> Map.put(:overlay_kind, :confirmation)
-      |> Map.put_new(:items, [Map.get(data, :confirm, "Yes"), Map.get(data, :cancel, "No")])
-      |> Map.put_new(:selected, 0)
-      |> Map.put_new(:limit, 2)
-    )
+    open_confirmation_selector(state, data)
   end
 
   defp reduce(state, %Event{type: :selector_moved, data: data}) do
@@ -474,6 +492,18 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, _event), do: state
+
+  defp open_confirmation_selector(state, data) do
+    open_selector(
+      state,
+      data
+      |> Map.put_new(:kind, :confirmation)
+      |> Map.put(:overlay_kind, :confirmation)
+      |> Map.put_new(:items, [Map.get(data, :confirm, "Yes"), Map.get(data, :cancel, "No")])
+      |> Map.put_new(:selected, 0)
+      |> Map.put_new(:limit, 2)
+    )
+  end
 
   defp open_selector(state, data) do
     selector = Selector.new(data)
@@ -593,10 +623,20 @@ defmodule Vibe.UI.Reducer do
     payload
     |> Map.from_struct()
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-    |> Map.new()
+    |> Map.new(fn {key, value} -> {payload_key(key), value} end)
   end
 
-  defp event_payload_map(payload) when is_map(payload), do: payload
+  defp event_payload_map(payload) when is_map(payload) do
+    Map.new(payload, fn {key, value} -> {payload_key(key), value} end)
+  end
+
+  defp payload_key(key) when is_binary(key) do
+    String.to_existing_atom(key)
+  rescue
+    ArgumentError -> key
+  end
+
+  defp payload_key(key), do: key
 
   defp drop_trailing_session_marker(messages, marker) do
     case List.pop_at(messages, -1) do

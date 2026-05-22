@@ -2,7 +2,7 @@ defmodule Vibe.TUI.Presentation.ToolBlock do
   @moduledoc "Renders structured tool display body blocks for TUI tool cards."
 
   alias Vibe.Model.Content
-  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool.Display
 
   alias Vibe.TUI.{
     DiffBlock,

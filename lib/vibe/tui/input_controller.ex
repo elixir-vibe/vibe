@@ -2,7 +2,8 @@ defmodule Vibe.TUI.InputController do
   @moduledoc "Routes semantic TUI input actions into editor and session commands."
 
   alias Vibe.Session
-  alias Vibe.UI.{Autocomplete, Command, EditorServer, FileAutocomplete, Reducer, SlashCommands}
+  alias Vibe.Session.Command, as: SlashCommands
+  alias Vibe.UI.{Autocomplete, Command, EditorServer, FileAutocomplete, Reducer}
 
   @type app_state :: map()
 

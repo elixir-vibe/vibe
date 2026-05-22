@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.Effort do
+defmodule Vibe.Session.Command.Effort do
   @moduledoc "Slash command: /effort — set reasoning effort level."
-  @behaviour Vibe.UI.SlashCommands.Command
-  alias Vibe.UI.SlashCommands.Spec
+  @behaviour Vibe.Session.Command.Command
+  alias Vibe.Session.Command.Spec
 
   alias Vibe.Model.Effort
 

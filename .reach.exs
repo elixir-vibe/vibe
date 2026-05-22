@@ -26,6 +26,8 @@
       "Vibe.UI.Event",
       "Vibe.UI.Event.*",
       "Vibe.UI.Bus",
+      "Vibe.UI.SlashCommands",
+      "Vibe.UI.SlashCommands.*",
       "Vibe.Storage.Schema.UIEvent",
       "Vibe.Storage.Schema.UIEventFTS",
       "Vibe.Session.Store.Codec",
@@ -42,6 +44,8 @@
       "lib/vibe/tool/presentation/**",
       "lib/vibe/ui/event.ex",
       "lib/vibe/ui/bus.ex",
+      "lib/vibe/ui/slash_commands.ex",
+      "lib/vibe/ui/slash_commands/**",
       "lib/vibe/storage/schema/ui_event.ex",
       "lib/vibe/storage/schema/ui_event_fts.ex",
       "lib/vibe/session/store/codec.ex",
@@ -164,7 +168,8 @@
       "Vibe.Storage.Representation.*"
     ],
     internal_callers: [
-      {"Vibe.Storage.Representation.*", ["Vibe.Storage.*", "Vibe.Session.Store*"]}
+      {"Vibe.Storage.Representation.*",
+       ["Vibe.Storage.*", "Vibe.Session.Store*", "Jason.Encoder.Vibe.Storage.Representation.*"]}
     ]
   ],
   risk: [

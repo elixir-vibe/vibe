@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.BranchTest do
+defmodule Vibe.Session.Command.BranchTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.UI.SlashCommands.Branch
+  alias Vibe.Session.Command.Branch
 
   test "spec has name branch" do
     assert Branch.spec().name == "branch"

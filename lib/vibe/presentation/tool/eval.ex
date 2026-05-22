@@ -1,7 +1,7 @@
 defmodule Vibe.Presentation.Tool.Eval do
   @moduledoc "Semantic display builder for eval tool results."
   alias Vibe.Model.Content
-  alias Vibe.Presentation.Tool, as: Display
+  alias Vibe.Presentation.Tool.Display
   alias Vibe.Presentation.Tool.Util
 
   @spec from_tool(map()) :: Display.t()

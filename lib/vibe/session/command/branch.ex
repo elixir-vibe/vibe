@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.Branch do
+defmodule Vibe.Session.Command.Branch do
   @moduledoc "Slash command: /branch — branch the session from an earlier point."
-  @behaviour Vibe.UI.SlashCommands.Command
-  alias Vibe.UI.SlashCommands.Spec
+  @behaviour Vibe.Session.Command.Command
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec, do: %Spec{name: "branch", description: "Branch from earlier message"}

@@ -1,11 +1,11 @@
-defmodule Vibe.UI.SlashCommands.Commands do
+defmodule Vibe.Session.Command.Commands do
   @moduledoc "Slash command: /commands — list available slash commands."
-  @behaviour Vibe.UI.SlashCommands.Command
+  @behaviour Vibe.Session.Command.Command
 
   alias Vibe.Event
   alias Vibe.UI.Selector
-  alias Vibe.UI.SlashCommands.Registry
-  alias Vibe.UI.SlashCommands.Spec
+  alias Vibe.Session.Command.Registry
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec,

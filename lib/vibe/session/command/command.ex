@@ -1,10 +1,10 @@
-defmodule Vibe.UI.SlashCommands.Command do
+defmodule Vibe.Session.Command.Command do
   @moduledoc "Slash command: /command — run a shell command."
   alias Vibe.Event
   alias Vibe.UI.State
 
   @type spec ::
-          Vibe.UI.SlashCommands.Spec.t()
+          Vibe.Session.Command.Spec.t()
           | %{
               required(:name) => String.t(),
               optional(:aliases) => [String.t()],

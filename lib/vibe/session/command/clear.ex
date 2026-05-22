@@ -1,9 +1,9 @@
-defmodule Vibe.UI.SlashCommands.Clear do
+defmodule Vibe.Session.Command.Clear do
   @moduledoc "Slash command: /clear — reset session history."
-  @behaviour Vibe.UI.SlashCommands.Command
+  @behaviour Vibe.Session.Command.Command
 
   alias Vibe.Event
-  alias Vibe.UI.SlashCommands.Spec
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec,
@@ -19,13 +19,17 @@ defmodule Vibe.UI.SlashCommands.Clear do
   def run(_args, session_state) do
     {:events,
      [
-       Event.new(:confirmation_requested, session_state.session_id, %{
-         kind: :clear_session_confirmation,
-         title: "Clear session?",
-         message: "This will delete all messages in the current session.",
-         confirm: "Yes",
-         cancel: "No"
-       })
+       Event.new(
+         :confirmation_requested,
+         session_state.session_id,
+         Vibe.Event.Surface.confirmation_requested(%{
+           kind: :clear_session_confirmation,
+           title: "Clear session?",
+           message: "This will delete all messages in the current session.",
+           confirm: "Yes",
+           cancel: "No"
+         })
+       )
      ]}
   end
 

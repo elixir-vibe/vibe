@@ -91,8 +91,8 @@ defmodule Vibe.PluginManagerTest do
   test "plugins can register slash command modules" do
     assert :ok = Vibe.Plugin.Manager.load(CommandPlugin, session_id: "plugin-command")
 
-    assert Enum.any?(Vibe.UI.SlashCommands.Registry.specs(), &(&1.name == "fixture"))
-    assert Vibe.UI.SlashCommands.Registry.find_selector(:missing_selector) == nil
+    assert Enum.any?(Vibe.Session.Command.Registry.specs(), &(&1.name == "fixture"))
+    assert Vibe.Session.Command.Registry.find_selector(:missing_selector) == nil
 
     {:ok, server} = Vibe.Session.start_link(session_id: "plugin-command-session")
 

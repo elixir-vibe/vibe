@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.BackgroundTest do
+defmodule Vibe.Session.Command.BackgroundTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.UI.SlashCommands.Background
+  alias Vibe.Session.Command.Background
 
   test "spec has name bg and alias background" do
     spec = Background.spec()

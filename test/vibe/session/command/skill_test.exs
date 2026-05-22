@@ -1,8 +1,8 @@
-defmodule Vibe.UI.SlashCommands.SkillTest do
+defmodule Vibe.Session.Command.SkillTest do
   use ExUnit.Case, async: false
 
-  alias Vibe.UI.SlashCommands
-  alias Vibe.UI.SlashCommands.Skill
+  alias Vibe.Session.Command
+  alias Vibe.Session.Command.Skill
   alias Vibe.UI.State
 
   test "skill commands expand into skill invocation prompt" do
@@ -24,7 +24,7 @@ defmodule Vibe.UI.SlashCommands.SkillTest do
   end
 
   test "autocomplete exposes pi-style skill commands" do
-    autocomplete = SlashCommands.autocomplete("/skill:session")
+    autocomplete = Command.autocomplete("/skill:session")
 
     assert Enum.any?(autocomplete.items, &(&1.value == "/skill:session-to-skill"))
   end

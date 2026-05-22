@@ -68,7 +68,7 @@ end
 defmodule Vibe.Test.PluginManagerFixtures.PluginCommand do
   @moduledoc false
 
-  @behaviour Vibe.UI.SlashCommands.Command
+  @behaviour Vibe.Session.Command.Command
 
   @impl true
   def spec, do: %{name: "fixture", description: "Fixture plugin command"}

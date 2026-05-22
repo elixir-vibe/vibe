@@ -130,7 +130,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 120, height: 30)
     assert :ok = TerminalLoop.input(loop, "/")
 
-    commands = Vibe.UI.SlashCommands.autocomplete("/").items |> Enum.map(& &1.value)
+    commands = Vibe.Session.Command.autocomplete("/").items |> Enum.map(& &1.value)
     expected = Vibe.Support.Lists.append(commands, hd(commands))
 
     for {command, step} <- Enum.with_index(expected) do

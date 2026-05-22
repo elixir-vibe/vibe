@@ -29,6 +29,8 @@ defmodule Vibe.Storage.Representation.Event do
                     "goal",
                     "goal_id",
                     "height",
+                    "key",
+                    "label",
                     "id",
                     "image",
                     "image_count",
@@ -37,9 +39,11 @@ defmodule Vibe.Storage.Representation.Event do
                     "level",
                     "lifecycle",
                     "mime_type",
+                    "message",
                     "model",
                     "name",
                     "objective",
+                    "overlay",
                     "output",
                     "output_format",
                     "output_parts",
@@ -186,15 +190,56 @@ defmodule Vibe.Storage.Representation.Event do
 
   defp decode_event_data(data, :subagent_finished), do: Vibe.Event.Subagent.finished(data)
 
-  defp decode_event_data(%{effort: effort} = data, :effort_selected) when is_binary(effort) do
+  defp decode_event_data(%{model: model}, :model_selected),
+    do: Vibe.Event.Model.selected(model)
+
+  defp decode_event_data(%{effort: effort}, :effort_selected) when is_binary(effort) do
     case Vibe.Model.Effort.from_string(effort) do
-      {:ok, effort} -> %{data | effort: effort}
-      {:error, _reason} -> data
+      {:ok, effort} -> Vibe.Event.Model.effort_selected(effort)
+      {:error, _reason} -> Vibe.Event.Model.effort_selected(effort)
     end
   end
 
-  defp decode_event_data(%{status: status} = data, :status_changed) when is_binary(status),
-    do: %{data | status: existing_atom_or_string(status)}
+  defp decode_event_data(%{effort: effort}, :effort_selected),
+    do: Vibe.Event.Model.effort_selected(effort)
+
+  defp decode_event_data(data, :usage_updated), do: Vibe.Event.Model.usage_updated(data)
+
+  defp decode_event_data(%{status: status}, :status_changed) when is_binary(status),
+    do: status |> existing_atom_or_string() |> Vibe.Event.Surface.status_changed()
+
+  defp decode_event_data(%{status: status}, :status_changed),
+    do: Vibe.Event.Surface.status_changed(status)
+
+  defp decode_event_data(%{overlay: overlay}, :overlay_opened),
+    do: Vibe.Event.Surface.overlay_opened(overlay)
+
+  defp decode_event_data(%{confirmation: confirmation}, :confirmation_requested),
+    do: Vibe.Event.Surface.confirmation_requested(confirmation)
+
+  defp decode_event_data(data, :confirmation_requested),
+    do: Vibe.Event.Surface.confirmation_requested(data)
+
+  defp decode_event_data(%{key: key, text: text}, :plugin_status_updated),
+    do: Vibe.Event.Plugin.status_updated(key, text)
+
+  defp decode_event_data(%{key: key}, :plugin_status_cleared),
+    do: Vibe.Event.Plugin.status_cleared(key)
+
+  defp decode_event_data(%{widget: widget}, :plugin_widget_updated),
+    do: Vibe.Event.Plugin.widget_updated(widget)
+
+  defp decode_event_data(%{key: key}, :plugin_widget_cleared),
+    do: Vibe.Event.Plugin.widget_cleared(key)
+
+  defp decode_event_data(%{message: message}, :working_message_updated),
+    do: Vibe.Event.Surface.working_message_updated(message)
+
+  defp decode_event_data(%{label: label}, :hidden_thinking_label_updated),
+    do: Vibe.Event.Surface.hidden_thinking_label_updated(label)
+
+  defp decode_event_data(%{title: title}, :title_updated),
+    do: Vibe.Event.Surface.title_updated(title)
 
   defp decode_event_data(%{goal: goal}, :goal_set) do
     goal |> decode_goal() |> Vibe.Event.Goal.set()
@@ -335,6 +380,12 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
     %{alert: Vibe.Storage.Persistable.persist(alert)}
   end
 
+  defp persist_data(:assistant_message_added, data) when is_map(data) do
+    data
+    |> event_struct_map()
+    |> Map.delete(:result)
+  end
+
   defp persist_data(:subagent_finished, %Vibe.Event.Subagent.Finished{} = data) do
     data
     |> Map.from_struct()
@@ -343,14 +394,22 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
     |> Map.new()
   end
 
-  defp persist_data(_type, %struct{} = data) when is_atom(struct) do
+  defp persist_data(_type, %struct{} = data) when is_atom(struct), do: event_struct_map(data)
+
+  defp persist_data(_type, data), do: data
+
+  defp event_struct_map(%struct{} = data) when is_atom(struct) do
     data
     |> Map.from_struct()
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
     |> Map.new()
   end
 
-  defp persist_data(_type, data), do: data
+  defp event_struct_map(data) when is_map(data) do
+    data
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
+  end
 end
 
 defimpl Jason.Encoder, for: Vibe.Storage.Representation.Event do

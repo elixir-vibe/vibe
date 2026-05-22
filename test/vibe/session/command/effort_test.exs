@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.EffortTest do
+defmodule Vibe.Session.Command.EffortTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.UI.SlashCommands.Effort
+  alias Vibe.Session.Command.Effort
   alias Vibe.UI.State
 
   test "opens selector through semantic command" do

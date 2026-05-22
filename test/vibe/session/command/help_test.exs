@@ -1,7 +1,8 @@
-defmodule Vibe.UI.SlashCommands.HelpTest do
+defmodule Vibe.Session.Command.HelpTest do
   use ExUnit.Case, async: true
 
-  alias Vibe.UI.{SlashCommands, State}
+  alias Vibe.Session.Command, as: SlashCommands
+  alias Vibe.UI.State
 
   test "help command is registered" do
     assert SlashCommands.Registry.find("help") == SlashCommands.Help

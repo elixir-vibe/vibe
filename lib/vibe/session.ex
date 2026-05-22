@@ -18,7 +18,8 @@ defmodule Vibe.Session do
   alias Vibe.Storage.Search
   alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
-  alias Vibe.UI.{Command, PluginBridge, Reducer, Selector, SlashCommands, State}
+  alias Vibe.Session.Command, as: SlashCommands
+  alias Vibe.UI.{Command, PluginBridge, Reducer, Selector, State}
 
   require Vibe.Debug
 
@@ -389,7 +390,10 @@ defmodule Vibe.Session do
 
     case Switcher.cycle_model(state.state.model, direction) do
       {:ok, model} ->
-        emit(state, Event.new(:model_selected, state.state.session_id, %{model: model}))
+        emit(
+          state,
+          Event.new(:model_selected, state.state.session_id, Vibe.Event.Model.selected(model))
+        )
 
       {:error, :one_model} ->
         notify(state, "Only one model available")
@@ -398,18 +402,35 @@ defmodule Vibe.Session do
 
   defp handle_command(%Command{type: :select_model, data: %{model: model}}, state)
        when is_binary(model) do
-    emit(state, Event.new(:model_selected, state.state.session_id, %{model: model}))
+    emit(
+      state,
+      Event.new(:model_selected, state.state.session_id, Vibe.Event.Model.selected(model))
+    )
   end
 
   defp handle_command(%Command{type: :cycle_effort}, state) do
     effort = Switcher.cycle_effort(state.state.effort, state.state.model)
 
-    emit(state, Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
+    emit(
+      state,
+      Event.new(
+        :effort_selected,
+        state.state.session_id,
+        Vibe.Event.Model.effort_selected(effort)
+      )
+    )
   end
 
   defp handle_command(%Command{type: :select_effort, data: %{effort: effort}}, state)
        when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
-    emit(state, Event.new(:effort_selected, state.state.session_id, %{effort: effort}))
+    emit(
+      state,
+      Event.new(
+        :effort_selected,
+        state.state.session_id,
+        Vibe.Event.Model.effort_selected(effort)
+      )
+    )
   end
 
   defp handle_command(
@@ -426,7 +447,10 @@ defmodule Vibe.Session do
   end
 
   defp handle_command(%Command{type: :open_overlay, data: data}, state) do
-    emit(state, Event.new(:overlay_opened, state.state.session_id, data))
+    emit(
+      state,
+      Event.new(:overlay_opened, state.state.session_id, Vibe.Event.Surface.overlay_opened(data))
+    )
   end
 
   defp handle_command(%Command{type: :close_overlay}, state) do

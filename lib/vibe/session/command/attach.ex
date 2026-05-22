@@ -1,10 +1,10 @@
-defmodule Vibe.UI.SlashCommands.Attach do
+defmodule Vibe.Session.Command.Attach do
   @moduledoc "Slash command: /attach — switch to an existing session."
-  @behaviour Vibe.UI.SlashCommands.Command
+  @behaviour Vibe.Session.Command.Command
 
   alias Vibe.Event
-  alias Vibe.UI.SlashCommands.Sessions
-  alias Vibe.UI.SlashCommands.Spec
+  alias Vibe.Session.Command.Sessions
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec, do: %Spec{name: "attach", aliases: ["a"], description: "Attach by session id"}

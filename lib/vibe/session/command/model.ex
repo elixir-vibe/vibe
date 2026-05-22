@@ -1,7 +1,7 @@
-defmodule Vibe.UI.SlashCommands.Model do
+defmodule Vibe.Session.Command.Model do
   @moduledoc "Slash command: /model — switch the active model."
-  @behaviour Vibe.UI.SlashCommands.Command
-  alias Vibe.UI.SlashCommands.Spec
+  @behaviour Vibe.Session.Command.Command
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec, do: %Spec{name: "model", description: "Choose model", selectors: []}
@@ -20,8 +20,8 @@ defmodule Vibe.UI.SlashCommands.Model do
           {:ok, model, effort} ->
             {:events,
              [
-               Vibe.Event.new(:model_selected, "", %{model: model}),
-               Vibe.Event.new(:effort_selected, "", %{effort: effort})
+               Vibe.Event.new(:model_selected, "", Vibe.Event.Model.selected(model)),
+               Vibe.Event.new(:effort_selected, "", Vibe.Event.Model.effort_selected(effort))
              ]}
 
           {:error, :not_found} ->

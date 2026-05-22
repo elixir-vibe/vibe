@@ -231,7 +231,10 @@ defmodule Vibe.Session.PromptLifecycle do
           state
       end
 
-    emit.(state, Event.new(:usage_updated, state.state.session_id, usage))
+    emit.(
+      state,
+      Event.new(:usage_updated, state.state.session_id, Vibe.Event.Model.usage_updated(usage))
+    )
   end
 
   defp response_text(response) when is_binary(response), do: response

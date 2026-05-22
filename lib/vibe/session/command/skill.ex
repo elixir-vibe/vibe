@@ -1,10 +1,10 @@
-defmodule Vibe.UI.SlashCommands.Skill do
+defmodule Vibe.Session.Command.Skill do
   @moduledoc "Slash command: /skill — invoke executable skills."
-  @behaviour Vibe.UI.SlashCommands.Command
+  @behaviour Vibe.Session.Command.Command
 
   alias Vibe.Event
   alias Vibe.UI.Selector
-  alias Vibe.UI.SlashCommands.Spec
+  alias Vibe.Session.Command.Spec
 
   @impl true
   def spec, do: %Spec{name: "skill", description: "Invoke a skill", selectors: [:skill_selector]}

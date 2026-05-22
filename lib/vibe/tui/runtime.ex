@@ -408,8 +408,20 @@ defmodule Vibe.TUI.Runtime do
   defp update_title_from_event(%{type: :assistant_stream_finished}),
     do: set_window_title("Vibe")
 
+  defp update_title_from_event(%{
+         type: :model_selected,
+         data: %Vibe.Event.Model.Selected{model: model}
+       }),
+       do: set_window_title("Vibe · #{model}")
+
   defp update_title_from_event(%{type: :model_selected, data: %{model: model}}),
     do: set_window_title("Vibe · #{model}")
+
+  defp update_title_from_event(%{
+         type: :status_changed,
+         data: %Vibe.Event.Surface.StatusChanged{status: :working}
+       }),
+       do: set_window_title("Vibe · working")
 
   defp update_title_from_event(%{type: :status_changed, data: %{status: :working}}),
     do: set_window_title("Vibe · working")

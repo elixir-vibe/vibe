@@ -1,9 +1,9 @@
-defmodule Vibe.UI.SlashCommands do
+defmodule Vibe.Session.Command do
   @moduledoc "Slash command dispatch and autocomplete."
   alias Vibe.UI.Autocomplete
   alias Vibe.UI.Autocomplete.Item
   alias Vibe.Event
-  alias Vibe.UI.SlashCommands.Registry
+  alias Vibe.Session.Command.Registry
 
   @spec autocomplete(String.t()) :: Autocomplete.t() | nil
   def autocomplete("/" <> text) do
@@ -15,9 +15,9 @@ defmodule Vibe.UI.SlashCommands do
 
   def autocomplete(_text), do: nil
 
-  @spec handle(String.t(), String.t(), map()) :: Vibe.UI.SlashCommands.Command.result()
+  @spec handle(String.t(), String.t(), map()) :: Vibe.Session.Command.Command.result()
   def handle("skill:" <> skill, args, session_state),
-    do: Vibe.UI.SlashCommands.Skill.run(Enum.join([skill, args], " "), session_state)
+    do: Vibe.Session.Command.Skill.run(Enum.join([skill, args], " "), session_state)
 
   def handle(command, args, session_state) do
     case Registry.find(command) do
@@ -27,7 +27,7 @@ defmodule Vibe.UI.SlashCommands do
   end
 
   @spec selector_action(map(), map()) ::
-          Vibe.UI.SlashCommands.Command.result() | {:command, String.t()}
+          Vibe.Session.Command.Command.result() | {:command, String.t()}
   def selector_action(%{selector: selector, item: item}, session_state) do
     case Registry.find_selector(selector) do
       nil -> :ignore
