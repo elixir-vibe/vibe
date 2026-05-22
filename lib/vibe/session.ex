@@ -13,14 +13,12 @@ defmodule Vibe.Session do
 
   use GenServer
 
-  alias Vibe.Model.{Effort, Switcher}
   alias Vibe.Session.PromptLifecycle
   alias Vibe.Storage.Search
   alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
-  alias Vibe.Session.Command, as: SlashCommands
   alias Vibe.Session.Command.Intent, as: Command
-  alias Vibe.UI.{PluginBridge, Reducer, Selector, State}
+  alias Vibe.UI.{PluginBridge, Reducer, State}
 
   require Vibe.Debug
 
@@ -93,7 +91,8 @@ defmodule Vibe.Session do
 
   @spec dispatch(GenServer.server(), Command.t() | atom() | {atom(), map()}) :: :ok
   def dispatch(server, command),
-    do: GenServer.call(server, {:dispatch, normalize_command(command)}, 30_000)
+    do:
+      GenServer.call(server, {:dispatch, Vibe.Session.CommandHandler.normalize(command)}, 30_000)
 
   @spec emit_event(GenServer.server(), Event.t()) :: :ok
   def emit_event(server, %Event{} = event), do: GenServer.call(server, {:emit_event, event})
@@ -186,9 +185,13 @@ defmodule Vibe.Session do
 
   def handle_call({:dispatch, %Command{} = command}, {caller, _tag}, state) do
     state =
-      Vibe.Telemetry.span([:vibe, :session, :command], command_metadata(command, state), fn ->
-        handle_command(command, state, caller)
-      end)
+      Vibe.Telemetry.span(
+        [:vibe, :session, :command],
+        Vibe.Session.CommandHandler.metadata(command, state),
+        fn ->
+          handle_command(command, state, caller)
+        end
+      )
 
     {:reply, :ok, state}
   end
@@ -307,228 +310,14 @@ defmodule Vibe.Session do
   end
 
   defp handle_command(command, state, caller) do
-    if locked?(state, caller) and command.type == :submit_prompt do
-      locked_notice(state)
-    else
-      handle_command(command, state)
-    end
+    Vibe.Session.CommandHandler.handle(command, state, caller, command_handler_context())
   end
 
-  defp handle_command(%Command{type: :submit_prompt, data: %{content: content}}, state)
-       when is_list(content) do
-    PromptLifecycle.submit(state, content, &emit/2)
-  end
-
-  defp handle_command(%Command{type: :submit_prompt, data: %{text: text}}, state)
-       when is_binary(text) do
-    PromptLifecycle.submit(state, text, &emit/2)
-  end
-
-  defp handle_command(%Command{type: :cancel_stream}, state) do
-    PromptLifecycle.cancel(state, &emit/2)
-  end
-
-  defp handle_command(%Command{type: :set_goal, data: %{objective: objective} = data}, state)
-       when is_binary(objective) do
-    case Vibe.Goals.set(state.state.session_id, objective,
-           token_budget: Map.get(data, :token_budget)
-         ) do
-      {:ok, goal} ->
-        emit(state, Event.new(:goal_set, state.state.session_id, Vibe.Event.Goal.set(goal)))
-
-      {:error, reason} ->
-        notify(state, goal_error(reason))
-    end
-  end
-
-  defp handle_command(%Command{type: :update_goal_status, data: %{status: status}}, state) do
-    case Vibe.Goals.update_status(state.state.session_id, status) do
-      {:ok, goal} ->
-        emit(
-          state,
-          Event.new(:goal_updated, state.state.session_id, Vibe.Event.Goal.updated(goal))
-        )
-
-      {:error, reason} ->
-        notify(state, goal_error(reason))
-    end
-  end
-
-  defp handle_command(%Command{type: :clear_goal}, state) do
-    case Vibe.Goals.clear(state.state.session_id) do
-      :ok ->
-        emit(state, Event.new(:goal_cleared, state.state.session_id, Vibe.Event.Goal.cleared()))
-
-      {:error, reason} ->
-        notify(state, goal_error(reason))
-    end
-  end
-
-  defp handle_command(%Command{type: :background_session}, state) do
-    emit(
-      state,
-      Event.new(:session_backgrounded, state.state.session_id, Vibe.Event.Session.backgrounded()),
-      persist?: false
-    )
-  end
-
-  defp handle_command(%Command{type: :branch_session, data: %{seq: seq}}, state) do
-    branch_id = Vibe.Session.Store.new_id()
-
-    case Vibe.Session.Store.branch(state.state.session_id, seq, branch_id) do
-      :ok ->
-        emit(
-          state,
-          Event.new(
-            :session_selected,
-            state.state.session_id,
-            Vibe.Event.Session.selected(branch_id)
-          )
-        )
-
-      {:error, reason} ->
-        notify(state, "Branch failed: #{inspect(reason)}")
-    end
-  end
-
-  defp handle_command(%Command{type: :toggle_truncation}, state) do
-    emit(
-      state,
-      Event.new(
-        :truncation_toggled,
-        state.state.session_id,
-        Vibe.Event.Surface.truncation_toggled()
-      )
-    )
-  end
-
-  defp handle_command(%Command{type: :open_model_selector}, state) do
-    open_model_selector(state)
-  end
-
-  defp handle_command(%Command{type: :open_effort_selector}, state) do
-    open_effort_selector(state)
-  end
-
-  defp handle_command(%Command{type: :cycle_model, data: data}, state) do
-    direction = Map.get(data, :direction, :forward)
-
-    case Switcher.cycle_model(state.state.model, direction) do
-      {:ok, model} ->
-        emit(
-          state,
-          Event.new(:model_selected, state.state.session_id, Vibe.Event.Model.selected(model))
-        )
-
-      {:error, :one_model} ->
-        notify(state, "Only one model available")
-    end
-  end
-
-  defp handle_command(%Command{type: :select_model, data: %{model: model}}, state)
-       when is_binary(model) do
-    emit(
-      state,
-      Event.new(:model_selected, state.state.session_id, Vibe.Event.Model.selected(model))
-    )
-  end
-
-  defp handle_command(%Command{type: :cycle_effort}, state) do
-    effort = Switcher.cycle_effort(state.state.effort, state.state.model)
-
-    emit(
-      state,
-      Event.new(
-        :effort_selected,
-        state.state.session_id,
-        Vibe.Event.Model.effort_selected(effort)
-      )
-    )
-  end
-
-  defp handle_command(%Command{type: :select_effort, data: %{effort: effort}}, state)
-       when effort in [:off, :minimal, :low, :medium, :high, :xhigh] do
-    emit(
-      state,
-      Event.new(
-        :effort_selected,
-        state.state.session_id,
-        Vibe.Event.Model.effort_selected(effort)
-      )
-    )
-  end
-
-  defp handle_command(
-         %Command{type: :slash_command_submitted, data: %{command: command} = data},
-         state
-       ) do
-    state =
-      emit(
-        state,
-        Event.new(
-          :slash_command_submitted,
-          state.state.session_id,
-          Vibe.Event.Command.slash_submitted(data)
-        )
-      )
-
-    run_slash_command(command, Map.get(data, :args, ""), state)
-  end
-
-  defp handle_command(%Command{type: :selector_confirmed, data: data}, state) do
-    state =
-      emit(
-        state,
-        Event.new(
-          :selector_confirmed,
-          state.state.session_id,
-          Vibe.Event.Selector.confirmed(data)
-        )
-      )
-
-    run_selector_action(data, state)
-  end
-
-  defp handle_command(%Command{type: :open_overlay, data: data}, state) do
-    emit(
-      state,
-      Event.new(:overlay_opened, state.state.session_id, Vibe.Event.Surface.overlay_opened(data))
-    )
-  end
-
-  defp handle_command(%Command{type: :close_overlay}, state) do
-    emit(
-      state,
-      Event.new(:overlay_closed, state.state.session_id, Vibe.Event.Surface.overlay_closed())
-    )
-  end
-
-  defp handle_command(%Command{type: type, data: data}, state) do
-    emit(state, Event.new(type, state.state.session_id, command_event_data(type, data)))
-  end
-
-  defp command_event_data(:tool_toggled, %{id: id}), do: Vibe.Event.Surface.tool_toggled(id)
-
-  defp command_event_data(:patch_confirmation_requested, data),
-    do: Vibe.Event.Command.patch_confirmation_requested(data)
-
-  defp command_event_data(_type, data), do: data
-
-  defp locked?(%{locked_by_job: nil}, _caller), do: false
-  defp locked?(%{lock_owner: owner}, caller), do: owner != caller
-
-  defp locked_notice(state) do
-    emit(
-      state,
-      Event.new(
-        :notification_added,
-        state.state.session_id,
-        Vibe.Event.Notification.added(
-          level: :warning,
-          text: "This subagent session is read-only until the job finishes."
-        )
-      )
-    )
+  defp command_handler_context do
+    %{
+      emit: &emit/2,
+      emit_opts: &emit/3
+    }
   end
 
   defp emit(state, event, opts \\ []) do
@@ -628,167 +417,6 @@ defmodule Vibe.Session do
         {events, true}
     end
   end
-
-  defp goal_error(:empty_objective), do: "Goal objective must not be empty"
-
-  defp goal_error({:objective_too_long, actual, max}) do
-    "Goal objective is too long: #{actual} characters. Limit: #{max} characters. Put longer instructions in a file and refer to that file in the goal."
-  end
-
-  defp goal_error(:not_found), do: "No goal is currently set"
-  defp goal_error(reason), do: "Goal error: #{inspect(reason)}"
-
-  defp command_metadata(%Command{} = command, state) do
-    %{
-      session_id: state.state.session_id,
-      command: command.type,
-      status: state.state.status
-    }
-  end
-
-  defp normalize_command(%Command{} = command), do: command
-  defp normalize_command(type) when is_atom(type), do: Command.new(type)
-
-  defp normalize_command({type, data}) when is_atom(type) and is_map(data),
-    do: Command.new(type, data)
-
-  defp run_slash_command(command, args, state) do
-    case SlashCommands.handle(command, args, state.state) do
-      {:events, events} -> Enum.reduce(events, state, &emit(&2, &1))
-      {:command, command} -> handle_command(normalize_command(command), state)
-      :compact -> run_compaction(state)
-      :ignore -> state
-    end
-  end
-
-  defp run_selector_action(%{selector: :model_selector, item: model}, state)
-       when is_binary(model) do
-    handle_command(Command.new(:select_model, %{model: model}), state)
-  end
-
-  defp run_selector_action(%{selector: :effort_selector, item: effort}, state)
-       when is_binary(effort) do
-    case Effort.from_string(effort) do
-      {:ok, effort} -> handle_command(Command.new(:select_effort, %{effort: effort}), state)
-      {:error, {:unknown_effort, value}} -> notify(state, "unknown effort: #{value}")
-    end
-  end
-
-  defp run_selector_action(data, state) do
-    case SlashCommands.selector_action(data, state.state) do
-      {:events, events} -> Enum.reduce(events, state, &emit(&2, &1))
-      {:command, command} when is_binary(command) -> run_slash_command(command, "", state)
-      {:command, command} -> handle_command(normalize_command(command), state)
-      :ignore -> state
-    end
-  end
-
-  defp open_model_selector(state) do
-    items = Switcher.model_options(state.state.model)
-
-    selector = %Selector{
-      kind: :model_selector,
-      title: "Model",
-      items: items,
-      selected: selected_index(items, state.state.model),
-      limit: 8
-    }
-
-    emit(
-      state,
-      Event.new(:selector_opened, state.state.session_id, Vibe.Event.Selector.opened(selector))
-    )
-  end
-
-  defp open_effort_selector(state) do
-    items = Enum.map(Switcher.effort_options(state.state.model), &Effort.label/1)
-
-    current = Effort.label(state.state.effort || Effort.default())
-
-    selector = %Selector{
-      kind: :effort_selector,
-      title: "Effort",
-      items: items,
-      selected: selected_index(items, current),
-      limit: 6
-    }
-
-    emit(
-      state,
-      Event.new(:selector_opened, state.state.session_id, Vibe.Event.Selector.opened(selector))
-    )
-  end
-
-  defp selected_index(items, current) do
-    case Enum.find_index(items, &(&1 == current)) do
-      nil -> 0
-      index -> index
-    end
-  end
-
-  defp notify(state, text) do
-    emit(
-      state,
-      Event.new(
-        :notification_added,
-        state.state.session_id,
-        Vibe.Event.Notification.added(level: :info, text: text)
-      )
-    )
-  end
-
-  defp run_compaction(state) do
-    session_id = state.state.session_id
-    tokens_before = estimate_tokens(state.state.messages)
-
-    state =
-      emit(
-        state,
-        Event.new(
-          :context_compaction_started,
-          session_id,
-          Vibe.Event.ContextCompaction.started(tokens_before)
-        )
-      )
-
-    case Vibe.Context.compact(session_id: session_id) do
-      {:ok, %{summary: summary}} ->
-        emit(
-          state,
-          Event.new(
-            :context_compaction_finished,
-            session_id,
-            Vibe.Event.ContextCompaction.finished(summary)
-          )
-        )
-
-      {:error, reason} ->
-        emit(
-          state,
-          Event.new(
-            :context_compaction_failed,
-            session_id,
-            Vibe.Event.ContextCompaction.failed(inspect(reason))
-          )
-        )
-    end
-  end
-
-  defp estimate_tokens(messages) do
-    messages
-    |> Enum.map_join("\n", fn message ->
-      message
-      |> Map.take([:text, :result, :error])
-      |> Enum.find_value(fn {_key, value} -> value end)
-      |> token_text()
-    end)
-    |> String.length()
-    |> div(4)
-  end
-
-  defp token_text(nil), do: ""
-  defp token_text(value) when is_binary(value), do: value
-  defp token_text(value), do: inspect(value, limit: 20)
 
   defp maybe_schedule_goal_continuation(%{goal_continuation?: false} = state), do: state
 
