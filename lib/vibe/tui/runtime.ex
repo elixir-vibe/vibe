@@ -276,12 +276,17 @@ defmodule Vibe.TUI.Runtime do
   defp record_input(nil, _data), do: :ok
 
   defp record_input(cast, data) do
-    if System.get_env("VIBE_TUI_CAST_INPUT") == "1" do
-      Writer.input(cast, data)
-    else
-      Writer.input_redacted(cast, byte_size(data))
+    case input_recording(data) do
+      {:raw, data} -> Writer.input(cast, data)
+      {:redacted, bytes} -> Writer.input_redacted(cast, bytes)
     end
   end
+
+  defp input_recording(data) do
+    if raw_input_recording?(), do: {:raw, data}, else: {:redacted, byte_size(data)}
+  end
+
+  defp raw_input_recording?, do: System.get_env("VIBE_TUI_CAST_INPUT") == "1"
 
   defp hide_cursor, do: "\e[?25l"
   defp show_cursor, do: "\e[?25h"

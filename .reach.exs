@@ -223,11 +223,13 @@
   boundaries: [
     public: [],
     internal: [
-      "Vibe.Storage.Representation.*"
+      "Vibe.Storage.Representation.*",
+      "Vibe.UI.Reducer.RestoredPayload"
     ],
     internal_callers: [
       {"Vibe.Storage.Representation.*",
-       ["Vibe.Storage.*", "Vibe.Session.Store*", "Jason.Encoder.Vibe.Storage.Representation.*"]}
+       ["Vibe.Storage.*", "Vibe.Session.Store*", "Jason.Encoder.Vibe.Storage.Representation.*"]},
+      {"Vibe.UI.Reducer.RestoredPayload", ["Vibe.UI.Reducer"]}
     ]
   ],
   risk: [

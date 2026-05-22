@@ -8,6 +8,7 @@ defmodule Vibe.UI.Reducer do
   alias Vibe.SystemAlarms.Alert
   alias Vibe.Support.Lists
   alias Vibe.Tool.Event, as: ToolEvent
+  alias Vibe.UI.Reducer.RestoredPayload
   alias Vibe.UI.{Message, Notification, Selector, State}
 
   @spec apply_event(State.t(), Event.t()) :: State.t()
@@ -33,7 +34,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :user_message_added, at: at, data: data}) do
-    data = restored_user_message(data)
+    data = RestoredPayload.user_message(data)
 
     append_user_message(
       state,
@@ -49,11 +50,11 @@ defmodule Vibe.UI.Reducer do
          at: at,
          data: %Vibe.Event.Message.AssistantAdded{} = data
        }) do
-    append_assistant_message(state, restored_assistant_message(data), at)
+    append_assistant_message(state, RestoredPayload.assistant_message(data), at)
   end
 
   defp reduce(state, %Event{type: :assistant_message_added, at: at, data: data}) do
-    append_assistant_message(state, restored_assistant_message(data), at)
+    append_assistant_message(state, RestoredPayload.assistant_message(data), at)
   end
 
   defp reduce(state, %Event{type: :assistant_stream_started}) do
@@ -73,7 +74,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_delta, at: at, data: data}) do
-    apply_assistant_delta(state, restored_text(data), at)
+    apply_assistant_delta(state, RestoredPayload.text(data), at)
   end
 
   defp reduce(state, %Event{
@@ -85,7 +86,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_thinking_delta, at: at, data: data}) do
-    append_streaming_delta(state, :thinking, restored_text(data), at)
+    append_streaming_delta(state, :thinking, RestoredPayload.text(data), at)
   end
 
   defp reduce(state, %Event{
@@ -97,7 +98,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_stream_finished, at: at, data: data}) do
-    finish_assistant_stream(state, restored_optional_text(data), at)
+    finish_assistant_stream(state, RestoredPayload.optional_text(data), at)
   end
 
   defp reduce(state, %Event{
@@ -108,7 +109,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
-    data = restored_assistant_abort(data)
+    data = RestoredPayload.assistant_abort(data)
     abort_assistant(state, data.reason, data.notify?)
   end
 
@@ -217,24 +218,24 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :tool_toggled, data: data}) do
-    toggle_tool(state, restored_id(data))
+    toggle_tool(state, RestoredPayload.id(data))
   end
 
   defp reduce(state, %Event{
          type: :patch_confirmation_requested,
          data: %Vibe.Event.Command.PatchConfirmationRequested{} = data
        }) do
-    open_patch_confirmation(state, restored_patch_confirmation(data))
+    open_patch_confirmation(state, RestoredPayload.patch_confirmation(data))
   end
 
   defp reduce(state, %Event{type: :patch_confirmation_requested, data: data}) do
-    open_patch_confirmation(state, restored_patch_confirmation(data))
+    open_patch_confirmation(state, RestoredPayload.patch_confirmation(data))
   end
 
   defp reduce(state, %Event{type: :usage_updated, data: usage}) do
     %{
       state
-      | usage: Usage.summarize([state.usage, restored_usage(usage)]),
+      | usage: Usage.summarize([state.usage, RestoredPayload.usage(usage)]),
         usage_preview: empty_usage_preview()
     }
   end
@@ -247,7 +248,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :status_changed, data: data}) do
-    %{state | status: restored_status(data)}
+    %{state | status: RestoredPayload.status(data)}
   end
 
   defp reduce(state, %Event{
@@ -270,7 +271,7 @@ defmodule Vibe.UI.Reducer do
          at: at,
          data: data
        }) do
-    model = restored_model(data)
+    model = RestoredPayload.model(data)
 
     %{
       state
@@ -299,7 +300,7 @@ defmodule Vibe.UI.Reducer do
          at: at,
          data: data
        }) do
-    effort = restored_effort(data)
+    effort = RestoredPayload.effort(data)
 
     %{
       state
@@ -316,7 +317,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :session_selected, data: data}) do
-    %{state | session_id: restored_session_id(data)}
+    %{state | session_id: RestoredPayload.session_id(data)}
   end
 
   defp reduce(state, %Event{type: :messages_cleared}) do
@@ -338,7 +339,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :context_compaction_started, data: data}) do
-    start_context_compaction(state, restored_context_tokens_before(data))
+    start_context_compaction(state, RestoredPayload.context_tokens_before(data))
   end
 
   defp reduce(state, %Event{
@@ -349,7 +350,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :context_compaction_failed, data: data}) do
-    fail_context_compaction(state, restored_context_failure_reason(data))
+    fail_context_compaction(state, RestoredPayload.context_failure_reason(data))
   end
 
   defp reduce(state, %Event{
@@ -360,7 +361,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :context_compaction_finished, data: data}) do
-    finish_context_compaction(state, restored_context_summary(data))
+    finish_context_compaction(state, RestoredPayload.context_summary(data))
   end
 
   defp reduce(state, %Event{
@@ -371,7 +372,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :overlay_opened, data: data}) do
-    %{state | overlays: Lists.append(state.overlays, restored_overlay(data))}
+    %{state | overlays: Lists.append(state.overlays, RestoredPayload.overlay(data))}
   end
 
   defp reduce(state, %Event{type: :overlay_closed}) do
@@ -383,11 +384,11 @@ defmodule Vibe.UI.Reducer do
          id: event_id,
          data: %Vibe.Event.Notification.Added{} = data
        }) do
-    add_notification(state, restored_notification(data), event_id)
+    add_notification(state, RestoredPayload.notification(data), event_id)
   end
 
   defp reduce(state, %Event{type: :notification_added, id: event_id, data: data}) do
-    add_notification(state, restored_notification(data), event_id)
+    add_notification(state, RestoredPayload.notification(data), event_id)
   end
 
   defp reduce(state, %Event{
@@ -412,7 +413,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :notification_expired, data: data}) do
-    expire_notification(state, restored_id(data))
+    expire_notification(state, RestoredPayload.id(data))
   end
 
   defp reduce(state, %Event{
@@ -420,11 +421,11 @@ defmodule Vibe.UI.Reducer do
          at: at,
          data: %Vibe.Event.Subagent.Started{} = data
        }) do
-    add_subagent_lifecycle(state, restored_subagent(data), :started, at)
+    add_subagent_lifecycle(state, RestoredPayload.subagent(data), :started, at)
   end
 
   defp reduce(state, %Event{type: :subagent_started, at: at, data: data}) do
-    add_subagent_lifecycle(state, restored_subagent(data), :started, at)
+    add_subagent_lifecycle(state, RestoredPayload.subagent(data), :started, at)
   end
 
   defp reduce(state, %Event{
@@ -432,11 +433,11 @@ defmodule Vibe.UI.Reducer do
          at: at,
          data: %Vibe.Event.Subagent.Finished{} = data
        }) do
-    add_subagent_lifecycle(state, restored_subagent(data), :finished, at)
+    add_subagent_lifecycle(state, RestoredPayload.subagent(data), :finished, at)
   end
 
   defp reduce(state, %Event{type: :subagent_finished, at: at, data: data}) do
-    add_subagent_lifecycle(state, restored_subagent(data), :finished, at)
+    add_subagent_lifecycle(state, RestoredPayload.subagent(data), :finished, at)
   end
 
   defp reduce(state, %Event{
@@ -447,7 +448,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :active_sessions_updated, data: data}) do
-    %{state | active_sessions: restored_count(data)}
+    %{state | active_sessions: RestoredPayload.count(data)}
   end
 
   defp reduce(state, %Event{
@@ -458,7 +459,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :plugin_status_updated, data: data}) do
-    data = restored_plugin_status(data)
+    data = RestoredPayload.plugin_status(data)
     put_plugin_status(state, data.key, data.text)
   end
 
@@ -470,7 +471,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :plugin_status_cleared, data: data}) do
-    clear_plugin_status(state, restored_key(data))
+    clear_plugin_status(state, RestoredPayload.key(data))
   end
 
   defp reduce(state, %Event{
@@ -481,7 +482,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :plugin_widget_updated, data: data}) do
-    put_plugin_widget(state, restored_widget(data))
+    put_plugin_widget(state, RestoredPayload.widget(data))
   end
 
   defp reduce(state, %Event{
@@ -492,7 +493,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :plugin_widget_cleared, data: data}) do
-    clear_plugin_widget(state, restored_key(data))
+    clear_plugin_widget(state, RestoredPayload.key(data))
   end
 
   defp reduce(state, %Event{
@@ -503,7 +504,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :working_message_updated, data: data}) do
-    %{state | working_message: restored_message(data)}
+    %{state | working_message: RestoredPayload.message(data)}
   end
 
   defp reduce(state, %Event{
@@ -514,7 +515,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :hidden_thinking_label_updated, data: data}) do
-    %{state | hidden_thinking_label: restored_label(data)}
+    %{state | hidden_thinking_label: RestoredPayload.label(data)}
   end
 
   defp reduce(state, %Event{
@@ -525,7 +526,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :title_updated, data: data}) do
-    %{state | title: restored_title(data)}
+    %{state | title: RestoredPayload.title(data)}
   end
 
   defp reduce(state, %Event{
@@ -558,7 +559,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :selector_moved, data: data}) do
-    move_active_selector(state, restored_direction(data))
+    move_active_selector(state, RestoredPayload.direction(data))
   end
 
   defp reduce(state, %Event{type: :selector_closed}) do
@@ -887,82 +888,6 @@ defmodule Vibe.UI.Reducer do
 
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
-
-  defp restored_user_message(payload) do
-    map = restored_payload_map(payload)
-
-    %{text: Map.fetch!(map, :text)}
-    |> maybe_put(:content, Map.get(map, :content))
-    |> maybe_put(:image_count, Map.get(map, :image_count))
-  end
-
-  defp restored_assistant_message(payload), do: restored_payload_map(payload)
-  defp restored_patch_confirmation(payload), do: restored_payload_map(payload)
-  defp restored_usage(payload), do: restored_payload_map(payload)
-  defp restored_overlay(payload), do: restored_payload_map(payload)
-  defp restored_notification(payload), do: restored_payload_map(payload)
-  defp restored_subagent(payload), do: restored_payload_map(payload)
-
-  defp restored_assistant_abort(payload) do
-    map = restored_payload_map(payload)
-    %{reason: Map.get(map, :reason, "Cancelled."), notify?: Map.get(map, :notify?, true)}
-  end
-
-  defp restored_text(payload), do: payload |> restored_payload_map() |> Map.fetch!(:text)
-  defp restored_optional_text(payload), do: payload |> restored_payload_map() |> Map.get(:text)
-  defp restored_id(payload), do: payload |> restored_payload_map() |> Map.fetch!(:id)
-  defp restored_status(payload), do: payload |> restored_payload_map() |> Map.fetch!(:status)
-  defp restored_model(payload), do: payload |> restored_payload_map() |> Map.fetch!(:model)
-  defp restored_effort(payload), do: payload |> restored_payload_map() |> Map.fetch!(:effort)
-
-  defp restored_session_id(payload),
-    do: payload |> restored_payload_map() |> Map.fetch!(:session_id)
-
-  defp restored_count(payload), do: payload |> restored_payload_map() |> Map.fetch!(:count)
-  defp restored_key(payload), do: payload |> restored_payload_map() |> Map.fetch!(:key)
-  defp restored_widget(payload), do: payload |> restored_payload_map() |> Map.fetch!(:widget)
-  defp restored_message(payload), do: payload |> restored_payload_map() |> Map.fetch!(:message)
-  defp restored_label(payload), do: payload |> restored_payload_map() |> Map.fetch!(:label)
-  defp restored_title(payload), do: payload |> restored_payload_map() |> Map.fetch!(:title)
-
-  defp restored_direction(payload),
-    do: payload |> restored_payload_map() |> Map.fetch!(:direction)
-
-  defp restored_context_tokens_before(payload) do
-    payload |> restored_payload_map() |> Map.get(:tokens_before, 0)
-  end
-
-  defp restored_context_failure_reason(payload) do
-    payload |> restored_payload_map() |> Map.get(:reason, "context compaction failed")
-  end
-
-  defp restored_context_summary(payload) do
-    payload |> restored_payload_map() |> Map.get(:summary, "context compacted")
-  end
-
-  defp restored_plugin_status(payload) do
-    map = restored_payload_map(payload)
-    %{key: Map.fetch!(map, :key), text: Map.fetch!(map, :text)}
-  end
-
-  defp restored_payload_map(%struct{} = payload) when is_atom(struct) do
-    payload
-    |> Map.from_struct()
-    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-    |> Map.new(fn {key, value} -> {payload_key(key), value} end)
-  end
-
-  defp restored_payload_map(payload) when is_map(payload) do
-    Map.new(payload, fn {key, value} -> {payload_key(key), value} end)
-  end
-
-  defp payload_key(key) when is_binary(key) do
-    String.to_existing_atom(key)
-  rescue
-    ArgumentError -> key
-  end
-
-  defp payload_key(key), do: key
 
   defp drop_trailing_session_marker(messages, marker) do
     case List.pop_at(messages, -1) do
