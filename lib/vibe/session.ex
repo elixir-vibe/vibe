@@ -18,7 +18,7 @@ defmodule Vibe.Session do
   alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
   alias Vibe.Session.Command.Intent, as: Command
-  alias Vibe.UI.{PluginBridge, Reducer, State}
+  alias Vibe.UI.{PluginBridge, State}
 
   require Vibe.Debug
 
@@ -118,7 +118,10 @@ defmodule Vibe.Session do
     restoring? = Keyword.get(opts, :restoring?, false)
     custom_ask? = Keyword.has_key?(opts, :ask_fun)
     opts = Keyword.put_new_lazy(opts, :runtime_alerts, &active_runtime_alerts/0)
-    {state, event_seq, events_tail} = restore_state(State.new(opts), persist?, restoring?)
+
+    {state, event_seq, events_tail} =
+      Vibe.Session.Replay.restore_state(State.new(opts), persist?, restoring?)
+
     state = maybe_load_goal(state, persist?)
 
     if persist?,
@@ -169,7 +172,7 @@ defmodule Vibe.Session do
     ref = Process.monitor(pid)
     state = %{state | subscribers: Map.put(state.subscribers, ref, pid)}
     replay_after = Keyword.get(opts, :after, state.event_seq)
-    replay_events(state, replay_after, pid)
+    Vibe.Session.Replay.replay_events(state, replay_after, pid)
     {:reply, {:ok, state.state, state.event_seq}, state}
   end
 
@@ -351,54 +354,6 @@ defmodule Vibe.Session do
 
   defp maybe_load_goal(state, false), do: state
   defp maybe_load_goal(state, true), do: %{state | goal: Vibe.Goals.get(state.session_id)}
-
-  defp restore_state(state, false, _restoring?), do: {state, 0, []}
-
-  defp restore_state(state, true, restoring?) do
-    events = Vibe.Session.Store.session_events(state.session_id)
-
-    session_state =
-      state
-      |> Reducer.apply_events(Enum.map(events, fn {_seq, event} -> event end))
-      |> finalize_restored_state(restoring?)
-
-    event_seq = events |> last_event({0, nil}) |> elem(0)
-    {session_state, event_seq, Enum.take(events, -200)}
-  end
-
-  defp finalize_restored_state(state, false), do: state
-
-  defp finalize_restored_state(%{status: :working} = state, true) do
-    has_active_stream? = not is_nil(state.streaming_message)
-
-    has_running_tool? =
-      Enum.any?(state.pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end)
-
-    if has_active_stream? or has_running_tool?, do: state, else: %{state | status: :idle}
-  end
-
-  defp finalize_restored_state(state, true), do: state
-
-  defp replay_events(state, replay_after, pid) do
-    events =
-      if durable_replay?(state, replay_after) do
-        Vibe.Session.Store.session_events_after(state.state.session_id, replay_after)
-      else
-        Enum.filter(state.events_tail, fn {seq, _event} -> seq > replay_after end)
-      end
-
-    Enum.each(events, fn {_seq, event} -> send(pid, {__MODULE__, :event, event}) end)
-  end
-
-  defp durable_replay?(%{persist?: false}, _replay_after), do: false
-  defp durable_replay?(%{events_tail: []}, _replay_after), do: false
-
-  defp durable_replay?(%{events_tail: [{oldest_seq, _event} | _events]}, replay_after),
-    do: replay_after < oldest_seq
-
-  defp last_event([], default), do: default
-  defp last_event([event], _default), do: event
-  defp last_event([_event | events], default), do: last_event(events, default)
 
   defp maybe_register_in_registry(session_id) do
     case Registry.lookup(Vibe.Registry, {:session, session_id}) do

@@ -237,6 +237,7 @@
       "Vibe.UI.Reducer.Selector",
       "Vibe.Session.CommandHandler",
       "Vibe.Session.EventEmitter",
+      "Vibe.Session.Replay",
       "Vibe.Plugin.Manager.Pipeline",
       "Vibe.Plugin.Manager.Callback",
       "Vibe.Plugin.Manager.Collections"
@@ -248,6 +249,7 @@
       {"Vibe.UI.Reducer.Selector", ["Vibe.UI.Reducer"]},
       {"Vibe.Session.CommandHandler", ["Vibe.Session"]},
       {"Vibe.Session.EventEmitter", ["Vibe.Session"]},
+      {"Vibe.Session.Replay", ["Vibe.Session"]},
       {"Vibe.Plugin.Manager.Pipeline", ["Vibe.Plugin.Manager"]},
       {"Vibe.Plugin.Manager.Callback",
        ["Vibe.Plugin.Manager", "Vibe.Plugin.Manager.Pipeline", "Vibe.Plugin.Manager.Collections"]},
