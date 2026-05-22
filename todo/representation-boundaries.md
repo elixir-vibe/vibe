@@ -482,70 +482,34 @@ This structure should be enforced by Reach architecture policy, not just convent
 
 Add/maintain `.reach.exs` and make `mix reach.check --arch` / `mix reach.check --smells --strict` part of release validation. No compatibility baseline for this refactor: fix violations or change the architecture intentionally.
 
-Target Reach layers after the current namespaces are untangled:
+Current Reach layers are intentionally more explicit than the early target sketch:
 
 ```elixir
 layers: [
-  domain: [
-    "Vibe.SystemAlarms.*",
-    "Vibe.Tool.*",
-    "Vibe.Model.*",
-    "Vibe.Command.*",
-    "Vibe.Goals.*",
-    "Vibe.Files.*",
-    "Vibe.Image",
-    "Vibe.Code.*"
-  ],
-  event: "Vibe.Event.*",
-  application: [
-    "Vibe.Session*",
-    "Vibe.SystemAlarms",
-    "Vibe.Goals",
-    "Vibe.Command",
-    "Vibe.Plugin.*",
-    "Vibe.Plugins.*",
-    "Vibe.Subagents.*"
-  ],
-  storage: [
-    "Vibe.Storage.*",
-    "Vibe.Memory",
-    "Vibe.Telemetry",
-    "Vibe.Session.Store*"
-  ],
-  presentation: ["Vibe.Presentation.*", "Vibe.Plugins.*.Presentation.*"],
-  markdown: ["Vibe.Presentation.Markdown.*", "Vibe.Plugins.*.Presentation.Markdown"],
-  tui: "Vibe.TUI.*",
-  web: "Vibe.Web.*",
-  transport: "Vibe.Remote.*"
+  json_value: ["Vibe.Storage.JSON.Value", "Vibe.Transport.JSON.Value", "Vibe.Tool.Transport.JSON.Value"],
+  storage: ["Vibe.Repo", "Vibe.Storage*", "Vibe.Session.Store*"],
+  event: ["Vibe.Event", "Vibe.Event.*"],
+  session: ["Vibe.Session", "Vibe.Session.Command*", "Vibe.Session.Current", "Vibe.Session.Listing", "Vibe.Session.Preview", "Vibe.Session.Processes", "Vibe.Session.PromptLifecycle", "Vibe.Session.Registry"],
+  command: "Vibe.Command*",
+  cli: ["Vibe.CLI*", "Mix.Tasks.Vibe*"],
+  tool: ["Vibe.Tool", "Vibe.Tool.AdapterResult", "Vibe.Tool.Builtin*", "Vibe.Tool.Event", "Vibe.Tool.Output*", "Vibe.Tool.PluginCall", "Vibe.Tool.PluginResult", "Vibe.Tool.Result"],
+  transport_json: "Vibe.Transport*",
+  remote_transport: "Vibe.Remote.Transport*",
+  tool_transport: "Vibe.Tool.Transport*",
+  presentation: ["Vibe.Presentation.Document", "Vibe.Presentation.Presentable", "Vibe.Presentation.RuntimeAlert", "Vibe.Presentation.Section", "Vibe.Presentation.Tool*", "Vibe.Presentation.Widget"],
+  markdown: ["Vibe.Markdown", "Vibe.Presentation.Markdown*"],
+  eval_api: ["Vibe.MD", "Vibe.MD.*"],
+  terminal: "Vibe.Terminal*",
+  ui_state: ["Vibe.UI.Autocomplete*", "Vibe.UI.Block*", "Vibe.UI.Editor*", "Vibe.UI.Error", "Vibe.UI.FileAutocomplete", "Vibe.UI.Message", "Vibe.UI.Notification", "Vibe.UI.Reducer", "Vibe.UI.Selector", "Vibe.UI.State", "Vibe.UI.ViewModel"],
+  tui: "Vibe.TUI*",
+  web: "Vibe.Web*",
+  plugin_core: "Vibe.Plugin*",
+  plugin_presentation: ["Vibe.Plugins.*.Presentation*", "Vibe.Plugins.WebSearch.SearchItemRenderer"],
+  plugin_impl: ["Vibe.Plugins.Notify*", "Vibe.Plugins.Question*", "Vibe.Plugins.Rules*", "Vibe.Plugins.Safety*", "Vibe.Plugins.WebSearch", "Vibe.Plugins.WebSearch.*"]
 ]
 ```
 
-Layer rules should forbid representation leakage:
-
-```elixir
-deps: [
-  forbidden: [
-    {:domain, :storage},
-    {:domain, :presentation},
-    {:domain, :markdown},
-    {:domain, :tui},
-    {:domain, :web},
-    {:domain, :transport},
-    {:storage, :presentation},
-    {:storage, :markdown},
-    {:storage, :tui},
-    {:storage, :web},
-    {:presentation, :storage},
-    {:presentation, :tui},
-    {:presentation, :web},
-    {:markdown, :storage},
-    {:markdown, :tui},
-    {:markdown, :web},
-    {:tui, :storage},
-    {:web, :storage}
-  ]
-]
-```
+Important forbidden directions include JSON value modules depending on any domain/surface layer, storage depending on presentation/TUI/web, events depending on storage/UI/presentation/tool/plugin layers, transport depending on storage, presentation depending on storage, CLI depending on TUI except for explicit TUI entrypoints, and TUI depending on storage except storybook fixtures.
 
 Call-level rules should ban random representation calls:
 
@@ -558,7 +522,7 @@ calls: [
     {"Vibe.UI.*", ["Vibe.Storage.Representation.*", "Vibe.Storage.Persistable.*", "Vibe.Storage.Restorable.*"]},
     {"Vibe.Web.*", ["Vibe.Storage.Representation.*", "Vibe.Storage.Persistable.*", "Vibe.Storage.Restorable.*"]},
     {"Vibe.TUI.*", ["Vibe.Storage.Representation.*", "Vibe.Storage.Persistable.*", "Vibe.Storage.Restorable.*"]},
-    {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.Markdown.*", "Vibe.TUI.*", "Vibe.Web.*"]}
+    {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.TUI.*", "Vibe.Web.*"]}
   ]
 ]
 ```
