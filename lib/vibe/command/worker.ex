@@ -94,7 +94,7 @@ defmodule Vibe.Command.Worker do
 
   def handle_call(:cancel, _from, %{status: :running} = state) do
     Port.close(state.port)
-    state = finish(%{state | status: :cancelled})
+    state = finish_command(%{state | status: :cancelled})
     {:reply, result(state), state}
   end
 
@@ -109,7 +109,13 @@ defmodule Vibe.Command.Worker do
   end
 
   def handle_info({port, {:exit_status, status}}, %{port: port, status: :running} = state) do
-    state = finish(%{state | exit_status: status, status: if(status == 0, do: :ok, else: :error)})
+    state =
+      finish_command(%{
+        state
+        | exit_status: status,
+          status: if(status == 0, do: :ok, else: :error)
+      })
+
     {:noreply, state}
   end
 
@@ -117,15 +123,8 @@ defmodule Vibe.Command.Worker do
 
   def handle_info(_message, state), do: {:noreply, state}
 
-  defp finish(state) do
-    Vibe.Command.Processes.untrack(state.eval_session_id, self())
-    result = result(state)
-
-    state
-    |> Map.get(:awaiters, [])
-    |> Enum.each(&GenServer.reply(&1, result))
-
-    Map.put(state, :awaiters, [])
+  defp finish_command(state) do
+    Vibe.Command.Worker.Finalizer.finish(state, result(state), self())
   end
 
   defp build_job(state) do
