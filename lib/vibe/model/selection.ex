@@ -16,7 +16,7 @@ defmodule Vibe.Model.Selection do
 
   @spec resolve(keyword()) :: String.t()
   def resolve(opts \\ []) do
-    Keyword.get(opts, :model) || role_model(opts) || System.get_env("VIBE_MODEL") || default()
+    Vibe.Model.Selection.Source.resolve(opts, &default/0)
   end
 
   @doc """
@@ -36,12 +36,5 @@ defmodule Vibe.Model.Selection do
     match?({:ok, _, _}, ReqLLM.Keys.get(provider, []))
   rescue
     _error -> false
-  end
-
-  defp role_model(opts) do
-    case Keyword.get(opts, :role) do
-      nil -> nil
-      role -> Vibe.Agent.Profile.model_for(role: role)
-    end
   end
 end
