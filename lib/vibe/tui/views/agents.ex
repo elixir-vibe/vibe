@@ -88,10 +88,12 @@ defmodule Vibe.TUI.Views.Agents do
     title = Theme.fg(theme, :fg_strong, "Agent sessions")
     stats = Theme.fg(theme, :muted, " #{count} total · #{working} working · #{idle} idle")
 
+    indent = Widget.spaces(2)
+
     [
       "",
-      [Widget.spaces(2), title, stats],
-      [Widget.spaces(2), Theme.fg(theme, :dim, String.duplicate("─", min(state.width - 4, 60)))],
+      [indent, title, stats],
+      [indent, Theme.fg(theme, :dim, String.duplicate("─", min(state.width - 4, 60)))],
       ""
     ]
   end
@@ -134,13 +136,16 @@ defmodule Vibe.TUI.Views.Agents do
   defp render_peek(%{peek: nil}, _theme), do: []
 
   defp render_peek(%{peek: peek}, theme) do
+    indent = Widget.spaces(2)
+    nested_indent = Widget.spaces(4)
+
     [
       "",
-      [Widget.spaces(2), Theme.fg(theme, :dim, String.duplicate("─", 40))],
-      [Widget.spaces(2), Theme.fg(theme, :fg_strong, peek.title)],
-      [Widget.spaces(4), Theme.fg(theme, :muted, peek.status)],
+      [indent, Theme.fg(theme, :dim, String.duplicate("─", 40))],
+      [indent, Theme.fg(theme, :fg_strong, peek.title)],
+      [nested_indent, Theme.fg(theme, :muted, peek.status)],
       "",
-      [Widget.spaces(4), Theme.fg(theme, :fg, String.slice(peek.last_message, 0, 200))]
+      [nested_indent, Theme.fg(theme, :fg, String.slice(peek.last_message, 0, 200))]
     ]
   end
 

@@ -38,12 +38,10 @@ defimpl Vibe.Markdown, for: Vibe.Code.AST.Result do
   end
 
   defp match_count(matches) when is_list(matches) do
-    matches
-    |> Enum.map(fn
+    Enum.sum_by(matches, fn
       {_path, count} -> count
       _other -> 1
     end)
-    |> Enum.sum()
   end
 
   defp match_count(_matches), do: 0

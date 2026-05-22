@@ -1,6 +1,20 @@
 [
-  layers: [],
-  deps: [forbidden: []],
+  layers: [
+    storage: ["Vibe.Repo", "Vibe.Storage*", "Vibe.Session.Store*"],
+    presentation: "Vibe.Presentation*",
+    tui: "Vibe.TUI*",
+    web: "Vibe.Web*",
+    plugin: ["Vibe.Plugin*", "Vibe.Plugins*"]
+  ],
+  deps: [
+    forbidden: [
+      {:storage, :presentation},
+      {:storage, :tui},
+      {:storage, :web},
+      {:presentation, :storage},
+      {:tui, :storage, except_edges: [{"Vibe.TUI.Storybook", "Vibe.Session.Store"}]}
+    ]
+  ],
   source: [
     forbidden_modules: [
       "Vibe.Actions.*",

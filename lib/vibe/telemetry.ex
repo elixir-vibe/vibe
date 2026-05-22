@@ -236,8 +236,8 @@ defmodule Vibe.Telemetry do
     %{
       at: DateTime.utc_now() |> DateTime.to_iso8601(),
       event: event_name,
-      measurements: measurements |> json_safe() |> atomize_known(),
-      metadata: metadata |> sanitize_metadata() |> json_safe() |> atomize_known()
+      measurements: measurements |> metadata_value() |> atomize_known(),
+      metadata: metadata |> sanitize_metadata() |> metadata_value() |> atomize_known()
     }
   end
 
@@ -247,8 +247,8 @@ defmodule Vibe.Telemetry do
     %TelemetryEvent{
       name: Enum.join(event.event, "."),
       at: parse_datetime!(event.at),
-      measurements: json_safe(event.measurements),
-      metadata: json_safe(event.metadata)
+      measurements: metadata_value(event.measurements),
+      metadata: metadata_value(event.metadata)
     }
     |> Vibe.Repo.insert()
   rescue
@@ -342,7 +342,9 @@ defmodule Vibe.Telemetry do
 
   defp sanitize_request(_request), do: "[REDACTED]"
 
-  defp sanitize_result({status, response}), do: [json_safe(status), sanitize_response(response)]
+  defp sanitize_result({status, response}),
+    do: [metadata_value(status), sanitize_response(response)]
+
   defp sanitize_result(%_{} = response), do: sanitize_response(response)
   defp sanitize_result(response) when is_map(response), do: sanitize_response(response)
   defp sanitize_result(_result), do: "[REDACTED]"
@@ -364,27 +366,30 @@ defmodule Vibe.Telemetry do
     if String.valid?(value), do: value, else: "[BINARY #{byte_size(value)} bytes]"
   end
 
-  defp json_safe(%_{} = struct), do: struct |> Map.from_struct() |> json_safe()
+  defp metadata_value(%_{} = struct), do: struct |> Map.from_struct() |> metadata_value()
 
-  defp json_safe(map) when is_map(map) do
-    Map.new(map, fn {key, value} -> {json_key(key), json_safe(value)} end)
+  defp metadata_value(map) when is_map(map) do
+    Map.new(map, fn {key, value} -> {metadata_key(key), metadata_value(value)} end)
   end
 
-  defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
-  defp json_safe(tuple) when is_tuple(tuple), do: tuple |> Tuple.to_list() |> json_safe()
-  defp json_safe(pid) when is_pid(pid), do: inspect(pid)
-  defp json_safe(ref) when is_reference(ref), do: inspect(ref)
-  defp json_safe(fun) when is_function(fun), do: inspect(fun)
-  defp json_safe(atom) when is_atom(atom), do: Atom.to_string(atom)
+  defp metadata_value(list) when is_list(list), do: Enum.map(list, &metadata_value/1)
 
-  defp json_safe(value)
+  defp metadata_value(tuple) when is_tuple(tuple),
+    do: tuple |> Tuple.to_list() |> metadata_value()
+
+  defp metadata_value(pid) when is_pid(pid), do: inspect(pid)
+  defp metadata_value(ref) when is_reference(ref), do: inspect(ref)
+  defp metadata_value(fun) when is_function(fun), do: inspect(fun)
+  defp metadata_value(atom) when is_atom(atom), do: Atom.to_string(atom)
+
+  defp metadata_value(value)
        when is_binary(value) or is_number(value) or is_boolean(value) or is_nil(value), do: value
 
-  defp json_safe(value), do: inspect(value, limit: 20)
+  defp metadata_value(value), do: inspect(value, limit: 20)
 
-  defp json_key(key) when is_atom(key), do: Atom.to_string(key)
-  defp json_key(key) when is_binary(key), do: key
-  defp json_key(key), do: inspect(key)
+  defp metadata_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp metadata_key(key) when is_binary(key), do: key
+  defp metadata_key(key), do: inspect(key)
 
   defp atomize_known(map) when is_map(map) do
     Map.new(map, fn {key, value} -> {safe_key(key), atomize_known(value)} end)

@@ -15,31 +15,28 @@ defmodule Vibe.Storage.Representation.RuntimeAlert do
         }
 
   @spec decode!(map()) :: t()
-  def decode!(
-        %{"id" => id, "source" => source, "type" => type, "severity" => severity, "at" => at} =
-          map
-      ) do
+  def decode!(map) when is_map(map) do
+    map = atomize_known_keys(map)
+
     %__MODULE__{
-      id: id,
-      source: decode_atom!(source),
-      type: decode_atom!(type),
-      severity: decode_atom!(severity),
-      detail: Map.get(map, "detail"),
-      at: decode_datetime!(at),
-      context: decode_context!(Map.get(map, "context", %{}))
+      id: Map.fetch!(map, :id),
+      source: map |> Map.fetch!(:source) |> decode_atom!(),
+      type: map |> Map.fetch!(:type) |> decode_atom!(),
+      severity: map |> Map.fetch!(:severity) |> decode_atom!(),
+      detail: Map.get(map, :detail),
+      at: map |> Map.fetch!(:at) |> decode_datetime!(),
+      context: decode_context!(Map.get(map, :context, %{}))
     }
   end
 
-  def decode!(%{id: id, source: source, type: type, severity: severity, at: at} = map) do
-    %__MODULE__{
-      id: id,
-      source: decode_atom!(source),
-      type: decode_atom!(type),
-      severity: decode_atom!(severity),
-      detail: Map.get(map, :detail),
-      at: decode_datetime!(at),
-      context: decode_context!(Map.get(map, :context, %{}))
-    }
+  defp atomize_known_keys(map) do
+    Map.new(map, fn
+      {key, value} when key in ["id", "source", "type", "severity", "detail", "at", "context"] ->
+        {String.to_existing_atom(key), value}
+
+      entry ->
+        entry
+    end)
   end
 
   defp decode_context!(context) when is_map(context) do

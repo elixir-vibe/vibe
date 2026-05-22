@@ -11,8 +11,11 @@ defmodule Vibe.CLI.Output do
 
   def print({:ok, results}, opts) when is_list(results) do
     case opts[:mode] do
-      "json" -> puts(Jason.encode!(json_safe(%{ok: true, results: results}), pretty: true))
-      _ -> puts(render(results))
+      "json" ->
+        puts(Jason.encode!(json_output_value(%{ok: true, results: results}), pretty: true))
+
+      _ ->
+        puts(render(results))
     end
 
     :ok
@@ -20,7 +23,7 @@ defmodule Vibe.CLI.Output do
 
   def print({:ok, result}, opts) do
     case opts[:mode] do
-      "json" -> puts(Jason.encode!(json_safe(%{ok: true, result: result}), pretty: true))
+      "json" -> puts(Jason.encode!(json_output_value(%{ok: true, result: result}), pretty: true))
       _ -> puts(render(result))
     end
 
@@ -30,7 +33,7 @@ defmodule Vibe.CLI.Output do
   def print({:error, reason}, opts) do
     case opts[:mode] do
       "json" ->
-        puts(Jason.encode!(json_safe(%{ok: false, error: inspect(reason)}), pretty: true))
+        puts(Jason.encode!(json_output_value(%{ok: false, error: inspect(reason)}), pretty: true))
 
       _ ->
         error(inspect(reason))
@@ -56,14 +59,14 @@ defmodule Vibe.CLI.Output do
     :exit, _reason -> :ok
   end
 
-  defp json_safe(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp json_safe(%_{} = value), do: value |> Map.from_struct() |> json_safe()
+  defp json_output_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
+  defp json_output_value(%_{} = value), do: value |> Map.from_struct() |> json_output_value()
 
-  defp json_safe(map) when is_map(map),
-    do: Map.new(map, fn {key, value} -> {key, json_safe(value)} end)
+  defp json_output_value(map) when is_map(map),
+    do: Map.new(map, fn {key, value} -> {key, json_output_value(value)} end)
 
-  defp json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
-  defp json_safe(value), do: value
+  defp json_output_value(list) when is_list(list), do: Enum.map(list, &json_output_value/1)
+  defp json_output_value(value), do: value
 
   defp render([]), do: "No results."
 

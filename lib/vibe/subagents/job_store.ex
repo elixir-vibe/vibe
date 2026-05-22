@@ -74,22 +74,25 @@ defmodule Vibe.Subagents.JobStore do
   end
 
   defp encode_result(nil), do: nil
-  defp encode_result(value), do: %{"value" => json_safe(value)}
+  defp encode_result(value), do: %{"value" => stored_result_value(value)}
 
   defp decode_result(nil), do: nil
   defp decode_result(%{"value" => value}), do: value
   defp decode_result(value), do: value
 
-  defp json_safe(nil), do: nil
-  defp json_safe(%_{} = value), do: value |> Map.from_struct() |> json_safe()
+  defp stored_result_value(nil), do: nil
+  defp stored_result_value(%_{} = value), do: value |> Map.from_struct() |> stored_result_value()
 
-  defp json_safe(value) when is_map(value),
-    do: Map.new(value, fn {k, v} -> {to_string(k), json_safe(v)} end)
+  defp stored_result_value(value) when is_map(value),
+    do: Map.new(value, fn {k, v} -> {to_string(k), stored_result_value(v)} end)
 
-  defp json_safe(value) when is_list(value), do: Enum.map(value, &json_safe/1)
-  defp json_safe(value) when is_atom(value), do: Atom.to_string(value)
-  defp json_safe(value) when is_binary(value) or is_number(value) or is_boolean(value), do: value
-  defp json_safe(value), do: inspect(value)
+  defp stored_result_value(value) when is_list(value), do: Enum.map(value, &stored_result_value/1)
+  defp stored_result_value(value) when is_atom(value), do: Atom.to_string(value)
+
+  defp stored_result_value(value) when is_binary(value) or is_number(value) or is_boolean(value),
+    do: value
+
+  defp stored_result_value(value), do: inspect(value)
 
   defp atom_string(nil), do: nil
   defp atom_string(value) when is_atom(value), do: Atom.to_string(value)
