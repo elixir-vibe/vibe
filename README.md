@@ -2,12 +2,27 @@
 
 BEAM-native coding agent for Elixir/OTP projects.
 
-Vibe is an experimental terminal/web coding agent that runs on the BEAM. It uses supervised Elixir processes for sessions, command jobs, subagents, plugin workers, UI state, telemetry, and local storage instead of treating agent work as only files plus shell commands.
+Vibe is a terminal/web coding agent that runs as a local OTP application. It includes a TUI, a LiveView web console, persistent sessions, plugins, skills, subagents, and project-aware Elixir eval.
 
 > [!WARNING]
-> Vibe is experimental and not production-ready. It can run commands, edit files, store local state, start background processes, and talk to external model providers. Use it at your own risk, review changes before applying them, and avoid pointing it at repositories or machines where unintended agent actions would be costly.
+> Vibe is experimental and not production-ready. It can take actions on your machine and talk to external model providers. Use it at your own risk, review changes before applying them, and avoid repositories or machines where unintended agent actions would be costly.
 
-## Install
+## Why Vibe?
+
+Vibe is an experiment in making an agent feel native to the BEAM, rather than wrapping a chat loop around shell commands.
+
+A few things this gives you:
+
+- **Elixir eval as the control plane.** The agent can use stateful Elixir APIs for commands, storage, search, telemetry, goals, web fetches, Markdown rendering, and custom helpers. The model sees a small tool surface, but the agent still gets a composable interface.
+- **Stateful work, closer to Livebook.** Eval sessions can keep intermediate values around, so the agent can compute something once, inspect it, transform it, and refer back to it later.
+- **OTP supervision for agent work.** Sessions, command jobs, plugin workers, subagents, telemetry, UI state, and storage are supervised processes that can be monitored, cancelled, resumed, and inspected.
+- **Agents can launch other agents.** Subagents get their own sessions and lifecycle, which makes parallel research, background work, and longer workflows easier to model.
+- **Remote workflows are part of the design.** Vibe can use SSH and Erlang distribution so agents can attach to remote nodes and coordinate across machines.
+- **The system is meant to be customized.** Plugins, skills, gateways, semantic events, and eval helpers are extension points. During development, Vibe can run checks, patch code, and hot-reload modules; tools like Reach help keep boundaries clear.
+
+## Quick start
+
+Requirements: Elixir 1.19+, Erlang/OTP 27+, and credentials for the model provider you select. Vibe stores local runtime state under `~/.vibe` by default.
 
 Install the released executable from Hex:
 
@@ -21,10 +36,6 @@ Sign in with ChatGPT/Codex OAuth if you use the Codex/OpenAI provider:
 ```bash
 vibe --login codex
 ```
-
-Requirements: Elixir 1.19+, Erlang/OTP 27+, and credentials for the model provider you select. Vibe stores local runtime state under `~/.vibe` by default.
-
-## Quick start
 
 Start the TUI. If no background server is running, Vibe starts one and attaches to a server-owned session:
 
@@ -56,33 +67,6 @@ Useful first slash commands:
 /web         Open the web console
 ```
 
-## Why Vibe?
-
-Vibe is an experiment in making an agent feel native to the BEAM instead of wrapping a chat loop around shell commands.
-
-A few things this makes possible:
-
-- **Elixir eval as the control plane.** The agent can use stateful Elixir APIs for commands, Markdown rendering, storage, search, telemetry, goals, web fetches, and custom helpers. This keeps the model-facing tool surface small while still giving the agent a composable interface.
-- **Stateful work, closer to Livebook.** Eval sessions can keep intermediate values around, so the agent can compute something once, inspect it, transform it, and refer back to it later.
-- **OTP supervision for agent work.** Sessions, command jobs, plugin workers, subagents, telemetry, UI state, and storage are supervised processes. They can be monitored, cancelled, resumed, and inspected with normal OTP tools.
-- **Agents can launch other agents.** Subagents get their own sessions and supervised lifecycle, which makes parallel research, background work, and longer workflows easier to model.
-- **Remote workflows are part of the design.** Vibe can use SSH and Erlang distribution so agents can attach to remote nodes and coordinate across machines.
-- **The system is meant to be customized.** Plugins, skills, gateways, semantic events, and eval helpers are extension points. During development, Vibe can run checks, patch code, and hot-reload modules; tools like Reach help keep those changes inside clear boundaries.
-
-## What Vibe is for
-
-Vibe is currently most useful for hands-on Elixir/OTP development work where runtime context matters:
-
-- debugging a running application and checking what processes, supervisors, storage, and configuration are doing;
-- long refactoring sessions where the agent should keep context, notes, command output, and intermediate findings around;
-- project maintenance work that benefits from repeatable checks, local search, session history, and saved tool output;
-- trying agent workflows that continue in the background or split into smaller research/code tasks;
-- experimenting with custom skills, plugins, gateways, or project-specific helper APIs.
-
-Good fit: Elixir/OTP projects, long debugging/refactoring sessions, runtime introspection, local memory/search, and experimental agent workflows.
-
-Less ideal: quick one-off prompting, production automation, or environments where local SQLite-backed state and command execution are not acceptable.
-
 ## Core commands
 
 | Command | Purpose |
@@ -100,7 +84,7 @@ Less ideal: quick one-off prompting, production automation, or environments wher
 | `vibe search <query>` | Search stored sessions/memory |
 | `vibe skill list` | List executable skills |
 
-Attach files with Pi-style `@file` arguments. Text files become context blocks; image files become semantic multimodal content for direct prompts and TUI/web session prompts.
+Attach files with Pi-style `@file` arguments. Text files become context blocks; image files become semantic multimodal content.
 
 ```bash
 vibe --direct @path/to/image.png "describe this"
@@ -111,7 +95,7 @@ vibe
 
 ## Server, TUI, and web console
 
-Normal `vibe` invocations are clients. They connect to a singleton background Vibe server, creating it when needed, and attach to server-owned sessions. This gives a tmux-like workflow:
+Normal `vibe` invocations are clients. They connect to a singleton background Vibe server, creating it when needed. This gives a tmux-like workflow:
 
 ```bash
 # terminal 1
@@ -124,7 +108,7 @@ vibe
 vibe a <session-id>
 ```
 
-The Phoenix LiveView web console uses the same session processes as the TUI. `vibe --web` starts the background server when needed, prints an authenticated URL, and opens the browser. Token-based local authentication protects the console.
+The Phoenix LiveView web console uses the same session processes as the TUI. `vibe --web` prints an authenticated URL and opens the browser.
 
 Foreground server commands are available for debugging:
 
@@ -133,9 +117,9 @@ vibe server start --foreground
 vibe server restart --foreground
 ```
 
-## Eval as the control plane
+## Eval APIs
 
-The model-facing tool surface stays small. Most project-aware power is exposed through Elixir APIs available from `eval`.
+Most project-aware power is exposed through Elixir APIs available from `eval`.
 
 Common aliases:
 
@@ -155,7 +139,7 @@ Vibe.Context.recall("sqlite migration", cwd: File.cwd!(), limit: 3)
 Web.search!("ecto sqlite fts", num_results: 5, highlights: true) |> MD.doc()
 ```
 
-Prefer these APIs over raw `System.cmd/3`, ad-hoc string formatting, and provider-specific web clients.
+Prefer these APIs over raw `System.cmd/3`, ad-hoc string formatting, and provider-specific web clients when working inside Vibe.
 
 ## Storage and search
 
@@ -192,7 +176,7 @@ VIBE_SESSION_DIR=/tmp/vibe-sessions
 
 ## Subagents, plugins, and skills
 
-Subagents are supervised jobs. LLM subagents create child Vibe sessions that can be attached like any other session.
+LLM subagents create child Vibe sessions that can be attached like any other session.
 
 ```elixir
 {:ok, job} = Vibe.Subagents.start("Research ReqLLM OpenRouter support", role: :scout)
@@ -294,7 +278,7 @@ Run the full gate:
 mix ci
 ```
 
-`mix ci` runs compile, format check, tests, Credo, Dialyzer, ExDNA, and Reach smell checks.
+`mix ci` runs compile, format check, tests, Credo, Dialyzer, ExDNA, and Reach checks.
 
 Useful checks from Elixir:
 
