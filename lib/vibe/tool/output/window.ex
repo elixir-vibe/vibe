@@ -1,6 +1,7 @@
 defmodule Vibe.Tool.Output.Window do
   @moduledoc "Reusable line/byte windows for large model-facing tool output."
 
+  @default_max_bytes 50_000
   @default_max_lines 2_000
 
   defstruct [
@@ -40,7 +41,7 @@ defmodule Vibe.Tool.Output.Window do
     mode = normalize_mode(Keyword.get(opts, :mode, :head))
 
     limit_bytes =
-      normalize_positive(Keyword.get(opts, :limit_bytes), Vibe.Tool.Output.default_max_bytes())
+      normalize_positive(Keyword.get(opts, :limit_bytes), @default_max_bytes)
 
     limit_lines = normalize_positive(Keyword.get(opts, :limit_lines), @default_max_lines)
     full_output_path = Keyword.get(opts, :full_output_path)

@@ -50,8 +50,8 @@ defmodule Vibe.Agent.Profile do
   @spec default_model() :: String.t()
   def default_model do
     case load() do
-      {:ok, data} -> Map.get(data, "default_model") || Vibe.Model.Selection.default()
-      {:error, _reason} -> Vibe.Model.Selection.default()
+      {:ok, data} -> Map.get(data, "default_model") || Vibe.Model.Default.model()
+      {:error, _reason} -> Vibe.Model.Default.model()
     end
   end
 
@@ -111,7 +111,7 @@ defmodule Vibe.Agent.Profile do
         |> Enum.uniq()
 
       {:error, _reason} ->
-        [Vibe.Model.Selection.default()]
+        [Vibe.Model.Default.model()]
     end
   end
 

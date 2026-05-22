@@ -9,7 +9,7 @@ defmodule Vibe.TUI.Cast.Writer do
 
   use GenServer
 
-  alias Vibe.TUI.Cast
+  alias Vibe.TUI.Cast.Format
 
   @max_block_events 100
   @max_block_bytes 256_000
@@ -101,7 +101,7 @@ defmodule Vibe.TUI.Cast.Writer do
 
     header = %{
       format: :vibe_tui_cast,
-      version: Cast.version(),
+      version: Format.version(),
       started_at_unix_ms: System.system_time(:millisecond),
       width: Keyword.fetch!(opts, :width),
       height: Keyword.fetch!(opts, :height),
@@ -120,8 +120,8 @@ defmodule Vibe.TUI.Cast.Writer do
       header_binary = :erlang.term_to_binary(header)
 
       IO.binwrite(file, [
-        Cast.magic(),
-        <<Cast.version()::16, byte_size(header_binary)::32>>,
+        Format.magic(),
+        <<Format.version()::16, byte_size(header_binary)::32>>,
         header_binary
       ])
 
@@ -210,7 +210,7 @@ defmodule Vibe.TUI.Cast.Writer do
       events: events
     }
 
-    binary = Cast.encode_block(block, state.compression)
+    binary = Format.encode_block(block, state.compression)
     offset = :file.position(state.file, :cur) |> elem(1)
     IO.binwrite(state.file, [<<byte_size(binary)::32>>, binary])
 

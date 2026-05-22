@@ -18,7 +18,7 @@ defmodule Vibe.Web.Endpoint do
     at: "/",
     from: :vibe,
     gzip: false,
-    only: Vibe.Web.static_paths()
+    only: Vibe.Web.Assets.static_paths()
   )
 
   plug(Volt.DevServer, root: "assets")

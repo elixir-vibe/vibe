@@ -1,6 +1,11 @@
 defmodule Vibe.Web.Assets do
   @moduledoc "Builds web assets using Volt's configured JS bundler and Tailwind compiler."
 
+  @static_paths ~w(assets fonts images favicon.ico robots.txt)
+
+  @spec static_paths() :: [String.t()]
+  def static_paths, do: @static_paths
+
   @spec ensure_built!() :: :ok
   def ensure_built! do
     if Code.ensure_loaded?(Volt.Builder) do

@@ -22,12 +22,15 @@ defimpl Vibe.Storage.JSON.Encodable, for: Any do
   end
 
   def value(value) when is_number(value), do: value
-  def value(value) when is_tuple(value), do: value |> Tuple.to_list() |> Vibe.Storage.JSON.value()
-  def value(value) when is_list(value), do: Enum.map(value, &Vibe.Storage.JSON.value/1)
+
+  def value(value) when is_tuple(value),
+    do: value |> Tuple.to_list() |> Vibe.Storage.JSON.Value.value()
+
+  def value(value) when is_list(value), do: Enum.map(value, &Vibe.Storage.JSON.Value.value/1)
 
   def value(value) when is_map(value) do
     Map.new(value, fn {key, value} ->
-      {Vibe.Storage.JSON.key(key), Vibe.Storage.JSON.value(value)}
+      {Vibe.Storage.JSON.Value.key(key), Vibe.Storage.JSON.Value.value(value)}
     end)
   end
 
@@ -59,7 +62,7 @@ defimpl Vibe.Storage.JSON.Encodable, for: Vibe.Files.ImageRef do
     ref
     |> Map.from_struct()
     |> Map.delete(:data)
-    |> Vibe.Storage.JSON.value()
+    |> Vibe.Storage.JSON.Value.value()
   end
 end
 
@@ -68,6 +71,6 @@ defimpl Vibe.Storage.JSON.Encodable, for: Vibe.Files.ReadResult do
     result
     |> Map.from_struct()
     |> Map.delete(:__content_parts__)
-    |> Vibe.Storage.JSON.value()
+    |> Vibe.Storage.JSON.Value.value()
   end
 end

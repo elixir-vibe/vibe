@@ -1,9 +1,8 @@
 defmodule Vibe.Web do
   @moduledoc "Phoenix endpoint, router, and asset configuration for the web console."
-  @static_paths ~w(assets fonts images favicon.ico robots.txt)
-
+  @doc "Intentional web static asset boundary."
   @spec static_paths() :: [String.t()]
-  def static_paths, do: @static_paths
+  defdelegate static_paths, to: Vibe.Web.Assets
 
   @spec start(keyword()) :: {:ok, pid()} | {:error, term()}
   def start(opts \\ []) do

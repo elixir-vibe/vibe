@@ -11,10 +11,8 @@ defmodule Vibe.Model.Selection do
   like `ANTHROPIC_API_KEY`, `ZAI_API_KEY`, `DEEPSEEK_API_KEY`, etc.
   """
 
-  @default "openai_codex:gpt-5.5"
-
   @spec default() :: String.t()
-  def default, do: @default
+  defdelegate default, to: Vibe.Model.Default, as: :model
 
   @spec resolve(keyword()) :: String.t()
   def resolve(opts \\ []) do

@@ -194,6 +194,7 @@
     max_clones: 50
   ],
   smells: [
+    strict: true,
     fixed_shape_map: [
       min_keys: 3,
       min_occurrences: 3,

@@ -1,7 +1,6 @@
 defmodule Vibe.Image.Resize do
   @moduledoc "Resize images through pluggable supervised command backends."
 
-  alias Vibe.Image
   alias Vibe.Image.Resize.Backends.{ImageMagick, Sips, Vips}
 
   @default_max_width 2_000
@@ -15,8 +14,8 @@ defmodule Vibe.Image.Resize do
   @spec backends() :: [backend()]
   def backends, do: Application.get_env(:vibe, :image_resize_backends, @default_backends)
 
-  @spec resize(Image.t(), keyword()) :: {:ok, Image.t()} | {:error, term()}
-  def resize(%Image{} = image, opts \\ []) do
+  @spec resize(map(), keyword()) :: {:ok, map()} | {:error, term()}
+  def resize(%{} = image, opts \\ []) do
     opts = normalize_opts(opts)
 
     if within_limits?(image, opts) do
@@ -26,16 +25,16 @@ defmodule Vibe.Image.Resize do
     end
   end
 
-  @spec resize!(Image.t(), keyword()) :: Image.t()
-  def resize!(%Image{} = image, opts \\ []) do
+  @spec resize!(map(), keyword()) :: map()
+  def resize!(%{} = image, opts \\ []) do
     case resize(image, opts) do
       {:ok, resized} -> resized
       {:error, reason} -> raise ArgumentError, "could not resize image: #{inspect(reason)}"
     end
   end
 
-  @spec needs_resize?(Image.t(), keyword()) :: boolean()
-  def needs_resize?(%Image{} = image, opts \\ []),
+  @spec needs_resize?(map(), keyword()) :: boolean()
+  def needs_resize?(%{} = image, opts \\ []),
     do: not within_limits?(image, normalize_opts(opts))
 
   defp resize_with_backend(_image, _opts, []), do: {:error, :no_available_image_resize_backend}
@@ -68,7 +67,7 @@ defmodule Vibe.Image.Resize do
     |> Keyword.put_new_lazy(:tmp_dir, &System.tmp_dir!/0)
   end
 
-  defp within_limits?(%Image{} = image, opts) do
+  defp within_limits?(%{} = image, opts) do
     not too_wide?(image, opts) and not too_tall?(image, opts) and not too_large?(image, opts)
   end
 

@@ -8,10 +8,9 @@ defmodule Vibe.Storage.JSON do
     |> boundary_value()
   end
 
-  defp boundary_value(value), do: value
-
+  @doc "Intentional storage JSON key boundary."
   @spec key(term()) :: String.t()
-  def key(term) when is_atom(term), do: Atom.to_string(term)
-  def key(term) when is_binary(term), do: term
-  def key(term), do: to_string(term)
+  defdelegate key(term), to: Vibe.Storage.JSON.Value
+
+  defp boundary_value(value), do: value
 end

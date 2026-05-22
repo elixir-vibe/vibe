@@ -8,6 +8,6 @@ defimpl Vibe.Storage.JSON.Encodable,
   def value(representation) do
     representation
     |> Map.from_struct()
-    |> Vibe.Storage.JSON.value()
+    |> Vibe.Storage.JSON.Value.value()
   end
 end

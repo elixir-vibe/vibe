@@ -9,10 +9,11 @@ defmodule Vibe.TUI.Cast do
   """
 
   alias Ghostty.Terminal
+  alias Vibe.TUI.Cast.Format
   alias Vibe.TUI.Cast.Writer
 
-  @magic "VIBE_TUI_CAST\0"
-  @version 1
+  @magic Format.magic()
+  @version Format.version()
   @default_scrollback 20_000
 
   defstruct [:path, :header, :blocks, :events]
@@ -184,18 +185,16 @@ defmodule Vibe.TUI.Cast do
   end
 
   @doc "Returns the native cast file magic bytes."
-  def magic, do: @magic
+  defdelegate magic, to: Format
 
   @doc "Returns the native cast format version."
-  def version, do: @version
+  defdelegate version, to: Format
 
   @doc "Encodes a native cast block with the configured compression."
-  def encode_block(term, :none), do: :erlang.term_to_binary(term)
-  def encode_block(term, :gzip), do: term |> :erlang.term_to_binary() |> :zlib.gzip()
+  defdelegate encode_block(term, compression), to: Format
 
   @doc "Decodes a native cast block with the configured compression."
-  def decode_block(binary, :none), do: :erlang.binary_to_term(binary, [:safe])
-  def decode_block(binary, :gzip), do: binary |> :zlib.gunzip() |> :erlang.binary_to_term([:safe])
+  defdelegate decode_block(binary, compression), to: Format
 
   defp generated_name(opts) do
     session_id = Keyword.get(opts, :session_id, "session")
