@@ -24,8 +24,6 @@ defmodule Vibe.Session do
 
   @type ask_fun :: (String.t(), keyword() -> {:ok, term()} | {:error, term()})
 
-  @notification_ttl_ms 8_000
-
   @spec start(keyword()) :: {:ok, pid()} | {:error, term()}
   def start(opts \\ []) do
     id = Keyword.get_lazy(opts, :session_id, &Vibe.Session.Store.new_id/0)
@@ -132,7 +130,7 @@ defmodule Vibe.Session do
 
     maybe_register_in_registry(state.session_id)
     maybe_register_event_bus(state.session_id)
-    broadcast_session_change(state.session_id)
+    Vibe.Session.EventEmitter.broadcast_session_change(state.session_id)
     unless restoring?, do: PluginBridge.dispatch_lifecycle(:session_started, %{}, state)
 
     {:ok,
@@ -320,102 +318,10 @@ defmodule Vibe.Session do
     }
   end
 
-  defp emit(state, event, opts \\ []) do
-    event = prepare_transient_event(event)
-    event_seq = state.event_seq + 1
-    persist? = Keyword.get(opts, :persist?, persist_event?(state, event))
+  defp emit(state, event), do: emit(state, event, [])
 
-    {events, persistence_failed?} =
-      events_with_persistence_status(state, event, event_seq, persist?)
-
-    schedule_notification_expiry(event)
-
-    Enum.each(events, fn {_seq, event} ->
-      Enum.each(state.subscribers, fn {_ref, pid} -> send(pid, {__MODULE__, :event, event}) end)
-    end)
-
-    session_state =
-      Enum.reduce(events, state.state, fn {_seq, event}, session_state ->
-        Reducer.apply_event(session_state, event)
-      end)
-
-    Enum.each(events, fn {_seq, event} -> PluginBridge.dispatch(session_state, event) end)
-    if session_list_relevant?(event), do: broadcast_session_change(state.state.session_id)
-
-    %{
-      state
-      | state: session_state,
-        event_seq: event_seq + length(events) - 1,
-        events_tail:
-          Enum.reduce(events, state.events_tail, fn {seq, event}, tail ->
-            remember_event(tail, seq, event)
-          end),
-        persistence_failed?: persistence_failed?
-    }
-  end
-
-  defp prepare_transient_event(
-         %Event{type: :notification_added, data: %Vibe.Event.Notification.Added{} = data} = event
-       ) do
-    %{event | data: %{data | id: event.id}}
-  end
-
-  defp prepare_transient_event(%Event{type: :notification_added} = event) do
-    data = Map.put(event.data, :id, event.id)
-    %{event | data: data}
-  end
-
-  defp prepare_transient_event(event), do: event
-
-  defp persist_event?(_state, %Event{type: type})
-       when type in [:notification_added, :notification_expired],
-       do: false
-
-  defp persist_event?(state, _event), do: state.persist?
-
-  defp schedule_notification_expiry(%Event{type: :notification_added, data: data}) do
-    data = event_payload_map(data)
-    ttl_ms = Map.get(data, :ttl_ms, @notification_ttl_ms)
-
-    if is_integer(ttl_ms) and ttl_ms > 0 do
-      Process.send_after(self(), {:notification_expired, Map.fetch!(data, :id)}, ttl_ms)
-    end
-
-    :ok
-  end
-
-  defp schedule_notification_expiry(_event), do: :ok
-
-  defp events_with_persistence_status(state, event, event_seq, false) do
-    {[{event_seq, event}], state.persistence_failed?}
-  end
-
-  defp events_with_persistence_status(state, event, event_seq, true) do
-    case Vibe.Session.Store.append_event(event, event_seq) do
-      :ok ->
-        {[{event_seq, event}], state.persistence_failed?}
-
-      {:error, reason} ->
-        require Logger
-        Logger.error("Vibe session persistence failed: #{inspect(reason)}")
-
-        failure_event =
-          Event.new(
-            :notification_added,
-            state.state.session_id,
-            Vibe.Event.Notification.added(
-              level: :error,
-              text: "Session persistence failed: #{inspect(reason)}"
-            )
-          )
-
-        events =
-          if state.persistence_failed?,
-            do: [{event_seq, event}],
-            else: [{event_seq, event}, {event_seq + 1, failure_event}]
-
-        {events, true}
-    end
+  defp emit(state, event, opts) do
+    Vibe.Session.EventEmitter.emit(state, event, Keyword.validate!(opts, [:persist?]))
   end
 
   defp maybe_schedule_goal_continuation(%{goal_continuation?: false} = state), do: state
@@ -490,18 +396,6 @@ defmodule Vibe.Session do
   defp durable_replay?(%{events_tail: [{oldest_seq, _event} | _events]}, replay_after),
     do: replay_after < oldest_seq
 
-  defp event_payload_map(%struct{} = payload) when is_atom(struct) do
-    payload
-    |> Map.from_struct()
-    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-    |> Map.new()
-  end
-
-  defp event_payload_map(payload) when is_map(payload), do: payload
-
-  defp remember_event(events, seq, event),
-    do: events |> Vibe.Support.Lists.append({seq, event}) |> Enum.take(-200)
-
   defp last_event([], default), do: default
   defp last_event([event], _default), do: event
   defp last_event([_event | events], default), do: last_event(events, default)
@@ -520,27 +414,6 @@ defmodule Vibe.Session do
     if Process.whereis(Vibe.Event.Bus), do: Vibe.Event.Bus.register(session_id, self()), else: :ok
   end
 
-  @session_list_events [
-    :user_message_added,
-    :assistant_message_added,
-    :assistant_stream_finished,
-    :assistant_aborted,
-    :status_changed,
-    :model_selected,
-    :usage_updated
-  ]
-
-  defp session_list_relevant?(%{type: type}) when type in @session_list_events, do: true
-  defp session_list_relevant?(_event), do: false
-
-  @sessions_topic "vibe:sessions"
-
   @doc false
-  def sessions_topic, do: @sessions_topic
-
-  defp broadcast_session_change(session_id) do
-    Phoenix.PubSub.broadcast(Vibe.PubSub, @sessions_topic, {:session_changed, session_id})
-  rescue
-    _error -> :ok
-  end
+  def sessions_topic, do: "vibe:sessions"
 end
