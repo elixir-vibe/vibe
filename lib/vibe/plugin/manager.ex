@@ -392,40 +392,17 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp pipeline_callback(callback, initial_value, context, state) do
-    state
-    |> ordered_plugins()
-    |> Enum.reduce_while({:ok, initial_value, false, state}, fn {module, entry}, acc ->
-      safe_pipeline_step(module, entry, callback, context, acc)
-    end)
-    |> pipeline_reply()
+    Vibe.Plugin.Manager.Pipeline.run(
+      ordered_plugins(state),
+      callback,
+      initial_value,
+      context,
+      state,
+      &call_plugin/3,
+      &put_plugin_state/3,
+      &log_plugin_failure/3
+    )
   end
-
-  defp safe_pipeline_step(module, entry, callback, context, {:ok, value, changed?, state}) do
-    with true <- function_exported?(module, callback, 3),
-         {:ok, reply} <- call_plugin(module, callback, [value, context, entry.state]) do
-      case reply do
-        {:ok, new_state} ->
-          {:cont, {:ok, value, changed?, put_plugin_state(state, module, new_state)}}
-
-        {:ok, modified, new_state} ->
-          {:cont, {:ok, modified, true, put_plugin_state(state, module, new_state)}}
-
-        {:block, reason, new_state} ->
-          {:halt, {{:block, reason}, put_plugin_state(state, module, new_state)}}
-      end
-    else
-      false ->
-        {:cont, {:ok, value, changed?, state}}
-
-      {:error, reason} ->
-        log_plugin_failure(module, callback, reason, nil)
-        {:cont, {:ok, value, changed?, state}}
-    end
-  end
-
-  defp pipeline_reply({:ok, _value, false, state}), do: {:ok, state}
-  defp pipeline_reply({:ok, value, true, state}), do: {{:ok, value}, state}
-  defp pipeline_reply({{:block, reason}, state}), do: {{:block, reason}, state}
 
   defp safe_shutdown(module, plugin_state) do
     with true <- function_exported?(module, :shutdown, 1),
@@ -453,6 +430,9 @@ defmodule Vibe.Plugin.Manager do
   defp plugin_callback_timeout_ms do
     Application.get_env(:vibe, :plugin_callback_timeout_ms, @default_plugin_callback_timeout_ms)
   end
+
+  defp log_plugin_failure(module, callback, reason),
+    do: log_plugin_failure(module, callback, reason, nil)
 
   defp log_plugin_failure(module, callback, reason, fallback) do
     Logger.warning(

@@ -235,14 +235,16 @@
       "Vibe.Storage.Representation.*",
       "Vibe.UI.Reducer.RestoredPayload",
       "Vibe.UI.Reducer.Selector",
-      "Vibe.Session.CommandHandler"
+      "Vibe.Session.CommandHandler",
+      "Vibe.Plugin.Manager.Pipeline"
     ],
     internal_callers: [
       {"Vibe.Storage.Representation.*",
        ["Vibe.Storage.*", "Vibe.Session.Store*", "Jason.Encoder.Vibe.Storage.Representation.*"]},
       {"Vibe.UI.Reducer.RestoredPayload", ["Vibe.UI.Reducer"]},
       {"Vibe.UI.Reducer.Selector", ["Vibe.UI.Reducer"]},
-      {"Vibe.Session.CommandHandler", ["Vibe.Session"]}
+      {"Vibe.Session.CommandHandler", ["Vibe.Session"]},
+      {"Vibe.Plugin.Manager.Pipeline", ["Vibe.Plugin.Manager"]}
     ]
   ],
   risk: [
