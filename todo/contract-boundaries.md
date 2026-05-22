@@ -6,9 +6,6 @@ String/atom flexibility belongs only at explicit external boundaries. Internal V
 
 ## Remaining cleanup candidates
 
-- `Vibe.Session.Store.Codec.atomize_keys/1`
-  - Replace broad recursive key conversion with event-type-specific decoders.
-  - Keep only known enum-value conversion for fields such as `:role`, `:status`, `:phase`, and `:lifecycle`.
 - `Vibe.Presentation.Tool.Util.arg/2`
   - Keep mixed-key access only if it is explicitly documented as a tool-event display boundary.
   - Prefer normalizing tool call args once when converting external tool events into UI state.
@@ -22,6 +19,7 @@ String/atom flexibility belongs only at explicit external boundaries. Internal V
 - Plugin tool hooks now use typed `Vibe.Tool.PluginCall` and `Vibe.Tool.PluginResult` payload structs instead of ad-hoc execution maps.
 - Session command intents now live at `Vibe.Session.Command.Intent`, outside `Vibe.UI`.
 - Session command handling, event emission, and replay responsibilities are isolated under focused `Vibe.Session.*` internal modules.
+- Storage event decoding now lives under typed `Vibe.Storage.Representation.*` modules; the old broad `Vibe.Session.Store.Codec` boundary was deleted.
 - Plugin manager pipeline, callback execution, and collection helpers are isolated under focused `Vibe.Plugin.Manager.*` internal modules.
 - Remote and gateway modules are guarded from `Vibe.UI.*` dependencies through Reach.
 - Auth provider dispatch is behaviour-driven instead of model-prefix conditionals in `Vibe.Model.Direct`.

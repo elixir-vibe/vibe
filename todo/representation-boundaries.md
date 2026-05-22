@@ -400,7 +400,8 @@ Completed since this plan was written:
 - Supervised ETS ownership for command process tracking and plugin waiter tables; covered streaming table ownership.
 - Extracted focused internals from large hotspots: `Vibe.UI.Reducer.Selector`, `Vibe.Session.CommandHandler`, `Vibe.Session.EventEmitter`, and `Vibe.Session.Replay`.
 - Removed storage JSON encoders for UI/presentation structs; storage event representation now performs explicit persistence projection where needed.
-- Added Reach guards for event→plugin, remote→UI, gateway→UI, storage→presentation/surface, JSON value boundaries, and internal helper callers.
+- Added Reach guards for event→plugin, remote→UI, gateway→UI, storage→presentation/surface, CLI→TUI, JSON value boundaries, removed TUI terminal primitive namespaces, and internal helper callers.
+- Moved reusable terminal primitives from `Vibe.TUI.*` to `Vibe.Terminal.*`: `Theme`, `Width`, `Lines`, `Image`, `Markdown`, `Text`, and `Layout`.
 
 ## Implementation phases
 

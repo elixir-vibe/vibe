@@ -25,4 +25,4 @@ Built-in commands:
 /help NAME Open a specific help topic
 ```
 
-Plugins can add slash commands by returning modules that implement `Vibe.UI.SlashCommands.Command` from `Vibe.Plugin.commands/1`.
+Plugins can add slash commands by returning modules that implement `Vibe.Session.Command.Command` from `Vibe.Plugin.commands/1`.
