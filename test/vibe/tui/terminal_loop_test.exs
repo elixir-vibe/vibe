@@ -839,7 +839,9 @@ defmodule Vibe.TUI.TerminalLoopTest do
     end
 
     title = picker_title(input)
+
     wait_until_render(loop, &Enum.any?(&1, fn line -> String.trim(line) == title end))
+    |> assert_picker_title!(title)
   end
 
   defp picker_title("/"), do: "Commands"
@@ -871,8 +873,20 @@ defmodule Vibe.TUI.TerminalLoopTest do
     Enum.count(plain, &(String.trim(&1) == title)) == 1
   end
 
+  defp assert_picker_title!(plain, title) do
+    picker_title_index!(plain, title)
+    plain
+  end
+
+  defp picker_title_index!(plain, title) do
+    Enum.find_index(plain, &(String.trim(&1) == title)) ||
+      flunk("picker title #{inspect(title)} did not render before timeout\n#{plain_text(plain)}")
+  end
+
+  defp plain_text(plain), do: Enum.join(plain, "\n")
+
   defp picker_panel_shape(plain, title) do
-    title_index = Enum.find_index(plain, &(String.trim(&1) == title))
+    title_index = picker_title_index!(plain, title)
 
     [
       blank_line?(Enum.at(plain, title_index - 1)),
@@ -881,13 +895,21 @@ defmodule Vibe.TUI.TerminalLoopTest do
       String.starts_with?(Enum.at(plain, title_index + 2), "  › ")
     ]
     |> then(fn
-      [true, true, true, true] -> {:blank, :title, :blank, :selected_row}
-      [true, true, true, false] -> {:blank, :title, :blank, :other}
+      [true, true, true, true] ->
+        {:blank, :title, :blank, :selected_row}
+
+      [true, true, true, false] ->
+        {:blank, :title, :blank, :other}
+
+      shape ->
+        flunk(
+          "unexpected picker panel shape for #{title}: #{inspect(shape)}\n#{plain_text(plain)}"
+        )
     end)
   end
 
   defp selected_row_prefix(plain, title) do
-    title_index = Enum.find_index(plain, &(String.trim(&1) == title))
+    title_index = picker_title_index!(plain, title)
     plain |> Enum.at(title_index + 2) |> String.slice(0, 4)
   end
 
