@@ -47,7 +47,26 @@
     ],
     tui: "Vibe.TUI*",
     web: "Vibe.Web*",
-    plugin: ["Vibe.Plugin*", "Vibe.Plugins*"]
+    plugin_core: "Vibe.Plugin*",
+    plugin_presentation: [
+      "Vibe.Plugins.*.Presentation*",
+      "Vibe.Plugins.WebSearch.SearchItemRenderer"
+    ],
+    plugin_impl: [
+      "Vibe.Plugins.Notify*",
+      "Vibe.Plugins.Question*",
+      "Vibe.Plugins.Rules*",
+      "Vibe.Plugins.Safety*",
+      "Vibe.Plugins.WebSearch",
+      "Vibe.Plugins.WebSearch.FetchProvider",
+      "Vibe.Plugins.WebSearch.FetchResult",
+      "Vibe.Plugins.WebSearch.HTML",
+      "Vibe.Plugins.WebSearch.Provider*",
+      "Vibe.Plugins.WebSearch.Result",
+      "Vibe.Plugins.WebSearch.SearchItem",
+      "Vibe.Plugins.WebSearch.SearchProvider",
+      "Vibe.Plugins.WebSearch.SearchResult"
+    ]
   ],
   deps: [
     forbidden: [
@@ -63,7 +82,9 @@
       {:json_value, :surface},
       {:json_value, :tui},
       {:json_value, :web},
-      {:json_value, :plugin},
+      {:json_value, :plugin_core},
+      {:json_value, :plugin_impl},
+      {:json_value, :plugin_presentation},
       {:storage, :presentation},
       {:storage, :tui},
       {:storage, :web},
@@ -71,7 +92,9 @@
       {:event, :surface},
       {:event, :presentation},
       {:event, :tool},
-      {:event, :plugin},
+      {:event, :plugin_core},
+      {:event, :plugin_impl},
+      {:event, :plugin_presentation},
       {:transport, :storage},
       {:presentation, :storage},
       {:tui, :storage, except_edges: [{"Vibe.TUI.Storybook", "Vibe.Session.Store"}]}
