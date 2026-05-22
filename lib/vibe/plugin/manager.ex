@@ -100,17 +100,17 @@ defmodule Vibe.Plugin.Manager do
   def handle_call(:plugins, _from, state), do: {:reply, Map.keys(state.plugins), state}
 
   def handle_call({:tool_call, call, context}, _from, state) do
-    {result, state} = pipeline_callback(:tool_call, [call, context], state)
+    {result, state} = pipeline_callback(:tool_call, call, context, state)
     {:reply, result, state}
   end
 
   def handle_call({:tool_result, result, context}, _from, state) do
-    {reply, state} = pipeline_callback(:tool_result, [result, context], state)
+    {reply, state} = pipeline_callback(:tool_result, result, context, state)
     {:reply, reply, state}
   end
 
   def handle_call({:context, messages, context}, _from, state) do
-    {reply, state} = pipeline_callback(:context, [messages, context], state)
+    {reply, state} = pipeline_callback(:context, messages, context, state)
     {:reply, reply, state}
   end
 
@@ -381,36 +381,39 @@ defmodule Vibe.Plugin.Manager do
       {:cont, {result, plugin_states}}
   end
 
-  defp pipeline_callback(callback, args, state) do
-    Enum.reduce_while(Map.to_list(state.plugins), {:ok, state}, fn {module, entry}, acc ->
-      safe_pipeline_step(module, entry, callback, args, acc)
+  defp pipeline_callback(callback, initial_value, context, state) do
+    state.plugins
+    |> Map.to_list()
+    |> Enum.reduce_while({:ok, initial_value, false, state}, fn {module, entry}, acc ->
+      safe_pipeline_step(module, entry, callback, context, acc)
     end)
+    |> pipeline_reply()
   end
 
-  defp safe_pipeline_step(module, entry, callback, args, {:ok, state}) do
-    full_args = List.insert_at(args, -1, entry.state)
-
-    if function_exported?(module, callback, length(full_args)) do
-      case apply(module, callback, full_args) do
+  defp safe_pipeline_step(module, entry, callback, context, {:ok, value, changed?, state}) do
+    if function_exported?(module, callback, 3) do
+      case apply(module, callback, [value, context, entry.state]) do
         {:ok, new_state} ->
-          {:cont, {:ok, put_plugin_state(state, module, new_state)}}
+          {:cont, {:ok, value, changed?, put_plugin_state(state, module, new_state)}}
 
         {:ok, modified, new_state} ->
-          {:cont, {{:ok, modified}, put_plugin_state(state, module, new_state)}}
+          {:cont, {:ok, modified, true, put_plugin_state(state, module, new_state)}}
 
         {:block, reason, new_state} ->
           {:halt, {{:block, reason}, put_plugin_state(state, module, new_state)}}
       end
     else
-      {:cont, {:ok, state}}
+      {:cont, {:ok, value, changed?, state}}
     end
   rescue
     error ->
       Logger.warning("Plugin #{inspect(module)} #{callback} failed: #{Exception.message(error)}")
-      {:cont, {:ok, state}}
+      {:cont, {:ok, value, changed?, state}}
   end
 
-  defp safe_pipeline_step(_module, _entry, _callback, _args, acc), do: {:cont, acc}
+  defp pipeline_reply({:ok, _value, false, state}), do: {:ok, state}
+  defp pipeline_reply({:ok, value, true, state}), do: {{:ok, value}, state}
+  defp pipeline_reply({{:block, reason}, state}), do: {{:block, reason}, state}
 
   defp safe_shutdown(module, plugin_state) do
     if function_exported?(module, :shutdown, 1), do: module.shutdown(plugin_state), else: :ok

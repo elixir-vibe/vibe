@@ -115,3 +115,54 @@ defmodule Vibe.Test.PluginManagerFixtures.APIPlugin do
     examples: ["Search.remember(query)"]
   )
 end
+
+defmodule Vibe.Test.PluginManagerFixtures.ToolPipelinePluginA do
+  @moduledoc false
+
+  use Vibe.Plugin
+
+  @impl true
+  def tool_call(call, _context, state) do
+    {:ok, Map.update(call, :steps, [:a], &(&1 ++ [:a])), state}
+  end
+
+  @impl true
+  def tool_result(result, _context, state) do
+    {:ok, Map.update(result, :steps, [:a], &(&1 ++ [:a])), state}
+  end
+
+  @impl true
+  def context(messages, _context, state) do
+    {:ok, messages ++ [%{role: :system, text: "a"}], state}
+  end
+end
+
+defmodule Vibe.Test.PluginManagerFixtures.ToolPipelinePluginB do
+  @moduledoc false
+
+  use Vibe.Plugin
+
+  @impl true
+  def tool_call(call, _context, state) do
+    {:ok, Map.update(call, :steps, [:b], &(&1 ++ [:b])), state}
+  end
+
+  @impl true
+  def tool_result(result, _context, state) do
+    {:ok, Map.update(result, :steps, [:b], &(&1 ++ [:b])), state}
+  end
+
+  @impl true
+  def context(messages, _context, state) do
+    {:ok, messages ++ [%{role: :system, text: "b"}], state}
+  end
+end
+
+defmodule Vibe.Test.PluginManagerFixtures.ToolBlockPlugin do
+  @moduledoc false
+
+  use Vibe.Plugin
+
+  @impl true
+  def tool_call(_call, _context, state), do: {:block, "blocked by fixture", state}
+end

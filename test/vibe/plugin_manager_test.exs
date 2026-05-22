@@ -8,7 +8,10 @@ defmodule Vibe.PluginManagerTest do
     BackgroundPlugin,
     CommandPlugin,
     EventPlugin,
-    PartialFailurePlugin
+    PartialFailurePlugin,
+    ToolBlockPlugin,
+    ToolPipelinePluginA,
+    ToolPipelinePluginB
   }
 
   test "plugin children run under OTP supervision and can update UI status" do
@@ -104,6 +107,28 @@ defmodule Vibe.PluginManagerTest do
 
     assert Enum.any?(Vibe.Session.state(server).notifications, &(&1.text == "fixture command"))
     assert :ok = Vibe.Plugin.Manager.unload(CommandPlugin)
+  end
+
+  test "plugin pipeline callbacks compose modifications in order" do
+    assert :ok = Vibe.Plugin.Manager.load(ToolPipelinePluginA)
+    assert :ok = Vibe.Plugin.Manager.load(ToolPipelinePluginB)
+
+    assert {:ok, %{steps: [:a, :b]}} = Vibe.Plugin.Manager.tool_call(%{}, %{})
+    assert {:ok, %{steps: [:a, :b]}} = Vibe.Plugin.Manager.tool_result(%{}, %{})
+
+    assert {:ok, [%{text: "start"}, %{text: "a"}, %{text: "b"}]} =
+             Vibe.Plugin.Manager.context([%{text: "start"}], %{})
+
+    assert :ok = Vibe.Plugin.Manager.unload(ToolPipelinePluginA)
+    assert :ok = Vibe.Plugin.Manager.unload(ToolPipelinePluginB)
+  end
+
+  test "plugin pipeline can block tool calls" do
+    assert :ok = Vibe.Plugin.Manager.load(ToolBlockPlugin)
+
+    assert {:block, "blocked by fixture"} = Vibe.Plugin.Manager.tool_call(%{}, %{})
+
+    assert :ok = Vibe.Plugin.Manager.unload(ToolBlockPlugin)
   end
 
   test "plugins can expose eval API modules" do

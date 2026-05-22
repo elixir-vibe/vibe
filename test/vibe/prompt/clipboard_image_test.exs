@@ -1,5 +1,5 @@
 defmodule Vibe.Prompt.ClipboardImageTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   test "reports missing pngpaste dependency" do
     path = System.get_env("PATH")
