@@ -143,6 +143,7 @@ defmodule Vibe.Session do
        llm_opts: PromptLifecycle.llm_opts(opts),
        streaming?: Keyword.get(opts, :streaming?, not custom_ask?),
        context?: Keyword.get(opts, :context?, true),
+       context_async?: Keyword.get(opts, :context_async?, not custom_ask?),
        locked_by_job: Keyword.get(opts, :locked_by_job),
        lock_owner: Keyword.get(opts, :lock_owner),
        subscribers: %{},

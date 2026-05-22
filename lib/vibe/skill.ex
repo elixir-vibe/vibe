@@ -11,6 +11,7 @@ defmodule Vibe.Skill do
 
   @allowed_name ~r/^[a-z0-9][a-z0-9._-]*$/
   @default_context_max_bytes 6_000
+  @list_cache_ttl_ms 30_000
   @max_skill_file_chars 100_000
 
   @spec dir() :: String.t()
@@ -29,6 +30,7 @@ defmodule Vibe.Skill do
       else
         File.mkdir_p!(skill_dir)
         atomic_write(path, content)
+        clear_list_cache()
         {:ok, path}
       end
     end
@@ -57,6 +59,7 @@ defmodule Vibe.Skill do
 
           with :ok <- validate_content(updated) do
             atomic_write(path, updated)
+            clear_list_cache()
             {:ok, path}
           end
       end
@@ -73,13 +76,31 @@ defmodule Vibe.Skill do
 
   @spec list() :: [map()]
   def list do
-    markdown_skills() ++ executable_skills()
+    now = System.monotonic_time(:millisecond)
+    key = list_cache_key()
+
+    case :persistent_term.get(key, nil) do
+      {expires_at, skills} when expires_at > now ->
+        skills
+
+      _stale ->
+        skills = markdown_skills() ++ executable_skills()
+        :persistent_term.put(key, {now + @list_cache_ttl_ms, skills})
+        skills
+    end
   end
 
   @spec script_paths() :: [String.t()]
   def script_paths, do: Vibe.Skill.Paths.script_paths() |> skill_paths()
 
   defp skill_paths(paths), do: paths
+
+  defp list_cache_key, do: {__MODULE__, :list, dir(), Vibe.Skill.Paths.script_paths()}
+
+  defp clear_list_cache do
+    :persistent_term.erase(list_cache_key())
+    :ok
+  end
 
   @spec executable() :: [Executable.t()]
   def executable, do: Loader.discover()
@@ -344,6 +365,7 @@ defmodule Vibe.Skill do
     else
       File.mkdir_p!(Path.dirname(path))
       atomic_write(path, script_content(name, session, events))
+      clear_list_cache()
       {:ok, path}
     end
   end

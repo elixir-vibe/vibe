@@ -37,12 +37,11 @@ defmodule Vibe.Session.PromptLifecycle do
     parent = self()
     ref = make_ref()
     context = %{session_id: session_id, cwd: state.state.cwd}
-    Vibe.Memory.Manager.on_turn_start(length(state.state.messages), text, context)
-    prompt_text = maybe_prompt_with_context(state, text, context)
-    maybe_dispatch_context_plugins(state, context)
 
     {ask_opts, state} = ask_options(state, parent, ref, session_id, emit)
     ask_opts = maybe_put_semantic_content(ask_opts, prompt)
+
+    {ask_fun, prompt_text} = prepare_prompt(state, ask_fun, text, context)
 
     {:ok, task} = PromptRunner.start(ask_fun, prompt_text, ask_opts, parent, ref)
 
@@ -158,6 +157,26 @@ defmodule Vibe.Session.PromptLifecycle do
 
   defp maybe_put_llm_provider_options(opts, provider_options),
     do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
+
+  defp prepare_prompt(%{context_async?: true} = state, ask_fun, text, context) do
+    {context_ask_fun(state, ask_fun, text, context), text}
+  end
+
+  defp prepare_prompt(state, ask_fun, text, context) do
+    Vibe.Memory.Manager.on_turn_start(length(state.state.messages), text, context)
+    prompt_text = maybe_prompt_with_context(state, text, context)
+    maybe_dispatch_context_plugins(state, context)
+    {ask_fun, prompt_text}
+  end
+
+  defp context_ask_fun(state, ask_fun, text, context) do
+    fn _text, opts ->
+      Vibe.Memory.Manager.on_turn_start(length(state.state.messages), text, context)
+      prompt_text = maybe_prompt_with_context(state, text, context)
+      maybe_dispatch_context_plugins(state, context)
+      ask_fun.(prompt_text, opts)
+    end
+  end
 
   defp maybe_put_semantic_content(opts, prompt) when is_list(prompt) do
     Keyword.update(opts, :tool_context, %{semantic_prompt_content: prompt}, fn context ->
