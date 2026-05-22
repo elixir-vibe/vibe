@@ -26,6 +26,25 @@ defmodule Vibe.Web.StorageLiveTest do
     assert html =~ "1 / 5 B"
   end
 
+  test "escapes search snippets while preserving semantic highlights" do
+    :ok =
+      Vibe.Event.new(
+        :user_message_added,
+        "web-storage-xss",
+        %{text: ~S|<script>alert("x")</script> needle|},
+        at: ~U[2026-01-01 00:00:00Z]
+      )
+      |> Vibe.Session.Store.append_event(1)
+
+    conn = authenticated_conn() |> get("/storage?q=needle")
+    html = html_response(conn, 200)
+
+    refute html =~ ~S|<script>alert("x")</script>|
+    assert html =~ "&lt;script&gt;alert("
+    assert html =~ "<mark"
+    assert html =~ "needle"
+  end
+
   test "search route redirects to storage" do
     {:error, {:live_redirect, %{to: to}}} = live(authenticated_conn(), "/search?q=hello")
 

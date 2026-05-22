@@ -21,7 +21,28 @@ defmodule Vibe.Storage.SearchTest do
     assert result.source == :session
     assert result.owner_id == session_id
     assert result.text == "Need SQLite full text search"
+    assert result.snippet == "Need SQLite full text search"
+    assert Enum.any?(result.snippet_parts, &(&1.highlight? and &1.text == "full"))
+    assert Enum.any?(result.snippet_parts, &(&1.highlight? and &1.text == "text"))
     assert result.metadata.seq == 1
+  end
+
+  test "snippets are semantic highlight parts instead of HTML" do
+    session_id = "fts-xss"
+
+    :ok =
+      Event.new(:user_message_added, session_id, %{text: ~S|<script>alert("x")</script> needle|},
+        at: ~U[2026-01-01 00:00:00Z]
+      )
+      |> Vibe.Session.Store.append_event(1)
+
+    assert [result] = Vibe.Session.search("needle", session_id: session_id)
+    refute result.snippet =~ "<mark>"
+    refute result.snippet =~ "</mark>"
+    assert result.snippet =~ ~S|<script>alert("x")</script>|
+
+    assert [%{text: "needle", highlight?: true}] =
+             Enum.filter(result.snippet_parts, & &1.highlight?)
   end
 
   test "filters session search by cwd and excludes imported tools by default" do

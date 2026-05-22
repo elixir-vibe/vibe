@@ -11,6 +11,9 @@ defmodule Vibe.Storage.Search do
   alias Vibe.Storage.Schema.{MemoryFTS, Session, SessionEventFTS}
   alias Vibe.Storage.Search.Result
 
+  @highlight_start "\uE000"
+  @highlight_end "\uE001"
+
   @spec query(String.t(), keyword()) :: {:ok, [Result.t()]} | {:error, term()}
   def query(query, opts \\ []) when is_binary(query) and is_list(opts) do
     Vibe.Storage.ensure!()
@@ -106,7 +109,13 @@ defmodule Vibe.Storage.Search do
       text: row.text,
       rank: selected_as(fragment("bm25(session_events_fts)"), :rank),
       snippet:
-        fragment("snippet(session_events_fts, 5, ?, ?, ?, ?)", "<mark>", "</mark>", "…", 32)
+        fragment(
+          "snippet(session_events_fts, 5, ?, ?, ?, ?)",
+          @highlight_start,
+          @highlight_end,
+          "…",
+          32
+        )
     })
     |> Vibe.Repo.all()
     |> Enum.map(&session_result/1)
@@ -129,7 +138,14 @@ defmodule Vibe.Storage.Search do
       inserted_at: row.inserted_at,
       text: row.text,
       rank: selected_as(fragment("bm25(memories_fts)"), :rank),
-      snippet: fragment("snippet(memories_fts, 4, ?, ?, ?, ?)", "<mark>", "</mark>", "…", 32)
+      snippet:
+        fragment(
+          "snippet(memories_fts, 4, ?, ?, ?, ?)",
+          @highlight_start,
+          @highlight_end,
+          "…",
+          32
+        )
     })
     |> Vibe.Repo.all()
     |> Enum.map(&memory_result/1)
@@ -174,7 +190,8 @@ defmodule Vibe.Storage.Search do
       owner_id: row.session_id,
       title: row.cwd || "session:#{row.session_id}",
       text: row.text,
-      snippet: row.snippet,
+      snippet: plain_snippet(row.snippet),
+      snippet_parts: snippet_parts(row.snippet),
       rank: row.rank,
       at: parse_datetime(row.at),
       metadata: %{
@@ -193,11 +210,45 @@ defmodule Vibe.Storage.Search do
       owner_id: format_scope(row.scope_type, row.scope_id),
       title: format_scope(row.scope_type, row.scope_id),
       text: row.text,
-      snippet: row.snippet,
+      snippet: plain_snippet(row.snippet),
+      snippet_parts: snippet_parts(row.snippet),
       rank: row.rank,
       at: parse_datetime(row.inserted_at),
       metadata: %{scope: decode_scope(row.scope_type, row.scope_id)}
     }
+  end
+
+  defp plain_snippet(nil), do: nil
+
+  defp plain_snippet(snippet) when is_binary(snippet) do
+    snippet
+    |> String.replace(@highlight_start, "")
+    |> String.replace(@highlight_end, "")
+  end
+
+  defp snippet_parts(nil), do: []
+
+  defp snippet_parts(snippet) when is_binary(snippet) do
+    snippet
+    |> String.split(@highlight_start, trim: false)
+    |> Enum.with_index()
+    |> Enum.flat_map(fn
+      {text, 0} -> snippet_plain_parts(text)
+      {text, _index} -> snippet_highlight_parts(text)
+    end)
+  end
+
+  defp snippet_plain_parts(""), do: []
+  defp snippet_plain_parts(text), do: [%{text: text, highlight?: false}]
+
+  defp snippet_highlight_parts(text) do
+    case String.split(text, @highlight_end, parts: 2) do
+      [highlight, rest] ->
+        [%{text: highlight, highlight?: true} | snippet_plain_parts(rest)]
+
+      [highlight] ->
+        [%{text: highlight, highlight?: true}]
+    end
   end
 
   defp rank_sort_key(%Result{rank: rank}) when is_number(rank), do: rank

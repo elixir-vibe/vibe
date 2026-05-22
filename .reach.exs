@@ -206,6 +206,7 @@
          "Vibe.Storage.Restorable.*"
        ]},
       {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.TUI.*", "Vibe.Web.*"]},
+      {"Vibe.Web.StorageLive", ["Phoenix.HTML.raw"]},
       {"Vibe.*",
        [
          "Vibe.Session.Store.ui_events_path",

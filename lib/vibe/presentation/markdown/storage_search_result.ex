@@ -15,7 +15,7 @@ defimpl Vibe.Markdown, for: Vibe.Storage.Search.Result do
       optional("- At: `", format_datetime(result.at), "`\n"),
       optional("- Rank: `", result.rank, "`\n"),
       "\n",
-      result.snippet || result.text || ""
+      snippet_markdown(result)
     ]
     |> IO.iodata_to_binary()
     |> String.trim()
@@ -24,6 +24,16 @@ defimpl Vibe.Markdown, for: Vibe.Storage.Search.Result do
   defp title(%{title: title}) when is_binary(title) and title != "", do: title
   defp title(%{owner_id: owner_id}) when is_binary(owner_id), do: owner_id
   defp title(result), do: to_string(result.id)
+
+  defp snippet_markdown(%{snippet_parts: [_ | _] = parts}) do
+    Enum.map(parts, fn
+      %{text: text, highlight?: true} -> ["**", text, "**"]
+      %{text: text} -> text
+    end)
+  end
+
+  defp snippet_markdown(result), do: result.snippet || result.text || ""
+
   defp optional(_prefix, nil, _suffix), do: []
   defp optional(_prefix, "", _suffix), do: []
   defp optional(prefix, value, suffix), do: [prefix, to_string(value), suffix]

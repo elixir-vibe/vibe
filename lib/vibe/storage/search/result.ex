@@ -9,10 +9,24 @@ defmodule Vibe.Storage.Search.Result do
           title: String.t() | nil,
           text: String.t(),
           snippet: String.t() | nil,
+          snippet_parts: [snippet_part()],
           rank: number() | nil,
           at: DateTime.t() | nil,
           metadata: map()
         }
 
-  defstruct [:source, :id, :owner_id, :title, :text, :snippet, :rank, :at, metadata: %{}]
+  @type snippet_part :: %{text: String.t(), highlight?: boolean()}
+
+  defstruct [
+    :source,
+    :id,
+    :owner_id,
+    :title,
+    :text,
+    :snippet,
+    :rank,
+    :at,
+    metadata: %{},
+    snippet_parts: []
+  ]
 end

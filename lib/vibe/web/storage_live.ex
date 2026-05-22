@@ -50,7 +50,12 @@ defmodule Vibe.Web.StorageLive do
                   <p class="text-xs uppercase tracking-[0.2em] text-vibe-accent">{result.source}</p>
                   <span class="text-xs text-vibe-dim">rank {Float.round(result.rank || 0.0, 3)}</span>
                 </div>
-                <p class="mt-3 break-words text-sm leading-6 text-vibe-fg [overflow-wrap:anywhere]">{Phoenix.HTML.raw(result.snippet || result.text || "")}</p>
+                <p class="mt-3 break-words text-sm leading-6 text-vibe-fg [overflow-wrap:anywhere]">
+                  <%= for part <- search_snippet_parts(result) do %>
+                    <mark :if={part.highlight?} class="rounded bg-vibe-accent/25 px-0.5 text-vibe-fg-strong">{part.text}</mark>
+                    <%= if not part.highlight? do %>{part.text}<% end %>
+                  <% end %>
+                </p>
                 <div class="mt-3 flex flex-wrap gap-3 text-xs text-vibe-dim">
                   <.link :if={result.source == :session} navigate={~p"/sessions/#{result.owner_id}"} class="break-words font-mono text-vibe-accent-strong hover:text-vibe-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibe-accent/70 [overflow-wrap:anywhere]">{result.owner_id}</.link>
                   <span :if={result.source == :memory}>{result.owner_id}</span>
@@ -100,6 +105,16 @@ defmodule Vibe.Web.StorageLive do
 
   defp artifact_summary_text(%{count: count, bytes: bytes}),
     do: "#{count} / #{Vibe.Format.bytes(bytes)}"
+
+  defp search_snippet_parts(%{snippet_parts: [_ | _] = parts}), do: parts
+
+  defp search_snippet_parts(%{snippet: snippet}) when is_binary(snippet),
+    do: [%{text: snippet, highlight?: false}]
+
+  defp search_snippet_parts(%{text: text}) when is_binary(text),
+    do: [%{text: text, highlight?: false}]
+
+  defp search_snippet_parts(_result), do: []
 
   defp table_count(%{tables: tables}, table), do: Map.get(tables, table, 0)
   defp table_count(_status, _table), do: 0

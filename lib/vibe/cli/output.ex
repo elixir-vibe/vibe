@@ -102,7 +102,7 @@ defmodule Vibe.CLI.Output do
         " #",
         to_string(result.metadata[:seq] || result.id),
         "\n",
-        highlight_search_snippet(result.snippet || result.text)
+        highlight_search_result(result)
       ]
       |> IO.iodata_to_binary()
     end)
@@ -118,12 +118,21 @@ defmodule Vibe.CLI.Output do
     end
   end
 
-  defp highlight_search_snippet(text) do
-    text
-    |> String.replace("…", "...")
-    |> String.replace("<mark>", ANSI.yellow() <> ANSI.bright())
-    |> String.replace("</mark>", ANSI.reset())
+  defp highlight_search_result(%{snippet_parts: [_ | _] = parts}) do
+    parts
+    |> Enum.map(fn
+      %{text: text, highlight?: true} ->
+        [ANSI.yellow(), ANSI.bright(), cli_snippet_text(text), ANSI.reset()]
+
+      %{text: text} ->
+        cli_snippet_text(text)
+    end)
+    |> IO.iodata_to_binary()
   end
+
+  defp highlight_search_result(result), do: cli_snippet_text(result.snippet || result.text)
+
+  defp cli_snippet_text(text), do: String.replace(to_string(text || ""), "…", "...")
 
   defp render_jobs(jobs) do
     header = "STATUS   ID          ROLE        CHILD SESSION              TASK"
