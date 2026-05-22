@@ -39,7 +39,7 @@
       "Vibe.Presentation.Widget"
     ],
     markdown: ["Vibe.Markdown", "Vibe.MD", "Vibe.Presentation.Markdown*"],
-    surface: [
+    ui_state: [
       "Vibe.UI.Autocomplete*",
       "Vibe.UI.Block*",
       "Vibe.UI.Editor*",
@@ -86,7 +86,7 @@
       {:json_value, :transport},
       {:json_value, :presentation},
       {:json_value, :markdown},
-      {:json_value, :surface},
+      {:json_value, :ui_state},
       {:json_value, :tui},
       {:json_value, :web},
       {:json_value, :plugin_core},
@@ -96,7 +96,7 @@
       {:storage, :tui},
       {:storage, :web},
       {:event, :storage},
-      {:event, :surface},
+      {:event, :ui_state},
       {:event, :presentation},
       {:event, :tool},
       {:event, :plugin_core},
