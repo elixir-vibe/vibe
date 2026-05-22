@@ -13,10 +13,12 @@ defmodule Vibe.CLI.Output.Renderer do
   def render([%Search.Result{} | _rest] = results), do: render_search_results(results)
   def render([%JobInfo{} | _rest] = jobs), do: render_jobs(jobs)
   def render([%Schedule{} | _rest] = schedules), do: render_schedules(schedules)
-  def render([%{id: _id} | _rest] = sessions), do: render_sessions(sessions)
 
-  def render(results) when is_list(results),
-    do: Enum.map_join(results, "\n", &inspect(&1, pretty: true, limit: 20))
+  def render([first | _rest] = sessions) when is_map(first) do
+    if session_listing?(first), do: render_sessions(sessions), else: render_list(sessions)
+  end
+
+  def render(results) when is_list(results), do: render_list(results)
 
   def render(%Response{} = response), do: response |> Response.text() |> render_markdown()
   def render(%EvalResult{format: :markdown, output: output}), do: render_markdown(output)
@@ -25,6 +27,15 @@ defmodule Vibe.CLI.Output.Renderer do
   def render(%{output: output}), do: output
   def render(result) when is_binary(result), do: render_markdown(result)
   def render(result), do: inspect(result, pretty: true, limit: 50)
+
+  defp render_list(results),
+    do: Enum.map_join(results, "\n", &inspect(&1, pretty: true, limit: 20))
+
+  defp session_listing?(session) do
+    Map.has_key?(session, :id) and
+      (Map.has_key?(session, :updated_at) or Map.has_key?(session, :first_message) or
+         Map.has_key?(session, :last_message_preview))
+  end
 
   defp render_search_results(results) do
     results

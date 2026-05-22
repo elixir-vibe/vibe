@@ -42,6 +42,7 @@
     ],
     markdown: ["Vibe.Markdown", "Vibe.Presentation.Markdown*"],
     eval_api: ["Vibe.MD", "Vibe.MD.*"],
+    terminal: "Vibe.Terminal*",
     ui_state: [
       "Vibe.UI.Autocomplete*",
       "Vibe.UI.Block*",
@@ -92,6 +93,7 @@
       {:json_value, :presentation},
       {:json_value, :markdown},
       {:json_value, :eval_api},
+      {:json_value, :terminal},
       {:json_value, :ui_state},
       {:json_value, :tui},
       {:json_value, :web},
@@ -290,6 +292,7 @@
       "Vibe.Web.Presentation.Tool.BodyProjection",
       "Vibe.TUI.Widgets.ModelInfo.Parts",
       "Vibe.Plugins.WebSearch.Presentation.FetchBody",
+      "Vibe.Presentation.Markdown.Fence",
       "Vibe.Agent.Streaming.Registry"
     ],
     internal_callers: [
@@ -314,6 +317,11 @@
       {"Vibe.TUI.Widgets.ModelInfo.Parts", ["Vibe.TUI.Widgets.ModelInfo"]},
       {"Vibe.Plugins.WebSearch.Presentation.FetchBody",
        ["Vibe.Markdown.Vibe.Plugins.WebSearch.*"]},
+      {"Vibe.Presentation.Markdown.Fence",
+       [
+         "Vibe.Plugins.WebSearch.Presentation.FetchBody",
+         "Vibe.Plugins.WebSearch.SearchItemRenderer"
+       ]},
       {"Vibe.Agent.Streaming.Registry", ["Vibe.Agent.Streaming"]}
     ]
   ],
