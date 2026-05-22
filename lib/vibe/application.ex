@@ -21,6 +21,7 @@ defmodule Vibe.Application do
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Agent.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Code.LSP.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Command.Supervisor},
+      Vibe.Command.Processes,
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Terminal.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Eval.Supervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: Vibe.Plugin.Supervisor},

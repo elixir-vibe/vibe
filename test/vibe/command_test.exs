@@ -59,6 +59,10 @@ defmodule Vibe.CommandTest do
     assert Command.output(job, tail_bytes: 3) == "def"
   end
 
+  test "process tracking table is owned by supervised process tracker" do
+    assert :ets.info(Vibe.Command.Streaming, :owner) == Process.whereis(Vibe.Command.Processes)
+  end
+
   test "Cmd alias is available in eval" do
     code = "Cmd.run([\"sh\", \"-c\", \"printf ok\"], timeout: #{@command_timeout_ms}).output"
     assert {:ok, result} = Vibe.Eval.run(code, session_id: "cmd-alias-test")

@@ -1,7 +1,23 @@
 defmodule Vibe.Command.Processes do
   @moduledoc false
+  use GenServer
 
   @table Vibe.Command.Streaming
+
+  @spec start_link(keyword()) :: GenServer.on_start()
+  def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+
+  @impl true
+  def init(_opts) do
+    create_table()
+    {:ok, %{}}
+  end
+
+  @impl true
+  def handle_call(:ensure_table, _from, state) do
+    create_table()
+    {:reply, :ok, state}
+  end
 
   @spec track(String.t() | nil, pid()) :: :ok
   def track(session_id, pid) when is_binary(session_id) and is_pid(pid) do
@@ -54,20 +70,25 @@ defmodule Vibe.Command.Processes do
   defp cancellable_pid?(pid), do: is_pid(pid) and Process.alive?(pid)
 
   defp ensure_table do
-    case table_status() do
-      :missing -> create_table()
-      :present -> @table
+    case :ets.info(@table) do
+      :undefined -> ensure_owned_table()
+      _info -> @table
     end
   end
 
-  defp table_status do
-    case :ets.info(@table) do
-      :undefined -> :missing
-      _info -> :present
+  defp ensure_owned_table do
+    if Process.whereis(__MODULE__) do
+      :ok = GenServer.call(__MODULE__, :ensure_table)
+      @table
+    else
+      raise "#{inspect(__MODULE__)} is not running"
     end
   end
 
   defp create_table do
-    :ets.new(@table, [:named_table, :public, read_concurrency: true])
+    case :ets.info(@table) do
+      :undefined -> :ets.new(@table, [:named_table, :public, read_concurrency: true])
+      _info -> @table
+    end
   end
 end
