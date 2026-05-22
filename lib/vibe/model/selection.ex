@@ -11,8 +11,9 @@ defmodule Vibe.Model.Selection do
   like `ANTHROPIC_API_KEY`, `ZAI_API_KEY`, `DEEPSEEK_API_KEY`, etc.
   """
 
+  @doc "Returns the configured default model identifier."
   @spec default() :: String.t()
-  defdelegate default, to: Vibe.Model.Default, as: :model
+  def default, do: Vibe.Model.Default.model()
 
   @spec resolve(keyword()) :: String.t()
   def resolve(opts \\ []) do

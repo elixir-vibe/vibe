@@ -17,6 +17,7 @@ defmodule Mix.Tasks.Vibe.Tui.Storybook do
 
   @impl true
   def run(argv) do
+    Application.put_env(:vibe, :web, false)
     Mix.Task.run("app.start")
 
     {opts, _args, _invalid} =
