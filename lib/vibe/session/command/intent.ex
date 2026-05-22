@@ -1,4 +1,4 @@
-defmodule Vibe.UI.Command do
+defmodule Vibe.Session.Command.Intent do
   @moduledoc """
   UI-neutral command dispatched by TUI or LiveView clients.
   """

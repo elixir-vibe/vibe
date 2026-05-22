@@ -2,7 +2,8 @@ defmodule Vibe.UI.SelectorTest do
   use ExUnit.Case, async: true
 
   alias Vibe.Event
-  alias Vibe.UI.{Command, Reducer, State}
+  alias Vibe.Session.Command.Intent, as: Command
+  alias Vibe.UI.{Reducer, State}
 
   test "opens, moves, and closes selector state" do
     state =

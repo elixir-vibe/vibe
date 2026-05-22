@@ -3,7 +3,7 @@ defmodule Vibe.Session.NotificationTest do
 
   alias Vibe.Session
   alias Vibe.Event
-  alias Vibe.UI.Command
+  alias Vibe.Session.Command.Intent, as: Command
 
   test "notifications get ids and expire as transient UI state" do
     session_id = "notification-expiry-#{System.unique_integer([:positive])}"

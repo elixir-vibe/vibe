@@ -9,7 +9,7 @@ defmodule Vibe.Gateway.Dispatcher do
   """
 
   alias Vibe.Gateway.{Message, SessionKey}
-  alias Vibe.UI.Command
+  alias Vibe.Session.Command.Intent, as: Command
 
   @type option :: {:session_key_opts, SessionKey.opts()} | {:session_opts, keyword()}
 

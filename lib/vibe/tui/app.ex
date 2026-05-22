@@ -14,7 +14,8 @@ defmodule Vibe.TUI.App do
 
   @active_sessions_tick_ms 1_000
   @server_migration_tick_ms 1_000
-  alias Vibe.UI.{Command, EditorServer, Reducer}
+  alias Vibe.Session.Command.Intent, as: Command
+  alias Vibe.UI.{EditorServer, Reducer}
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do

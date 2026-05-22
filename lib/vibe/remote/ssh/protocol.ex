@@ -2,7 +2,7 @@ defmodule Vibe.Remote.SSH.Protocol do
   @moduledoc "Versioned JSON command protocol for the Vibe SSH transport."
 
   alias Vibe.Remote.SSH.Attachment
-  alias Vibe.UI.Command
+  alias Vibe.Session.Command.Intent, as: Command
 
   @version 1
 

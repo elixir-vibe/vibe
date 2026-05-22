@@ -19,7 +19,8 @@ defmodule Vibe.Session do
   alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
   alias Vibe.Session.Command, as: SlashCommands
-  alias Vibe.UI.{Command, PluginBridge, Reducer, Selector, State}
+  alias Vibe.Session.Command.Intent, as: Command
+  alias Vibe.UI.{PluginBridge, Reducer, Selector, State}
 
   require Vibe.Debug
 

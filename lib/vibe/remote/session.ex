@@ -1,7 +1,7 @@
 defmodule Vibe.Remote.Session do
   @moduledoc "Trusted remote session lifecycle commands over Erlang distribution."
 
-  alias Vibe.UI.Command
+  alias Vibe.Session.Command.Intent, as: Command
   @spec list() :: {:ok, [map()]} | {:error, term()} | {:badrpc, term()}
   def list do
     case call(Vibe.Session, :list, []) do

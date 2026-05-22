@@ -32,7 +32,6 @@
     surface: [
       "Vibe.UI.Autocomplete*",
       "Vibe.UI.Block*",
-      "Vibe.UI.Command",
       "Vibe.UI.Editor*",
       "Vibe.UI.Error",
       "Vibe.UI.FileAutocomplete",
@@ -82,6 +81,7 @@
       "Vibe.ToolDisplay",
       "Vibe.Tool.Presentation",
       "Vibe.Tool.Presentation.*",
+      "Vibe.UI.Command",
       "Vibe.UI.Event",
       "Vibe.UI.Event.*",
       "Vibe.UI.Bus",
@@ -101,6 +101,7 @@
       "lib/vibe/tools/**",
       "lib/vibe/tool/presentation.ex",
       "lib/vibe/tool/presentation/**",
+      "lib/vibe/ui/command.ex",
       "lib/vibe/ui/event.ex",
       "lib/vibe/ui/bus.ex",
       "lib/vibe/ui/slash_commands.ex",

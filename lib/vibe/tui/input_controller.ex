@@ -3,7 +3,8 @@ defmodule Vibe.TUI.InputController do
 
   alias Vibe.Session
   alias Vibe.Session.Command, as: SlashCommands
-  alias Vibe.UI.{Autocomplete, Command, EditorServer, FileAutocomplete, Reducer}
+  alias Vibe.Session.Command.Intent, as: Command
+  alias Vibe.UI.{Autocomplete, EditorServer, FileAutocomplete, Reducer}
 
   @type app_state :: map()
 

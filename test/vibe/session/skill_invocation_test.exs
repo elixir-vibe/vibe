@@ -2,7 +2,7 @@ defmodule Vibe.Session.SkillInvocationTest do
   use ExUnit.Case, async: false
 
   alias Vibe.Session
-  alias Vibe.UI.Command
+  alias Vibe.Session.Command.Intent, as: Command
 
   test "slash skill command submits expanded skill content to the model" do
     parent = self()
