@@ -298,16 +298,11 @@ defmodule Vibe.TUI.TerminalLoop do
     {frame, state}
   end
 
-  defp frame_cache_key(snapshot, picker, state, :visible) do
-    {snapshot.render_version, picker, snapshot.width, snapshot.height, state.theme,
-     state.loader_phase}
+  defp frame_cache_key(snapshot, picker, state, _viewport) do
+    {snapshot.render_version, picker, snapshot.width, state.theme, state.loader_phase}
   end
 
-  defp frame_cache_key(_snapshot, _picker, _state, viewport), do: {:uncached, viewport}
-
-  defp frame_cache(_frame, {:uncached, _}, _), do: nil
-  defp frame_cache(frame, key, :visible), do: %{key: key, body: frame.body}
-  defp frame_cache(_frame, _key, _viewport), do: nil
+  defp frame_cache(frame, key, _viewport), do: %{key: key, body: frame.body}
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
     if working?(state) do
