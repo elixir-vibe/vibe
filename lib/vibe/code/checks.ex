@@ -70,24 +70,10 @@ defmodule Vibe.Code.Checks do
   defp format_check(opts) do
     paths = Keyword.get(opts, :format_paths, ["*.exs", "{config,lib,test}/**/*.{ex,exs}"])
 
-    stale =
-      paths
-      |> Enum.flat_map(&Path.wildcard/1)
-      |> Enum.uniq()
-      |> Enum.sort()
-      |> Enum.reject(&formatted?/1)
+    stale = Vibe.Code.Checks.Format.stale_files(paths)
 
     status = if stale == [], do: :ok, else: :error
     %Result{name: :format, status: status, details: %{stale: stale}}
-  end
-
-  defp formatted?(path) do
-    source = File.read!(path)
-
-    {formatter, _opts} = Mix.Tasks.Format.formatter_for_file(path)
-    formatted = source |> formatter.() |> IO.iodata_to_binary()
-
-    source == formatted
   end
 
   defp credo_check(opts) do
