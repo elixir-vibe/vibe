@@ -72,7 +72,12 @@ defmodule Vibe.Storage.Representation.Trajectory do
          data: data
        }) do
     text = Map.get(data, :prompt, "")
-    [Event.new(:user_message_added, session_id, %{text: text}, at: at)]
+
+    [
+      Event.new(:user_message_added, session_id, Vibe.Event.Message.user_added(text: text),
+        at: at
+      )
+    ]
   end
 
   defp project_event(%Trajectory{

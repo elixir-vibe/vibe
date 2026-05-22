@@ -390,7 +390,14 @@ defmodule Vibe.Session do
   end
 
   defp handle_command(%Command{type: :toggle_truncation}, state) do
-    emit(state, Event.new(:truncation_toggled, state.state.session_id, %{}))
+    emit(
+      state,
+      Event.new(
+        :truncation_toggled,
+        state.state.session_id,
+        Vibe.Event.Surface.truncation_toggled()
+      )
+    )
   end
 
   defp handle_command(%Command{type: :open_model_selector}, state) do
@@ -453,12 +460,30 @@ defmodule Vibe.Session do
          %Command{type: :slash_command_submitted, data: %{command: command} = data},
          state
        ) do
-    state = emit(state, Event.new(:slash_command_submitted, state.state.session_id, data))
+    state =
+      emit(
+        state,
+        Event.new(
+          :slash_command_submitted,
+          state.state.session_id,
+          Vibe.Event.Command.slash_submitted(data)
+        )
+      )
+
     run_slash_command(command, Map.get(data, :args, ""), state)
   end
 
   defp handle_command(%Command{type: :selector_confirmed, data: data}, state) do
-    state = emit(state, Event.new(:selector_confirmed, state.state.session_id, data))
+    state =
+      emit(
+        state,
+        Event.new(
+          :selector_confirmed,
+          state.state.session_id,
+          Vibe.Event.Selector.confirmed(data)
+        )
+      )
+
     run_selector_action(data, state)
   end
 
@@ -470,12 +495,22 @@ defmodule Vibe.Session do
   end
 
   defp handle_command(%Command{type: :close_overlay}, state) do
-    emit(state, Event.new(:overlay_closed, state.state.session_id, %{}))
+    emit(
+      state,
+      Event.new(:overlay_closed, state.state.session_id, Vibe.Event.Surface.overlay_closed())
+    )
   end
 
   defp handle_command(%Command{type: type, data: data}, state) do
-    emit(state, Event.new(type, state.state.session_id, data))
+    emit(state, Event.new(type, state.state.session_id, command_event_data(type, data)))
   end
+
+  defp command_event_data(:tool_toggled, %{id: id}), do: Vibe.Event.Surface.tool_toggled(id)
+
+  defp command_event_data(:patch_confirmation_requested, data),
+    do: Vibe.Event.Command.patch_confirmation_requested(data)
+
+  defp command_event_data(_type, data), do: data
 
   defp locked?(%{locked_by_job: nil}, _caller), do: false
   defp locked?(%{lock_owner: owner}, caller), do: owner != caller
@@ -483,10 +518,14 @@ defmodule Vibe.Session do
   defp locked_notice(state) do
     emit(
       state,
-      Event.new(:notification_added, state.state.session_id, %{
-        level: :warning,
-        text: "This subagent session is read-only until the job finishes."
-      })
+      Event.new(
+        :notification_added,
+        state.state.session_id,
+        Vibe.Event.Notification.added(
+          level: :warning,
+          text: "This subagent session is read-only until the job finishes."
+        )
+      )
     )
   end
 
@@ -570,10 +609,14 @@ defmodule Vibe.Session do
         Logger.error("Vibe session persistence failed: #{inspect(reason)}")
 
         failure_event =
-          Event.new(:notification_added, state.state.session_id, %{
-            level: :error,
-            text: "Session persistence failed: #{inspect(reason)}"
-          })
+          Event.new(
+            :notification_added,
+            state.state.session_id,
+            Vibe.Event.Notification.added(
+              level: :error,
+              text: "Session persistence failed: #{inspect(reason)}"
+            )
+          )
 
         events =
           if state.persistence_failed?,
@@ -678,7 +721,11 @@ defmodule Vibe.Session do
   defp notify(state, text) do
     emit(
       state,
-      Event.new(:notification_added, state.state.session_id, %{level: :info, text: text})
+      Event.new(
+        :notification_added,
+        state.state.session_id,
+        Vibe.Event.Notification.added(level: :info, text: text)
+      )
     )
   end
 

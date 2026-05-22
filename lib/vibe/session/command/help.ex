@@ -19,11 +19,11 @@ defmodule Vibe.Session.Command.Help do
 
     {:events,
      [
-       Vibe.Event.new(:notification_added, session_state.session_id, %{
-         level: :info,
-         title: help_title(topic),
-         text: markdown
-       })
+       Vibe.Event.new(
+         :notification_added,
+         session_state.session_id,
+         Vibe.Event.Notification.added(level: :info, title: help_title(topic), text: markdown)
+       )
      ]}
   end
 

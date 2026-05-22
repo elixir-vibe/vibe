@@ -67,8 +67,7 @@ defmodule Vibe.TUI.Views.AgentsTest do
 
     dashboard = %Agents{sessions: sessions, selected: 0, width: 80, height: 24}
     lines = Agents.render(dashboard, Theme.default())
-    assert is_list(lines)
-    assert lines != []
+    assert [_ | _] = lines
 
     text = Enum.map_join(lines, "\n", &IO.iodata_to_binary/1)
     assert text =~ "Agent sessions"

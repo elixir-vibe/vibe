@@ -177,6 +177,20 @@ defmodule Vibe.Storage.Representation.Event do
 
   defp decode_event_data(data, :selector_confirmed), do: Vibe.Event.Selector.confirmed(data)
 
+  defp decode_event_data(data, :prompt_submitted), do: Vibe.Event.Command.prompt_submitted(data)
+
+  defp decode_event_data(data, :slash_command_submitted),
+    do: Vibe.Event.Command.slash_submitted(data)
+
+  defp decode_event_data(data, :patch_confirmation_requested),
+    do: Vibe.Event.Command.patch_confirmation_requested(data)
+
+  defp decode_event_data(%{id: id}, :tool_toggled), do: Vibe.Event.Surface.tool_toggled(id)
+
+  defp decode_event_data(_data, :truncation_toggled), do: Vibe.Event.Surface.truncation_toggled()
+
+  defp decode_event_data(_data, :overlay_closed), do: Vibe.Event.Surface.overlay_closed()
+
   defp decode_event_data(%{tokens_before: tokens_before}, :context_compaction_started),
     do: Vibe.Event.ContextCompaction.started(tokens_before)
 

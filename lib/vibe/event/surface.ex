@@ -13,6 +13,22 @@ defmodule Vibe.Event.Surface do
     defstruct [:overlay]
   end
 
+  defmodule OverlayClosed do
+    @moduledoc "Payload for closing the active overlay."
+    defstruct []
+  end
+
+  defmodule TruncationToggled do
+    @moduledoc "Payload for toggling prompt truncation."
+    defstruct []
+  end
+
+  defmodule ToolToggled do
+    @moduledoc "Payload for toggling an expanded tool result."
+    @enforce_keys [:id]
+    defstruct [:id]
+  end
+
   defmodule ConfirmationRequested do
     @moduledoc "Payload for confirmation selector requests."
     @enforce_keys [:confirmation]
@@ -36,6 +52,9 @@ defmodule Vibe.Event.Surface do
 
   def status_changed(status), do: %StatusChanged{status: status}
   def overlay_opened(overlay) when is_map(overlay), do: %OverlayOpened{overlay: overlay}
+  def overlay_closed, do: %OverlayClosed{}
+  def truncation_toggled, do: %TruncationToggled{}
+  def tool_toggled(id) when is_binary(id), do: %ToolToggled{id: id}
 
   def confirmation_requested(confirmation) when is_map(confirmation),
     do: %ConfirmationRequested{confirmation: confirmation}

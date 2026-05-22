@@ -89,7 +89,11 @@ defmodule Vibe.TUI.InputController do
 
     apply_local_event(
       state,
-      Vibe.Event.new(:selector_confirmed, state.session_snapshot.session_id, data)
+      Vibe.Event.new(
+        :selector_confirmed,
+        state.session_snapshot.session_id,
+        Vibe.Event.Selector.confirmed(data)
+      )
     )
   end
 
@@ -98,7 +102,11 @@ defmodule Vibe.TUI.InputController do
 
     apply_local_event(
       state,
-      Vibe.Event.new(:selector_closed, state.session_snapshot.session_id, %{})
+      Vibe.Event.new(
+        :selector_closed,
+        state.session_snapshot.session_id,
+        Vibe.Event.Selector.closed()
+      )
     )
   end
 

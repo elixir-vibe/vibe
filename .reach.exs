@@ -47,6 +47,11 @@
       {:storage, :presentation},
       {:storage, :tui},
       {:storage, :web},
+      {:event, :storage},
+      {:event, :surface},
+      {:event, :presentation},
+      {:event, :tool},
+      {:transport, :storage},
       {:presentation, :storage},
       {:tui, :storage, except_edges: [{"Vibe.TUI.Storybook", "Vibe.Session.Store"}]}
     ]

@@ -207,7 +207,9 @@ defmodule Vibe.UI.Reducer do
     %{state | truncate?: !state.truncate?}
   end
 
-  defp reduce(state, %Event{type: :tool_toggled, data: %{id: id}}) do
+  defp reduce(state, %Event{type: :tool_toggled, data: data}) do
+    %{id: id} = event_payload_map(data)
+
     pending_tools =
       Map.update(state.pending_tools, id, nil, fn
         nil -> nil
@@ -218,6 +220,7 @@ defmodule Vibe.UI.Reducer do
   end
 
   defp reduce(state, %Event{type: :patch_confirmation_requested, data: data}) do
+    data = event_payload_map(data)
     %{state | overlays: Lists.append(state.overlays, Map.put(data, :kind, :patch_confirmation))}
   end
 

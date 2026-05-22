@@ -25,16 +25,23 @@ defmodule Vibe.Command.Processes do
   def cancel_session(session_id) when is_binary(session_id) do
     ensure_table()
 
-    @table
-    |> :ets.match({{session_id, :"$1"}, :_})
-    |> List.flatten()
+    session_id
+    |> tracked_pids()
     |> Enum.each(fn pid ->
-      if is_pid(pid) and Process.alive?(pid), do: GenServer.call(pid, :cancel)
+      if cancellable_pid?(pid), do: GenServer.call(pid, :cancel)
       untrack(session_id, pid)
     end)
 
     :ok
   end
+
+  defp tracked_pids(session_id) do
+    @table
+    |> :ets.match({{session_id, :"$1"}, :_})
+    |> List.flatten()
+  end
+
+  defp cancellable_pid?(pid), do: is_pid(pid) and Process.alive?(pid)
 
   defp ensure_table do
     case :ets.info(@table) do

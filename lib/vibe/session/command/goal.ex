@@ -33,11 +33,15 @@ defmodule Vibe.Session.Command.Goal do
 
     {:events,
      [
-       Event.new(:notification_added, session_state.session_id, %{
-         level: :info,
-         text: Vibe.Goals.summary(goal),
-         ttl_ms: 10_000
-       })
+       Event.new(
+         :notification_added,
+         session_state.session_id,
+         Vibe.Event.Notification.added(
+           level: :info,
+           text: Vibe.Goals.summary(goal),
+           ttl_ms: 10_000
+         )
+       )
      ]}
   end
 

@@ -88,7 +88,11 @@ defmodule Vibe.Plugins.Safety do
 
     Session.emit_transient_event(
       session,
-      Event.new(:notification_added, session_id, %{level: :warning, text: "#{label}: #{preview}"})
+      Event.new(
+        :notification_added,
+        session_id,
+        Vibe.Event.Notification.added(level: :warning, text: "#{label}: #{preview}")
+      )
     )
   end
 

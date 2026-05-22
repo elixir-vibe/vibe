@@ -4,7 +4,7 @@ defmodule Vibe.Context.CompactorTest do
   alias Vibe.Context.{Compactor, Serializer}
   alias Vibe.Trajectory
 
-  defp trajectory(type, data \\ %{}) do
+  defp trajectory(type, data) do
     %Trajectory{
       id: "evt-#{System.unique_integer([:positive])}",
       type: type,

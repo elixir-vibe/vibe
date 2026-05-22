@@ -20,7 +20,12 @@ defmodule Vibe.Session.PromptLifecycle do
     text = Content.summarize(prompt)
     session_id = state.state.session_id
     event_data = prompt_event_data(prompt, text)
-    state = emit.(state, Event.new(:prompt_submitted, session_id, event_data))
+
+    state =
+      emit.(
+        state,
+        Event.new(:prompt_submitted, session_id, Vibe.Event.Command.prompt_submitted(event_data))
+      )
 
     state =
       emit.(
@@ -84,11 +89,11 @@ defmodule Vibe.Session.PromptLifecycle do
     state =
       emit.(
         state,
-        Event.new(:assistant_aborted, state.state.session_id, %{
-          reason: error.message,
-          error: error,
-          notify?: false
-        })
+        Event.new(
+          :assistant_aborted,
+          state.state.session_id,
+          Vibe.Event.AssistantStream.aborted(reason: error.message, error: error, notify?: false)
+        )
       )
 
     emit.(

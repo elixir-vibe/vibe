@@ -4,14 +4,7 @@ defmodule Vibe.Auth.WebToken do
   @spec token() :: String.t()
   def token do
     path = token_path()
-    File.mkdir_p!(Path.dirname(path))
-
-    unless File.exists?(path) do
-      secret = 32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
-      File.write!(path, secret)
-      File.chmod!(path, 0o600)
-    end
-
+    ensure_token_file!(path)
     path |> File.read!() |> String.trim()
   end
 
@@ -23,4 +16,17 @@ defmodule Vibe.Auth.WebToken do
 
   @spec token_path() :: String.t()
   def token_path, do: Path.join(Vibe.Paths.home(), "web-token")
+
+  defp ensure_token_file!(path) do
+    File.mkdir_p!(Path.dirname(path))
+
+    unless File.exists?(path) do
+      File.write!(path, random_token())
+      File.chmod!(path, 0o600)
+    end
+  end
+
+  defp random_token do
+    32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
+  end
 end

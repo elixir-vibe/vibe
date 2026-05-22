@@ -67,17 +67,29 @@ defmodule Vibe.TUI.Storybook do
   def story(:chat_basic) do
     State.new(session_id: "story-chat", cwd: File.cwd!(), model: "openai_codex:gpt-5.5")
     |> Reducer.apply_event(
-      Event.new(:user_message_added, "story-chat", %{text: "Inspect runtime info"})
+      Event.new(
+        :user_message_added,
+        "story-chat",
+        Vibe.Event.Message.user_added(text: "Inspect runtime info")
+      )
     )
     |> Reducer.apply_event(
-      Event.new(:assistant_message_added, "story-chat", %{text: "Runtime looks healthy."})
+      Event.new(
+        :assistant_message_added,
+        "story-chat",
+        Vibe.Event.Message.assistant_added(text: "Runtime looks healthy.")
+      )
     )
     |> Reducer.apply_event(
-      Event.new(:usage_updated, "story-chat", %{
-        input_tokens: 120,
-        output_tokens: 32,
-        total_tokens: 152
-      })
+      Event.new(
+        :usage_updated,
+        "story-chat",
+        Vibe.Event.Model.usage_updated(%{
+          input_tokens: 120,
+          output_tokens: 32,
+          total_tokens: 152
+        })
+      )
     )
     |> ViewModel.from_state()
   end
@@ -281,10 +293,14 @@ end|,
       model: "openai_codex:gpt-5.5"
     )
     |> apply_events([
-      Event.new(:user_message_added, session_id, %{
-        text: "Run the test matrix, inspect the README, and stop if it takes too long."
-      }),
-      Event.new(:assistant_stream_started, session_id, %{}),
+      Event.new(
+        :user_message_added,
+        session_id,
+        Vibe.Event.Message.user_added(
+          text: "Run the test matrix, inspect the README, and stop if it takes too long."
+        )
+      ),
+      Event.new(:assistant_stream_started, session_id, Vibe.Event.AssistantStream.started()),
       Event.new(
         :tool_updated,
         session_id,
@@ -370,8 +386,16 @@ end|,
           }
         )
       ),
-      Event.new(:assistant_aborted, session_id, %{reason: "Cancelled."}),
-      Event.new(:usage_updated, session_id, %{input_tokens: 12_000, output_tokens: 3_500})
+      Event.new(
+        :assistant_aborted,
+        session_id,
+        Vibe.Event.AssistantStream.aborted(reason: "Cancelled.")
+      ),
+      Event.new(
+        :usage_updated,
+        session_id,
+        Vibe.Event.Model.usage_updated(%{input_tokens: 12_000, output_tokens: 3_500})
+      )
     ])
     |> ViewModel.from_state()
   end

@@ -46,10 +46,11 @@ defmodule Vibe.Session.Command.Skill do
       {:error, reason} ->
         {:events,
          [
-           Event.new(:notification_added, session_state.session_id, %{
-             level: :warning,
-             text: reason
-           })
+           Event.new(
+             :notification_added,
+             session_state.session_id,
+             Vibe.Event.Notification.added(level: :warning, text: reason)
+           )
          ]}
     end
   end

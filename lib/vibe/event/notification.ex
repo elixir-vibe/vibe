@@ -4,10 +4,11 @@ defmodule Vibe.Event.Notification do
   defmodule Added do
     @moduledoc "Payload for adding a transient notification."
     @enforce_keys [:text]
-    defstruct [:id, :text, :ttl_ms, level: :info]
+    defstruct [:id, :title, :text, :ttl_ms, level: :info]
 
     @type t :: %__MODULE__{
             id: String.t() | nil,
+            title: String.t() | nil,
             text: String.t(),
             ttl_ms: non_neg_integer() | nil,
             level: atom()

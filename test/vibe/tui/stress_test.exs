@@ -227,14 +227,6 @@ defmodule Vibe.TUI.StressTest do
     Event.new(type, session_id, event)
   end
 
-  defp drain_loop_events do
-    receive do
-      {TerminalLoop, :event, _} -> drain_loop_events()
-    after
-      100 -> :ok
-    end
-  end
-
   defp paint_screen(loop, terminal, painter) do
     {lines, cursor} = TerminalLoop.render_snapshot(loop)
     {frame, painter} = TerminalPainter.render(painter, lines, cursor)

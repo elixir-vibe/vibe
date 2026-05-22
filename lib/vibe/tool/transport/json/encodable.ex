@@ -7,5 +7,53 @@ defprotocol Vibe.Tool.Transport.JSON.Encodable do
 end
 
 defimpl Vibe.Tool.Transport.JSON.Encodable, for: Any do
+  def value(%_{} = value) do
+    raise ArgumentError,
+          "no tool transport JSON projection for #{inspect(value.__struct__)}; add a Vibe.Tool.Transport.JSON.Encodable implementation"
+  end
+
   def value(value), do: Vibe.Tool.Transport.JSON.Value.value(value)
+end
+
+defimpl Vibe.Tool.Transport.JSON.Encodable, for: Vibe.Model.Content.Text do
+  def value(content), do: %{type: "text", text: content.text}
+end
+
+defimpl Vibe.Tool.Transport.JSON.Encodable, for: Vibe.Model.Content.Image do
+  def value(content) do
+    %{
+      type: "image",
+      data: content.data,
+      mime_type: content.mime_type,
+      filename: content.filename,
+      width: content.width,
+      height: content.height
+    }
+  end
+end
+
+defimpl Vibe.Tool.Transport.JSON.Encodable, for: Vibe.Files.ImageRef do
+  def value(ref) do
+    ref
+    |> Map.from_struct()
+    |> Map.delete(:data)
+    |> Vibe.Tool.Transport.JSON.Value.value()
+  end
+end
+
+defimpl Vibe.Tool.Transport.JSON.Encodable, for: Vibe.Files.ReadResult do
+  def value(result) do
+    result
+    |> Map.from_struct()
+    |> Map.delete(:__content_parts__)
+    |> Vibe.Tool.Transport.JSON.Value.value()
+  end
+end
+
+defimpl Vibe.Tool.Transport.JSON.Encodable, for: Vibe.Image do
+  def value(image), do: image |> Map.from_struct() |> Vibe.Tool.Transport.JSON.Value.value()
+end
+
+defimpl Vibe.Tool.Transport.JSON.Encodable, for: Vibe.UI.Error do
+  def value(error), do: error |> Map.from_struct() |> Vibe.Tool.Transport.JSON.Value.value()
 end

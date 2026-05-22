@@ -85,19 +85,24 @@ defmodule Vibe.Memory do
     Storage.ensure!()
     {scope_type, scope_id} = encode_scope(scope)
 
-    ids =
-      Memory
-      |> where([memory], memory.scope_type == ^scope_type)
-      |> where_scope_id(scope_id)
-      |> select([memory], memory.id)
-      |> Vibe.Repo.all()
+    ids = memory_ids(scope_type, scope_id)
+    delete_memories(ids)
+    Enum.each(ids, &Vibe.Storage.FTS.remove_memory/1)
+    :ok
+  end
 
+  defp memory_ids(scope_type, scope_id) do
+    Memory
+    |> where([memory], memory.scope_type == ^scope_type)
+    |> where_scope_id(scope_id)
+    |> select([memory], memory.id)
+    |> Vibe.Repo.all()
+  end
+
+  defp delete_memories(ids) do
     Memory
     |> where([memory], memory.id in ^ids)
     |> Vibe.Repo.delete_all()
-
-    Enum.each(ids, &Vibe.Storage.FTS.remove_memory/1)
-    :ok
   end
 
   @spec context_block(String.t(), keyword()) :: String.t()

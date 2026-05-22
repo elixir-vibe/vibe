@@ -374,7 +374,7 @@ defmodule Vibe.TUI.Runtime do
           pid when is_pid(pid) ->
             Session.emit_transient_event(
               pid,
-              Event.new(:session_selected, session_id, %{session_id: session_id})
+              Event.new(:session_selected, session_id, Vibe.Event.Session.selected(session_id))
             )
 
           nil ->
