@@ -27,8 +27,9 @@ defmodule Vibe.Tool.Builtin.Eval do
 
   @impl true
   def run(params, context) do
-    ToolResult.run(fn ->
-      params = JSONSpec.atomize(@schema, params)
+    params = JSONSpec.atomize(@schema, params)
+
+    Vibe.Tool.PluginHooks.run(:eval, params, context, fn params ->
       opts = [timeout: Map.get(params, :timeout, @default_timeout_ms)]
 
       params.code

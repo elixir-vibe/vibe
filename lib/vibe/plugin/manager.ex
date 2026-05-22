@@ -7,7 +7,7 @@ defmodule Vibe.Plugin.Manager do
   alias Vibe.Plugin.API
   alias Vibe.Presentation.Document
 
-  defstruct plugins: %{}
+  defstruct plugins: %{}, order: []
 
   @type plugin_entry :: %{state: term(), children: [pid()]}
 
@@ -64,15 +64,15 @@ defmodule Vibe.Plugin.Manager do
   def init(opts) do
     modules = Keyword.get(opts, :plugins, configured_plugins())
 
-    plugins =
-      Enum.reduce(modules, %{}, fn module, acc ->
+    {plugins, order} =
+      Enum.reduce(modules, {%{}, []}, fn module, {plugins, order} ->
         case start_plugin(module, []) do
-          {:ok, entry} -> Map.put(acc, module, entry)
-          _ -> acc
+          {:ok, entry} -> {Map.put(plugins, module, entry), [module | order]}
+          _ -> {plugins, order}
         end
       end)
 
-    {:ok, %__MODULE__{plugins: plugins}}
+    {:ok, %__MODULE__{plugins: plugins, order: Enum.reverse(order)}}
   end
 
   @impl true
@@ -121,7 +121,7 @@ defmodule Vibe.Plugin.Manager do
 
   def handle_call({:before_command, command, context}, from, state) do
     caller = self()
-    plugins = Map.to_list(state.plugins)
+    plugins = ordered_plugins(state)
 
     {:ok, _pid} =
       Task.start(fn ->
@@ -135,7 +135,8 @@ defmodule Vibe.Plugin.Manager do
 
   def handle_call(:commands, _from, state) do
     commands =
-      state.plugins
+      state
+      |> ordered_plugins()
       |> Enum.flat_map(fn {module, entry} -> plugin_commands(module, entry.state) end)
       |> Enum.uniq()
 
@@ -144,7 +145,8 @@ defmodule Vibe.Plugin.Manager do
 
   def handle_call(:apis, _from, state) do
     apis =
-      state.plugins
+      state
+      |> ordered_plugins()
       |> Enum.flat_map(fn {module, entry} -> plugin_apis(module, entry.state) end)
       |> Enum.uniq_by(&{&1.alias, &1.module})
 
@@ -164,7 +166,7 @@ defmodule Vibe.Plugin.Manager do
   def handle_call({:dispatch, event, context}, _from, state) do
     {result, state} =
       Vibe.Telemetry.span([:vibe, :plugin, :dispatch], dispatch_metadata(event, context), fn ->
-        do_dispatch(Map.to_list(state.plugins), event, context, state, [])
+        do_dispatch(ordered_plugins(state), event, context, state, [])
       end)
 
     {:reply, result, state}
@@ -173,6 +175,15 @@ defmodule Vibe.Plugin.Manager do
   @impl true
   def handle_info({:plugin_states_updated, plugin_states}, state) do
     {:noreply, apply_plugin_state_changes(state, plugin_states)}
+  end
+
+  defp ordered_plugins(%__MODULE__{} = state) do
+    Enum.flat_map(state.order, fn module ->
+      case Map.fetch(state.plugins, module) do
+        {:ok, entry} -> [{module, entry}]
+        :error -> []
+      end
+    end)
   end
 
   defp dispatch_metadata(event, context) do
@@ -283,7 +294,7 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp put_plugin(%__MODULE__{} = state, module, entry) do
-    %{state | plugins: Map.put(state.plugins, module, entry)}
+    %{state | plugins: Map.put(state.plugins, module, entry), order: state.order ++ [module]}
   end
 
   defp put_plugin_state(%__MODULE__{} = state, module, plugin_state) do
@@ -303,12 +314,12 @@ defmodule Vibe.Plugin.Manager do
   defp unload_plugin(%__MODULE__{} = state, module) do
     case Map.pop(state.plugins, module) do
       {nil, plugins} ->
-        %{state | plugins: plugins}
+        %{state | plugins: plugins, order: List.delete(state.order, module)}
 
       {entry, plugins} ->
         Enum.each(entry.children, &DynamicSupervisor.terminate_child(Vibe.Plugin.Supervisor, &1))
         safe_shutdown(module, entry.state)
-        %{state | plugins: plugins}
+        %{state | plugins: plugins, order: List.delete(state.order, module)}
     end
   end
 
@@ -319,7 +330,7 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp collect_system_prompts(state, context) do
-    Enum.reduce(Map.to_list(state.plugins), {[], state}, fn {module, entry}, {blocks, state} ->
+    Enum.reduce(ordered_plugins(state), {[], state}, fn {module, entry}, {blocks, state} ->
       safe_system_prompt(module, entry, context, blocks, state)
     end)
     |> then(fn {blocks, state} -> {Enum.reverse(blocks), state} end)
@@ -382,8 +393,8 @@ defmodule Vibe.Plugin.Manager do
   end
 
   defp pipeline_callback(callback, initial_value, context, state) do
-    state.plugins
-    |> Map.to_list()
+    state
+    |> ordered_plugins()
     |> Enum.reduce_while({:ok, initial_value, false, state}, fn {module, entry}, acc ->
       safe_pipeline_step(module, entry, callback, context, acc)
     end)

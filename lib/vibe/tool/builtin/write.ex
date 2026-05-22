@@ -16,10 +16,10 @@ defmodule Vibe.Tool.Builtin.Write do
     schema: @schema
 
   @impl true
-  def run(params, _context) do
-    Vibe.Tool.AdapterResult.run(fn ->
-      params = JSONSpec.atomize(@schema, params)
+  def run(params, context) do
+    params = JSONSpec.atomize(@schema, params)
 
+    Vibe.Tool.PluginHooks.run(:write, params, context, fn params ->
       params.path
       |> Vibe.Files.write_file(params.content)
       |> transport_result()

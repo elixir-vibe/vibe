@@ -32,10 +32,10 @@ defmodule Vibe.Tool.Builtin.Read do
     schema: @schema
 
   @impl true
-  def run(params, _context) do
-    Vibe.Tool.AdapterResult.run(fn ->
-      params = JSONSpec.atomize(@schema, params)
+  def run(params, context) do
+    params = JSONSpec.atomize(@schema, params)
 
+    Vibe.Tool.PluginHooks.run(:read, params, context, fn params ->
       case Vibe.Files.read_file(params.path,
              limit_lines: Map.get(params, :limit_lines, @default_limit_lines),
              limit_bytes: Map.get(params, :limit_bytes, Vibe.Tool.Output.default_max_bytes()),

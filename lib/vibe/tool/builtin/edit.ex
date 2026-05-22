@@ -23,10 +23,10 @@ defmodule Vibe.Tool.Builtin.Edit do
     schema: @schema
 
   @impl true
-  def run(params, _context) do
-    Vibe.Tool.AdapterResult.run(fn ->
-      params = JSONSpec.atomize(@schema, params)
+  def run(params, context) do
+    params = JSONSpec.atomize(@schema, params)
 
+    Vibe.Tool.PluginHooks.run(:edit, params, context, fn params ->
       params.path
       |> Vibe.Files.edit_file(params.edits)
       |> transport_result()

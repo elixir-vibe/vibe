@@ -37,10 +37,10 @@ defmodule Vibe.Tool.Builtin.AST do
     schema: @schema
 
   @impl true
-  def run(params, _context) do
-    Vibe.Tool.AdapterResult.run(fn ->
-      params = JSONSpec.atomize(@schema, params)
+  def run(params, context) do
+    params = JSONSpec.atomize(@schema, params)
 
+    Vibe.Tool.PluginHooks.run(:ast, params, context, fn params ->
       case Vibe.Code.AST.run(params) do
         {:ok, result} -> {:ok, Vibe.Tool.Output.limit_value(result)}
         other -> other

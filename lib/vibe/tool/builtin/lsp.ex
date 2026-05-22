@@ -36,10 +36,10 @@ defmodule Vibe.Tool.Builtin.LSP do
     schema: @schema
 
   @impl true
-  def run(params, _context) do
-    Vibe.Tool.AdapterResult.run(fn ->
-      params = JSONSpec.atomize(@schema, params)
+  def run(params, context) do
+    params = JSONSpec.atomize(@schema, params)
 
+    Vibe.Tool.PluginHooks.run(:lsp, params, context, fn params ->
       case Vibe.Code.LSP.run(params) do
         {:ok, result} -> {:ok, %{result: Vibe.Tool.Output.limit_value(result)}}
         other -> other
