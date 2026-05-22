@@ -168,6 +168,12 @@ defmodule Vibe.Storage.Representation.Event do
   defp decode_event_data(%{count: count}, :active_sessions_updated),
     do: Vibe.Event.Session.active_count_updated(count)
 
+  defp decode_event_data(%{selector: selector}, :selector_opened),
+    do: selector |> selector_payload() |> Vibe.Event.Selector.opened()
+
+  defp decode_event_data(%{"selector" => selector}, :selector_opened),
+    do: selector |> selector_payload() |> Vibe.Event.Selector.opened()
+
   defp decode_event_data(data, :selector_opened), do: Vibe.Event.Selector.opened(data)
 
   defp decode_event_data(%{direction: direction}, :selector_moved),
@@ -309,6 +315,24 @@ defmodule Vibe.Storage.Representation.Event do
   end
 
   defp decode_existing_atom(_type), do: :error
+
+  defp selector_payload(selector) when is_map(selector) do
+    %{}
+    |> maybe_put_selector(selector, :kind)
+    |> maybe_put_selector(selector, :overlay_kind)
+    |> maybe_put_selector(selector, :title)
+    |> maybe_put_selector(selector, :message)
+    |> maybe_put_selector(selector, :items)
+    |> maybe_put_selector(selector, :selected)
+    |> maybe_put_selector(selector, :limit)
+  end
+
+  defp selector_payload(selector), do: selector
+
+  defp maybe_put_selector(output, selector, key) do
+    value = Map.get(selector, key, Map.get(selector, Atom.to_string(key)))
+    if is_nil(value), do: output, else: Map.put(output, key, value)
+  end
 
   defp atomize_keys(map) when is_map(map) do
     Map.new(map, fn {key, value} ->

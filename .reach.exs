@@ -240,7 +240,17 @@
       "Vibe.Session.Replay",
       "Vibe.Plugin.Manager.Pipeline",
       "Vibe.Plugin.Manager.Callback",
-      "Vibe.Plugin.Manager.Collections"
+      "Vibe.Plugin.Manager.Collections",
+      "Vibe.CLI.Output.Payload",
+      "Vibe.CLI.Output.Renderer",
+      "Vibe.CLI.Commands.Default.Dispatch",
+      "Vibe.CLI.Commands.Connect.Dispatch",
+      "Vibe.CLI.Commands.Connect.KnownNodesView",
+      "Vibe.Model.Selection.Source",
+      "Vibe.Web.Presentation.Tool.BodyProjection",
+      "Vibe.TUI.Widgets.ModelInfo.Parts",
+      "Vibe.Plugins.WebSearch.Presentation.FetchBody",
+      "Vibe.Agent.Streaming.Registry"
     ],
     internal_callers: [
       {"Vibe.Storage.Representation.*",
@@ -253,7 +263,18 @@
       {"Vibe.Plugin.Manager.Pipeline", ["Vibe.Plugin.Manager"]},
       {"Vibe.Plugin.Manager.Callback",
        ["Vibe.Plugin.Manager", "Vibe.Plugin.Manager.Pipeline", "Vibe.Plugin.Manager.Collections"]},
-      {"Vibe.Plugin.Manager.Collections", ["Vibe.Plugin.Manager"]}
+      {"Vibe.Plugin.Manager.Collections", ["Vibe.Plugin.Manager"]},
+      {"Vibe.CLI.Output.Payload", ["Vibe.CLI.Output"]},
+      {"Vibe.CLI.Output.Renderer", ["Vibe.CLI.Output.Payload"]},
+      {"Vibe.CLI.Commands.Default.Dispatch", ["Vibe.CLI.Commands.Default"]},
+      {"Vibe.CLI.Commands.Connect.Dispatch", ["Vibe.CLI.Commands.Connect"]},
+      {"Vibe.CLI.Commands.Connect.KnownNodesView", ["Vibe.CLI.Commands.Connect"]},
+      {"Vibe.Model.Selection.Source", ["Vibe.Model.Selection"]},
+      {"Vibe.Web.Presentation.Tool.BodyProjection", ["Vibe.Web.Presentation.Tool"]},
+      {"Vibe.TUI.Widgets.ModelInfo.Parts", ["Vibe.TUI.Widgets.ModelInfo"]},
+      {"Vibe.Plugins.WebSearch.Presentation.FetchBody",
+       ["Vibe.Markdown.Vibe.Plugins.WebSearch.*"]},
+      {"Vibe.Agent.Streaming.Registry", ["Vibe.Agent.Streaming"]}
     ]
   ],
   risk: [

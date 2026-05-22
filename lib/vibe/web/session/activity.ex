@@ -3,23 +3,33 @@ defmodule Vibe.Web.Session.Activity do
 
   @spec working?(map()) :: boolean()
   def working?(state) do
-    state.status in [:working, :running] or not is_nil(state.streaming_message) or
-      running_tool?(state.pending_tools)
+    Map.get(state, :status) in [:working, :running] or
+      not is_nil(Map.get(state, :streaming_message)) or
+      running_tool?(Map.get(state, :pending_tools))
   end
 
   @spec visible_stream?(map()) :: boolean()
   def visible_stream?(state) do
-    not is_nil(state.streaming_message) and
-      String.trim(Map.get(state.streaming_message, :text, "")) != ""
+    streaming_message = Map.get(state, :streaming_message)
+
+    not is_nil(streaming_message) and
+      String.trim(Map.get(streaming_message, :text, "")) != ""
   end
 
   @spec activity_label(map()) :: String.t() | nil
   def activity_label(state) do
     cond do
-      Enum.any?(state.pending_tools || %{}) -> pending_tool_label(state.pending_tools)
-      visible_stream?(state) -> "Writing…"
-      working?(state) -> "Thinking…"
-      true -> nil
+      running_tool?(Map.get(state, :pending_tools)) ->
+        pending_tool_label(Map.get(state, :pending_tools))
+
+      visible_stream?(state) ->
+        "Writing…"
+
+      working?(state) ->
+        "Thinking…"
+
+      true ->
+        nil
     end
   end
 

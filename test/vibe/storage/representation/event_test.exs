@@ -41,6 +41,32 @@ defmodule Vibe.Storage.Representation.EventTest do
     assert %Event{data: %Vibe.Event.Goal.Set{goal: ^goal}} = decoded
   end
 
+  test "encodes and decodes selector opened events through storage representation" do
+    selector = %Vibe.UI.Selector{
+      kind: :model_selector,
+      title: "Model",
+      items: ["a", "b"],
+      selected: 0,
+      limit: 8
+    }
+
+    event =
+      Event.new(:selector_opened, "session-1", Vibe.Event.Selector.opened(selector),
+        at: ~U[2026-05-20 12:00:01Z]
+      )
+
+    encoded = EventRepresentation.encode(event, 9)
+
+    assert {:ok, {9, decoded}} = EventRepresentation.decode_map(encoded)
+
+    state =
+      Vibe.UI.State.new(session_id: "session-1")
+      |> Vibe.UI.Reducer.apply_event(decoded)
+
+    assert state.selector.kind == :model_selector
+    assert state.selector.items == ["a", "b"]
+  end
+
   test "encodes and decodes runtime alert events through storage representation" do
     alert =
       Alert.from_alarm(:set, {:disk_almost_full, ~c"/tmp"}, [], at: ~U[2026-05-20 12:00:00Z])

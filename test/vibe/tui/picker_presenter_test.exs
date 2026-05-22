@@ -14,6 +14,22 @@ defmodule Vibe.TUI.PickerPresenterTest do
     assert props.kind == :model
   end
 
+  test "presents plain-map confirmation selectors as confirmation pickers" do
+    selector = %{
+      kind: :clear_session_confirmation,
+      overlay_kind: :confirmation,
+      title: "Clear session?",
+      items: ["Yes", "No"],
+      selected: 0
+    }
+
+    assert %{type: :confirmation, props: props} =
+             PickerPresenter.from_snapshot(%{ui: %{selector: selector}})
+
+    assert props.kind == :clear_session_confirmation
+    assert props.items == ["Yes", "No"]
+  end
+
   test "presents selectors as select lists" do
     selector = %Selector{kind: :model, items: [], selected: 0}
 

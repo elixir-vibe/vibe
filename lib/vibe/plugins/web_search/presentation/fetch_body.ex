@@ -16,5 +16,5 @@ defmodule Vibe.Plugins.WebSearch.Presentation.FetchBody do
   def markdown(%{format: :json, text: text}), do: fenced("json", text)
   def markdown(%{text: text}), do: fenced("text", text)
 
-  defp fenced(language, text), do: ["```", language, "\n", String.trim(text || ""), "\n```"]
+  defp fenced(language, text), do: Vibe.Presentation.Markdown.Fence.code_block(language, text)
 end

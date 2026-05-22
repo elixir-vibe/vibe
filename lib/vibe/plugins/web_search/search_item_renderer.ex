@@ -49,5 +49,5 @@ defmodule Vibe.Plugins.WebSearch.SearchItemRenderer do
 
   defp body(nil), do: []
   defp body(""), do: []
-  defp body(text), do: ["```text\n", String.trim(text), "\n```"]
+  defp body(text), do: Vibe.Presentation.Markdown.Fence.code_block("text", text)
 end
