@@ -49,11 +49,6 @@ defmodule Vibe.Event.Bus do
     emit_all(:notification_added, notification_attrs(notification), opts)
   end
 
-  @spec set_status(String.t(), String.t() | atom(), String.t() | nil) ::
-          :ok | {:error, :not_found}
-  @doc "Intentional facade for the public Vibe API boundary."
-  defdelegate set_status(session_id, key, text), to: Vibe.Plugin.UI
-
   @impl true
   def init(_opts), do: {:ok, %{sessions: %{}, monitors: %{}, session_refs: %{}}}
 
