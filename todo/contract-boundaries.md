@@ -19,6 +19,11 @@ String/atom flexibility belongs only at explicit external boundaries. Internal V
 
 ## Already addressed
 
+- Plugin tool hooks now use typed `Vibe.Tool.PluginCall` and `Vibe.Tool.PluginResult` payload structs instead of ad-hoc execution maps.
+- Session command intents now live at `Vibe.Session.Command.Intent`, outside `Vibe.UI`.
+- Session command handling, event emission, and replay responsibilities are isolated under focused `Vibe.Session.*` internal modules.
+- Plugin manager pipeline, callback execution, and collection helpers are isolated under focused `Vibe.Plugin.Manager.*` internal modules.
+- Remote and gateway modules are guarded from `Vibe.UI.*` dependencies through Reach.
 - Auth provider dispatch is behaviour-driven instead of model-prefix conditionals in `Vibe.Model.Direct`.
 - Provider usage extraction only accepts known usage fields.
 - Code tool parameter keys are bounded in `Vibe.Code.AST` and `Vibe.Code.LSP`.

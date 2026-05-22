@@ -386,6 +386,22 @@ Vibe.WebTools.*
 
 No compatibility aliases. Eval alias `Web` points to `Vibe.Plugins.WebSearch`.
 
+## Recent cleanup status
+
+Completed since this plan was written:
+
+- Deleted old compatibility namespaces including `Vibe.UI.Event`, `Vibe.UI.Bus`, `Vibe.UI.SlashCommands.*`, `Vibe.WebTools.*`, `Vibe.Session.Store.Codec`, and broad JSON/codec escape hatches.
+- Added typed `Vibe.Event.*` payload modules and storage/transport JSON boundary protocols.
+- Enforced architecture, smell, JSON-value, and cycle gates through `.reach.exs` and `scripts/check_reach_cycles.exs`.
+- Removed `Vibe.Event.Bus -> Vibe.Plugin.UI` upward dependency.
+- Moved session command intents from `Vibe.UI.Command` to `Vibe.Session.Command.Intent`.
+- Enforced plugin tool hooks at the built-in tool execution boundary with typed `Vibe.Tool.PluginCall` and `Vibe.Tool.PluginResult` payloads.
+- Isolated plugin manager callback execution and extracted pipeline/collection helpers.
+- Supervised ETS ownership for command process tracking and plugin waiter tables; covered streaming table ownership.
+- Extracted focused internals from large hotspots: `Vibe.UI.Reducer.Selector`, `Vibe.Session.CommandHandler`, `Vibe.Session.EventEmitter`, and `Vibe.Session.Replay`.
+- Removed storage JSON encoders for UI/presentation structs; storage event representation now performs explicit persistence projection where needed.
+- Added Reach guards for event→plugin, remote→UI, gateway→UI, storage→presentation/surface, JSON value boundaries, and internal helper callers.
+
 ## Implementation phases
 
 ### Phase 0: stop churn and clean partial work
@@ -421,9 +437,9 @@ Vibe.SystemAlarms.Alert
 
 UI reducer consumes typed `Vibe.Event` payloads. Web/TUI consume presentation values. Storage persists through protocols.
 
-### Phase 3: delete `Session.Store.Codec`
+### Phase 3: delete `Session.Store.Codec` — done
 
-`Vibe.Session.Store.Codec` is a misnamed storage representation boundary. Delete it rather than shrinking it indefinitely.
+`Vibe.Session.Store.Codec` was a misnamed storage representation boundary and has been deleted rather than shrunk indefinitely.
 
 Split by concern:
 
@@ -434,7 +450,7 @@ Vibe.Storage.Representation.EvalSnapshot
 Vibe.Session.Store.TrajectoryProjection
 ```
 
-Delete `Vibe.Session.Store.Codec` after the responsibilities move. Do not leave a compatibility facade.
+Deleted `Vibe.Session.Store.Codec` after the responsibilities moved. No compatibility facade was left.
 
 ### Phase 4: convert remaining event payloads
 
@@ -447,9 +463,9 @@ Order:
 5. notifications/status/session/plugin widgets
 6. subagents/context compaction
 
-### Phase 5: move web search
+### Phase 5: move web search — done
 
-Move `Vibe.WebTools.*` into `Vibe.Plugins.WebSearch.*`. Delete old namespace with no aliases.
+Moved `Vibe.WebTools.*` into `Vibe.Plugins.WebSearch.*`. Deleted old namespace with no aliases.
 
 ### Phase 6: markdown projection cleanup
 
