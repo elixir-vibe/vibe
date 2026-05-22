@@ -92,21 +92,42 @@ defmodule Vibe.CLI.Commands.Default do
     Runner.configure_api_key(opts)
     Vibe.Application.configure_dependency_logging()
 
-    session_id = Vibe.Session.Store.new_id()
-    model = Vibe.Model.Selection.resolve(opts)
+    prompt
+    |> start_background_session(background_session_opts(opts))
+    |> print_background_result()
+  end
 
-    case Vibe.Session.start(session_id: session_id, cwd: File.cwd!(), model: model) do
+  defp background_session_opts(opts) do
+    [
+      session_id: Vibe.Session.Store.new_id(),
+      cwd: File.cwd!(),
+      model: Vibe.Model.Selection.resolve(opts)
+    ]
+  end
+
+  defp start_background_session(prompt, session_opts) do
+    session_id = Keyword.fetch!(session_opts, :session_id)
+
+    case Vibe.Session.start(session_opts) do
       {:ok, session} ->
         Vibe.Session.dispatch(session, {:submit_prompt, %{text: prompt}})
-        IO.puts("backgrounded · #{session_id}")
-        IO.puts("  mix vibe sessions          list sessions")
-        IO.puts("  mix vibe attach #{session_id}   attach")
-        :ok
+        {:ok, session_id}
 
       {:error, reason} ->
-        Output.error("Failed to start background session: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  defp print_background_result({:ok, session_id}) do
+    IO.puts("backgrounded · #{session_id}")
+    IO.puts("  mix vibe sessions          list sessions")
+    IO.puts("  mix vibe attach #{session_id}   attach")
+    :ok
+  end
+
+  defp print_background_result({:error, reason}) do
+    Output.error("Failed to start background session: #{inspect(reason)}")
+    {:error, reason}
   end
 
   defp maybe_put(opts, _key, nil), do: opts

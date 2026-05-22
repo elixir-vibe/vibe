@@ -142,67 +142,118 @@ defmodule Vibe.TUI.Runtime do
     do: now - last_interrupt_at <= @interrupt_repeat_window_ms
 
   defp drain_pending_events(tty, loop, last_interrupt_at, painter, cast) do
-    deadline = System.monotonic_time(:millisecond) + 8
-    drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, 0)
+    context = {tty, loop, cast, System.monotonic_time(:millisecond) + 8}
+
+    state = %{last_interrupt_at: last_interrupt_at, painter: painter, drained: 0}
+    drain_pending_events(context, state)
   end
 
-  defp drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, drained) do
-    if drained >= 25 or System.monotonic_time(:millisecond) >= deadline do
-      {:continue, painter}
+  defp drain_pending_events(context, state) do
+    if pending_drain_finished?(context, state) do
+      {:continue, state.painter}
     else
       receive do
-        {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]} = event}} ->
-          if recent_interrupt?(last_interrupt_at) do
-            :stop
-          else
-            Writer.key(cast, event)
-            TerminalLoop.input_key(loop, event)
-
-            drain_pending_events(
-              tty,
-              loop,
-              System.monotonic_time(:millisecond),
-              painter,
-              cast,
-              deadline,
-              drained + 1
-            )
-          end
-
-        {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}} ->
-          Writer.key(cast, event)
-          TerminalLoop.input_key(loop, event)
-          drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, drained + 1)
-
-        {Ghostty.TTY, ^tty, {:key, %Ghostty.KeyEvent{} = event}} ->
-          Writer.key(cast, event)
-          TerminalLoop.input_key(loop, event)
-          drain_pending_events(tty, loop, nil, painter, cast, deadline, drained + 1)
-
-        {Ghostty.TTY, ^tty, {:data, data}} when is_binary(data) ->
-          record_input(cast, data)
-          TerminalLoop.input(loop, data)
-          drain_pending_events(tty, loop, nil, painter, cast, deadline, drained + 1)
-
-        {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
-          Writer.resize(cast, columns, rows)
-          {painter, _changed?} = resize_painter(loop, painter, {columns, rows})
-          drain_pending_events(tty, loop, nil, painter, cast, deadline, drained + 1)
-
-        {TerminalLoop, :event, %{type: :session_backgrounded}} ->
-          {:agents, painter}
-
-        {TerminalLoop, :event, event} ->
-          Writer.app_event(cast, event)
-          drain_pending_events(tty, loop, last_interrupt_at, painter, cast, deadline, drained + 1)
-
-        {Ghostty.TTY, ^tty, :eof} ->
-          :stop
+        message ->
+          message
+          |> handle_pending_message(context, state)
+          |> continue_pending_drain(context)
       after
-        0 -> {:continue, painter}
+        0 -> {:continue, state.painter}
       end
     end
   end
+
+  defp pending_drain_finished?({_tty, _loop, _cast, deadline}, %{drained: drained}) do
+    drained >= 25 or System.monotonic_time(:millisecond) >= deadline
+  end
+
+  defp handle_pending_message(
+         {Ghostty.TTY, tty, {:key, %Ghostty.KeyEvent{key: :c, mods: [:ctrl]} = event}},
+         {tty, loop, cast, _deadline},
+         %{last_interrupt_at: last_interrupt_at} = state
+       ) do
+    if recent_interrupt?(last_interrupt_at) do
+      :stop
+    else
+      Writer.key(cast, event)
+      TerminalLoop.input_key(loop, event)
+
+      {:continue,
+       %{state | last_interrupt_at: System.monotonic_time(:millisecond)} |> bump_drained()}
+    end
+  end
+
+  defp handle_pending_message(
+         {Ghostty.TTY, tty, {:key, %Ghostty.KeyEvent{key: :escape} = event}},
+         {tty, loop, cast, _deadline},
+         state
+       ) do
+    Writer.key(cast, event)
+    TerminalLoop.input_key(loop, event)
+    {:continue, bump_drained(state)}
+  end
+
+  defp handle_pending_message(
+         {Ghostty.TTY, tty, {:key, %Ghostty.KeyEvent{} = event}},
+         {tty, loop, cast, _deadline},
+         state
+       ) do
+    Writer.key(cast, event)
+    TerminalLoop.input_key(loop, event)
+    {:continue, state |> reset_interrupt() |> bump_drained()}
+  end
+
+  defp handle_pending_message(
+         {Ghostty.TTY, tty, {:data, data}},
+         {tty, loop, cast, _deadline},
+         state
+       )
+       when is_binary(data) do
+    record_input(cast, data)
+    TerminalLoop.input(loop, data)
+    {:continue, state |> reset_interrupt() |> bump_drained()}
+  end
+
+  defp handle_pending_message(
+         {Ghostty.TTY, tty, {:resize, columns, rows}},
+         {tty, loop, cast, _deadline},
+         state
+       ) do
+    Writer.resize(cast, columns, rows)
+    {painter, _changed?} = resize_painter(loop, state.painter, {columns, rows})
+    {:continue, state |> Map.put(:painter, painter) |> reset_interrupt() |> bump_drained()}
+  end
+
+  defp handle_pending_message(
+         {TerminalLoop, :event, %{type: :session_backgrounded}},
+         _context,
+         state
+       ) do
+    {:agents, state.painter}
+  end
+
+  defp handle_pending_message(
+         {TerminalLoop, :event, event},
+         {_tty, _loop, cast, _deadline},
+         state
+       ) do
+    Writer.app_event(cast, event)
+    {:continue, bump_drained(state)}
+  end
+
+  defp handle_pending_message({Ghostty.TTY, tty, :eof}, {tty, _loop, _cast, _deadline}, _state),
+    do: :stop
+
+  defp handle_pending_message(_message, _context, state), do: {:continue, bump_drained(state)}
+
+  defp continue_pending_drain({:continue, state}, context),
+    do: drain_pending_events(context, state)
+
+  defp continue_pending_drain(:stop, _context), do: :stop
+  defp continue_pending_drain({:agents, painter}, _context), do: {:agents, painter}
+
+  defp reset_interrupt(state), do: %{state | last_interrupt_at: nil}
+  defp bump_drained(state), do: %{state | drained: state.drained + 1}
 
   @doc """
   Resizes the terminal loop and painter when the terminal dimensions change.
