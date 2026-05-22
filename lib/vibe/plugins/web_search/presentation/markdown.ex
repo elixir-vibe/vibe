@@ -55,7 +55,7 @@ defimpl Vibe.Markdown, for: Vibe.Plugins.WebSearch.FetchResult do
       "\n\n",
       metadata(result),
       "\n\n",
-      body(result)
+      Vibe.Plugins.WebSearch.Presentation.FetchBody.markdown(result)
     ]
     |> IO.iodata_to_binary()
     |> String.trim()
@@ -136,16 +136,4 @@ defimpl Vibe.Markdown, for: Vibe.Plugins.WebSearch.FetchResult do
     |> String.split(";", parts: 2)
     |> List.first()
   end
-
-  defp body(%{format: :markdown, text: text}), do: text || ""
-
-  defp body(%{format: :html, text: text}) do
-    case Vibe.Plugins.WebSearch.HTML.to_markdown(text || "") do
-      {:ok, markdown} -> markdown
-      {:error, _reason} -> ["```html\n", String.trim(text || ""), "\n```"]
-    end
-  end
-
-  defp body(%{format: :json, text: text}), do: ["```json\n", String.trim(text || ""), "\n```"]
-  defp body(%{text: text}), do: ["```text\n", String.trim(text || ""), "\n```"]
 end
