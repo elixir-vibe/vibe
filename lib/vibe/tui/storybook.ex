@@ -288,7 +288,7 @@ end|,
       Event.new(
         :tool_updated,
         session_id,
-        ToolEvent.preparing(
+        tool_updated(
           id: "eval-matrix",
           name: :eval,
           args: %{
@@ -304,7 +304,7 @@ end|,
       Event.new(
         :tool_started,
         session_id,
-        ToolEvent.started(
+        tool_started(
           id: "eval-matrix",
           name: :eval,
           args: %{
@@ -320,7 +320,7 @@ end|,
       Event.new(
         :tool_finished,
         session_id,
-        ToolEvent.finished(
+        tool_finished(
           id: "eval-matrix",
           name: :eval,
           args: %{
@@ -346,7 +346,7 @@ end|,
       Event.new(
         :tool_started,
         session_id,
-        ToolEvent.started(
+        tool_started(
           id: "read-reach",
           name: :read,
           args: %{path: "/Users/dannote/Development/reach/README.md"}
@@ -355,7 +355,7 @@ end|,
       Event.new(
         :tool_finished,
         session_id,
-        ToolEvent.finished(
+        tool_finished(
           id: "read-reach",
           name: :read,
           args: %{path: "/Users/dannote/Development/reach/README.md"},
@@ -620,4 +620,8 @@ end|,
     |> render(opts)
     |> Enum.map(&Width.visible_text/1)
   end
+
+  defp tool_started(opts), do: Vibe.Event.Tool.started(ToolEvent.started(opts))
+  defp tool_updated(opts), do: Vibe.Event.Tool.updated(ToolEvent.preparing(opts))
+  defp tool_finished(opts), do: Vibe.Event.Tool.finished(ToolEvent.finished(opts))
 end

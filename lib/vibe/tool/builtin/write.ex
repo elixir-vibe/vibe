@@ -19,7 +19,13 @@ defmodule Vibe.Tool.Builtin.Write do
   def run(params, _context) do
     Vibe.Tool.AdapterResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
-      Vibe.Files.write_file(params.path, params.content)
+
+      params.path
+      |> Vibe.Files.write_file(params.content)
+      |> transport_result()
     end)
   end
+
+  defp transport_result({:ok, result}), do: {:ok, Vibe.Tool.Transport.Result.from_result(result)}
+  defp transport_result(other), do: other
 end

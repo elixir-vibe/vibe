@@ -108,11 +108,22 @@ defmodule Vibe.Storage.Representation.Event do
     end
   end
 
-  defp decode_event_data(data, type)
-       when type in [:tool_started, :tool_updated, :tool_finished] and is_map(data) do
+  defp decode_event_data(data, :tool_started) when is_map(data) do
     data
-    |> Vibe.Storage.Representation.ToolEvent.decode!()
-    |> Vibe.Storage.Restorable.restore()
+    |> decode_tool_event()
+    |> Vibe.Event.Tool.started()
+  end
+
+  defp decode_event_data(data, :tool_updated) when is_map(data) do
+    data
+    |> decode_tool_event()
+    |> Vibe.Event.Tool.updated()
+  end
+
+  defp decode_event_data(data, :tool_finished) when is_map(data) do
+    data
+    |> decode_tool_event()
+    |> Vibe.Event.Tool.finished()
   end
 
   defp decode_event_data(%{effort: effort} = data, :effort_selected) when is_binary(effort) do
@@ -150,6 +161,12 @@ defmodule Vibe.Storage.Representation.Event do
     do: %{data | level: existing_atom_or_string(level)}
 
   defp decode_event_data(data, _type), do: data
+
+  defp decode_tool_event(data) do
+    data
+    |> Vibe.Storage.Representation.ToolEvent.decode!()
+    |> Vibe.Storage.Restorable.restore()
+  end
 
   defp decode_goal(goal) when is_map(goal) do
     goal
@@ -229,8 +246,15 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
     }
   end
 
-  defp persist_data(type, %Vibe.Tool.Event{} = event)
-       when type in [:tool_started, :tool_updated, :tool_finished] do
+  defp persist_data(:tool_started, %Vibe.Event.Tool.Started{event: event}) do
+    Vibe.Storage.Persistable.persist(event)
+  end
+
+  defp persist_data(:tool_updated, %Vibe.Event.Tool.Updated{event: event}) do
+    Vibe.Storage.Persistable.persist(event)
+  end
+
+  defp persist_data(:tool_finished, %Vibe.Event.Tool.Finished{event: event}) do
     Vibe.Storage.Persistable.persist(event)
   end
 

@@ -115,11 +115,13 @@ defmodule Vibe.FilesTest do
        Event.new(
          :tool_finished,
          session_id,
-         ToolEvent.finished(
-           id: "read-image",
-           name: :read,
-           args: %{path: "tiny.png"},
-           output: output
+         Vibe.Event.Tool.finished(
+           ToolEvent.finished(
+             id: "read-image",
+             name: :read,
+             args: %{path: "tiny.png"},
+             output: output
+           )
          )
        )}
     ])
@@ -127,7 +129,7 @@ defmodule Vibe.FilesTest do
     assert [{1, event}] = Vibe.Session.Store.ui_events(session_id)
 
     assert [%Content.Text{}, %Content.Image{} = image] =
-             event.data.output.parts
+             event.data.event.output.parts
 
     assert image.filename == "tiny.png"
   end

@@ -26,7 +26,13 @@ defmodule Vibe.Tool.Builtin.Edit do
   def run(params, _context) do
     Vibe.Tool.AdapterResult.run(fn ->
       params = JSONSpec.atomize(@schema, params)
-      Vibe.Files.edit_file(params.path, params.edits)
+
+      params.path
+      |> Vibe.Files.edit_file(params.edits)
+      |> transport_result()
     end)
   end
+
+  defp transport_result({:ok, result}), do: {:ok, Vibe.Tool.Transport.Result.from_result(result)}
+  defp transport_result(other), do: other
 end

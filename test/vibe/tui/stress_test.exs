@@ -3,7 +3,6 @@ defmodule Vibe.TUI.StressTest do
 
   alias Vibe.TUI
   alias Vibe.TUI.{TerminalLoop, TerminalPainter, Theme, Widget, Width}
-  alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
 
   @width 120
@@ -221,8 +220,8 @@ defmodule Vibe.TUI.StressTest do
   defp tool_event(session_id, type, fields) do
     event =
       case type do
-        :tool_started -> ToolEvent.started(fields)
-        :tool_finished -> ToolEvent.finished(fields)
+        :tool_started -> tool_payload_started(fields)
+        :tool_finished -> tool_payload_finished(fields)
       end
 
     Event.new(type, session_id, event)
@@ -255,4 +254,7 @@ defmodule Vibe.TUI.StressTest do
     |> Enum.reverse()
     |> Enum.find("", &(String.trim(&1) != ""))
   end
+
+  defp tool_payload_started(opts), do: Vibe.Event.Tool.started(Vibe.Tool.Event.started(opts))
+  defp tool_payload_finished(opts), do: Vibe.Event.Tool.finished(Vibe.Tool.Event.finished(opts))
 end

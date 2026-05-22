@@ -115,14 +115,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.Tool.Event.started(id: "tool-1", name: "eval")
+          tool_started(id: "tool-1", name: "eval")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.Tool.Event.finished(id: "tool-1", status: :ok)
+          tool_finished(id: "tool-1", status: :ok)
         )
       )
 
@@ -140,7 +140,7 @@ defmodule Vibe.UI.ReducerTest do
       Vibe.Event.new(
         :tool_updated,
         "s1",
-        Vibe.Tool.Event.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
+        tool_updated(id: "call-1", name: :eval, args: %{code: "IO."})
       )
 
     state = Vibe.UI.Reducer.apply_event(state, event)
@@ -160,7 +160,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_updated,
           "s1",
-          Vibe.Tool.Event.preparing(id: "call-1", name: :eval, args: %{code: "IO."})
+          tool_updated(id: "call-1", name: :eval, args: %{code: "IO."})
         )
       )
 
@@ -170,7 +170,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_started,
           "s1",
-          Vibe.Tool.Event.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
+          tool_started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
         )
       )
 
@@ -187,7 +187,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_started,
           "s1",
-          Vibe.Tool.Event.started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
+          tool_started(id: "call-1", name: :eval, args: %{code: "IO.puts(:ok)"})
         )
       )
 
@@ -197,7 +197,7 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_finished,
           "s1",
-          Vibe.Tool.Event.finished(id: "call-1", name: :eval, output: "ok")
+          tool_finished(id: "call-1", name: :eval, output: "ok")
         )
       )
 
@@ -270,14 +270,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.Tool.Event.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
+          tool_started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
+          tool_finished(id: "tool-1", name: "eval", output: {:ok, "2"})
         )
       )
 
@@ -322,14 +322,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.Tool.Event.started(id: "tool-1", name: "eval")
+          tool_started(id: "tool-1", name: "eval")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: "ok")
+          tool_finished(id: "tool-1", name: "eval", output: "ok")
         )
       )
       |> Vibe.UI.Reducer.apply_event(
@@ -350,14 +350,14 @@ defmodule Vibe.UI.ReducerTest do
         Vibe.Event.new(
           :tool_started,
           "ui-test",
-          Vibe.Tool.Event.started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
+          tool_started(id: "tool-1", name: "eval", args: %{code: "1 + 1"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
         Vibe.Event.new(
           :tool_finished,
           "ui-test",
-          Vibe.Tool.Event.finished(id: "tool-1", name: "eval", output: {:ok, "2"})
+          tool_finished(id: "tool-1", name: "eval", output: {:ok, "2"})
         )
       )
       |> Vibe.UI.Reducer.apply_event(
@@ -371,4 +371,8 @@ defmodule Vibe.UI.ReducerTest do
              %{role: :assistant, text: "After."}
            ] = state.messages
   end
+
+  defp tool_started(opts), do: Vibe.Event.Tool.started(Vibe.Tool.Event.started(opts))
+  defp tool_updated(opts), do: Vibe.Event.Tool.updated(Vibe.Tool.Event.preparing(opts))
+  defp tool_finished(opts), do: Vibe.Event.Tool.finished(Vibe.Tool.Event.finished(opts))
 end

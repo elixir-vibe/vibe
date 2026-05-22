@@ -93,7 +93,11 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_started, at: at, data: %ToolEvent{id: id} = data}) do
+  defp reduce(state, %Event{
+         type: :tool_started,
+         at: at,
+         data: %Vibe.Event.Tool.Started{event: %ToolEvent{id: id} = data}
+       }) do
     data = tool_event_map(data)
 
     {messages, pending_tools} =
@@ -116,7 +120,10 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_finished, data: %ToolEvent{id: id} = data}) do
+  defp reduce(state, %Event{
+         type: :tool_finished,
+         data: %Vibe.Event.Tool.Finished{event: %ToolEvent{id: id} = data}
+       }) do
     data = tool_event_map(data)
     pending_tools = Map.update(state.pending_tools, id, data, &Map.merge(&1, data))
 
@@ -128,7 +135,11 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
-  defp reduce(state, %Event{type: :tool_updated, at: at, data: %ToolEvent{id: id} = data}) do
+  defp reduce(state, %Event{
+         type: :tool_updated,
+         at: at,
+         data: %Vibe.Event.Tool.Updated{event: %ToolEvent{id: id} = data}
+       }) do
     data = tool_event_map(data)
 
     {messages, pending_tools} =

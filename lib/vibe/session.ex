@@ -257,15 +257,21 @@ defmodule Vibe.Session do
   end
 
   def handle_info({:tool_preparing, %ToolEvent{} = data}, state) do
-    {:noreply, emit(state, Event.new(:tool_updated, state.state.session_id, data))}
+    {:noreply,
+     emit(state, Event.new(:tool_updated, state.state.session_id, Vibe.Event.Tool.updated(data)))}
   end
 
   def handle_info({:tool_started, %ToolEvent{} = data}, state) do
-    {:noreply, emit(state, Event.new(:tool_started, state.state.session_id, data))}
+    {:noreply,
+     emit(state, Event.new(:tool_started, state.state.session_id, Vibe.Event.Tool.started(data)))}
   end
 
   def handle_info({:tool_finished, %ToolEvent{} = data}, state) do
-    {:noreply, emit(state, Event.new(:tool_finished, state.state.session_id, data))}
+    {:noreply,
+     emit(
+       state,
+       Event.new(:tool_finished, state.state.session_id, Vibe.Event.Tool.finished(data))
+     )}
   end
 
   defp handle_command(command, state, caller) do

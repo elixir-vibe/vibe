@@ -76,12 +76,17 @@ defmodule Vibe.SessionTest do
                Vibe.Event.new(
                  :tool_started,
                  session_id,
-                 Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
+                 Vibe.Event.Tool.started(
+                   Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
+                 )
                ),
                1
              )
 
-    assert [{1, %{type: :tool_started, data: %ToolEvent{} = event}}] =
+    assert [
+             {1,
+              %{type: :tool_started, data: %Vibe.Event.Tool.Started{event: %ToolEvent{} = event}}}
+           ] =
              Vibe.Session.Store.ui_events(session_id)
 
     assert event.id == "tool-1"

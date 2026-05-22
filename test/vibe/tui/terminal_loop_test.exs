@@ -158,7 +158,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         Vibe.Event.new(
           :tool_started,
           session_id,
-          Vibe.Tool.Event.started(id: "read-1", name: :read, args: %{path: "large.ex"})
+          tool_payload_started(id: "read-1", name: :read, args: %{path: "large.ex"})
         )
       )
 
@@ -168,7 +168,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         Vibe.Event.new(
           :tool_finished,
           session_id,
-          Vibe.Tool.Event.finished(
+          tool_payload_finished(
             id: "read-1",
             name: :read,
             args: %{path: "large.ex"},
@@ -201,7 +201,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         Vibe.Event.new(
           :tool_finished,
           session_id,
-          Vibe.Tool.Event.finished(
+          tool_payload_finished(
             id: "read-1",
             name: :read,
             args: %{path: "large.ex"},
@@ -248,7 +248,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
                Vibe.Event.new(
                  :tool_started,
                  session_id,
-                 Vibe.Tool.Event.started(id: "eval-1", name: :eval, args: %{code: code})
+                 tool_payload_started(id: "eval-1", name: :eval, args: %{code: code})
                )
              )
 
@@ -258,7 +258,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
                Vibe.Event.new(
                  :tool_finished,
                  session_id,
-                 Vibe.Tool.Event.finished(
+                 tool_payload_finished(
                    id: "eval-1",
                    name: :eval,
                    args: %{code: code},
@@ -391,7 +391,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
         Vibe.Event.new(
           :tool_finished,
           session_id,
-          Vibe.Tool.Event.finished(
+          tool_payload_finished(
             id: "eval-scroll",
             name: :eval,
             args: %{code: "many()"},
@@ -555,7 +555,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
              Vibe.Event.Bus.emit(
                session_id,
                :tool_started,
-               Vibe.Tool.Event.started(id: "eval-1", name: :eval)
+               tool_payload_started(id: "eval-1", name: :eval)
              )
 
     assert_receive {TerminalLoop, :event, :loader_tick}, 300
@@ -658,7 +658,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     Vibe.Event.new(
       :tool_started,
       session_id,
-      Vibe.Tool.Event.started(id: id, name: name, args: args)
+      tool_payload_started(id: id, name: name, args: args)
     )
   end
 
@@ -666,7 +666,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     Vibe.Event.new(
       :tool_finished,
       session_id,
-      Vibe.Tool.Event.finished(
+      tool_payload_finished(
         id: id,
         name: name,
         output: %{output: output, output_format: format || :text}
@@ -949,4 +949,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     plain = loop |> TerminalLoop.render() |> Enum.map(&Width.visible_text/1)
     assert Enum.any?(plain, &(String.length(&1) <= 100))
   end
+
+  defp tool_payload_started(opts), do: Vibe.Event.Tool.started(Vibe.Tool.Event.started(opts))
+  defp tool_payload_finished(opts), do: Vibe.Event.Tool.finished(Vibe.Tool.Event.finished(opts))
 end

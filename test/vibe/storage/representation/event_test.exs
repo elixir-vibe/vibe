@@ -7,12 +7,16 @@ defmodule Vibe.Storage.Representation.EventTest do
 
   test "encodes and decodes tool events through storage representation" do
     tool = Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
-    event = Event.new(:tool_started, "session-1", tool, at: ~U[2026-05-20 12:00:01Z])
+
+    event =
+      Event.new(:tool_started, "session-1", Vibe.Event.Tool.started(tool),
+        at: ~U[2026-05-20 12:00:01Z]
+      )
 
     encoded = EventRepresentation.encode(event, 6)
 
     assert {:ok, {6, decoded}} = EventRepresentation.decode_map(encoded)
-    assert %Event{data: ^tool} = decoded
+    assert %Event{data: %Vibe.Event.Tool.Started{event: ^tool}} = decoded
   end
 
   test "encodes and decodes goal events through storage representation" do

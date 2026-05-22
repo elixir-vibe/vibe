@@ -2,7 +2,6 @@ defmodule Vibe.UI.ViewModelTest do
   use ExUnit.Case, async: true
 
   alias Vibe.UI.Block.{AssistantMessage, ToolCall, UserMessage}
-  alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
   alias Vibe.UI.{Reducer, State, ViewModel}
 
@@ -37,7 +36,7 @@ defmodule Vibe.UI.ViewModelTest do
         Event.new(
           :tool_started,
           "s1",
-          ToolEvent.started(id: "tool-1", name: "read")
+          tool_started(id: "tool-1", name: "read")
         )
       )
 
@@ -55,7 +54,7 @@ defmodule Vibe.UI.ViewModelTest do
         Event.new(
           :tool_started,
           "s1",
-          ToolEvent.started(id: "tool-1", name: "eval")
+          tool_started(id: "tool-1", name: "eval")
         )
       )
 
@@ -82,7 +81,7 @@ defmodule Vibe.UI.ViewModelTest do
         Event.new(
           :tool_started,
           "s1",
-          ToolEvent.started(id: "tool-1", name: "eval")
+          tool_started(id: "tool-1", name: "eval")
         )
       )
       |> Reducer.apply_event(Event.new(:assistant_delta, "s1", %{text: "After."}))
@@ -93,4 +92,6 @@ defmodule Vibe.UI.ViewModelTest do
              %AssistantMessage{text: "After."}
            ] = ViewModel.from_state(state).body
   end
+
+  defp tool_started(opts), do: Vibe.Event.Tool.started(Vibe.Tool.Event.started(opts))
 end

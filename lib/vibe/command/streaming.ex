@@ -111,12 +111,14 @@ defmodule Vibe.Command.Streaming do
         Event.new(
           :tool_updated,
           session_id,
-          ToolEvent.started(
-            id: Map.fetch!(tool, :id),
-            name: :eval,
-            args: Map.get(tool, :args),
-            output: output,
-            output_format: :text
+          Vibe.Event.Tool.updated(
+            ToolEvent.started(
+              id: Map.fetch!(tool, :id),
+              name: :eval,
+              args: Map.get(tool, :args),
+              output: output,
+              output_format: :text
+            )
           )
         )
       )

@@ -38,17 +38,21 @@ defmodule Vibe.Web.SessionLiveTest do
        Event.new(
          :tool_started,
          session_id,
-         ToolEvent.started(id: "tool-start", name: :eval, args: %{code: "1 + 1"})
+         Vibe.Event.Tool.started(
+           ToolEvent.started(id: "tool-start", name: :eval, args: %{code: "1 + 1"})
+         )
        )},
       {2,
        Event.new(
          :tool_finished,
          session_id,
-         ToolEvent.finished(
-           id: "tool-start",
-           name: :eval,
-           args: %{code: "1 + 1"},
-           output: %{output: "2", output_format: :inspect}
+         Vibe.Event.Tool.finished(
+           ToolEvent.finished(
+             id: "tool-start",
+             name: :eval,
+             args: %{code: "1 + 1"},
+             output: %{output: "2", output_format: :inspect}
+           )
          )
        )}
     ])
@@ -69,13 +73,17 @@ defmodule Vibe.Web.SessionLiveTest do
        Event.new(
          :tool_started,
          session_id,
-         ToolEvent.started(id: "tool-empty", name: :lsp, args: %{action: :hover})
+         Vibe.Event.Tool.started(
+           ToolEvent.started(id: "tool-empty", name: :lsp, args: %{action: :hover})
+         )
        )},
       {2,
        Event.new(
          :tool_finished,
          session_id,
-         ToolEvent.finished(id: "tool-empty", name: :lsp, args: %{action: :hover}, output: nil)
+         Vibe.Event.Tool.finished(
+           ToolEvent.finished(id: "tool-empty", name: :lsp, args: %{action: :hover}, output: nil)
+         )
        )}
     ])
 
