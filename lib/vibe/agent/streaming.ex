@@ -11,12 +11,11 @@ defmodule Vibe.Agent.Streaming do
   use GenServer
 
   alias ReqLLM.StreamChunk
+  alias Vibe.Agent.Streaming.Registry
   alias Vibe.Tool.Event, as: ToolEvent
 
   require Vibe.Debug
 
-  @table :vibe_agent_streaming_callbacks
-  @runtime_delta_table :vibe_agent_streaming_runtime_delta_calls
   @runtime_order_key :runtime_order
 
   @doc """
@@ -54,8 +53,7 @@ defmodule Vibe.Agent.Streaming do
   end
 
   defp store_callbacks(agent_id, callbacks) do
-    ensure_table!()
-    :ets.insert(@table, {agent_id, callbacks})
+    Registry.put_callbacks(agent_id, callbacks)
   end
 
   @doc """
@@ -64,10 +62,9 @@ defmodule Vibe.Agent.Streaming do
   @spec unregister(pid()) :: :ok
   def unregister(agent_pid) when is_pid(agent_pid) do
     with true <- Process.alive?(agent_pid),
-         {:ok, status} <- safe_status(agent_pid),
-         true <- table?() do
-      :ets.delete(@table, status.agent_id)
-      delete_runtime_delta_calls(status.agent_id)
+         {:ok, status} <- safe_status(agent_pid) do
+      Registry.delete_callbacks(status.agent_id)
+      Registry.delete_runtime_delta_calls(status.agent_id)
     end
 
     :ok
@@ -82,7 +79,7 @@ defmodule Vibe.Agent.Streaming do
   @spec dispatch(String.t(), StreamChunk.t()) :: :ok
   def dispatch(agent_id, %StreamChunk{} = chunk) when is_binary(agent_id) do
     call_id = call_id(chunk)
-    suppressed? = runtime_delta_call?(agent_id, call_id)
+    suppressed? = Registry.runtime_delta_call?(agent_id, call_id)
 
     Vibe.Debug.run do
       Vibe.Agent.Streaming.Trace.record(:derived_llm_delta, %{
@@ -123,20 +120,20 @@ defmodule Vibe.Agent.Streaming do
 
   @impl true
   def init(_opts) do
-    ensure_table!()
+    Registry.ensure_tables!()
     {:ok, %{@runtime_order_key => %{}}}
   end
 
   @impl true
   def handle_call({:runtime_delta, agent_id, call_id, nil, data}, _from, state) do
-    mark_runtime_delta_call(agent_id, call_id)
+    Registry.mark_runtime_delta_call(agent_id, call_id)
     dispatch_chunk(agent_id, data)
     {:reply, :ok, state}
   end
 
   def handle_call({:runtime_delta, agent_id, call_id, seq, data}, _from, state)
       when is_integer(seq) do
-    mark_runtime_delta_call(agent_id, call_id)
+    Registry.mark_runtime_delta_call(agent_id, call_id)
     key = {agent_id, call_id}
     order_state = Map.fetch!(state, @runtime_order_key)
     entry = Map.get(order_state, key, %{next: seq, buffer: %{}})
@@ -221,7 +218,7 @@ defmodule Vibe.Agent.Streaming do
   end
 
   defp dispatch_chunk(agent_id, %StreamChunk{} = data) do
-    with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
+    with {:ok, callbacks} <- Registry.callbacks(agent_id) do
       data
       |> chunk()
       |> maybe_dispatch_delta(callbacks)
@@ -245,44 +242,10 @@ defmodule Vibe.Agent.Streaming do
     do: callbacks[type] && callbacks[type].(text)
 
   defp dispatch_tool(agent_id, type, %ToolEvent{} = event) do
-    with true <- table?(), [{^agent_id, callbacks}] <- :ets.lookup(@table, agent_id) do
+    with {:ok, callbacks} <- Registry.callbacks(agent_id) do
       callbacks[type] && callbacks[type].(event)
     end
 
     :ok
   end
-
-  defp delete_runtime_delta_calls(agent_id) do
-    if runtime_delta_table?(), do: :ets.match_delete(@runtime_delta_table, {{agent_id, :_}, :_})
-    :ok
-  end
-
-  defp mark_runtime_delta_call(_agent_id, call_id) when call_id in [nil, ""], do: :ok
-
-  defp mark_runtime_delta_call(agent_id, call_id) do
-    ensure_table!()
-    :ets.insert(@runtime_delta_table, {{agent_id, call_id}, true})
-    :ok
-  end
-
-  defp runtime_delta_call?(_agent_id, call_id) when call_id in [nil, ""], do: false
-
-  defp runtime_delta_call?(agent_id, call_id) do
-    runtime_delta_table?() and :ets.member(@runtime_delta_table, {agent_id, call_id})
-  end
-
-  defp ensure_table! do
-    ensure_named_table(@table)
-    ensure_named_table(@runtime_delta_table)
-  end
-
-  defp ensure_named_table(table) do
-    case :ets.whereis(table) do
-      :undefined -> :ets.new(table, [:named_table, :public, read_concurrency: true])
-      _table -> table
-    end
-  end
-
-  defp table?, do: :ets.whereis(@table) != :undefined
-  defp runtime_delta_table?, do: :ets.whereis(@runtime_delta_table) != :undefined
 end
