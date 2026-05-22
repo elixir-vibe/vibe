@@ -22,4 +22,11 @@ defmodule Vibe.TUI.Renderer do
   def render_frame(snapshot, theme, %RenderState{} = state, opts \\ []) when is_map(snapshot) do
     FrameRenderer.render(snapshot, theme, state, opts)
   end
+
+  @spec render_frame_with_body(map(), Theme.t(), RenderState.t(), [IO.chardata()], keyword()) ::
+          RenderFrame.t()
+  def render_frame_with_body(snapshot, theme, %RenderState{} = state, body, opts \\ [])
+      when is_map(snapshot) and is_list(body) do
+    FrameRenderer.render_with_body(snapshot, theme, state, body, opts)
+  end
 end

@@ -3,13 +3,15 @@ defmodule Vibe.TUI.RenderFrame do
 
   alias Vibe.TUI.RenderState
 
-  defstruct lines: [], cursor: {1, 1}, state: RenderState.new(), stats: %{}
+  defstruct lines: [], cursor: {1, 1}, state: RenderState.new(), stats: %{}, body: [], editor: []
 
   @type cursor :: {pos_integer(), pos_integer()}
   @type t :: %__MODULE__{
           lines: [IO.chardata()],
           cursor: cursor(),
           state: RenderState.t(),
-          stats: map()
+          stats: map(),
+          body: [IO.chardata()],
+          editor: [IO.chardata()]
         }
 end

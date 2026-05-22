@@ -271,11 +271,14 @@ defmodule Vibe.TUI.Runtime do
   end
 
   defp render(loop, painter, cast) do
-    {lines, cursor} = TerminalLoop.render_snapshot(loop)
-    {frame, painter} = TerminalPainter.render(painter, lines, cursor)
-    write_output(frame, cast)
+    frame = TerminalLoop.render_frame(loop, render_viewport(painter))
+    {output, painter} = TerminalPainter.render(painter, frame.lines, frame.cursor)
+    write_output(output, cast)
     painter
   end
+
+  defp render_viewport(%TerminalPainter{lines: []}), do: :full
+  defp render_viewport(%TerminalPainter{}), do: :visible
 
   @doc "Builds a complete synchronized terminal repaint frame."
   @spec render_frame([IO.chardata()], {pos_integer(), pos_integer()}, pos_integer()) ::

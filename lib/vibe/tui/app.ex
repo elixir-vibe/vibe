@@ -60,7 +60,8 @@ defmodule Vibe.TUI.App do
        active_sessions_timer: active_sessions_timer,
        active_sessions_task: nil,
        server_migration_timer: server_migration_timer,
-       server_migration_fun: server_migration_fun
+       server_migration_fun: server_migration_fun,
+       render_version: 0
      }}
   end
 
@@ -85,7 +86,8 @@ defmodule Vibe.TUI.App do
       autocomplete: state.autocomplete,
       width: state.width,
       height: state.height,
-      events: Enum.reverse(state.events)
+      events: Enum.reverse(state.events),
+      render_version: state.render_version
     }
 
     {:reply, snapshot, state}
@@ -182,7 +184,8 @@ defmodule Vibe.TUI.App do
           session_snapshot: session_snapshot,
           remote_node: node,
           autocomplete: nil,
-          server_migration_timer: nil
+          server_migration_timer: nil,
+          render_version: state.render_version + 1
       }
     else
       false ->
@@ -222,7 +225,14 @@ defmodule Vibe.TUI.App do
     with {:ok, session} <- lookup_session(state, session_id),
          :ok <- Session.detach(state.ui, self()),
          {:ok, session_snapshot, _cursor} <- Session.attach(session, self()) do
-      {:ok, %{state | ui: session, session_snapshot: session_snapshot, autocomplete: nil}}
+      {:ok,
+       %{
+         state
+         | ui: session,
+           session_snapshot: session_snapshot,
+           autocomplete: nil,
+           render_version: state.render_version + 1
+       }}
     end
   end
 
@@ -232,7 +242,14 @@ defmodule Vibe.TUI.App do
     with {:ok, session} <- start_session(state, cwd: current.cwd, model: current.model),
          :ok <- Session.detach(state.ui, self()),
          {:ok, session_snapshot, _cursor} <- Session.attach(session, self()) do
-      {:ok, %{state | ui: session, session_snapshot: session_snapshot, autocomplete: nil}}
+      {:ok,
+       %{
+         state
+         | ui: session,
+           session_snapshot: session_snapshot,
+           autocomplete: nil,
+           render_version: state.render_version + 1
+       }}
     end
   end
 
@@ -319,7 +336,8 @@ defmodule Vibe.TUI.App do
     %{
       state
       | session_snapshot: Reducer.apply_event(state.session_snapshot, event),
-        events: [event | state.events]
+        events: [event | state.events],
+        render_version: state.render_version + 1
     }
   end
 end

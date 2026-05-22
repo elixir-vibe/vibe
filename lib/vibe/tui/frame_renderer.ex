@@ -12,11 +12,17 @@ defmodule Vibe.TUI.FrameRenderer do
       |> ViewModel.from_state()
       |> Map.put(:picker, Keyword.get(opts, :picker))
 
-    editor = EditorRenderer.render(snapshot, theme)
-
     %{body: body, state: render_state} =
       PartialRenderer.render_body(view, snapshot.width, theme, state, opts)
 
+    render_with_body(snapshot, theme, render_state, body, opts)
+  end
+
+  @spec render_with_body(map(), Theme.t(), RenderState.t(), [IO.chardata()], keyword()) ::
+          RenderFrame.t()
+  def render_with_body(snapshot, theme, %RenderState{} = state, body, opts \\ [])
+      when is_map(snapshot) and is_list(body) do
+    editor = EditorRenderer.render(snapshot, theme)
     viewport = Keyword.get(opts, :viewport, :visible)
 
     %RenderFrame{
@@ -26,8 +32,10 @@ defmodule Vibe.TUI.FrameRenderer do
           snapshot,
           editor_start_row(body, editor, snapshot.height, viewport)
         ),
-      state: render_state,
-      stats: RenderState.stats(render_state)
+      state: state,
+      stats: RenderState.stats(state),
+      body: body,
+      editor: editor
     }
   end
 

@@ -219,7 +219,7 @@ defmodule Vibe.TUI.TerminalLoopTest do
     :ok = TerminalLoop.input(loop, "x")
     second = TerminalLoop.render_frame(loop)
 
-    assert second.stats.hits > first.stats.hits
+    assert second.stats == first.stats
   end
 
   test "ctrl-w deletes the word before the cursor" do

@@ -192,7 +192,9 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp apply_local_event(state, event) do
-    %{state | session_snapshot: Reducer.apply_event(state.session_snapshot, event)}
+    state
+    |> Map.update(:render_version, 1, &(&1 + 1))
+    |> Map.put(:session_snapshot, Reducer.apply_event(state.session_snapshot, event))
   end
 
   defp handle_editor_command({:submit, text}, state) do

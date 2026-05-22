@@ -67,6 +67,7 @@ defmodule Vibe.TUI.TerminalLoop do
       loader_tick_ms: Keyword.get(opts, :loader_tick_ms, 120),
       painter: TerminalPainter.new(snapshot.width, snapshot.height),
       render_state: RenderState.new(),
+      frame_cache: nil,
       theme: Keyword.get_lazy(opts, :theme, &Theme.default/0),
       trace:
         Vibe.Debug.run nil do
@@ -251,6 +252,7 @@ defmodule Vibe.TUI.TerminalLoop do
     %{
       state
       | render_state: RenderState.new(),
+        frame_cache: nil,
         painter: TerminalPainter.force_full_redraw(state.painter)
     }
   end
@@ -273,16 +275,39 @@ defmodule Vibe.TUI.TerminalLoop do
 
   defp build_frame(state, viewport) do
     snapshot = App.snapshot(state.app)
+    picker = PickerPresenter.from_snapshot(snapshot)
+
+    opts = [loader_phase: state.loader_phase, picker: picker, viewport: viewport]
+    cache_key = frame_cache_key(snapshot, picker, state, viewport)
 
     frame =
-      Renderer.render_frame(snapshot, state.theme, state.render_state,
-        loader_phase: state.loader_phase,
-        picker: PickerPresenter.from_snapshot(snapshot),
-        viewport: viewport
-      )
+      case state.frame_cache do
+        %{key: ^cache_key, body: body} ->
+          Renderer.render_frame_with_body(snapshot, state.theme, state.render_state, body, opts)
 
-    {frame, %{state | render_state: frame.state}}
+        _cache ->
+          Renderer.render_frame(snapshot, state.theme, state.render_state, opts)
+      end
+
+    state = %{
+      state
+      | render_state: frame.state,
+        frame_cache: frame_cache(frame, cache_key, viewport)
+    }
+
+    {frame, state}
   end
+
+  defp frame_cache_key(snapshot, picker, state, :visible) do
+    {snapshot.render_version, picker, snapshot.width, snapshot.height, state.theme,
+     state.loader_phase}
+  end
+
+  defp frame_cache_key(_snapshot, _picker, _state, viewport), do: {:uncached, viewport}
+
+  defp frame_cache(_frame, {:uncached, _}, _), do: nil
+  defp frame_cache(frame, key, :visible), do: %{key: key, body: frame.body}
+  defp frame_cache(_frame, _key, _viewport), do: nil
 
   defp maybe_start_loader_timer(%{loader_timer: nil} = state) do
     if working?(state) do
