@@ -55,38 +55,3 @@ defimpl Vibe.Storage.JSON.Encodable, for: Map do
     end)
   end
 end
-
-defimpl Vibe.Storage.JSON.Encodable, for: Vibe.Model.Content.Text do
-  def value(content), do: %{type: "text", text: content.text}
-end
-
-defimpl Vibe.Storage.JSON.Encodable, for: Vibe.Model.Content.Image do
-  def value(content) do
-    %{
-      type: "image",
-      data: content.data,
-      mime_type: content.mime_type,
-      filename: content.filename,
-      width: content.width,
-      height: content.height
-    }
-  end
-end
-
-defimpl Vibe.Storage.JSON.Encodable, for: Vibe.Files.ImageRef do
-  def value(ref) do
-    ref
-    |> Map.from_struct()
-    |> Map.delete(:data)
-    |> Vibe.Storage.JSON.Encodable.value()
-  end
-end
-
-defimpl Vibe.Storage.JSON.Encodable, for: Vibe.Files.ReadResult do
-  def value(result) do
-    result
-    |> Map.from_struct()
-    |> Map.delete(:__content_parts__)
-    |> Vibe.Storage.JSON.Encodable.value()
-  end
-end

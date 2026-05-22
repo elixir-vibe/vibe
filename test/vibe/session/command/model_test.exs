@@ -9,7 +9,7 @@ defmodule Vibe.Session.Command.ModelTest do
   end
 
   test "selects model through semantic command" do
-    assert Model.run("openrouter:test/model", State.new(session_id: "s1")) ==
-             {:command, {:select_model, %{model: "openrouter:test/model"}}}
+    assert Model.run("openai_codex:gpt-5.5", State.new(session_id: "s1")) ==
+             {:command, {:select_model, %{model: "openai_codex:gpt-5.5"}}}
   end
 end

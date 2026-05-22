@@ -19,11 +19,14 @@ defmodule Vibe.Auth.WebToken do
 
   defp ensure_token_file!(path) do
     File.mkdir_p!(Path.dirname(path))
+    if missing?(path), do: write_token_file!(path)
+  end
 
-    unless File.exists?(path) do
-      File.write!(path, random_token())
-      File.chmod!(path, 0o600)
-    end
+  defp missing?(path), do: not File.exists?(path)
+
+  defp write_token_file!(path) do
+    File.write!(path, random_token())
+    File.chmod!(path, 0o600)
   end
 
   defp random_token do

@@ -34,18 +34,20 @@ defmodule Vibe.Agent.Streaming do
   """
   @spec register(pid(), keyword()) :: :ok
   def register(agent_pid, opts) when is_pid(agent_pid) do
-    callbacks = callbacks(opts)
+    opts
+    |> callbacks()
+    |> register_callbacks(agent_pid)
+  end
 
-    if map_size(callbacks) == 0 do
-      :ok
-    else
-      with {:ok, status} <- Jido.AgentServer.status(agent_pid) do
-        ensure_table!()
-        :ets.insert(@table, {status.agent_id, callbacks})
-      end
+  defp register_callbacks(callbacks, _agent_pid) when map_size(callbacks) == 0, do: :ok
 
-      :ok
+  defp register_callbacks(callbacks, agent_pid) do
+    with {:ok, status} <- Jido.AgentServer.status(agent_pid) do
+      ensure_table!()
+      :ets.insert(@table, {status.agent_id, callbacks})
     end
+
+    :ok
   end
 
   @doc """

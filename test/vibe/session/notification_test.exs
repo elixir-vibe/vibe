@@ -12,10 +12,10 @@ defmodule Vibe.Session.NotificationTest do
     :ok =
       Session.dispatch(
         session,
-        Command.new(:notification_added, %{level: :error, text: "temporary error", ttl_ms: 50})
+        Command.new(:notification_added, %{level: :error, text: "temporary error", ttl_ms: 200})
       )
 
-    assert [%{id: id, text: "temporary error"}] = wait_for_notifications(session)
+    assert [%{id: id, text: "temporary error"}] = Session.state(session).notifications
     assert is_binary(id)
 
     wait_until(fn -> Session.state(session).notifications == [] end)

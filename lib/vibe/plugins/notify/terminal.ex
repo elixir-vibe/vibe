@@ -41,7 +41,7 @@ defmodule Vibe.Plugins.Notify.Terminal do
   defp osc_9(title, body), do: "\e]9;#{title}: #{body}\e\\"
 
   defp interactive? do
-    :prim_tty.isatty(:stderr)
+    Application.get_env(:vibe, :terminal_notifications, true) and :prim_tty.isatty(:stderr)
   rescue
     _error -> false
   end

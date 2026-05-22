@@ -21,12 +21,17 @@ defmodule Vibe.Auth.Store do
     path = path()
     File.mkdir_p!(Path.dirname(path))
 
-    auth =
-      case File.read(path) do
-        {:ok, text} -> Jason.decode!(text)
-        _ -> %{}
-      end
+    path
+    |> auth_data()
+    |> Map.put(provider, credentials)
+    |> Jason.encode!(pretty: true)
+    |> then(&File.write!(path, &1))
+  end
 
-    File.write!(path, Jason.encode!(Map.put(auth, provider, credentials), pretty: true))
+  defp auth_data(path) do
+    case File.read(path) do
+      {:ok, text} -> Jason.decode!(text)
+      _ -> %{}
+    end
   end
 end

@@ -193,13 +193,7 @@ defmodule Vibe.UI.Reducer do
     %{
       state
       | goal: nil,
-        messages:
-          Lists.append(state.messages, %{
-            role: :system,
-            text: "Goal cleared",
-            level: :info,
-            at: at
-          })
+        messages: Lists.append(state.messages, system_message("Goal cleared", at))
     }
   end
 
@@ -229,12 +223,38 @@ defmodule Vibe.UI.Reducer do
     %{state | usage: Usage.summarize([state.usage, usage]), usage_preview: empty_usage_preview()}
   end
 
+  defp reduce(state, %Event{
+         type: :status_changed,
+         data: %Vibe.Event.Surface.StatusChanged{status: status}
+       }) do
+    %{state | status: status}
+  end
+
   defp reduce(state, %Event{type: :status_changed, data: data}) do
     %{status: status} = event_payload_map(data)
     %{state | status: status}
   end
 
-  defp reduce(state, %Event{type: :model_selected, at: at, data: data}) do
+  defp reduce(state, %Event{
+         type: :model_selected,
+         at: at,
+         data: %Vibe.Event.Model.Selected{model: model}
+       }) do
+    %{
+      state
+      | model: model,
+        messages:
+          state.messages
+          |> drop_trailing_session_marker(:model_selected)
+          |> Lists.append(model_selected_message(model, at))
+    }
+  end
+
+  defp reduce(state, %Event{
+         type: :model_selected,
+         at: at,
+         data: data
+       }) do
     %{model: model} = event_payload_map(data)
 
     %{
@@ -243,30 +263,41 @@ defmodule Vibe.UI.Reducer do
         messages:
           state.messages
           |> drop_trailing_session_marker(:model_selected)
-          |> Lists.append(%{
-            role: :system,
-            marker: :model_selected,
-            text: "Model: #{model}",
-            level: :info,
-            at: at
-          })
+          |> Lists.append(model_selected_message(model, at))
     }
   end
 
-  defp reduce(state, %Event{type: :effort_selected, at: at, data: data}) do
+  defp reduce(state, %Event{
+         type: :effort_selected,
+         at: at,
+         data: %Vibe.Event.Model.EffortSelected{effort: effort}
+       }) do
+    %{
+      state
+      | effort: effort,
+        messages: Lists.append(state.messages, effort_selected_message(effort, at))
+    }
+  end
+
+  defp reduce(state, %Event{
+         type: :effort_selected,
+         at: at,
+         data: data
+       }) do
     %{effort: effort} = event_payload_map(data)
 
     %{
       state
       | effort: effort,
-        messages:
-          Lists.append(state.messages, %{
-            role: :system,
-            text: "Effort: #{Vibe.Model.Effort.label(effort)}",
-            level: :info,
-            at: at
-          })
+        messages: Lists.append(state.messages, effort_selected_message(effort, at))
     }
+  end
+
+  defp reduce(state, %Event{
+         type: :session_selected,
+         data: %Vibe.Event.Session.Selected{session_id: session_id}
+       }) do
+    %{state | session_id: session_id}
   end
 
   defp reduce(state, %Event{type: :session_selected, data: data}) do
@@ -413,6 +444,13 @@ defmodule Vibe.UI.Reducer do
     }
   end
 
+  defp reduce(state, %Event{
+         type: :active_sessions_updated,
+         data: %Vibe.Event.Session.ActiveCountUpdated{count: count}
+       }) do
+    %{state | active_sessions: count}
+  end
+
   defp reduce(state, %Event{type: :active_sessions_updated, data: data}) do
     %{count: count} = event_payload_map(data)
     %{state | active_sessions: count}
@@ -439,14 +477,35 @@ defmodule Vibe.UI.Reducer do
     %{state | plugin_widgets: Map.delete(state.plugin_widgets, key)}
   end
 
+  defp reduce(state, %Event{
+         type: :working_message_updated,
+         data: %Vibe.Event.Surface.WorkingMessageUpdated{message: message}
+       }) do
+    %{state | working_message: message}
+  end
+
   defp reduce(state, %Event{type: :working_message_updated, data: data}) do
     %{message: message} = event_payload_map(data)
     %{state | working_message: message}
   end
 
+  defp reduce(state, %Event{
+         type: :hidden_thinking_label_updated,
+         data: %Vibe.Event.Surface.HiddenThinkingLabelUpdated{label: label}
+       }) do
+    %{state | hidden_thinking_label: label}
+  end
+
   defp reduce(state, %Event{type: :hidden_thinking_label_updated, data: data}) do
     %{label: label} = event_payload_map(data)
     %{state | hidden_thinking_label: label}
+  end
+
+  defp reduce(state, %Event{
+         type: :title_updated,
+         data: %Vibe.Event.Surface.TitleUpdated{title: title}
+       }) do
+    %{state | title: title}
   end
 
   defp reduce(state, %Event{type: :title_updated, data: data}) do
@@ -618,6 +677,19 @@ defmodule Vibe.UI.Reducer do
       goal: goal,
       at: DateTime.utc_now()
     }
+  end
+
+  defp model_selected_message(model, at) do
+    system_message("Model: #{model}", at, marker: :model_selected)
+  end
+
+  defp effort_selected_message(effort, at) do
+    system_message("Effort: #{Vibe.Model.Effort.label(effort)}", at)
+  end
+
+  defp system_message(text, at, opts \\ []) do
+    %{role: :system, text: text, level: :info, at: at}
+    |> maybe_put(:marker, Keyword.get(opts, :marker))
   end
 
   defp maybe_put(map, _key, nil), do: map

@@ -33,7 +33,7 @@ defmodule Vibe.GoalsTest do
         persist?: true,
         ask_fun: fn prompt, _opts ->
           send(parent, {:prompt, prompt})
-          "ok"
+          {:ok, "ok"}
         end
       )
 

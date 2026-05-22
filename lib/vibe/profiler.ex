@@ -35,86 +35,60 @@ defmodule Vibe.Profiler do
 
   @spec eprof((-> term()), keyword()) :: map()
   def eprof(fun, opts \\ []) when is_function(fun, 0) do
-    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
-    parent = self()
+    monitored_profile(:eprof, Keyword.get(opts, :timeout, @default_timeout_ms), fn ->
+      call(:eprof, :start, [])
+      call(:eprof, :start_profiling, [[self()]])
+      started_at = System.monotonic_time(:millisecond)
+      result = fun.()
+      call(:eprof, :stop_profiling, [])
+      analysis = capture_io(fn -> call(:eprof, :analyze, []) end)
+      call(:eprof, :stop, [])
 
-    {pid, ref} =
-      spawn_monitor(fn ->
-        call(:eprof, :start, [])
-        call(:eprof, :start_profiling, [[self()]])
-        started_at = System.monotonic_time(:millisecond)
-
-        result = fun.()
-
-        call(:eprof, :stop_profiling, [])
-        analysis = capture_io(fn -> call(:eprof, :analyze, []) end)
-        call(:eprof, :stop, [])
-
-        send(
-          parent,
-          {:vibe_eprof, self(),
-           %{
-             profiler: :eprof,
-             duration_ms: System.monotonic_time(:millisecond) - started_at,
-             result: safe_inspect(result),
-             analysis: analysis
-           }}
-        )
-      end)
-
-    receive do
-      {:vibe_eprof, ^pid, result} ->
-        Process.demonitor(ref, [:flush])
-        result
-
-      {:DOWN, ^ref, :process, ^pid, reason} ->
-        %{profiler: :eprof, error: Exception.format_exit(reason)}
-    after
-      timeout ->
-        Process.demonitor(ref, [:flush])
-        Process.exit(pid, :brutal_kill)
-        %{profiler: :eprof, error: "timed out after #{timeout}ms"}
-    end
+      profile_result(:eprof, started_at, result, analysis)
+    end)
   end
 
   @spec fprof((-> term()), keyword()) :: map()
   def fprof(fun, opts \\ []) when is_function(fun, 0) do
-    timeout = Keyword.get(opts, :timeout, @default_timeout_ms)
+    monitored_profile(:fprof, Keyword.get(opts, :timeout, @default_timeout_ms), fn ->
+      started_at = System.monotonic_time(:millisecond)
+      result = call(:fprof, :apply, [fun, []])
+      call(:fprof, :profile, [])
+      analysis = capture_io(fn -> call(:fprof, :analyse, [[dest: []]]) end)
+      call(:fprof, :stop, [])
+
+      profile_result(:fprof, started_at, result, analysis)
+    end)
+  end
+
+  defp monitored_profile(profiler, timeout, run) do
     parent = self()
 
     {pid, ref} =
-      spawn_monitor(fn ->
-        started_at = System.monotonic_time(:millisecond)
-        result = call(:fprof, :apply, [fun, []])
-        call(:fprof, :profile, [])
-        analysis = capture_io(fn -> call(:fprof, :analyse, [[dest: []]]) end)
-        call(:fprof, :stop, [])
-
-        send(
-          parent,
-          {:vibe_fprof, self(),
-           %{
-             profiler: :fprof,
-             duration_ms: System.monotonic_time(:millisecond) - started_at,
-             result: safe_inspect(result),
-             analysis: analysis
-           }}
-        )
-      end)
+      spawn_monitor(fn -> send(parent, {:vibe_profile, self(), run.()}) end)
 
     receive do
-      {:vibe_fprof, ^pid, result} ->
+      {:vibe_profile, ^pid, result} ->
         Process.demonitor(ref, [:flush])
         result
 
       {:DOWN, ^ref, :process, ^pid, reason} ->
-        %{profiler: :fprof, error: Exception.format_exit(reason)}
+        %{profiler: profiler, error: Exception.format_exit(reason)}
     after
       timeout ->
         Process.demonitor(ref, [:flush])
         Process.exit(pid, :brutal_kill)
-        %{profiler: :fprof, error: "timed out after #{timeout}ms"}
+        %{profiler: profiler, error: "timed out after #{timeout}ms"}
     end
+  end
+
+  defp profile_result(profiler, started_at, result, analysis) do
+    %{
+      profiler: profiler,
+      duration_ms: System.monotonic_time(:millisecond) - started_at,
+      result: safe_inspect(result),
+      analysis: analysis
+    }
   end
 
   @spec process_growth(non_neg_integer(), keyword()) :: [map()]

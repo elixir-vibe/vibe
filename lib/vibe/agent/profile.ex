@@ -14,13 +14,15 @@ defmodule Vibe.Agent.Profile do
   @spec ensure!() :: :ok
   def ensure! do
     path = path()
-
-    unless File.exists?(path) do
-      File.mkdir_p!(Path.dirname(path))
-      File.cp!(@default_path, path)
-    end
-
+    if missing?(path), do: copy_default_profile!(path)
     :ok
+  end
+
+  defp missing?(path), do: not File.exists?(path)
+
+  defp copy_default_profile!(path) do
+    File.mkdir_p!(Path.dirname(path))
+    File.cp!(@default_path, path)
   end
 
   @spec load() :: {:ok, map()} | {:error, term()}

@@ -44,10 +44,8 @@ defmodule Vibe.Files.ArtifactsTest do
     :telemetry.attach(
       handler,
       [:vibe, :image, :artifact, :stored],
-      fn event, measurements, metadata, _config ->
-        send(parent, {:telemetry_event, event, measurements, metadata})
-      end,
-      nil
+      &__MODULE__.handle_artifact_stored/4,
+      parent
     )
 
     try do
@@ -70,6 +68,10 @@ defmodule Vibe.Files.ArtifactsTest do
       :telemetry.detach(handler)
       File.rm_rf(dir)
     end
+  end
+
+  def handle_artifact_stored(event, measurements, metadata, parent) do
+    send(parent, {:telemetry_event, event, measurements, metadata})
   end
 
   defp image(opts) do

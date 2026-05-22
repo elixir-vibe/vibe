@@ -1,6 +1,8 @@
 defmodule Vibe.Model.ResolverTest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureIO
+
   alias Vibe.Model.Resolver
 
   test "resolves exact provider:model spec" do
@@ -15,8 +17,14 @@ defmodule Vibe.Model.ResolverTest do
   end
 
   test "returns a result even for unknown models via openrouter passthrough" do
-    result = Resolver.resolve("nonexistent_provider:fake_model_xyz")
-    assert match?({:ok, _, _}, result) or match?({:error, :not_found}, result)
+    result =
+      capture_io(:stderr, fn ->
+        send(self(), {:result, Resolver.resolve("nonexistent_provider:fake_model_xyz")})
+      end)
+
+    assert result =~ "Using unverified model"
+    assert_receive {:result, resolver_result}
+    assert match?({:ok, _, _}, resolver_result) or match?({:error, :not_found}, resolver_result)
   end
 
   test "effort parsing works for valid levels" do

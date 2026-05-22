@@ -74,16 +74,22 @@ defmodule Vibe.Web do
   defp secret_key_base do
     path = Path.join(Vibe.Paths.home(), "web-secret-key-base")
     File.mkdir_p!(Path.dirname(path))
-
-    unless File.exists?(path) do
-      secret = 64 |> :crypto.strong_rand_bytes() |> Base.encode64(padding: false)
-      File.write!(path, secret, [:write])
-      File.chmod!(path, 0o600)
-    end
+    if missing?(path), do: write_secret_key_base!(path)
 
     path
     |> File.read!()
     |> String.trim()
+  end
+
+  defp missing?(path), do: not File.exists?(path)
+
+  defp write_secret_key_base!(path) do
+    File.write!(path, random_secret_key_base(), [:write])
+    File.chmod!(path, 0o600)
+  end
+
+  defp random_secret_key_base do
+    64 |> :crypto.strong_rand_bytes() |> Base.encode64(padding: false)
   end
 
   defmacro __using__(which) when is_atom(which), do: apply(__MODULE__, which, [])

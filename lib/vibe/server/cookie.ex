@@ -7,16 +7,22 @@ defmodule Vibe.Server.Cookie do
   def get do
     path = path()
     File.mkdir_p!(Path.dirname(path))
-
-    unless File.exists?(path) do
-      cookie = 32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
-      File.write!(path, cookie, [:write])
-      File.chmod!(path, 0o600)
-    end
+    if missing?(path), do: write_cookie!(path)
 
     path
     |> File.read!()
     |> String.trim()
     |> :erlang.binary_to_atom()
+  end
+
+  defp missing?(path), do: not File.exists?(path)
+
+  defp write_cookie!(path) do
+    File.write!(path, random_cookie(), [:write])
+    File.chmod!(path, 0o600)
+  end
+
+  defp random_cookie do
+    32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
   end
 end

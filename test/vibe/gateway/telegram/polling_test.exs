@@ -1,5 +1,7 @@
 defmodule Vibe.Gateway.Telegram.PollingTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
+
+  import ExUnit.CaptureLog
 
   alias Vibe.Gateway.Telegram.{Config, Polling}
 
@@ -58,26 +60,31 @@ defmodule Vibe.Gateway.Telegram.PollingTest do
       raise RuntimeError, "Conflict: terminated by other getUpdates request"
     end
 
-    assert {:ok, polling} =
-             Polling.start_link(
-               config: config,
-               runtime: self(),
-               interval_ms: 60_000,
-               timeout_s: 1,
-               fetch_fun: fetch,
-               delete_webhook?: false
-             )
+    log =
+      capture_log(fn ->
+        assert {:ok, polling} =
+                 Polling.start_link(
+                   config: config,
+                   runtime: self(),
+                   interval_ms: 60_000,
+                   timeout_s: 1,
+                   fetch_fun: fetch,
+                   delete_webhook?: false
+                 )
 
-    assert_receive {:fetch_opts, _opts}
+        assert_receive {:fetch_opts, _opts}
 
-    status = Polling.status(polling)
-    assert status.conflict_count == 1
-    assert status.consecutive_conflicts == 1
-    assert status.last_error.kind == :conflict
-    assert status.max_consecutive_conflicts == 12
-    assert status.polling?
+        status = Polling.status(polling)
+        assert status.conflict_count == 1
+        assert status.consecutive_conflicts == 1
+        assert status.last_error.kind == :conflict
+        assert status.max_consecutive_conflicts == 12
+        assert status.polling?
 
-    refute_receive {:fetch_opts, _opts}, 20
+        refute_receive {:fetch_opts, _opts}, 20
+      end)
+
+    assert log =~ "Telegram polling failed"
   end
 
   test "stops scheduling after repeated getUpdates conflicts" do
@@ -89,26 +96,31 @@ defmodule Vibe.Gateway.Telegram.PollingTest do
       raise RuntimeError, "Conflict: terminated by other getUpdates request"
     end
 
-    assert {:ok, polling} =
-             Polling.start_link(
-               config: config,
-               runtime: self(),
-               interval_ms: 1,
-               timeout_s: 1,
-               max_consecutive_conflicts: 2,
-               fetch_fun: fetch,
-               delete_webhook?: false
-             )
+    log =
+      capture_log(fn ->
+        assert {:ok, polling} =
+                 Polling.start_link(
+                   config: config,
+                   runtime: self(),
+                   interval_ms: 1,
+                   timeout_s: 1,
+                   max_consecutive_conflicts: 2,
+                   fetch_fun: fetch,
+                   delete_webhook?: false
+                 )
 
-    assert_receive {:fetch_opts, _opts}
-    assert_receive {:fetch_opts, _opts}, 100
+        assert_receive {:fetch_opts, _opts}
+        assert_receive {:fetch_opts, _opts}, 100
 
-    status = Polling.status(polling)
-    assert status.stopped?
-    assert status.stopped_reason == :too_many_conflicts
-    assert status.consecutive_conflicts == 2
-    refute status.polling?
+        status = Polling.status(polling)
+        assert status.stopped?
+        assert status.stopped_reason == :too_many_conflicts
+        assert status.consecutive_conflicts == 2
+        refute status.polling?
 
-    refute_receive {:fetch_opts, _opts}, 20
+        refute_receive {:fetch_opts, _opts}, 20
+      end)
+
+    assert log =~ "Telegram polling stopped"
   end
 end

@@ -11,14 +11,19 @@ defmodule Vibe.Remote.SSH.Keys do
   def ensure_host_key! do
     path = host_key_path()
     File.mkdir_p!(Path.dirname(path))
-
-    unless File.exists?(path) do
-      key = :public_key.generate_key({:rsa, 2048, 65_537})
-      pem = :public_key.pem_encode([:public_key.pem_entry_encode(:RSAPrivateKey, key)])
-      File.write!(path, pem)
-      File.chmod!(path, 0o600)
-    end
-
+    if missing?(path), do: write_host_key!(path)
     path
+  end
+
+  defp missing?(path), do: not File.exists?(path)
+
+  defp write_host_key!(path) do
+    File.write!(path, private_key_pem())
+    File.chmod!(path, 0o600)
+  end
+
+  defp private_key_pem do
+    key = :public_key.generate_key({:rsa, 2048, 65_537})
+    :public_key.pem_encode([:public_key.pem_entry_encode(:RSAPrivateKey, key)])
   end
 end
