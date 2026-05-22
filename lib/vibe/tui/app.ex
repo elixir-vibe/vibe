@@ -284,7 +284,11 @@ defmodule Vibe.TUI.App do
 
     Session.emit_transient_event(
       state.ui,
-      Vibe.Event.new(:active_sessions_updated, state.session_snapshot.session_id, %{count: count})
+      Vibe.Event.new(
+        :active_sessions_updated,
+        state.session_snapshot.session_id,
+        Vibe.Event.Session.active_count_updated(count)
+      )
     )
 
     state

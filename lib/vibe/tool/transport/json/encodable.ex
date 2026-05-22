@@ -7,5 +7,5 @@ defprotocol Vibe.Tool.Transport.JSON.Encodable do
 end
 
 defimpl Vibe.Tool.Transport.JSON.Encodable, for: Any do
-  def value(value), do: Vibe.Storage.JSON.value(value)
+  def value(value), do: Vibe.Tool.Transport.JSON.Value.value(value)
 end

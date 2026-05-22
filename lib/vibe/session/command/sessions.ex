@@ -39,12 +39,24 @@ defmodule Vibe.Session.Command.Sessions do
   def selector_action(%{value: session_id}, session_state) when is_binary(session_id),
     do:
       {:events,
-       [Event.new(:session_selected, session_state.session_id, %{session_id: session_id})]}
+       [
+         Event.new(
+           :session_selected,
+           session_state.session_id,
+           Vibe.Event.Session.selected(session_id)
+         )
+       ]}
 
   def selector_action(session_id, session_state) when is_binary(session_id),
     do:
       {:events,
-       [Event.new(:session_selected, session_state.session_id, %{session_id: session_id})]}
+       [
+         Event.new(
+           :session_selected,
+           session_state.session_id,
+           Vibe.Event.Session.selected(session_id)
+         )
+       ]}
 
   def selector_action(_item, _session_state), do: :ignore
 

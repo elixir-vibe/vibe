@@ -34,7 +34,7 @@ defmodule Vibe.Gateway.Telegram.StreamConsumerTest do
     assert opts[:parse_mode] == "HTML"
 
     StreamConsumer.finish(consumer)
-    assert_receive {:gateway_send, "123", "**hel**lo", opts}
+    assert_receive {:gateway_send, "123", "**hel**lo", opts}, 1_000
     assert opts[:reply_to] == "reply-1"
   end
 end

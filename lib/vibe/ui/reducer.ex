@@ -559,7 +559,8 @@ defmodule Vibe.UI.Reducer do
   defp runtime_alert_notification(%Alert{} = alert) do
     alert
     |> Vibe.Presentation.Presentable.present()
-    |> Vibe.Presentation.RuntimeAlert.notification()
+    |> Vibe.Presentation.RuntimeAlert.notification_attrs()
+    |> Notification.new()
   end
 
   defp notification_id(%Notification{id: id}), do: id

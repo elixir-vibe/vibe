@@ -10,5 +10,13 @@ defmodule Vibe.Session.Command.New do
 
   @impl true
   def run(_args, session_state),
-    do: {:events, [Event.new(:session_new_requested, session_state.session_id, %{})]}
+    do:
+      {:events,
+       [
+         Event.new(
+           :session_new_requested,
+           session_state.session_id,
+           Vibe.Event.Session.new_requested()
+         )
+       ]}
 end

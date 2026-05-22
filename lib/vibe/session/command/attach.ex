@@ -17,7 +17,13 @@ defmodule Vibe.Session.Command.Attach do
 
       session_id ->
         {:events,
-         [Event.new(:session_selected, session_state.session_id, %{session_id: session_id})]}
+         [
+           Event.new(
+             :session_selected,
+             session_state.session_id,
+             Vibe.Event.Session.selected(session_id)
+           )
+         ]}
     end
   end
 end

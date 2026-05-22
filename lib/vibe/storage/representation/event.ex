@@ -386,6 +386,10 @@ defimpl Vibe.Storage.Persistable, for: Vibe.Event do
     |> Map.delete(:result)
   end
 
+  defp persist_data(:plugin_widget_updated, %Vibe.Event.Plugin.WidgetUpdated{widget: widget}) do
+    %{widget: event_struct_map(widget)}
+  end
+
   defp persist_data(:subagent_finished, %Vibe.Event.Subagent.Finished{} = data) do
     data
     |> Map.from_struct()

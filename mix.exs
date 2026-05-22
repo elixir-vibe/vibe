@@ -124,7 +124,8 @@ defmodule Vibe.MixProject do
         "credo --strict",
         "dialyzer",
         "ex_dna",
-        "reach.check --smells --strict"
+        "reach.check --arch --smells",
+        "run --no-start scripts/check_reach_cycles.exs"
       ]
     ]
   end

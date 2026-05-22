@@ -6,7 +6,8 @@ defmodule Vibe.Session.NotificationTest do
   alias Vibe.UI.Command
 
   test "notifications get ids and expire as transient UI state" do
-    {:ok, session} = Session.start_link(persist?: false, session_id: "notification-expiry")
+    session_id = "notification-expiry-#{System.unique_integer([:positive])}"
+    {:ok, session} = Session.start_link(persist?: false, session_id: session_id)
 
     :ok =
       Session.dispatch(
@@ -14,12 +15,10 @@ defmodule Vibe.Session.NotificationTest do
         Command.new(:notification_added, %{level: :error, text: "temporary error", ttl_ms: 50})
       )
 
-    assert [%{id: id, text: "temporary error"}] = Session.state(session).notifications
+    assert [%{id: id, text: "temporary error"}] = wait_for_notifications(session)
     assert is_binary(id)
 
-    # Wait for the timer to fire, then flush the GenServer mailbox with a sync call
-    Process.sleep(80)
-    assert Session.state(session).notifications == []
+    wait_until(fn -> Session.state(session).notifications == [] end)
   end
 
   test "notifications are not replayed from durable session history" do
@@ -36,5 +35,28 @@ defmodule Vibe.Session.NotificationTest do
 
     {:ok, restored} = Session.start_link(session_id: "notification-transient", restoring?: true)
     assert Session.state(restored).notifications == []
+  end
+
+  defp wait_for_notifications(session) do
+    wait_until(fn ->
+      case Session.state(session).notifications do
+        [] -> false
+        notifications -> notifications
+      end
+    end)
+  end
+
+  defp wait_until(fun, attempts \\ 50)
+  defp wait_until(_fun, 0), do: flunk("condition was not met")
+
+  defp wait_until(fun, attempts) do
+    case fun.() do
+      false ->
+        Process.sleep(10)
+        wait_until(fun, attempts - 1)
+
+      value ->
+        value
+    end
   end
 end

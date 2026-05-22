@@ -1,14 +1,12 @@
 defmodule Vibe.Event.Tool do
   @moduledoc "Typed semantic tool lifecycle event payloads."
 
-  alias Vibe.Tool.Event
-
   defmodule Started do
     @moduledoc "Payload for a tool starting."
     @enforce_keys [:event]
     defstruct [:event]
 
-    @type t :: %__MODULE__{event: Event.t()}
+    @type t :: %__MODULE__{event: term()}
   end
 
   defmodule Updated do
@@ -16,7 +14,7 @@ defmodule Vibe.Event.Tool do
     @enforce_keys [:event]
     defstruct [:event]
 
-    @type t :: %__MODULE__{event: Event.t()}
+    @type t :: %__MODULE__{event: term()}
   end
 
   defmodule Finished do
@@ -24,15 +22,15 @@ defmodule Vibe.Event.Tool do
     @enforce_keys [:event]
     defstruct [:event]
 
-    @type t :: %__MODULE__{event: Event.t()}
+    @type t :: %__MODULE__{event: term()}
   end
 
-  @spec started(Event.t()) :: Started.t()
-  def started(%Event{} = event), do: %Started{event: event}
+  @spec started(term()) :: Started.t()
+  def started(event), do: %Started{event: event}
 
-  @spec updated(Event.t()) :: Updated.t()
-  def updated(%Event{} = event), do: %Updated{event: event}
+  @spec updated(term()) :: Updated.t()
+  def updated(event), do: %Updated{event: event}
 
-  @spec finished(Event.t()) :: Finished.t()
-  def finished(%Event{} = event), do: %Finished{event: event}
+  @spec finished(term()) :: Finished.t()
+  def finished(event), do: %Finished{event: event}
 end

@@ -59,6 +59,13 @@ defmodule Vibe.Session.Command.Goal do
   end
 
   defp notice(level, text, session_id) do
-    {:events, [Event.new(:notification_added, session_id, %{level: level, text: text})]}
+    {:events,
+     [
+       Event.new(
+         :notification_added,
+         session_id,
+         Vibe.Event.Notification.added(level: level, text: text)
+       )
+     ]}
   end
 end

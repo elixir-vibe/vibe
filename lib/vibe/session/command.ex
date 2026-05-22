@@ -64,10 +64,11 @@ defmodule Vibe.Session.Command do
   defp unknown_command(command, session_state) do
     {:events,
      [
-       Event.new(:notification_added, session_state.session_id, %{
-         level: :warning,
-         text: "unknown command: /#{command}"
-       })
+       Event.new(
+         :notification_added,
+         session_state.session_id,
+         Vibe.Event.Notification.added(level: :warning, text: "unknown command: /#{command}")
+       )
      ]}
   end
 end

@@ -1,7 +1,43 @@
 [
   layers: [
     storage: ["Vibe.Repo", "Vibe.Storage*", "Vibe.Session.Store*"],
+    event: ["Vibe.Event", "Vibe.Event.*"],
+    session: [
+      "Vibe.Session",
+      "Vibe.Session.Command*",
+      "Vibe.Session.Current",
+      "Vibe.Session.Listing",
+      "Vibe.Session.Preview",
+      "Vibe.Session.Processes",
+      "Vibe.Session.PromptLifecycle",
+      "Vibe.Session.Registry"
+    ],
+    command: "Vibe.Command*",
+    tool: [
+      "Vibe.Tool",
+      "Vibe.Tool.AdapterResult",
+      "Vibe.Tool.Builtin*",
+      "Vibe.Tool.Event",
+      "Vibe.Tool.Output*",
+      "Vibe.Tool.Result"
+    ],
+    transport: ["Vibe.Transport*", "Vibe.Remote.Transport*", "Vibe.Tool.Transport*"],
     presentation: "Vibe.Presentation*",
+    markdown: ["Vibe.Markdown", "Vibe.MD"],
+    surface: [
+      "Vibe.UI.Autocomplete*",
+      "Vibe.UI.Block*",
+      "Vibe.UI.Command",
+      "Vibe.UI.Editor*",
+      "Vibe.UI.Error",
+      "Vibe.UI.FileAutocomplete",
+      "Vibe.UI.Message",
+      "Vibe.UI.Notification",
+      "Vibe.UI.Reducer",
+      "Vibe.UI.Selector",
+      "Vibe.UI.State",
+      "Vibe.UI.ViewModel"
+    ],
     tui: "Vibe.TUI*",
     web: "Vibe.Web*",
     plugin: ["Vibe.Plugin*", "Vibe.Plugins*"]

@@ -9,7 +9,6 @@ defmodule Vibe.Event.Bus do
   use GenServer
 
   alias Vibe.Event
-  alias Vibe.UI.Command
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -26,7 +25,7 @@ defmodule Vibe.Event.Bus do
   @spec server(String.t()) :: {:ok, GenServer.server()} | {:error, :not_found}
   def server(session_id), do: GenServer.call(__MODULE__, {:server, session_id})
 
-  @spec dispatch(String.t(), Command.t() | atom() | {atom(), map()}) :: :ok | {:error, :not_found}
+  @spec dispatch(String.t(), term()) :: :ok | {:error, :not_found}
   def dispatch(session_id, command) do
     with {:ok, server} <- server(session_id) do
       GenServer.call(server, {:dispatch, command})
@@ -45,10 +44,9 @@ defmodule Vibe.Event.Bus do
     GenServer.call(__MODULE__, {:emit_all, type, data, Keyword.get(opts, :persist?, false)})
   end
 
-  @spec notify_all(Vibe.UI.Notification.t() | map() | keyword() | String.t(), keyword()) :: :ok
+  @spec notify_all(term(), keyword()) :: :ok
   def notify_all(notification, opts \\ []) do
-    notification = Vibe.UI.Notification.new(notification)
-    emit_all(:notification_added, Map.from_struct(notification), opts)
+    emit_all(:notification_added, notification_attrs(notification), opts)
   end
 
   @spec set_status(String.t(), String.t() | atom(), String.t() | nil) ::
@@ -123,6 +121,11 @@ defmodule Vibe.Event.Bus do
         {:noreply, state}
     end
   end
+
+  defp notification_attrs(text) when is_binary(text), do: %{text: text, level: :info}
+  defp notification_attrs(attrs) when is_list(attrs), do: Map.new(attrs)
+  defp notification_attrs(%_{} = attrs), do: attrs |> Map.from_struct() |> notification_attrs()
+  defp notification_attrs(attrs) when is_map(attrs), do: attrs
 
   defp safe_emit(server, event, persist?) do
     if Process.alive?(server) do

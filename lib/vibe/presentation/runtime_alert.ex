@@ -2,7 +2,6 @@ defmodule Vibe.Presentation.RuntimeAlert do
   @moduledoc "Renderer-neutral presentation for runtime alerts."
 
   alias Vibe.SystemAlarms.Alert
-  alias Vibe.UI.Notification
 
   @enforce_keys [:id, :severity, :title, :message]
   defstruct [:id, :severity, :title, :message, :footer_label]
@@ -26,13 +25,13 @@ defmodule Vibe.Presentation.RuntimeAlert do
     }
   end
 
-  @spec notification(t()) :: Notification.t()
-  def notification(%__MODULE__{} = alert) do
-    Notification.new(%{
+  @spec notification_attrs(t()) :: map()
+  def notification_attrs(%__MODULE__{} = alert) do
+    %{
       id: {:runtime_alert, alert.id},
       level: alert.severity,
       text: "#{alert.title}: #{alert.message}"
-    })
+    }
   end
 
   defp title(%Alert{severity: :info, type: :disk_almost_full}), do: "Disk pressure cleared"

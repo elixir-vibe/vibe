@@ -2,7 +2,6 @@ defmodule Vibe.Session.Store.Summary do
   @moduledoc "Session summary extraction for dashboards and previews."
   alias Vibe.Session.Store.EventLog
   alias Vibe.Storage.Schema.Session
-  alias Vibe.UI.{Reducer, State}
 
   @spec refresh(String.t(), (-> [{non_neg_integer(), Vibe.Event.t()}])) :: :ok
   def refresh(session_id, fallback \\ fn -> [] end) do
@@ -19,17 +18,17 @@ defmodule Vibe.Session.Store.Summary do
     if events == [] do
       nil
     else
-      state = session_id |> restore_state(events) |> finalize_restored_state()
+      state = summarize_events(events)
       messages = conversation_messages(state.messages)
       first_user = Enum.find(messages, &(&1[:role] == :user))
-      last_message = last_message(messages)
+      last_message = List.last(messages)
 
       %{
         status: state.status,
         model: state.model,
         message_count: length(messages),
-        first_message: Vibe.Session.Preview.message(first_user),
-        last_message_preview: Vibe.Session.Preview.message(last_message),
+        first_message: preview_message(first_user),
+        last_message_preview: preview_message(last_message),
         usage: state.usage
       }
     end
@@ -64,32 +63,166 @@ defmodule Vibe.Session.Store.Summary do
     |> ok()
   end
 
-  defp finalize_restored_state(%{status: :working} = state) do
-    has_active_stream? = not is_nil(state.streaming_message)
-
-    has_running_tool? =
-      Enum.any?(state.pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end)
-
-    if has_active_stream? or has_running_tool?, do: state, else: %{state | status: :idle}
+  defp summarize_events(events) do
+    Enum.reduce(events, initial_summary(), fn {_seq, event}, state ->
+      reduce_event(state, event)
+    end)
+    |> finalize_status()
   end
 
-  defp finalize_restored_state(state), do: state
+  defp initial_summary do
+    %{
+      status: :idle,
+      model: nil,
+      messages: [],
+      usage: Vibe.Model.Usage.empty(),
+      streaming?: false,
+      running_tools: MapSet.new()
+    }
+  end
+
+  defp reduce_event(state, %{type: :user_message_added, data: data}) do
+    data = payload_map(data)
+
+    state
+    |> append_message(%{role: :user, text: Map.get(data, :text, "")})
+    |> Map.put(:status, :working)
+  end
+
+  defp reduce_event(state, %{type: :assistant_message_added, data: data}) do
+    data = payload_map(data)
+
+    state
+    |> append_message(%{role: :assistant, text: Map.get(data, :text, "")})
+    |> Map.put(:status, :idle)
+    |> Map.put(:streaming?, false)
+  end
+
+  defp reduce_event(state, %{type: :assistant_stream_started}) do
+    %{state | status: :working, streaming?: true}
+  end
+
+  defp reduce_event(state, %{type: :assistant_stream_finished, data: data}) do
+    text = data |> payload_map() |> Map.get(:text)
+
+    state =
+      if is_binary(text) and text != "",
+        do: append_message(state, %{role: :assistant, text: text}),
+        else: state
+
+    %{state | status: :idle, streaming?: false}
+  end
+
+  defp reduce_event(state, %{type: :tool_started, data: data}) do
+    id = data |> tool_event() |> Map.get(:id)
+    running = if id, do: MapSet.put(state.running_tools, id), else: state.running_tools
+    %{state | status: :working, running_tools: running}
+  end
+
+  defp reduce_event(state, %{type: :tool_finished, data: data}) do
+    id = data |> tool_event() |> Map.get(:id)
+    running = if id, do: MapSet.delete(state.running_tools, id), else: state.running_tools
+
+    %{
+      state
+      | running_tools: running,
+        status: if(MapSet.size(running) == 0, do: :idle, else: :working)
+    }
+  end
+
+  defp reduce_event(state, %{type: :model_selected, data: data}) do
+    %{state | model: data |> payload_map() |> Map.get(:model)}
+  end
+
+  defp reduce_event(state, %{type: :usage_updated, data: data}) do
+    %{state | usage: summarize_usage([state.usage, payload_map(data)])}
+  end
+
+  defp reduce_event(state, %{type: :status_changed, data: data}) do
+    %{state | status: data |> payload_map() |> Map.get(:status, state.status)}
+  end
+
+  defp reduce_event(state, _event), do: state
+
+  defp finalize_status(%{status: :working, streaming?: false, running_tools: running} = state)
+       when map_size(running) == 0,
+       do: %{state | status: :idle}
+
+  defp finalize_status(state), do: state
+
+  defp append_message(state, message), do: %{state | messages: state.messages ++ [message]}
+
+  defp preview_message(nil), do: ""
+
+  defp preview_message(message) when is_map(message) do
+    message
+    |> Map.get(:text, "")
+    |> preview_text()
+  end
+
+  defp preview_text(text) when is_binary(text) do
+    text
+    |> String.replace(~r/\s+/, " ")
+    |> String.slice(0, 120)
+  end
+
+  defp preview_text(value), do: value |> inspect(limit: 6, printable_limit: 180) |> preview_text()
 
   defp conversation_messages(messages) do
-    Enum.reject(messages, fn message ->
-      match?(%{streaming?: true}, message) or message[:role] == :system
-    end)
+    Enum.reject(messages, fn message -> message[:role] == :system end)
   end
 
-  defp last_message([]), do: nil
-  defp last_message([message]), do: message
-  defp last_message([_message | messages]), do: last_message(messages)
+  defp payload_map(%struct{} = payload) when is_atom(struct),
+    do: payload |> Map.from_struct() |> drop_nil()
 
-  defp restore_state(session_id, events) do
-    events
-    |> Enum.map(fn {_seq, event} -> event end)
-    |> then(&Reducer.apply_events(State.new(session_id: session_id), &1))
+  defp payload_map(payload) when is_map(payload), do: payload
+  defp payload_map(_payload), do: %{}
+
+  defp tool_event(%{event: event}), do: event |> payload_map()
+  defp tool_event(%{data: %{event: event}}), do: event |> payload_map()
+  defp tool_event(data), do: data |> payload_map()
+
+  defp drop_nil(map), do: Map.reject(map, fn {_key, value} -> is_nil(value) end)
+
+  defp summarize_usage(usages) do
+    Enum.reduce(
+      usages,
+      Vibe.Model.Usage.empty(),
+      fn usage, acc ->
+        usage = payload_map(usage)
+
+        acc
+        |> add_int(:input_tokens, usage)
+        |> add_int(:output_tokens, usage)
+        |> add_total_tokens(usage)
+        |> add_float(:total_cost, usage)
+      end
+    )
   end
+
+  defp add_int(acc, key, usage), do: Map.update!(acc, key, &(&1 + int(usage[key])))
+
+  defp add_total_tokens(acc, usage) do
+    total = int(usage[:total_tokens])
+
+    if total > 0,
+      do: Map.update!(acc, :total_tokens, &(&1 + total)),
+      else:
+        Map.update!(
+          acc,
+          :total_tokens,
+          &(&1 + int(usage[:input_tokens]) + int(usage[:output_tokens]))
+        )
+  end
+
+  defp add_float(acc, key, usage), do: Map.update!(acc, key, &(&1 + float(usage[key])))
+
+  defp int(value) when is_integer(value), do: value
+  defp int(_value), do: 0
+
+  defp float(value) when is_integer(value), do: value * 1.0
+  defp float(value) when is_float(value), do: value
+  defp float(_value), do: 0.0
 
   defp ok(_result), do: :ok
 end

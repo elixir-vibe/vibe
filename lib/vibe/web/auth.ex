@@ -13,27 +13,17 @@ defmodule Vibe.Web.Auth do
   @token_session_key "vibe_web_auth"
 
   @spec token() :: String.t()
-  def token do
-    path = token_path()
-    File.mkdir_p!(Path.dirname(path))
-
-    unless File.exists?(path) do
-      secret = 32 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
-      File.write!(path, secret)
-      File.chmod!(path, 0o600)
-    end
-
-    path |> File.read!() |> String.trim()
-  end
+  def token, do: Vibe.Auth.WebToken.token() |> web_token()
 
   @spec authenticated_url(keyword()) :: String.t()
-  def authenticated_url(opts \\ []) do
-    port = Keyword.get(opts, :port, 4321)
-    "http://localhost:#{port}/?token=#{token()}"
-  end
+  def authenticated_url(opts \\ []), do: Vibe.Auth.WebToken.authenticated_url(opts) |> web_url()
 
   @spec token_path() :: String.t()
-  def token_path, do: Path.join(Vibe.Paths.home(), "web-token")
+  def token_path, do: Vibe.Auth.WebToken.token_path() |> web_token_path()
+
+  defp web_token(token), do: token
+  defp web_url(url), do: url
+  defp web_token_path(path), do: path
 
   @behaviour Plug
 

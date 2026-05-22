@@ -53,7 +53,13 @@ defmodule Vibe.Session.PromptLifecycle do
 
     state
     |> Map.merge(%{prompt_task: nil, prompt_ref: nil, active_agent: nil})
-    |> emit.(Event.new(:assistant_aborted, state.state.session_id, %{reason: "Cancelled."}))
+    |> emit.(
+      Event.new(
+        :assistant_aborted,
+        state.state.session_id,
+        Vibe.Event.AssistantStream.aborted(reason: "Cancelled.")
+      )
+    )
   end
 
   @spec record_result(map(), {:ok, term()} | {:error, term()}, emit_fun()) :: map()
@@ -243,7 +249,7 @@ defmodule Vibe.Session.PromptLifecycle do
 
   defp dispatch_context_plugins(messages, context) do
     if Process.whereis(Vibe.Plugin.Manager) do
-      Task.start(fn -> Vibe.Plugin.Manager.context(messages, context) end)
+      Task.start(fn -> GenServer.call(Vibe.Plugin.Manager, {:context, messages, context}) end)
     end
 
     :ok

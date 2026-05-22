@@ -35,6 +35,10 @@ defmodule Vibe.Session.Command.Branch do
   end
 
   defp notification(level, text) do
-    Vibe.Event.new(:notification_added, "", %{level: level, text: text})
+    Vibe.Event.new(
+      :notification_added,
+      "",
+      Vibe.Event.Notification.added(level: level, text: text)
+    )
   end
 end

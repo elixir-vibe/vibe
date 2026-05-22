@@ -377,7 +377,11 @@ defmodule Vibe.Session do
       :ok ->
         emit(
           state,
-          Event.new(:session_selected, state.state.session_id, %{session_id: branch_id})
+          Event.new(
+            :session_selected,
+            state.state.session_id,
+            Vibe.Event.Session.selected(branch_id)
+          )
         )
 
       {:error, reason} ->

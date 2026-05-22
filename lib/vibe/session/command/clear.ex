@@ -35,7 +35,9 @@ defmodule Vibe.Session.Command.Clear do
 
   @impl true
   def selector_action("Yes", session_state),
-    do: {:events, [Event.new(:messages_cleared, session_state.session_id, %{})]}
+    do:
+      {:events,
+       [Event.new(:messages_cleared, session_state.session_id, Vibe.Event.Message.cleared())]}
 
   def selector_action(_item, _session_state), do: :ignore
 end

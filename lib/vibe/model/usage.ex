@@ -22,11 +22,14 @@ defmodule Vibe.Model.Usage do
   def from_response({:ok, response}), do: from_response(response)
   def from_response(_response), do: nil
 
+  @spec empty() :: map()
+  def empty, do: Map.new(input_tokens: 0, output_tokens: 0, total_tokens: 0, total_cost: 0.0)
+
   @spec summarize([map()]) :: map()
   def summarize(usages) when is_list(usages) do
     usages
     |> Enum.reduce(
-      %{input_tokens: 0, output_tokens: 0, total_tokens: 0, total_cost: 0.0},
+      empty(),
       fn usage, acc ->
         usage = usage_fields(usage)
 

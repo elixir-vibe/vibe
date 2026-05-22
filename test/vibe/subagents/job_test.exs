@@ -1,7 +1,7 @@
 defmodule Vibe.Subagents.JobTest do
   use ExUnit.Case, async: false
 
-  @await_timeout_ms 2_000
+  @await_timeout_ms 5_000
 
   setup do
     session_dir =

@@ -48,7 +48,7 @@ defmodule Vibe.Session.Command.Registry do
 
   defp plugin_commands do
     if Process.whereis(Vibe.Plugin.Manager) do
-      Vibe.Plugin.Manager.commands()
+      GenServer.call(Vibe.Plugin.Manager, :commands)
     else
       []
     end
