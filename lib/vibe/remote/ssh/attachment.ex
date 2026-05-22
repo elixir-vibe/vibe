@@ -8,7 +8,7 @@ defmodule Vibe.Remote.SSH.Attachment do
   defstruct [:id, :session_id, :session, :snapshot, :cursor, events: :queue.new(), waiter: nil]
 
   @type start_result ::
-          {:ok, %{id: String.t(), state: Vibe.UI.State.t(), cursor: non_neg_integer()}}
+          {:ok, %{id: String.t(), state: term(), cursor: non_neg_integer()}}
 
   @spec start(String.t()) :: start_result() | {:error, term()}
   def start(session_id) do

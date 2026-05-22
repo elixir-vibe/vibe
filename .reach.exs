@@ -210,6 +210,8 @@
          "Vibe.Storage.Restorable.*"
        ]},
       {"Vibe.Storage.*", ["Vibe.Presentation.*", "Vibe.TUI.*", "Vibe.Web.*"]},
+      {"Vibe.Remote.*", ["Vibe.UI.*"]},
+      {"Vibe.Gateway.*", ["Vibe.UI.*"]},
       {"Vibe.Web.StorageLive", ["Phoenix.HTML.raw"]},
       {"Vibe.*",
        [
