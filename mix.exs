@@ -147,6 +147,7 @@ defmodule Vibe.MixProject do
 
   defp aliases do
     [
+      "assets.build": ["volt.build --tailwind --no-hash"],
       ci: [
         "compile --warnings-as-errors",
         "format --check-formatted",

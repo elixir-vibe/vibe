@@ -5,9 +5,6 @@ defmodule Vibe.Agent.Profile do
 
   alias Vibe.Model.Effort
 
-  @default_path Application.app_dir(:vibe, "priv/config/agent-profiles.toml")
-  @external_resource @default_path
-
   @spec path() :: String.t()
   def path, do: Vibe.Paths.agent_profiles()
 
@@ -21,8 +18,13 @@ defmodule Vibe.Agent.Profile do
   defp missing?(path), do: not File.exists?(path)
 
   defp copy_default_profile!(path) do
+    source = default_profile_path()
     File.mkdir_p!(Path.dirname(path))
-    File.cp!(@default_path, path)
+    File.cp!(source, path)
+  end
+
+  defp default_profile_path do
+    Application.app_dir(:vibe, "priv/config/agent-profiles.toml")
   end
 
   @spec load() :: {:ok, map()} | {:error, term()}

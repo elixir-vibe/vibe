@@ -33,6 +33,8 @@ config :volt,
   root: "assets",
   outdir: "priv/static/assets",
   target: :es2020,
+  hash: false,
+  sourcemap: false,
   resolve_dirs: ["deps"],
   tailwind: [
     css: "assets/web/app.css",

@@ -1,58 +1,20 @@
 defmodule Vibe.Web.Assets do
-  @moduledoc "Builds web assets using Volt's configured JS bundler and Tailwind compiler."
+  @moduledoc "Web static asset paths for the Vibe endpoint."
 
   @static_paths ~w(assets fonts images favicon.ico robots.txt)
+  @required_assets ~w(assets/css/app.css assets/js/manifest.json)
 
   @spec static_paths() :: [String.t()]
   def static_paths, do: @static_paths
 
   @spec ensure_built!() :: :ok
   def ensure_built! do
-    if Code.ensure_loaded?(Volt.Builder) do
-      build_tailwind!()
-      build_javascript!()
-    end
-
-    :ok
-  end
-
-  defp build_javascript! do
-    config = Volt.Config.build()
-
-    case Volt.Builder.build(
-           entry: config.entry,
-           outdir: to_string(config.outdir),
-           target: config.target,
-           hash: config.hash,
-           sourcemap: false,
-           format: config.format,
-           external: config[:external] || [],
-           resolve_dirs: config.resolve_dirs,
-           aliases: config.aliases,
-           plugins: config.plugins,
-           minify: false
-         ) do
-      {:ok, _result} -> :ok
-      {:error, reason} -> raise "Volt JS build failed: #{inspect(reason)}"
+    if Enum.all?(@required_assets, &File.exists?(priv_static_path(&1))) do
+      :ok
+    else
+      raise "Web assets are missing. Run `mix assets.build` before packaging Vibe."
     end
   end
 
-  defp build_tailwind! do
-    tw = Volt.Config.tailwind()
-    css_path = Keyword.get(tw, :css)
-
-    if css_path do
-      outdir = Volt.Config.build().outdir |> to_string()
-      File.mkdir_p!(outdir)
-
-      case Volt.Tailwind.build(
-             css: File.read!(css_path),
-             css_base: Path.dirname(css_path),
-             sources: Keyword.get(tw, :sources, [])
-           ) do
-        {:ok, css} -> File.write!(Path.join(outdir, "app.css"), css)
-        {:error, reason} -> raise "Volt Tailwind build failed: #{inspect(reason)}"
-      end
-    end
-  end
+  defp priv_static_path(path), do: Application.app_dir(:vibe, Path.join("priv/static", path))
 end
