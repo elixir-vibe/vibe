@@ -24,6 +24,8 @@ A few things this gives you:
 
 Requirements: Elixir 1.19+, Erlang/OTP 27+, and credentials for the model provider you select. Vibe stores local runtime state under `~/.vibe` by default.
 
+Package docs are on [HexDocs](https://hexdocs.pm/vibe/).
+
 Install the released executable from Hex:
 
 ```bash
@@ -67,24 +69,23 @@ Useful first slash commands:
 /web         Open the web console
 ```
 
-## Core commands
+## Useful commands
+
+The README only shows the common paths. For the full command reference, run `vibe --help` or see [`Mix.Tasks.Vibe`](https://hexdocs.pm/vibe/Mix.Tasks.Vibe.html).
 
 | Command | Purpose |
 | --- | --- |
 | `vibe` | Start/attach the TUI |
-| `vibe --web [--port 4321]` | Ensure the background server is running and open the web console |
+| `vibe --web [--port 4321]` | Open the LiveView console |
 | `vibe -p "prompt"` | Run a prompt and exit |
-| `vibe new` / `vibe n` | Create and attach a fresh server session |
+| `vibe --bg "prompt"` | Start a background session |
+| `vibe new` / `vibe n` | Create and attach a fresh session |
 | `vibe sessions` / `vibe ls` | List recent sessions |
-| `vibe send <session-id> "prompt"` | Send work to an existing session |
-| `vibe attach <session-id>` / `vibe a <session-id>` | Attach the TUI to a session |
-| `vibe server status` | Show background server metadata |
-| `vibe server stop` | Stop the background server |
-| `vibe storage status` | Show local storage status |
-| `vibe search <query>` | Search stored sessions/memory |
-| `vibe skill list` | List executable skills |
+| `vibe attach [session-id]` / `vibe a [session-id]` | Attach the TUI to a session |
+| `vibe subagents jobs` | List subagent jobs |
+| `vibe connect [--ssh\|--dist] <target>` | Save a remote Vibe node |
 
-Attach files with Pi-style `@file` arguments. Text files become context blocks; image files become semantic multimodal content.
+Attach files with Pi-style `@file` arguments. Text files become context blocks. Image files are supported by direct prompts and by inline `@image` references in the TUI/web prompt.
 
 ```bash
 vibe --direct @path/to/image.png "describe this"
@@ -119,7 +120,7 @@ vibe server restart --foreground
 
 ## Eval APIs
 
-Most project-aware power is exposed through Elixir APIs available from `eval`.
+Most project-aware power is exposed through Elixir APIs available from [`eval`](https://hexdocs.pm/vibe/Vibe.Eval.html).
 
 Common aliases:
 
@@ -143,45 +144,32 @@ Prefer these APIs over raw `System.cmd/3`, ad-hoc string formatting, and provide
 
 ## Storage and search
 
-Runtime state lives under `~/.vibe` by default. The main database is `~/.vibe/vibe.db`.
+Runtime state lives under `~/.vibe` by default and is stored in local SQLite. Sessions, eval snapshots, memory, telemetry, subagent jobs, and imported history can be searched from the CLI or eval.
 
 ```bash
 vibe storage status
-vibe storage migrate
 vibe search "sqlite migration" --cwd vibe
-vibe storage search "sqlite migration" --cwd vibe --include-tools
 vibe storage import pi path/to/pi-session.jsonl --rebuild-fts
 ```
 
-Important local files:
-
-```text
-~/.vibe/vibe.db                 # SQLite database for durable state
-~/.vibe/auth.json               # ChatGPT/Codex OAuth credentials
-~/.vibe/server.json             # background server metadata
-~/.vibe/server.out              # background server log
-~/.vibe/web-token               # web console auth token
-~/.vibe/agent-profiles.toml     # model/role/plugin configuration
-~/.vibe/skills/                 # user skill files
-~/.vibe/rules/                  # system prompt rule files
-```
-
-Use environment variables to isolate dev/test instances:
-
-```bash
-VIBE_HOME=/tmp/vibe-dev
-VIBE_DB_PATH=/tmp/vibe-dev/vibe.db
-VIBE_SESSION_DIR=/tmp/vibe-sessions
-```
+See `vibe help storage`, [`Vibe.Storage`](https://hexdocs.pm/vibe/Vibe.Storage.html), and [`Vibe.Storage.Search`](https://hexdocs.pm/vibe/Vibe.Storage.Search.html) for migration, FTS, and isolation options.
 
 ## Subagents, plugins, and skills
 
-LLM subagents create child Vibe sessions that can be attached like any other session.
+[`Vibe.Subagents`](https://hexdocs.pm/vibe/Vibe.Subagents.html) creates child Vibe sessions that can be attached like any other session.
 
 ```elixir
-{:ok, job} = Vibe.Subagents.start("Research ReqLLM OpenRouter support", role: :scout)
+{:ok, job} = Vibe.Subagents.start("Review the storage search code")
 Vibe.Subagents.await(job.id)
 Vibe.Subagents.result(job.id)
+```
+
+From the CLI:
+
+```bash
+vibe subagents jobs
+vibe subagents status <job-id>
+vibe subagents result <job-id>
 ```
 
 Built-in plugins currently include:
@@ -218,30 +206,20 @@ vibe --login codex
 Model switching supports fuzzy names and reasoning-effort shorthand:
 
 ```bash
-vibe --model anthropic:claude-sonnet-4-5-20250929
-/model claude-sonnet:high
+vibe --model openai_codex:gpt-5.5
+/model openai_codex:gpt-5.5:high
 /effort medium
 ```
 
 ## Built-in help
 
-Task-focused docs are available from the CLI:
+API docs are available on [HexDocs](https://hexdocs.pm/vibe/). Task-focused docs are available from the CLI:
 
 ```bash
 vibe help
-vibe help quickstart
 vibe help eval
-vibe help ast
-vibe help lsp
-vibe help sessions
-vibe help slash-commands
 vibe help subagents
-vibe help plugins
 vibe help storage
-vibe help memory
-vibe help web
-vibe help gateways
-vibe help troubleshooting
 ```
 
 The TUI exposes the same docs through `/help`.

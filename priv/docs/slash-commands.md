@@ -18,11 +18,16 @@ Built-in commands:
 /effort    Open effort selector (Shift+Tab cycles effort)
 /effort ID Select effort: off, minimal, low, medium, high, xhigh
 /skill     Choose skill
+/bg        Put the current session in the background
+/background Alias for /bg
+/branch    Branch from an earlier message
 /clear     Clear visible messages
 /compact   Compact context
 /commands  Command palette
 /help      Open built-in docs
+/h         Alias for /help
+/docs      Alias for /help
 /help NAME Open a specific help topic
 ```
 
-Plugins can add slash commands by returning modules that implement `Vibe.Session.Command.Command` from `Vibe.Plugin.commands/1`.
+Plugins can add slash commands by returning modules that implement `Vibe.Session.Command.Command` from `c:Vibe.Plugin.commands/1`.

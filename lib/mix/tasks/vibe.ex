@@ -11,6 +11,7 @@ defmodule Mix.Tasks.Vibe do
       vibe                        # Start server if needed and attach the TUI
       vibe [options] [message...]
       vibe --web [--port 4321]
+      vibe --bg "prompt"
       vibe server start [--foreground]
       vibe server restart
       vibe server status
@@ -29,6 +30,9 @@ defmodule Mix.Tasks.Vibe do
       vibe search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
       vibe storage search <query> [--cwd project] [--role user|assistant|tool] [--include-tools]
       vibe storage import pi <path> [--no-fts] [--rebuild-fts] [--batch-size N]
+      vibe subagents jobs|active|schedules|status <id>|result <id>|cancel <id>
+      vibe connect [--ssh|--dist] <target>
+      vibe gateway telegram --foreground
       vibe skill list|show <name>|apis|from-session <session-id> <name>
       vibe attach                 # Alias: vibe a
       vibe attach <session-id>    # Alias: vibe a <session-id>
@@ -46,6 +50,7 @@ defmodule Mix.Tasks.Vibe do
     * `--system-prompt <text>` - Override system prompt for direct TUI/`--direct` calls.
     * `--mode <text|json>` - Output mode. Defaults to `text`.
     * `--print`, `-p` - Non-interactive mode: process prompt and exit.
+    * `--bg` - Start a background session for the prompt and return immediately.
     * `--direct` - Use a direct ReqLLM call instead of the tool-capable agent runtime.
     * `--stream` - Stream direct ReqLLM calls. Default for `--direct`.
     * `--no-stream` - Disable direct ReqLLM streaming.
@@ -64,6 +69,8 @@ defmodule Mix.Tasks.Vibe do
     * `--limit <n>` - With `vibe sessions`, limit displayed sessions. Defaults to `20`.
     * `--timeout <ms>` - Request/eval timeout.
     * `--cast <path>` - Record the TUI byte stream as a native gzip cast for debugging.
+    * `--ssh`, `--dist` - Select remote transport for `vibe connect`.
+    * `--yes` - Accept remote SSH host keys for `vibe connect --ssh`.
     * `--login codex` - Sign in with ChatGPT/Codex OAuth.
     * `--help`, `-h` - Show this help.
     * `--version`, `-v` - Show version.
@@ -72,14 +79,17 @@ defmodule Mix.Tasks.Vibe do
 
       vibe
       vibe -p "Inspect runtime info with eval"
-      vibe --model anthropic:claude-sonnet-4-5-20250929 "Review this project"
+      vibe --model openai_codex:gpt-5.5 "Review this project"
       vibe --login codex
       vibe --compact --keep-recent 20
       vibe --eval "Vibe.OTP.runtime_info()"
+      vibe --bg "Research this failure in the background"
       vibe new --mode json
       vibe ls --limit 5
       vibe send 20260425-120000-abcd "Use eval to inspect System.version()"
       vibe storage search "figma variable"
+      vibe subagents jobs
+      vibe connect --ssh localhost:4022 --yes
       vibe a
       vibe a 20260425-120000-abcd
   """

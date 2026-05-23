@@ -1,7 +1,7 @@
 defmodule Vibe.MixProject do
   use Mix.Project
 
-  @version "0.2.1"
+  @version "0.2.2"
   @source_url "https://github.com/elixir-vibe/vibe"
 
   def project do
@@ -15,6 +15,7 @@ defmodule Vibe.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       description: "BEAM-native coding agent substrate for Elixir/OTP projects",
       source_url: @source_url,
+      docs: docs(),
       package: package(),
       aliases: aliases(),
       escript: escript(),
@@ -39,6 +40,35 @@ defmodule Vibe.MixProject do
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
       files: ~w(assets config lib priv mix.exs mix.lock README.md LICENSE CHANGELOG.md)
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: [
+        "README.md",
+        "CHANGELOG.md",
+        "priv/docs/quickstart.md",
+        "priv/docs/sessions.md",
+        "priv/docs/eval.md",
+        "priv/docs/ast.md",
+        "priv/docs/lsp.md",
+        "priv/docs/slash-commands.md",
+        "priv/docs/memory.md",
+        "priv/docs/subagents.md",
+        "priv/docs/gateways.md",
+        "priv/docs/plugins.md",
+        "priv/docs/storage.md",
+        "priv/docs/web.md",
+        "priv/docs/troubleshooting.md"
+      ],
+      groups_for_extras: [
+        Guides: ~r{priv/docs/},
+        Release: ["CHANGELOG.md"]
+      ],
+      source_ref: "v#{@version}",
+      source_url: @source_url
     ]
   end
 

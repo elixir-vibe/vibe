@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.2.2 - 2026-05-22
+
+### Documentation
+
+- Added README links to current HexDocs pages without pinning a specific version.
+- Published the built-in task guides as HexDocs extras, including quickstart, eval, sessions, subagents, storage, plugins, gateways, and troubleshooting.
+- Tightened README positioning around Vibe's BEAM-native eval, OTP supervision, subagents, remote workflows, and self-customization model.
+- Updated CLI help and built-in docs for background sessions, subagent job inspection, slash-command aliases, eval aliases, and current Codex/OpenAI model examples.
+- Removed the stale subagents planning note now that the implemented APIs are documented.
+
 ## v0.2.1 - 2026-05-22
 
 ### Fixes and performance

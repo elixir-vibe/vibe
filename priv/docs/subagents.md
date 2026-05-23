@@ -3,11 +3,20 @@
 Subagents are supervised jobs. LLM subagents create child Vibe sessions, so their work can be inspected or attached like any other session.
 
 ```elixir
-{:ok, job} = Vibe.Subagents.start("Research ReqLLM OpenRouter support", role: :scout)
+{:ok, job} = Vibe.Subagents.start("Review the storage search code")
 Vibe.Subagents.status(job.id)
 Vibe.Subagents.await(job.id)
 Vibe.Subagents.result(job.id)
 Vibe.Subagents.cancel(job.id)
+```
+
+Inspect jobs from the CLI:
+
+```bash
+vibe subagents jobs
+vibe subagents status <job-id>
+vibe subagents result <job-id>
+vibe subagents cancel <job-id>
 ```
 
 Attach to a child session from the shell:
@@ -19,13 +28,15 @@ vibe a <job.child_session_id>
 Run one-off or parallel work:
 
 ```elixir
-Vibe.Subagents.ask("Summarize this repository", role: :summarizer)
+Vibe.Subagents.ask("Summarize this repository")
 
 Vibe.Subagents.run_many([
-  %{role: :scout, task: "Inspect provider docs"},
-  %{role: :reviewer, task: "Review the implementation plan"}
+  %{task: "Inspect provider docs"},
+  %{task: "Review the implementation plan"}
 ])
 ```
+
+Pass `role: :coder` or another profile when you have configured the matching model/provider credentials.
 
 Schedule background work:
 

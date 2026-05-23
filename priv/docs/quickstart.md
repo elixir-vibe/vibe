@@ -41,6 +41,20 @@ Run a non-interactive prompt and print the answer:
 vibe -p "Inspect this project and suggest next steps"
 ```
 
+Start background work and attach later:
+
+```bash
+vibe --bg "Research this failure and summarize likely fixes"
+vibe sessions
+vibe a <session-id>
+```
+
+Use direct model calls for simple one-shot prompts without the agent runtime:
+
+```bash
+vibe --direct "Summarize @README.md"
+```
+
 Open the prototype web UI over the same session/runtime model:
 
 ```bash

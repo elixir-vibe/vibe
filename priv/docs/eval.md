@@ -14,6 +14,8 @@ Use the smallest execution layer that fits:
 Eval sessions preload useful aliases:
 
 - `Cmd` — `Vibe.Command`, supervised OS commands.
+- `Goal` — `Vibe.Goals`, active session goal controls.
+- `Image` — `Vibe.Image`, image loading/resizing helpers.
 - `MD` — `Vibe.MD`, Markdown rendering for UI/tool output.
 - Plugin aliases such as `Web` when plugins are enabled.
 
@@ -24,7 +26,7 @@ Cmd.run(["mix", "test"], timeout: 120_000) |> MD.doc()
 Vibe.Telemetry.summary()
 Vibe.Session.list()
 Vibe.Storage.status()
-Vibe.Subagents.ask("Review this module", role: :reviewer)
+Vibe.Subagents.ask("Review this module")
 Web.search!("ecto sqlite fts", num_results: 5, highlights: true) |> MD.doc()
 Web.fetch!("https://hexdocs.pm/ecto/Ecto.html", format: :html) |> Web.select!("main") |> MD.doc()
 ```
