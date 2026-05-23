@@ -31,7 +31,10 @@ defmodule Vibe.CLI.Commands.Default do
 
   defp execute({:compact}, opts), do: compact(opts)
   defp execute({:checks}, opts), do: Output.print(Vibe.Code.Checks.run_all(), opts)
-  defp execute({:codex_usage}, opts), do: Output.print(Vibe.Auth.Codex.usage_limits(), opts)
+
+  defp execute({:codex_usage}, opts),
+    do: Output.print(Vibe.Subscription.usage("openai-codex"), opts)
+
   defp execute({:sessions}, opts), do: Output.print({:ok, Vibe.Session.Store.list()}, opts)
 
   defp execute({:background, prompt}, opts), do: background(prompt, opts)

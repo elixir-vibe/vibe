@@ -119,10 +119,7 @@ defmodule Vibe.Auth.Codex do
 
   @impl Vibe.Auth.Provider
   @spec usage(keyword()) :: {:ok, map()} | {:error, term()}
-  def usage(opts \\ []), do: Vibe.Codex.Usage.limits(opts)
-
-  @spec usage_limits(keyword()) :: {:ok, map()} | {:error, term()}
-  def usage_limits(opts \\ []), do: usage(opts)
+  def usage(opts \\ []), do: Vibe.Subscription.usage(id(), opts)
 
   @impl Vibe.Auth.Provider
   @spec ensure_fresh() :: {:ok, map()} | {:error, term()}

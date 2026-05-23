@@ -1,19 +1,17 @@
-defmodule Vibe.Codex.Usage do
+defmodule Vibe.Subscription.Provider.OpenAICodex do
   @moduledoc """
-  Codex subscription usage/limit awareness.
-
-  Uses the public Codex CLI app-server JSON-RPC method discovered in the open
-  Codex/CodexBar implementations: `account/rateLimits/read`. This avoids screen
-  scraping `https://chatgpt.com/codex/settings/usage` and reuses the user's
-  existing Codex login.
+  OpenAI Codex subscription usage through the Codex CLI app-server RPC.
   """
+
+  @behaviour Vibe.Subscription.Provider
 
   @rpc_args ["-s", "read-only", "-a", "untrusted", "app-server"]
   @rpc_line_length 65_536
   @rpc_response_timeout_ms 10_000
 
-  @spec limits(keyword()) :: {:ok, map()} | {:error, term()}
-  def limits(opts \\ []) do
+  @impl Vibe.Subscription.Provider
+  @spec usage(keyword()) :: {:ok, map()} | {:error, term()}
+  def usage(opts \\ []) do
     with {:ok, rpc} <- start_rpc(opts),
          {:ok, _} <-
            request(rpc, "initialize", %{clientInfo: %{name: "vibe", version: version()}}, 1),
@@ -28,6 +26,7 @@ defmodule Vibe.Codex.Usage do
     :ok
   end
 
+  @impl Vibe.Subscription.Provider
   @spec account(keyword()) :: {:ok, map()} | {:error, term()}
   def account(opts \\ []) do
     with {:ok, rpc} <- start_rpc(opts),
