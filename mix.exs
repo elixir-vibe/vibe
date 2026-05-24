@@ -137,7 +137,8 @@ defmodule Vibe.MixProject do
       {:quickbeam, "~> 0.10.14", optional: true},
       {:jido, "~> 2.2"},
       {:jido_ai, "~> 2.1"},
-      {:ghostty, "~> 0.4.8"}
+      {:ghostty, "~> 0.4.9"},
+      {:ttycast, path: "../ttycast"}
     ]
   end
 

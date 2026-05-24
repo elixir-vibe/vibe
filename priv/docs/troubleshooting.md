@@ -60,16 +60,16 @@ Trace capture is opt-in and intended for development/debugging. Avoid recording 
 
 For stream-ordering investigations, use `VIBE_STREAM_TRACE_DIR` only in disposable/debug sessions.
 
-For visual TUI artifacts, record the actual terminal byte stream with a native gzip-compressed cast:
+For visual TUI artifacts, record the actual terminal byte stream with a TTYCast recording:
 
 ```bash
-VIBE_TUI_CAST=/tmp/vibe-session.vibe-tui.etf.gz mix vibe
+VIBE_TUI_CAST=/tmp/vibe-session.ttycast mix vibe
 ```
 
 The recording contains conversation output and terminal control bytes. Input bytes are redacted by default; set `VIBE_TUI_CAST_INPUT=1` only in disposable sessions if raw input is needed. Inspect recordings from eval or `mix run`:
 
 ```elixir
-Vibe.TUI.Cast.info("/tmp/vibe-session.vibe-tui.etf.gz")
-Vibe.TUI.Cast.snapshot!("/tmp/vibe-session.vibe-tui.etf.gz", time_ms: 1_000)
-Vibe.TUI.Cast.export_asciinema("/tmp/vibe-session.vibe-tui.etf.gz", "/tmp/vibe-session.cast")
+TTYCast.info("/tmp/vibe-session.ttycast")
+TTYCast.snapshot!("/tmp/vibe-session.ttycast", time_ms: 1_000)
+TTYCast.export("/tmp/vibe-session.ttycast", :asciinema, "/tmp/vibe-session.cast")
 ```

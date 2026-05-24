@@ -1,11 +1,11 @@
 defmodule Vibe.TUI.CastTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Vibe.TUI.Cast
   alias Vibe.TUI.Cast.Writer
 
-  test "records native gzip ETF blocks and replays plain snapshots" do
-    path = tmp_path("basic.vibe-tui.etf.gz")
+  test "records TTYCast chunks and replays plain snapshots" do
+    path = tmp_path("basic.ttycast")
 
     {:ok, writer} = Writer.start_link(path: path, width: 20, height: 5, session_id: "cast-test")
     :ok = Writer.output(writer, "hello")
@@ -15,10 +15,10 @@ defmodule Vibe.TUI.CastTest do
     :ok = Writer.close(writer)
 
     assert File.exists?(path)
-    assert File.exists?(path <> ".idx.etf.gz")
+    assert File.exists?(path <> ".live.idx")
 
     assert {:ok, cast} = Cast.open(path)
-    assert %{session_id: "cast-test", width: 20, height: 5, output_events: 2} = Cast.info(cast)
+    assert %{width: 20, height: 5, events: 4} = Cast.info(cast)
 
     assert {:input_redacted, _t_us, 12} =
              Enum.find(Cast.events(cast), &(elem(&1, 0) == :input_redacted))
@@ -31,10 +31,18 @@ defmodule Vibe.TUI.CastTest do
   end
 
   test "exports asciinema v2 jsonl" do
-    path = tmp_path("export.vibe-tui.etf.gz")
+    path = tmp_path("export.ttycast")
     cast_path = tmp_path("export.cast")
 
-    {:ok, writer} = Writer.start_link(path: path, width: 10, height: 4, session_id: "cast-export")
+    {:ok, writer} =
+      Writer.start_link(
+        path: path,
+        width: 10,
+        height: 4,
+        session_id: "cast-export",
+        record_input: true
+      )
+
     :ok = Writer.output(writer, "hi")
     :ok = Writer.input(writer, "x")
     :ok = Writer.close(writer)
@@ -50,15 +58,30 @@ defmodule Vibe.TUI.CastTest do
   end
 
   test "find locates visual text over replayed snapshots" do
-    path = tmp_path("find.vibe-tui.etf.gz")
+    path = tmp_path("find.ttycast")
 
     {:ok, writer} = Writer.start_link(path: path, width: 20, height: 5, session_id: "cast-find")
     :ok = Writer.output(writer, "first")
-    Process.sleep(2)
     :ok = Writer.output(writer, "\r\nneedle")
     :ok = Writer.close(writer)
 
     assert [%{match: "needle"} | _] = Cast.find(path, "needle", every_ms: 1)
+  end
+
+  test "path generation uses ttycast extension" do
+    dir = tmp_path("casts")
+    File.mkdir_p!(dir)
+
+    previous = System.get_env("VIBE_TUI_CAST_DIR")
+    System.put_env("VIBE_TUI_CAST_DIR", dir)
+
+    on_exit(fn ->
+      if previous,
+        do: System.put_env("VIBE_TUI_CAST_DIR", previous),
+        else: System.delete_env("VIBE_TUI_CAST_DIR")
+    end)
+
+    assert Cast.path_from_opts(session_id: "abc") =~ ~r/abc\.ttycast$/
   end
 
   defp tmp_path(name) do
