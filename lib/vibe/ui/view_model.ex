@@ -9,6 +9,7 @@ defmodule Vibe.UI.ViewModel do
 
   alias Vibe.UI.Block.{
     AssistantMessage,
+    EvalExecution,
     Footer,
     NotificationList,
     Overlay,
@@ -72,6 +73,7 @@ defmodule Vibe.UI.ViewModel do
         :assistant -> assistant_block(id, message)
         :system -> system_block(id, message)
         :tool -> tool_block(message, state)
+        :eval -> eval_block(id, message, state)
         :subagent -> subagent_block(id, message)
       end
       |> Map.put(:role, message.role)
@@ -159,8 +161,9 @@ defmodule Vibe.UI.ViewModel do
     if running_tool?(state), do: "Working", else: "Thinking"
   end
 
-  defp running_tool?(%{pending_tools: pending_tools}) do
-    Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) in [:running, "running"] end)
+  defp running_tool?(%{pending_tools: pending_tools, pending_evals: pending_evals}) do
+    map_size(pending_evals) > 0 or
+      Enum.any?(pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end)
   end
 
   defp last_message([]), do: nil
@@ -192,6 +195,23 @@ defmodule Vibe.UI.ViewModel do
         sidebar: Map.get(groups, :sidebar, [])
       }
     end)
+  end
+
+  defp eval_block(id, message, state) do
+    %EvalExecution{
+      id: Map.get(message, :id, id),
+      code: Map.get(message, :code),
+      status: Map.get(message, :status),
+      output: Map.get(message, :output),
+      output_format: Map.get(message, :output_format),
+      output_parts: Map.get(message, :output_parts),
+      output_truncation: Map.get(message, :output_truncation),
+      error: Map.get(message, :error),
+      duration_ms: Map.get(message, :duration_ms),
+      include_context?: Map.get(message, :include_context?, true),
+      expanded?: Map.get(message, :expanded?, true),
+      truncate?: state.truncate?
+    }
   end
 
   defp tool_block(tool, state) do

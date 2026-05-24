@@ -12,8 +12,13 @@ defimpl Vibe.Presentation.Presentable, for: Any do
 end
 
 defimpl Vibe.Presentation.Presentable, for: Map do
+  def present(%{role: :eval} = eval), do: Vibe.Presentation.EvalExecution.present(eval)
   def present(%{name: _name} = tool), do: Vibe.Presentation.Tool.from_tool(tool)
   def present(value), do: value
+end
+
+defimpl Vibe.Presentation.Presentable, for: Vibe.UI.Block.EvalExecution do
+  def present(eval), do: Vibe.Presentation.EvalExecution.present(eval)
 end
 
 defimpl Vibe.Presentation.Presentable, for: Vibe.Tool.Event do

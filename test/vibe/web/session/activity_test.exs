@@ -18,12 +18,6 @@ defmodule Vibe.Web.Session.ActivityTest do
     assert Activity.working?(%{
              status: :idle,
              streaming_message: nil,
-             pending_tools: %{"1" => %{status: "running"}}
-           })
-
-    assert Activity.working?(%{
-             status: :idle,
-             streaming_message: nil,
              pending_tools: %{"1" => %{status: nil}}
            })
   end

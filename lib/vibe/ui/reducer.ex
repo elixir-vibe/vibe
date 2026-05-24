@@ -5,8 +5,8 @@ defmodule Vibe.UI.Reducer do
 
   alias Vibe.Event
   alias Vibe.Model.Usage
-  alias Vibe.SystemAlarms.Alert
   alias Vibe.Support.Lists
+  alias Vibe.SystemAlarms.Alert
   alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.UI.Reducer.{RestoredPayload, Selector}
   alias Vibe.UI.{Message, Notification, State}
@@ -111,6 +111,14 @@ defmodule Vibe.UI.Reducer do
   defp reduce(state, %Event{type: :assistant_aborted, data: data}) do
     data = RestoredPayload.assistant_abort(data)
     abort_assistant(state, data.reason, data.notify?)
+  end
+
+  defp reduce(state, %Event{type: :eval_execution_started, at: at, data: data}) do
+    append_eval_message(state, RestoredPayload.eval_execution(data), at, :running)
+  end
+
+  defp reduce(state, %Event{type: :eval_execution_finished, at: at, data: data}) do
+    finish_eval_message(state, RestoredPayload.eval_execution(data), at)
   end
 
   defp reduce(state, %Event{
@@ -572,6 +580,49 @@ defmodule Vibe.UI.Reducer do
 
   defp reduce(state, _event), do: state
 
+  defp append_eval_message(state, data, at, status) do
+    message =
+      data
+      |> Map.put(:role, :eval)
+      |> Map.put(:at, at)
+      |> Map.put(:status, status)
+      |> Map.put_new(:expanded?, true)
+
+    %{
+      state
+      | messages: Lists.append(state.messages, message),
+        pending_evals: Map.put(state.pending_evals, message.id, message),
+        status: :working
+    }
+  end
+
+  defp finish_eval_message(state, data, at) do
+    data = data |> Map.put(:at, at) |> Map.put_new(:role, :eval) |> Map.put_new(:expanded?, true)
+    id = Map.get(data, :id)
+
+    messages =
+      Enum.map(state.messages, fn
+        %{role: :eval, id: ^id} = message -> Map.merge(message, data)
+        message -> message
+      end)
+
+    messages =
+      if Enum.any?(messages, &match?(%{role: :eval, id: ^id}, &1)) do
+        messages
+      else
+        Lists.append(messages, data)
+      end
+
+    pending_evals = Map.delete(state.pending_evals, id)
+
+    %{
+      state
+      | messages: messages,
+        pending_evals: pending_evals,
+        status: maybe_idle_after_local_work(%{state | pending_evals: pending_evals})
+    }
+  end
+
   defp toggle_tool(state, id) do
     pending_tools =
       Map.update(state.pending_tools, id, nil, fn
@@ -848,17 +899,19 @@ defmodule Vibe.UI.Reducer do
     |> Map.new()
   end
 
-  defp maybe_idle_after_tool_finished(
-         %{streaming_message: streaming_message} = state,
-         pending_tools
-       ) do
+  defp maybe_idle_after_tool_finished(state, pending_tools) do
+    maybe_idle_after_local_work(%{state | pending_tools: pending_tools})
+  end
+
+  defp maybe_idle_after_local_work(state) do
     cond do
-      Enum.any?(pending_tools, fn {_id, tool} ->
-        Map.get(tool, :status) in [:running, "running"]
-      end) ->
+      Enum.any?(state.pending_tools, fn {_id, tool} -> Map.get(tool, :status) == :running end) ->
         state.status
 
-      not is_nil(streaming_message) ->
+      map_size(state.pending_evals) > 0 ->
+        state.status
+
+      not is_nil(state.streaming_message) ->
         :working
 
       true ->

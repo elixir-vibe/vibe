@@ -23,6 +23,96 @@ defmodule Vibe.SessionProcessTest do
     assert state.usage.total_tokens == 10
   end
 
+  test "evaluates user Elixir expressions as semantic session events" do
+    {:ok, server} = Vibe.Session.start_link(persist?: false, session_id: "eval-expression")
+
+    :ok = Vibe.Session.subscribe(server)
+
+    :ok =
+      Vibe.Session.dispatch(
+        server,
+        {:evaluate_expression, %{code: "1 + 2", include_context?: false}}
+      )
+
+    assert_receive {Vibe.Session, :event,
+                    %{
+                      type: :eval_execution_started,
+                      data: %{code: "1 + 2", include_context?: false}
+                    }},
+                   500
+
+    assert_receive {Vibe.Session, :event,
+                    %{
+                      type: :eval_execution_finished,
+                      data: %{code: "1 + 2", include_context?: false, output: "3", status: :ok}
+                    }},
+                   500
+
+    state = Vibe.Session.state(server)
+    assert [%{role: :eval, code: "1 + 2", include_context?: false, output: "3"}] = state.messages
+  end
+
+  test "cancels running user evals" do
+    {:ok, server} = Vibe.Session.start_link(persist?: false, session_id: "eval-cancel")
+
+    :ok = Vibe.Session.subscribe(server)
+
+    :ok =
+      Vibe.Session.dispatch(server, {:evaluate_expression, %{code: "Process.sleep(5_000); 1"}})
+
+    assert_receive {Vibe.Session, :event, %{type: :eval_execution_started}}, 500
+
+    :ok = Vibe.Session.dispatch(server, :cancel_stream)
+
+    assert_receive {Vibe.Session, :event,
+                    %{
+                      type: :eval_execution_finished,
+                      data: %{status: :error, error: "Cancelled."}
+                    }},
+                   500
+
+    assert Vibe.Session.state(server).pending_evals == %{}
+    assert :sys.get_state(server).eval_tasks == %{}
+  end
+
+  test "included eval results are added to the next model prompt" do
+    parent = self()
+
+    ask_fun = fn text, _opts ->
+      send(parent, {:asked_with, text})
+      {:ok, "ok"}
+    end
+
+    {:ok, server} =
+      Vibe.Session.start_link(
+        persist?: false,
+        session_id: "eval-context",
+        ask_fun: ask_fun,
+        context?: true
+      )
+
+    :ok = Vibe.Session.subscribe(server)
+    :ok = Vibe.Session.dispatch(server, {:evaluate_expression, %{code: "1 + 2"}})
+    assert_receive {Vibe.Session, :event, %{type: :eval_execution_finished}}, 500
+
+    :ok =
+      Vibe.Session.dispatch(
+        server,
+        {:evaluate_expression, %{code: "3 + 4", include_context?: false}}
+      )
+
+    assert_receive {Vibe.Session, :event, %{type: :eval_execution_finished}}, 500
+
+    :ok = Vibe.Session.dispatch(server, {:submit_prompt, %{text: "use prior eval"}})
+
+    assert_receive {:asked_with, prompt}, 500
+    assert prompt =~ "<user-evals>"
+    assert prompt =~ "1 + 2"
+    assert prompt =~ "3"
+    refute prompt =~ "3 + 4"
+    refute prompt =~ "7"
+  end
+
   test "semantic prompt content is preserved in session events" do
     prompt = [
       Vibe.Model.Content.text("describe"),

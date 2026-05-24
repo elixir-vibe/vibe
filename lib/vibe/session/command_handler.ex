@@ -5,7 +5,7 @@ defmodule Vibe.Session.CommandHandler do
   alias Vibe.Model.{Effort, Switcher}
   alias Vibe.Session.Command, as: SlashCommands
   alias Vibe.Session.Command.Intent, as: Command
-  alias Vibe.Session.PromptLifecycle
+  alias Vibe.Session.{EvalLifecycle, PromptLifecycle}
   alias Vibe.UI.Selector
 
   @type session_state :: map()
@@ -13,7 +13,7 @@ defmodule Vibe.Session.CommandHandler do
 
   @spec handle(Command.t(), session_state(), pid(), context()) :: session_state()
   def handle(%Command{} = command, state, caller, context) when is_map(context) do
-    if locked?(state, caller) and command.type == :submit_prompt do
+    if locked?(state, caller) and command.type in [:submit_prompt, :evaluate_expression] do
       locked_notice(state, context)
     else
       handle(command, state, context)
@@ -45,7 +45,9 @@ defmodule Vibe.Session.CommandHandler do
   end
 
   defp handle(%Command{type: :cancel_stream}, state, context) do
-    PromptLifecycle.cancel(state, context.emit)
+    state
+    |> PromptLifecycle.cancel(context.emit)
+    |> EvalLifecycle.cancel(context.emit)
   end
 
   defp handle(%Command{type: :set_goal, data: %{objective: objective} = data}, state, context)
@@ -132,6 +134,11 @@ defmodule Vibe.Session.CommandHandler do
       ),
       context
     )
+  end
+
+  defp handle(%Command{type: :evaluate_expression, data: %{code: code} = data}, state, context)
+       when is_binary(code) do
+    EvalLifecycle.submit(state, code, Map.get(data, :include_context?, true), context.emit)
   end
 
   defp handle(%Command{type: :open_model_selector}, state, context),

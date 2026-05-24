@@ -17,6 +17,7 @@ defmodule Vibe.UI.State do
             model: nil,
             effort: nil,
             messages: [],
+            pending_evals: %{},
             pending_tools: %{},
             usage: %{input_tokens: 0, output_tokens: 0, total_tokens: 0, total_cost: 0.0},
             usage_preview: %{input_tokens: 0, output_tokens: 0, total_tokens: 0},
@@ -38,7 +39,7 @@ defmodule Vibe.UI.State do
             events: []
 
   @type message :: %{
-          required(:role) => :user | :assistant | :tool | :subagent,
+          required(:role) => :user | :assistant | :tool | :eval | :subagent,
           required(:at) => DateTime.t(),
           optional(atom()) => term()
         }
@@ -49,6 +50,7 @@ defmodule Vibe.UI.State do
           model: String.t() | nil,
           effort: Effort.t() | nil,
           messages: [message()],
+          pending_evals: map(),
           pending_tools: map(),
           usage: map(),
           usage_preview: map(),

@@ -28,6 +28,9 @@ defmodule Vibe.UI.Reducer.RestoredPayload do
   @spec subagent(term()) :: map()
   def subagent(payload), do: payload_map(payload)
 
+  @spec eval_execution(term()) :: map()
+  def eval_execution(payload), do: payload_map(payload)
+
   @spec assistant_abort(term()) :: %{reason: term(), notify?: term()}
   def assistant_abort(payload) do
     map = payload_map(payload)

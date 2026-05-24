@@ -7,7 +7,7 @@ defmodule Vibe.Web.Components.Message do
     router: Vibe.Web.Router,
     statics: Vibe.Web.static_paths()
 
-  import Vibe.Web.Presentation.Tool, only: [tool_card: 1]
+  import Vibe.Web.Presentation.Tool, only: [display_card: 1, tool_card: 1]
 
   alias Vibe.UI.Error
 
@@ -16,6 +16,14 @@ defmodule Vibe.Web.Components.Message do
   def message_card(%{message: %{role: role}} = assigns) when role in [:tool, "tool"] do
     ~H"""
     <.tool_card tool={@message} />
+    """
+  end
+
+  def message_card(%{message: %{role: :eval}} = assigns) do
+    assigns = assign(assigns, :display, Vibe.Presentation.EvalExecution.present(assigns.message))
+
+    ~H"""
+    <.display_card display={@display} />
     """
   end
 

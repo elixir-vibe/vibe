@@ -8,7 +8,16 @@ defmodule Vibe.Web.Presentation.Tool do
   attr(:tool, :map, required: true)
 
   def tool_card(assigns) do
-    assigns = assign(assigns, :display, Presentable.present(assigns.tool))
+    assigns
+    |> assign(:display, Presentable.present(assigns.tool))
+    |> display_card()
+  end
+
+  attr(:display, :any, required: true)
+  attr(:tool, :map, default: %{})
+
+  def display_card(assigns) do
+    assigns = assign(assigns, :status, assigns.display.status || Map.get(assigns.tool, :status))
 
     ~H"""
     <article class="overflow-hidden rounded-lg border border-vibe-accent/15 bg-vibe-surface/70">
@@ -16,7 +25,7 @@ defmodule Vibe.Web.Presentation.Tool do
         <div class="min-w-0">
           <div class="flex min-w-0 flex-wrap items-center gap-2">
             <h3 class="text-sm font-semibold text-vibe-fg-strong">{tool_name(@display.name)}</h3>
-            <Vibe.Web.Components.Core.status_badge :if={(@display.status || @tool.status) not in [:ok, "ok"]} status={@display.status || @tool.status || :running} />
+            <Vibe.Web.Components.Core.status_badge :if={@status not in [:ok, "ok"]} status={@status || :running} />
           </div>
           <div :if={Code.display_text(@display.summary) not in [nil, ""]} class="mt-1 break-words font-mono text-xs leading-5 text-vibe-dim [overflow-wrap:anywhere]">
             <%= if @display.summary_style == :elixir_dim do %>

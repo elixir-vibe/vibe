@@ -94,8 +94,7 @@ defmodule Vibe.Command.Streaming do
     |> Map.get(:pending_tools, %{})
     |> Enum.reverse()
     |> Enum.find_value(fn {_id, tool} ->
-      if Map.get(tool, :name) in [:eval, "eval"] and
-           Map.get(tool, :status) in [:running, "running"] do
+      if Map.get(tool, :name) in [:eval, "eval"] and Map.get(tool, :status) == :running do
         {:ok, tool}
       end
     end)

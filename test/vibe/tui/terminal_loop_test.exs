@@ -17,6 +17,21 @@ defmodule Vibe.TUI.TerminalLoopTest do
     assert Enum.any?(plain, &String.contains?(&1, "hello"))
   end
 
+  test "evaluates Elixir expressions from bang input" do
+    {:ok, loop} =
+      TerminalLoop.start_link(output: false, width: 80, height: 20, event_target: self())
+
+    assert :ok = TerminalLoop.input(loop, "!1 + 2")
+    assert :ok = TerminalLoop.input_key(loop, %Ghostty.KeyEvent{key: :enter})
+
+    assert_receive {TerminalLoop, :event, %{type: :eval_execution_finished}}, 2_000
+
+    plain =
+      wait_until_render(loop, &Enum.any?(&1, fn line -> String.contains?(line, "1 + 2") end))
+
+    assert Enum.any?(plain, &String.contains?(&1, "3"))
+  end
+
   test "renders model selector after slash command submit" do
     {:ok, loop} = TerminalLoop.start_link(output: false, width: 80, height: 20)
 

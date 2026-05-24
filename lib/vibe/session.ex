@@ -13,11 +13,11 @@ defmodule Vibe.Session do
 
   use GenServer
 
-  alias Vibe.Session.PromptLifecycle
-  alias Vibe.Storage.Search
-  alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.Event
   alias Vibe.Session.Command.Intent, as: Command
+  alias Vibe.Session.{EvalLifecycle, PromptLifecycle}
+  alias Vibe.Storage.Search
+  alias Vibe.Tool.Event, as: ToolEvent
   alias Vibe.UI.{PluginBridge, State}
 
   require Vibe.Debug
@@ -150,6 +150,7 @@ defmodule Vibe.Session do
        prompt_task: nil,
        prompt_ref: nil,
        active_agent: nil,
+       eval_tasks: %{},
        event_seq: event_seq,
        events_tail: events_tail,
        persist?: persist?,
@@ -309,6 +310,10 @@ defmodule Vibe.Session do
        state,
        Event.new(:tool_finished, state.state.session_id, Vibe.Event.Tool.finished(data))
      )}
+  end
+
+  def handle_info({:eval_expression_finished, id, duration_ms, result}, state) do
+    {:noreply, EvalLifecycle.record_result(state, id, duration_ms, result, &emit/2)}
   end
 
   defp handle_command(command, state, caller) do

@@ -34,6 +34,24 @@ defmodule Vibe.UI.Block do
     ]
   end
 
+  defmodule EvalExecution do
+    @moduledoc "User-initiated Elixir eval block."
+    defstruct [
+      :id,
+      :code,
+      :status,
+      :output,
+      :output_format,
+      :output_parts,
+      :output_truncation,
+      :error,
+      :duration_ms,
+      :include_context?,
+      :expanded?,
+      :truncate?
+    ]
+  end
+
   defmodule SubagentLifecycle do
     @moduledoc "Subagent job lifecycle event block."
     defstruct [

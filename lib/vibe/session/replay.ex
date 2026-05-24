@@ -34,6 +34,7 @@ defmodule Vibe.Session.Replay do
   defp finalize_restored_state(state, false), do: state
 
   defp finalize_restored_state(%{status: :working} = state, true) do
+    state = %{state | pending_evals: %{}}
     has_active_stream? = not is_nil(state.streaming_message)
 
     has_running_tool? =

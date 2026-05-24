@@ -70,6 +70,33 @@ defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.SystemMessage do
   end
 end
 
+defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.EvalExecution do
+  alias Vibe.TUI.RenderKey
+
+  def render(eval, context) do
+    eval
+    |> Vibe.Presentation.EvalExecution.present()
+    |> Vibe.TUI.Presentation.Tool.render(context.width, context.theme)
+  end
+
+  def render_key(eval, context) do
+    RenderKey.component(
+      :eval_execution,
+      eval.id,
+      RenderKey.fingerprint({eval.code, eval.output, eval.error, eval.output_parts}),
+      [
+        eval.status,
+        eval.expanded?,
+        eval.truncate?,
+        eval.output_format,
+        eval.output_truncation,
+        eval.include_context?
+      ],
+      context
+    )
+  end
+end
+
 defimpl Vibe.TUI.Renderable, for: Vibe.UI.Block.ToolCall do
   alias Vibe.TUI.RenderKey
 

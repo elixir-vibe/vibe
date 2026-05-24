@@ -1,9 +1,9 @@
 defmodule Vibe.Storage.Representation.EventTest do
   use ExUnit.Case, async: true
 
+  alias Vibe.Event
   alias Vibe.Storage.Representation.Event, as: EventRepresentation
   alias Vibe.SystemAlarms.Alert
-  alias Vibe.Event
 
   test "encodes and decodes tool events through storage representation" do
     tool = Vibe.Tool.Event.started(id: "tool-1", name: :eval, args: %{code: "1 + 1"})
@@ -17,6 +17,37 @@ defmodule Vibe.Storage.Representation.EventTest do
 
     assert {:ok, {6, decoded}} = EventRepresentation.decode_map(encoded)
     assert %Event{data: %Vibe.Event.Tool.Started{event: ^tool}} = decoded
+  end
+
+  test "encodes and decodes eval execution events through storage representation" do
+    data =
+      Vibe.Event.EvalExecution.finished(
+        id: "eval-1",
+        code: "1 + 2",
+        include_context?: false,
+        status: :ok,
+        output: "3",
+        output_format: :inspect,
+        output_truncation: :tail,
+        duration_ms: 12
+      )
+
+    event = Event.new(:eval_execution_finished, "session-1", data, at: ~U[2026-05-20 12:00:01Z])
+
+    encoded = EventRepresentation.encode(event, 10)
+
+    assert {:ok, {10, decoded}} = EventRepresentation.decode_map(encoded)
+
+    assert %Event{
+             data: %Vibe.Event.EvalExecution.Finished{
+               id: "eval-1",
+               code: "1 + 2",
+               include_context?: false,
+               output: "3",
+               output_format: :inspect,
+               output_truncation: :tail
+             }
+           } = decoded
   end
 
   test "encodes and decodes goal events through storage representation" do

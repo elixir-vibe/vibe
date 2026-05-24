@@ -2,54 +2,68 @@
 
 This repository is part of the Elixir Vibe organization.
 
-- Keep the model-facing tool count minimal.
-- Add Vibe helper modules callable from `Vibe.Eval` instead of adding narrow external tools.
-- Prefer eval aliases `Cmd` (`Vibe.Command`) for supervised shell commands and `MD` (`Vibe.MD`) for Markdown rendering. Use `MD.doc/1` for Markdown UI output and `MD.to_markdown/1` for raw Markdown strings. Use `System.cmd/3` only for tiny bounded commands.
+## Core architecture
+
+- Keep model-facing tool count minimal. Prefer Vibe helper modules callable from `Vibe.Eval` over narrow external tools.
+- User-facing interactions should flow through UI-neutral session commands, typed semantic events, reducers, and renderer-neutral presentation values. Keep execution ownership in lifecycle modules such as `Vibe.Session.*Lifecycle`; keep context serialization in dedicated context helpers; keep TUI/Web limited to input adaptation and rendering.
+- Auth, plugins, runtimes, slash commands, providers, storage imports, and similar extension points should be behaviour/protocol based so future implementations can be added without changing callers.
+- Avoid static catalogs/registries when modules can be discovered idiomatically from compiled application modules or dependency availability.
+- Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
+- Keep durable runtime state in local SQLite through Ecto schemas, migrations, and `Vibe.Repo`; do not add app-level raw SQL storage helpers. Use `Vibe.Storage.migrate!/0`, `Vibe.Storage.status/0`, and storage/search modules for lifecycle and introspection. Keep SQLite FTS DDL/query fragments isolated under storage FTS modules.
+- Domain structs that cross JSON/storage/transport boundaries should use explicit boundary protocols or typed representation modules. Keep primitive JSON helpers primitive/container-only; avoid broad centralized encoders, arbitrary semantic `Jason.Encoder` impls, or static event-type codec maps when typed decoders can do the job.
+
+## Eval, commands, and context
+
+- Prefer eval aliases: `Cmd` (`Vibe.Command`) for supervised shell commands, `MD` (`Vibe.MD`) for Markdown output, and `Web` (`Vibe.Plugins.WebSearch`) for web access. Use `System.cmd/3` only for tiny bounded commands.
+- Session eval state belongs in `Vibe.Eval`; per-agent scratch state belongs in `Vibe.Agent.Memory`; curated long-term facts belong in `Vibe.Memory` / `Vibe.Memory.Manager`.
+- Model/role preferences live in editable TOML via `Vibe.Agent.Profile`. Model and effort switching are session-level semantic commands/keybindings first; slash commands should be thin aliases. Internal effort values follow Pi-style atoms: `:off`, `:minimal`, `:low`, `:medium`, `:high`, `:xhigh`; parse strings only at UI/config boundaries.
+- `mix vibe` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
+- `vibe sessions` should be human-friendly by default: recent useful sessions only. Put exhaustive listings behind `--all` and destructive cleanup behind explicit subcommands.
+
+## Web, plugins, and presentation
+
+- Web access should go through `Web` and provider behaviours. Put network/provider concerns in request opts (`provider`, `timeout`, `headers`, search filters); put local result transformations in pipeable helpers (`Web.select!/2`, `Web.truncate/2`, `Web.filter_domain/2`, `Web.take/2`).
+- Parse HTML with `Web.parse_html!/1` and Floki; never use regular expressions or ad-hoc string stripping for HTML.
+- Markdown rendering belongs to `Vibe.Markdown` implementations and should be invoked with `MD.doc/1` or `MD.to_markdown/1`; do not add renderer-specific markdown/text helpers to unrelated modules.
+- Plugins may run supervised background children, update semantic UI state through `Vibe.Plugin.UI`, register slash command modules through `Vibe.Plugin.commands/1`, and expose renderer-neutral output through `Vibe.Markdown` or `Vibe.Presentation.*` values.
+- Core web UI should expose generic plugin surfaces only. Plugins own specific forms, labels, actions, and result semantics; core owns discovery, status, lifecycle, and generic rendering.
+- Plugin-owned UI should use renderer-neutral presentation (`Vibe.Presentation.Document` / `Section` / `Widget`) and `Vibe.Plugin.UI`; avoid plugin-specific HEEx/HTML/Tailwind/ANSI contracts in core.
+
+## Terminal/TUI
+
+- Terminal rendering primitives live under `Vibe.Terminal.*`. TUI rendering should stay semantic and iodata-first; avoid raw markdown markers/fences and renderer-owned canonical semantics.
+- Put detailed TUI behavior and reusable rendering guidance in the relevant module docs (`Vibe.TUI.*`, `Vibe.Terminal.*`, widgets, renderers) so both agents and users see it at the API boundary.
+- Use shared TUI layout/widget helpers instead of ad-hoc width math. Preserve chat vertical rhythm: blank space between message blocks and between history and footer/status, no gap between footer and prompt.
+- Loader/working indicators should be driven by BEAM events/timers and repaint immediately without waiting for keyboard input.
+- Use MDEx streaming documents for partial LLM Markdown and Lumis terminal highlighting for fenced code blocks instead of hand-rolled parsers/highlighters.
+- Storybook output is a visual regression surface; inspect it after changing TUI/Markdown rendering.
+- Prefer `IO.ANSI` or established terminal libraries over raw ANSI escape strings. If raw terminal control is unavoidable, isolate it behind a small named adapter and document why.
+- Use Ghostty.TTY for interactive current-terminal runtime and Ghostty.KeyDecoder/Ghostty.KeyEvent for input. Do not add Vibe-local `stty`, `/dev/tty`, raw terminal-mode adapters, or hard-coded VT byte fixtures when Ghostty.Test can express the behavior.
+
+## Development workflow
+
 - Use `Vibe.Code.AST`/ExAST for Elixir syntax search, replace, and diff. Do not use grep for code structure.
 - Use OTP supervision for background work and subagents.
-- Self-improvement should prefer skills and helper modules before changing runtime core. Skills may be Markdown (`SKILL.md`) or trusted executable Elixir (`skill.exs` in a skill directory, or single-file `*.skill.exs`) using `Vibe.Skill.Script`; review executable skill code before sharing or installing it.
-- Before self-modification, add/update tests for intended behavior, run `Vibe.SelfPatch.preflight/1`, then patch.
-- Validate self-patches through `Vibe.Code.Checks.analyze/1` first; use the returned `report.failures` instead of rerunning checks with different inspect/options. Prefer Elixir APIs over shelling out to Mix tasks.
-- Prefer idiomatic OTP/Elixir APIs over ad-hoc path/process handling, e.g. `Application.app_dir/2` for priv files and Erlang `:code.soft_purge/1`/`:code.delete/1`/`:code.ensure_loaded/1` for hot reload.
 - Keep prompts in `priv/prompts/*.md` and embed them at compile time through `Vibe.Prompts` with `@external_resource`.
-- Keep non-immediate follow-up work in `todo/*.md`; use focused files such as `todo/streaming.md` instead of scattering TODOs through code or general notes.
-- Avoid static catalogs/registries when modules can be discovered idiomatically from compiled application modules or dependency availability, like Reach/Volt plugin detection.
-- Design APIs for agents to use comfortably: return structured, compact, actionable maps with summaries and failure details in one call.
-- Web access should use the eval alias `Web` (`Vibe.Plugins.WebSearch`) instead of vendor-specific clients. Keep providers behind `Vibe.Plugins.WebSearch.SearchProvider` / `Vibe.Plugins.WebSearch.FetchProvider`.
-- Put network/provider web concerns in request opts (`provider`, `timeout`, `headers`, search filters). Put local content/result transformations in pipeable helpers (`Web.select!/2`, `Web.truncate/2`, `Web.filter_domain/2`, `Web.take/2`). For plain text extraction from HTML, use `Web.parse_html!/1` and Floki directly; do not add renderer-like text helpers unless Vibe has an explicit protocol for them.
-- Markdown rendering belongs to `Vibe.Markdown` implementations and should be invoked with `MD.doc/1` or `MD.to_markdown/1`; do not add renderer-specific helpers such as `Web.markdown/1`.
-- Use `Web.parse_html!/1` as the Floki shortcut for advanced HTML traversal. Common extraction should use `Web.select!/2` so fetch metadata is preserved. Never parse HTML with regular expressions or ad-hoc string stripping.
-- Auth, plugins, runtimes, slash commands, and providers should be behaviour-based so future implementations can be added without changing callers.
-- `mix vibe` is the default interactive TUI entrypoint; preserve non-interactive paths through flags like `--print`, `--eval`, `--checks`, and `--sessions`.
-- Keep `vibe sessions` human-friendly by default: recent useful sessions only. Put raw exhaustive listings behind `--all` and destructive cleanup behind explicit subcommands.
+- Keep non-immediate follow-up work in focused `todo/*.md` files instead of scattered TODO comments or general notes.
 - For Mix task help, use Mix's built-in help rendering (`@moduledoc` + `Mix.Tasks.Help`) instead of hand-rolled CLI help formatters.
 - Use `OptionParser` or Mix/Elixir built-ins for argv parsing and switch detection; avoid ad-hoc manual flag scans.
-- Terminal rendering primitives live under `Vibe.Terminal.*` (`Theme`, `Width`, `Lines`, `Image`, `Markdown`, `Text`, `Layout`). TUI rendering should stay semantic and iodata-first; avoid raw markdown markers/fences when rendering Markdown widgets.
-- Use shared TUI layout helpers (`Widget.pad_line/2`, `Widget.background_line/5`, `Widget.spaces/1`, `Widget.repeat/2`, `Widget.join_sides/3`) instead of ad-hoc `String.duplicate/2` width math in widgets.
-- Message blocks should use full-width padded backgrounds; nested Markdown/ANSI styling must remain visually transparent to the parent background.
-- Preserve vertical rhythm in chat: blank space between message blocks and between chat history and the footer/status line; do not insert a gap between footer and prompt.
-- Loader/working indicators should be driven by BEAM events/timers and repaint immediately without waiting for keyboard input; plugins/background workers must update session UI through `Vibe.Plugin.UI` / semantic `Vibe.Event.*` events.
-- Keep dark theme message backgrounds muted and colorful, not bright; light theme message text must set explicit dark foregrounds on light backgrounds.
-- Use MDEx streaming documents for partial LLM Markdown and Lumis terminal highlighting for fenced code blocks instead of hand-rolled parsers/highlighters.
-- Storybook output is a visual regression surface; inspect it after changing TUI/Markdown rendering, not just tests.
-- Prefer `IO.ANSI` or established terminal libraries over raw ANSI escape strings. If a raw terminal control sequence is unavoidable, isolate it behind a small named adapter and document why no library API is available.
-- Use Ghostty.TTY for the interactive current-terminal runtime; do not add Vibe-local `stty`, `/dev/tty`, or raw terminal-mode adapters.
-- Use Ghostty.KeyDecoder for terminal byte decoding; Vibe-local key handling should only map `Ghostty.KeyEvent` values into semantic editor/UI commands.
-- Use Ghostty.Test and Ghostty.KeyEvent in TUI harness tests for keyboard input and terminal snapshots instead of hard-coding VT byte sequences wherever possible.
-- Plugins may run supervised background children, update semantic UI state through `Vibe.Plugin.UI`, register slash command modules through `Vibe.Plugin.commands/1`, and define `defimpl Vibe.Markdown` for their result structs; keep plugin UI/command/rendering APIs renderer-neutral so TUI and future LiveView consume the same state.
-- Core web UI must expose generic plugin surfaces, not hardcoded plugin products. Do not add core pages/playgrounds tied to a specific plugin capability (for example, a WebSearch-specific playground). If a plugin wants UI, expose it through a generic plugin-owned UI/display/action contract and render it from the plugin page or a generic plugin route mechanism. Core owns discovery/status/lifecycle/generic rendering; plugins own specific forms, actions, labels, and result semantics.
-- Plugin-owned UI must be semantic and renderer-neutral: expose plugin detail/inspector presentation as `Vibe.Presentation.Document` / `Vibe.Presentation.Section` containing `Vibe.Presentation.Widget` values, and use `Vibe.Plugin.UI` status/widget APIs for live session UI. Do not introduce plugin-specific web pages, HEEx/HTML/Tailwind/ANSI contracts, or parallel UI structs under plugin modules.
-- Store durable runtime state in local SQLite through Ecto schemas, migrations, and `Vibe.Repo`; do not add app-level raw SQL storage helpers. Use `Vibe.Storage.migrate!/0`, `Vibe.Storage.status/0`, `Vibe.Storage.Search`, and storage CLI commands for schema/search lifecycle. Keep SQLite FTS5 DDL and MATCH/snippet/bm25/optimize fragments isolated under `Vibe.Storage.FTS.Migration` / `Vibe.Storage.FTS` / `Vibe.Storage.Search`.
-- Domain structs that cross a JSON boundary should use explicit boundary protocols such as `Vibe.Storage.JSON.Encodable`, `Vibe.Transport.JSON.Encodable`, or `Vibe.Tool.Transport.JSON.Encodable`. Keep `*.JSON.Value` modules primitive/container-only; do not create broad centralized encoder files, arbitrary `Jason.Encoder` impls on semantic structs, or hand-roll JSON codecs with static event-type maps when typed boundary decoders can do the job.
-- Store runtime observability under `Vibe.Telemetry` backed by SQLite; agents should introspect local telemetry through `Vibe.Telemetry.recent/1`, `Vibe.Telemetry.all/1`, and `Vibe.Telemetry.summary/1` instead of scraping logs.
-- Keep memory scopes separate: session eval state stays in `Vibe.Eval`, per-agent scratch state in `Vibe.Agent.Memory`, and curated long-term user/global/workspace facts in `Vibe.Memory` / `Vibe.Memory.Manager`. Durable eval snapshots and curated memory are SQLite-backed. Subagents should report findings to the parent instead of writing global memory directly.
-- Subagents are supervised jobs with child sessions. Use `Vibe.Subagents.start/2`, `ask/2`, `run_many/2`, and `schedule/2`; attach to a running child session with `vibe a <child_session_id>`. Persist job/schedule state through `Vibe.Subagents.JobStore` / `Vibe.Subagents.Store`, not JSONL files.
-- Model/role preferences live in editable TOML via `Vibe.Agent.Profile`. OpenRouter is a regular provider, not a special architecture path.
-- Model and effort switching are session-level semantic commands and TUI keybindings first, not slash-command-owned features. Keep `/model` and `/effort` as thin aliases over `Vibe.Session` commands. Internal effort values follow Pi-style atoms: `:off`, `:minimal`, `:low`, `:medium`, `:high`, `:xhigh`; parse strings only at UI/config boundaries.
-- Avoid recording raw prompts, file contents, tool outputs, secrets, or OAuth tokens in telemetry metadata; prefer IDs, counts, durations, statuses, and byte/token sizes.
-- For storage imports, add an `Vibe.Storage.Importer` implementation and register it in `Vibe.Storage.Import`; keep provider-specific parsing (such as Pi JSONL) out of the dispatcher. Preserve source metadata such as cwd and distinguish conversation text from imported tool output for search quality.
+- Prefer idiomatic OTP/Elixir APIs over ad-hoc path/process handling, e.g. `Application.app_dir/2` for priv files and Erlang purge/delete/load APIs for hot reload.
 - For Livebook-style execution and `Mix.install/2`, isolate work in a child BEAM/runtime; do not pollute Vibe's long-running VM.
-- Keep the default test suite fast without weakening coverage: prefer deterministic process handshakes, monitor/receive synchronization, and `refute_received` after synchronous calls over fixed `Process.sleep/1` or long `refute_receive` delays.
-- Never use uncapped `receive` loops as timeout-test fixtures; they can hang full-suite/autoresearch runs. Use bounded sleeps/timeouts or explicit messages with a safe `after` clause.
-- Put expensive real-environment tests (real PTY `mix vibe`, image backend binaries, and similar external integrations) behind `@tag :integration`; default tests should still cover behavior with deterministic local fakes or semantic renderers.
-- When optimizing tests, run the full default suite with a hard external timeout and avoid keeping changes that only reduce ExUnit-reported time while worsening wall-clock time or reducing meaningful default coverage.
+
+## Self-improvement and testing
+
+- Self-improvement should prefer skills and helper modules before changing runtime core. Review executable skill code before sharing or installing it.
+- Before self-modification, add/update tests for intended behavior, run `Vibe.SelfPatch.preflight/1`, then patch.
+- Validate self-patches through `Vibe.Code.Checks.analyze/1`; use the returned `report.failures` instead of rerunning checks with different inspect/options. Prefer Elixir APIs over shelling out to Mix tasks.
+- Keep default tests fast without weakening coverage: prefer deterministic process handshakes, monitor/receive synchronization, and `refute_received` after synchronous calls over fixed sleeps or long `refute_receive` delays.
+- Never use uncapped `receive` loops as timeout-test fixtures.
+- Put expensive real-environment tests behind `@tag :integration`; default tests should use deterministic fakes or semantic renderers.
+- When optimizing tests, run the full default suite with a hard external timeout and avoid changes that only reduce ExUnit-reported time while worsening wall-clock time or reducing meaningful coverage.
+
+## Safety and observability
+
+- Store runtime observability under `Vibe.Telemetry` backed by SQLite. Agents should introspect local telemetry through `Vibe.Telemetry.recent/1`, `Vibe.Telemetry.all/1`, and `Vibe.Telemetry.summary/1` instead of scraping logs.
+- Avoid recording raw prompts, file contents, tool outputs, secrets, or OAuth tokens in telemetry metadata; prefer IDs, counts, durations, statuses, and byte/token sizes.
+- Subagents are supervised jobs with child sessions. Use `Vibe.Subagents.start/2`, `ask/2`, `run_many/2`, and `schedule/2`; persist job/schedule state through `Vibe.Subagents.JobStore` / `Vibe.Subagents.Store`, not JSONL files. Subagents should report findings to the parent instead of writing global memory directly.
+- Storage imports should add a `Vibe.Storage.Importer` implementation, preserve source metadata such as cwd, and distinguish conversation text from imported tool output for search quality.

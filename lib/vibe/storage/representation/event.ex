@@ -17,6 +17,7 @@ defmodule Vibe.Storage.Representation.Event do
                     "alert",
                     "args",
                     "at",
+                    "code",
                     "content",
                     "context",
                     "created_at",
@@ -24,6 +25,7 @@ defmodule Vibe.Storage.Representation.Event do
                     "data",
                     "detail",
                     "direction",
+                    "duration_ms",
                     "error",
                     "filename",
                     "goal",
@@ -34,6 +36,7 @@ defmodule Vibe.Storage.Representation.Event do
                     "id",
                     "image",
                     "image_count",
+                    "include_context?",
                     "input_tokens",
                     "kind",
                     "level",
@@ -47,6 +50,7 @@ defmodule Vibe.Storage.Representation.Event do
                     "output",
                     "output_format",
                     "output_parts",
+                    "output_truncation",
                     "output_tokens",
                     "overlay_kind",
                     "parts",
@@ -130,6 +134,12 @@ defmodule Vibe.Storage.Representation.Event do
     |> decode_tool_event()
     |> Vibe.Event.Tool.finished()
   end
+
+  defp decode_event_data(data, :eval_execution_started),
+    do: Vibe.Event.EvalExecution.started(data)
+
+  defp decode_event_data(data, :eval_execution_finished),
+    do: Vibe.Event.EvalExecution.finished(data)
 
   defp decode_event_data(data, :user_message_added), do: Vibe.Event.Message.user_added(data)
 
@@ -355,6 +365,8 @@ defmodule Vibe.Storage.Representation.Event do
               :placement,
               :type,
               :phase,
+              :output_format,
+              :output_truncation,
               :role,
               :lifecycle
             ] and is_binary(value),

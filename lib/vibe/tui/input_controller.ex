@@ -198,7 +198,10 @@ defmodule Vibe.TUI.InputController do
   end
 
   defp handle_editor_command({:submit, text}, state) do
-    Session.dispatch(state.ui, submit_prompt_command(text, state))
+    case Vibe.Session.EvalInput.parse(text) do
+      {:eval, code, include_context?} -> dispatch_eval_expression(state, code, include_context?)
+      :prompt -> Session.dispatch(state.ui, submit_prompt_command(text, state))
+    end
   end
 
   defp handle_editor_command({:slash_command, command, args}, state) do
@@ -251,6 +254,13 @@ defmodule Vibe.TUI.InputController do
         level: :warning,
         text: "could not paste clipboard image: #{inspect(reason)}"
       })
+    )
+  end
+
+  defp dispatch_eval_expression(state, code, include_context?) do
+    dispatch_async(
+      state.ui,
+      Command.new(:evaluate_expression, %{code: code, include_context?: include_context?})
     )
   end
 

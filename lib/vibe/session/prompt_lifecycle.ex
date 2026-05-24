@@ -1,7 +1,7 @@
 defmodule Vibe.Session.PromptLifecycle do
   @moduledoc "Prompt submission, cancellation, memory injection, and result recording."
-  alias Vibe.Model.{Content, Error, Usage}
   alias Vibe.Event
+  alias Vibe.Model.{Content, Error, Usage}
   alias Vibe.UI.PromptRunner
 
   require Vibe.Debug
@@ -195,11 +195,15 @@ defmodule Vibe.Session.PromptLifecycle do
   defp prompt_event_data(_prompt, text), do: %{text: text}
 
   defp maybe_prompt_with_context(%{context?: false}, text, _context), do: text
-  defp maybe_prompt_with_context(_state, text, context), do: prompt_with_memory(text, context)
 
-  defp prompt_with_memory(text, context) do
+  defp maybe_prompt_with_context(state, text, context) do
+    prompt_with_memory(text, context, Vibe.Session.EvalContext.block(state.state.messages))
+  end
+
+  defp prompt_with_memory(text, context, eval_context) do
     [
       text,
+      eval_context,
       Vibe.Goals.context_block(Map.get(context, :session_id)),
       Vibe.Memory.Manager.prefetch(text, context),
       active_skill_context(text),

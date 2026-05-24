@@ -20,7 +20,7 @@ defmodule Vibe.Web.SessionLive do
     prompt = String.trim(prompt)
 
     if prompt != "" do
-      :ok = Vibe.Session.dispatch(socket.assigns.session, submit_prompt_command(prompt, socket))
+      :ok = Vibe.Session.dispatch(socket.assigns.session, prompt_command(prompt, socket))
     end
 
     {:noreply, assign(socket, prompt: "")}
@@ -44,6 +44,16 @@ defmodule Vibe.Web.SessionLive do
   end
 
   def handle_info(_message, socket), do: {:noreply, socket}
+
+  defp prompt_command(prompt, socket) do
+    case Vibe.Session.EvalInput.parse(prompt) do
+      {:eval, code, include_context?} ->
+        {:evaluate_expression, %{code: code, include_context?: include_context?}}
+
+      :prompt ->
+        submit_prompt_command(prompt, socket)
+    end
+  end
 
   defp submit_prompt_command(prompt, socket) do
     root = socket.assigns.session_state.cwd || File.cwd!()
