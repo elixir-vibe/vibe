@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## v0.2.3 - 2026-05-24
+
+### Fixes
+
+- Fixed installed `vibe` escripts failing to start because packaged priv assets and default agent profile files were not available at runtime.
+
+### TUI recordings
+
+- Replaced Vibe's native TUI cast container with the standalone `ttycast` package.
+- Changed generated recording names to use the `.ttycast` extension.
+- Updated troubleshooting docs and CLI help to use `TTYCast` inspection, snapshots, and asciinema export.
+- Bumped Ghostty to v0.4.9 for reliable PTY child exit notifications.
+
 ## v0.2.2 - 2026-05-22
 
 ### Documentation
