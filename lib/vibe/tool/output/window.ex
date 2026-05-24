@@ -1,7 +1,7 @@
 defmodule Vibe.Tool.Output.Window do
   @moduledoc "Reusable line/byte windows for large model-facing tool output."
 
-  @default_max_bytes 50_000
+  @default_max_bytes 50 * 1_024
   @default_max_lines 2_000
 
   defstruct [
@@ -46,7 +46,7 @@ defmodule Vibe.Tool.Output.Window do
     limit_lines = normalize_positive(Keyword.get(opts, :limit_lines), @default_max_lines)
     full_output_path = Keyword.get(opts, :full_output_path)
     total_bytes = byte_size(text)
-    lines = String.split(text, "\n")
+    lines = split_lines(text)
     total_lines = length(lines)
 
     if total_bytes <= limit_bytes and total_lines <= limit_lines do
@@ -170,30 +170,34 @@ defmodule Vibe.Tool.Output.Window do
     visible
   end
 
-  defp take_bytes(text, limit_bytes, direction) do
+  defp take_bytes(text, limit_bytes, :head) do
     text
-    |> String.graphemes()
-    |> take_graphemes(limit_bytes, direction)
-    |> Enum.join()
+    |> binary_part(0, min(byte_size(text), limit_bytes))
+    |> valid_prefix()
   end
 
-  defp take_graphemes(graphemes, limit_bytes, :head),
-    do: take_graphemes_head(graphemes, limit_bytes, [])
+  defp take_bytes(text, limit_bytes, :tail) do
+    size = byte_size(text)
+    start = max(size - limit_bytes, 0)
 
-  defp take_graphemes(graphemes, limit_bytes, :tail),
-    do: graphemes |> Enum.reverse() |> take_graphemes_head(limit_bytes, []) |> Enum.reverse()
+    text
+    |> binary_part(start, size - start)
+    |> valid_suffix()
+  end
 
-  defp take_graphemes_head([grapheme | rest], limit_bytes, acc) do
-    next = [grapheme | acc]
-
-    if next |> Enum.reverse() |> Enum.join() |> byte_size() <= limit_bytes do
-      take_graphemes_head(rest, limit_bytes, next)
-    else
-      Enum.reverse(acc)
+  defp valid_prefix(text) do
+    case String.valid?(text) do
+      true -> text
+      false -> text |> binary_part(0, byte_size(text) - 1) |> valid_prefix()
     end
   end
 
-  defp take_graphemes_head([], _limit_bytes, acc), do: Enum.reverse(acc)
+  defp valid_suffix(text) do
+    case String.valid?(text) do
+      true -> text
+      false -> text |> binary_part(1, byte_size(text) - 1) |> valid_suffix()
+    end
+  end
 
   defp line_range(%__MODULE__{mode: :head, output_lines: output_lines}) do
     "1-#{output_lines}"
@@ -202,6 +206,13 @@ defmodule Vibe.Tool.Output.Window do
   defp line_range(%__MODULE__{mode: :tail, total_lines: total_lines, output_lines: output_lines}) do
     start_line = max(total_lines - output_lines + 1, 1)
     "#{start_line}-#{total_lines}"
+  end
+
+  defp split_lines(""), do: []
+
+  defp split_lines(text) do
+    lines = String.split(text, "\n")
+    if String.ends_with?(text, "\n"), do: Enum.drop(lines, -1), else: lines
   end
 
   defp normalize_mode(:tail), do: :tail

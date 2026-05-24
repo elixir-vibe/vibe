@@ -118,7 +118,11 @@ defmodule Vibe.Agent.Streaming.Plugin do
         id: tool_call_id(data),
         name: name,
         args: tool_arguments(data),
-        output: Map.get(result, :output, event_field(data, :result))
+        output:
+          result
+          |> Map.get(:output, event_field(data, :result))
+          |> ToolEvent.normalize_result()
+          |> Vibe.Tool.Output.normalize()
       )
     )
 

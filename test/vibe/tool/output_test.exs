@@ -26,14 +26,23 @@ defmodule Vibe.Tool.OutputTest do
            ) == "line 4\nline 5\n\n[Showing lines 4-5 of 5. Full output: /tmp/full.log]"
   end
 
-  test "keeps text under the default context limit" do
+  test "limits text under the default context window" do
     text = String.duplicate("x", Vibe.Tool.Output.default_max_bytes() + 10)
 
     output = Vibe.Tool.Output.limit_text(text)
 
     assert byte_size(output) > Vibe.Tool.Output.default_max_bytes()
-    assert output =~ "tool output truncated"
-    assert output =~ "10 bytes omitted"
+    assert output =~ "[Showing"
+    assert output =~ "50.0KB limit"
+  end
+
+  test "normalizes plugin-style text outputs through reusable limits" do
+    text = Enum.map_join(1..2_005, "\n", &"line #{&1}")
+
+    normalized = Vibe.Tool.Output.normalize(%{output: text})
+
+    assert normalized.output =~ "line 1"
+    assert normalized.output =~ "[Showing lines 1-2000 of 2005"
   end
 
   test "small structured values remain encodable through explicit JSON projection" do

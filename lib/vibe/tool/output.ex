@@ -3,14 +3,37 @@ defmodule Vibe.Tool.Output do
   Context-safe limits for model-facing tool output.
   """
 
-  @default_max_bytes 50_000
+  @default_max_bytes 50 * 1_024
   @inspect_opts [charlists: :as_lists, limit: :infinity, printable_limit: :infinity, pretty: true]
 
   @spec default_max_bytes() :: pos_integer()
   def default_max_bytes, do: @default_max_bytes
 
+  @spec default_max_lines() :: pos_integer()
+  def default_max_lines, do: Vibe.Tool.Output.Window.default_max_lines()
+
+  @spec window(String.t(), keyword()) :: Vibe.Tool.Output.Window.t()
+  def window(text, opts \\ []) when is_binary(text) and is_list(opts) do
+    Vibe.Tool.Output.Window.build(text, opts)
+  end
+
+  @spec normalize(term(), keyword()) :: term()
+  def normalize(value, opts \\ [])
+
+  def normalize(value, opts) when is_binary(value) and is_list(opts), do: limit_text(value, opts)
+
+  def normalize(%{} = value, opts) when is_list(opts) do
+    value
+    |> limit_map_text(:output, opts)
+    |> limit_map_text("output", opts)
+    |> limit_map_text(:error, opts)
+    |> limit_map_text("error", opts)
+  end
+
+  def normalize(value, _opts), do: value
+
   @spec limit_text(String.t(), pos_integer() | keyword()) :: String.t()
-  def limit_text(text, opts \\ @default_max_bytes)
+  def limit_text(text, opts \\ [])
 
   def limit_text(text, max_bytes) when is_binary(text) and is_integer(max_bytes) do
     text |> limit_text_result(max_bytes) |> Map.fetch!(:text)
@@ -26,7 +49,7 @@ defmodule Vibe.Tool.Output do
           limit_bytes: pos_integer(),
           truncated?: boolean()
         }
-  def limit_text_result(text, opts \\ @default_max_bytes)
+  def limit_text_result(text, opts \\ [])
 
   def limit_text_result(text, max_bytes) when is_binary(text) and is_integer(max_bytes) do
     max_bytes = normalize_max_bytes(max_bytes)
@@ -57,6 +80,13 @@ defmodule Vibe.Tool.Output do
 
   defp text_result(text, omitted_bytes, limit_bytes, truncated?) do
     %{text: text, omitted_bytes: omitted_bytes, limit_bytes: limit_bytes, truncated?: truncated?}
+  end
+
+  defp limit_map_text(map, key, opts) do
+    case Map.fetch(map, key) do
+      {:ok, text} when is_binary(text) -> Map.put(map, key, limit_text(text, opts))
+      _other -> map
+    end
   end
 
   @spec limit_content(String.t(), keyword()) :: %{

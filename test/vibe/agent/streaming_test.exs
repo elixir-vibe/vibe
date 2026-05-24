@@ -217,6 +217,34 @@ defmodule Vibe.Agent.StreamingTest do
     Vibe.Agent.Streaming.unregister(agent)
   end
 
+  test "plugin limits large text tool results before session dispatch", %{
+    agent: agent,
+    agent_id: agent_id
+  } do
+    test_pid = self()
+    Vibe.Agent.Streaming.register(agent, on_tool_finished: &send(test_pid, {:tool_finished, &1}))
+
+    output = Enum.map_join(1..2_005, "\n", &"line #{&1}")
+
+    signal = %{
+      type: "ai.tool.result",
+      data: %{
+        call_id: "call-large",
+        tool_name: "plugin_tool",
+        result: {:ok, %{output: output}, []}
+      }
+    }
+
+    assert {:ok, :continue} =
+             Vibe.Agent.Streaming.Plugin.handle_signal(signal, %{agent: %{id: agent_id}})
+
+    assert_receive {:tool_finished, %ToolEvent{id: "call-large", output: limited}}
+    assert limited =~ "line 1"
+    assert limited =~ "[Showing lines 1-2000 of 2005"
+  after
+    Vibe.Agent.Streaming.unregister(agent)
+  end
+
   test "plugin accepts Jido runtime tool field names", %{agent: agent, agent_id: agent_id} do
     test_pid = self()
 
