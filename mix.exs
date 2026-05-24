@@ -138,7 +138,7 @@ defmodule Vibe.MixProject do
       {:jido, "~> 2.2"},
       {:jido_ai, "~> 2.1"},
       {:ghostty, "~> 0.4.9"},
-      {:ttycast, path: "../ttycast"}
+      {:ttycast, "~> 0.1.0"}
     ]
   end
 
