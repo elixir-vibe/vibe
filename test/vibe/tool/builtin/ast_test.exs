@@ -40,7 +40,8 @@ defmodule Vibe.Tool.Builtin.ASTTest do
                %{}
              )
 
-    assert byte_size(output) > Vibe.Tool.Output.default_max_bytes()
-    assert output =~ "tool output truncated"
+    assert byte_size(output) <= Vibe.Tool.Output.default_max_bytes()
+    assert output =~ "SyntaxError"
+    assert output =~ "Showing lines"
   end
 end
