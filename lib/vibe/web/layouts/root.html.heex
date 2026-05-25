@@ -14,8 +14,8 @@
         document.documentElement.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : prefersLight ? "light" : "dark";
       })();
     </script>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
-    <script defer phx-track-static src={Volt.entry_path(Vibe.Web.Endpoint)}></script>
+    <link phx-track-static rel="stylesheet" href={Volt.static_path(Vibe.Web.Endpoint, "/assets/css/app.css")} />
+    <script defer phx-track-static src={Volt.static_path(Vibe.Web.Endpoint, "/assets/js/app.js")}></script>
   </head>
   <body class="min-h-full overflow-x-hidden bg-vibe-bg text-vibe-fg antialiased">
     {@inner_content}

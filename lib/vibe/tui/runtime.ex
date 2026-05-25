@@ -47,7 +47,7 @@ defmodule Vibe.TUI.Runtime do
         after
           restore_window_title()
           write_output(TerminalPainter.cleanup(), cast)
-          Writer.close(cast)
+          TTYCast.Writer.close(cast)
           GenServer.stop(tty)
           Supervisor.stop(supervisor)
         end
@@ -79,7 +79,7 @@ defmodule Vibe.TUI.Runtime do
         repaint_or_stop(tty, loop, nil, painter, cast)
 
       {Ghostty.TTY, ^tty, {:resize, columns, rows}} ->
-        Writer.resize(cast, columns, rows)
+        TTYCast.Writer.resize(cast, columns, rows)
         {painter, _changed?} = resize_painter(loop, painter, {columns, rows})
         repaint_or_stop(tty, loop, nil, painter, cast)
 
@@ -219,7 +219,7 @@ defmodule Vibe.TUI.Runtime do
          {tty, loop, cast, _deadline},
          state
        ) do
-    Writer.resize(cast, columns, rows)
+    TTYCast.Writer.resize(cast, columns, rows)
     {painter, _changed?} = resize_painter(loop, state.painter, {columns, rows})
     {:continue, state |> Map.put(:painter, painter) |> reset_interrupt() |> bump_drained()}
   end
@@ -328,8 +328,8 @@ defmodule Vibe.TUI.Runtime do
 
   defp record_input(cast, data) do
     case input_recording(data) do
-      {:raw, data} -> Writer.input(cast, data)
-      {:redacted, bytes} -> Writer.input_redacted(cast, bytes)
+      {:raw, data} -> TTYCast.Writer.input(cast, data)
+      {:redacted, bytes} -> TTYCast.Writer.input_redacted(cast, bytes)
     end
   end
 

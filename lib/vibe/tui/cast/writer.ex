@@ -7,18 +7,9 @@ defmodule Vibe.TUI.Cast.Writer do
   @spec output(pid() | nil, IO.chardata()) :: :ok
   def output(pid, iodata), do: TTYCast.Writer.write(pid, iodata)
 
-  @spec input(pid() | nil, IO.chardata()) :: :ok
-  def input(pid, iodata), do: TTYCast.Writer.input(pid, iodata)
-
-  @spec input_redacted(pid() | nil, non_neg_integer()) :: :ok
-  def input_redacted(pid, byte_count), do: TTYCast.Writer.input_redacted(pid, byte_count)
-
   @spec key(pid() | nil, term()) :: :ok
   def key(nil, _event), do: :ok
   def key(pid, event), do: TTYCast.Writer.event(pid, :"vibe.key", simplify_key(event))
-
-  @spec resize(pid() | nil, pos_integer(), pos_integer()) :: :ok
-  def resize(pid, columns, rows), do: TTYCast.Writer.resize(pid, columns, rows)
 
   @spec app_event(pid() | nil, term()) :: :ok
   def app_event(nil, _event), do: :ok
@@ -31,9 +22,6 @@ defmodule Vibe.TUI.Cast.Writer do
 
   @spec trace_snapshot(pid() | nil, term()) :: :ok
   def trace_snapshot(pid, payload), do: TTYCast.Writer.event(pid, :"vibe.trace_snapshot", payload)
-
-  @spec close(pid() | nil) :: :ok
-  def close(pid), do: TTYCast.Writer.close(pid)
 
   defp normalize_opts(opts) do
     Keyword.put_new(opts, :input_policy, input_policy(opts))

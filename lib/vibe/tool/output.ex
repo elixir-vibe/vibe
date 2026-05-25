@@ -9,9 +9,6 @@ defmodule Vibe.Tool.Output do
   @spec default_max_bytes() :: pos_integer()
   def default_max_bytes, do: @default_max_bytes
 
-  @spec default_max_lines() :: pos_integer()
-  def default_max_lines, do: Vibe.Tool.Output.Window.default_max_lines()
-
   @spec window(String.t(), keyword()) :: Vibe.Tool.Output.Window.t()
   def window(text, opts \\ []) when is_binary(text) and is_list(opts) do
     Vibe.Tool.Output.Window.build(text, opts)

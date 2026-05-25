@@ -10,22 +10,22 @@ defmodule Vibe.TUI.CastTest do
     {:ok, writer} = Writer.start_link(path: path, width: 20, height: 5, session_id: "cast-test")
     :ok = Writer.output(writer, "hello")
     :ok = Writer.output(writer, "\r\nworld")
-    :ok = Writer.input_redacted(writer, 12)
-    :ok = Writer.resize(writer, 30, 6)
-    :ok = Writer.close(writer)
+    :ok = TTYCast.Writer.input_redacted(writer, 12)
+    :ok = TTYCast.Writer.resize(writer, 30, 6)
+    :ok = TTYCast.Writer.close(writer)
 
     assert File.exists?(path)
     assert File.exists?(path <> ".live.idx")
 
     assert {:ok, cast} = Cast.open(path)
-    assert %{width: 20, height: 5, events: 4} = Cast.info(cast)
+    assert %{width: 20, height: 5, events: 4} = TTYCast.info(cast)
 
     assert {:input_redacted, _t_us, 12} =
-             Enum.find(Cast.events(cast), &(elem(&1, 0) == :input_redacted))
+             Enum.find(TTYCast.events(cast), &(elem(&1, 0) == :input_redacted))
 
-    assert {:resize, _t_us, 30, 6} = Enum.find(Cast.events(cast), &(elem(&1, 0) == :resize))
+    assert {:resize, _t_us, 30, 6} = Enum.find(TTYCast.events(cast), &(elem(&1, 0) == :resize))
 
-    assert {:ok, snapshot} = Cast.snapshot(cast, format: :plain)
+    assert {:ok, snapshot} = TTYCast.snapshot(cast, format: :plain)
     assert snapshot =~ "hello"
     assert snapshot =~ "world"
   end
@@ -44,8 +44,8 @@ defmodule Vibe.TUI.CastTest do
       )
 
     :ok = Writer.output(writer, "hi")
-    :ok = Writer.input(writer, "x")
-    :ok = Writer.close(writer)
+    :ok = TTYCast.Writer.input(writer, "x")
+    :ok = TTYCast.Writer.close(writer)
 
     assert :ok = Cast.export_asciinema(path, cast_path)
 
@@ -63,9 +63,9 @@ defmodule Vibe.TUI.CastTest do
     {:ok, writer} = Writer.start_link(path: path, width: 20, height: 5, session_id: "cast-find")
     :ok = Writer.output(writer, "first")
     :ok = Writer.output(writer, "\r\nneedle")
-    :ok = Writer.close(writer)
+    :ok = TTYCast.Writer.close(writer)
 
-    assert [%{match: "needle"} | _] = Cast.find(path, "needle", every_ms: 1)
+    assert [%{match: "needle"} | _] = TTYCast.find(path, "needle", every_ms: 1)
   end
 
   test "path generation uses ttycast extension" do

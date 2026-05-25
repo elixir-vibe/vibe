@@ -131,7 +131,7 @@ defmodule Vibe.MixProject do
       {:ex_dna, "~> 1.5", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:reach, "~> 2.6", runtime: false},
+      {:reach, "~> 2.6.1", runtime: false},
       {:dune, "~> 0.3", optional: true},
       {:pythonx, "~> 0.4.10", optional: true},
       {:quickbeam, "~> 0.10.14", optional: true},
@@ -148,7 +148,7 @@ defmodule Vibe.MixProject do
 
   defp aliases do
     [
-      "assets.build": ["volt.build --tailwind --no-hash"],
+      "assets.build": ["volt.build --tailwind"],
       ci: [
         "compile --warnings-as-errors",
         "format --check-formatted",

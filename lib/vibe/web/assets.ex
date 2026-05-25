@@ -2,7 +2,7 @@ defmodule Vibe.Web.Assets do
   @moduledoc "Web static asset paths for the Vibe endpoint."
 
   @static_paths ~w(assets fonts images favicon.ico robots.txt)
-  @required_assets ~w(assets/css/app.css assets/js/manifest.json)
+  @required_assets ~w(assets/css/app.css assets/css/manifest.json assets/js/app.js assets/js/manifest.json)
 
   @spec static_paths() :: [String.t()]
   def static_paths, do: @static_paths

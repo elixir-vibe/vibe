@@ -27,12 +27,6 @@ defmodule Vibe.TUI.Cast do
 
   defdelegate open(path_or_cast), to: TTYCast
   defdelegate open!(path_or_cast), to: TTYCast
-  defdelegate info(path_or_cast), to: TTYCast
-  defdelegate events(path_or_cast), to: TTYCast
-  defdelegate snapshot(path_or_cast, opts \\ []), to: TTYCast
-  defdelegate snapshot!(path_or_cast, opts \\ []), to: TTYCast
-  defdelegate find(path_or_cast, pattern, opts \\ []), to: TTYCast
-  defdelegate reindex(path), to: TTYCast
 
   @doc "Exports a TTYCast recording to asciinema v2 JSONL."
   def export_asciinema(path_or_cast, output_path),
