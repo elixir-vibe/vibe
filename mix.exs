@@ -138,7 +138,7 @@ defmodule Vibe.MixProject do
       {:jido, "~> 2.2"},
       {:jido_ai, "~> 2.1"},
       {:ghostty, "~> 0.4.9"},
-      {:cringe, "~> 0.4.0"},
+      {:cringe, "~> 0.5.0"},
       {:ttycast, "~> 0.1.0"}
     ]
   end
