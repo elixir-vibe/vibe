@@ -9,8 +9,7 @@ defmodule Vibe.Terminal.Layout do
   def wrap(content, width) do
     content
     |> Text.sanitize()
-    |> String.split("\n")
-    |> Enum.flat_map(&wrap_line(&1, width))
+    |> Cringe.Measure.wrap(width)
   end
 
   @spec fit_line(IO.chardata(), pos_integer()) :: line()
@@ -74,51 +73,5 @@ defmodule Vibe.Terminal.Layout do
     content
     |> IO.iodata_to_binary()
     |> String.replace(Theme.reset(), Theme.reset() <> background)
-  end
-
-  defp wrap_line("", _width), do: [""]
-
-  defp wrap_line(line, width) do
-    cond do
-      Width.visible_length(line) <= width ->
-        [line]
-
-      String.contains?(line, " ") ->
-        word_wrap(line, width)
-
-      true ->
-        Width.chunks(line, width)
-    end
-  end
-
-  defp word_wrap(line, width) do
-    line
-    |> String.split(~r/(\s+)/, include_captures: true, trim: true)
-    |> Enum.flat_map(&split_long_wrap_part(&1, width))
-    |> Enum.reduce([""], fn part, [current | rest] ->
-      candidate = [current, part]
-      current_text = IO.iodata_to_binary(current)
-
-      cond do
-        String.trim(current_text) == "" ->
-          [String.trim_leading(part) | rest]
-
-        Width.visible_length(candidate) <= width ->
-          [candidate | rest]
-
-        true ->
-          [String.trim_leading(part), String.trim_trailing(current_text) | rest]
-      end
-    end)
-    |> Enum.reverse()
-    |> Enum.reject(&(&1 == ""))
-  end
-
-  defp split_long_wrap_part(part, width) do
-    if String.trim(part) == "" or Width.visible_length(part) <= width do
-      [part]
-    else
-      Width.chunks(part, width)
-    end
   end
 end

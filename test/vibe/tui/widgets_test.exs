@@ -122,6 +122,12 @@ defmodule Vibe.TUI.WidgetsTest do
     assert Widget.fit_line("\e[31mhello\e[0m", 2) == "\e[31mhe\e[0m"
   end
 
+  test "wrap helper uses terminal cell widths" do
+    assert Widget.wrap("hello world", 5) == ["hello", "world"]
+    assert Widget.wrap("a🚀b東c", 3) == ["a🚀", "b東", "c"]
+    assert Widget.wrap("one\ntwo", 10) == ["one", "two"]
+  end
+
   test "inset line helper adds symmetric edge padding and fills width" do
     line = Widget.inset_line("notice", 12) |> Width.visible_text()
 
