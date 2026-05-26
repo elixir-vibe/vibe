@@ -65,15 +65,10 @@ defmodule Vibe.TUI.Widget do
   def fit_line(line, width, opts) do
     line = Text.sanitize(line)
 
-    cond do
-      Width.visible_length(line) <= width ->
-        line
-
-      Keyword.get(opts, :ellipsis?, false) and width > 0 ->
-        [Width.take(line, max(width - 1, 0)), "…"]
-
-      true ->
-        Width.take(line, width)
+    if Width.visible_length(line) <= width do
+      line
+    else
+      Cringe.Measure.fit(line, width, opts)
     end
   end
 
