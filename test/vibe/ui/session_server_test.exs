@@ -281,7 +281,7 @@ defmodule Vibe.SessionProcessTest do
     assert_receive {:ask_opts, opts}, 500
     assert opts[:model] == "model-b"
     assert opts[:effort] == :high
-    assert opts[:llm_opts][:provider_options][:reasoning_effort] == "high"
+    assert opts[:llm_opts][:reasoning_effort] == :high
   end
 
   test "updates token preview from streaming callbacks before final usage" do

@@ -155,8 +155,15 @@ defmodule Vibe.Session.PromptLifecycle do
   defp maybe_put_llm_provider_options(opts, []), do: opts
   defp maybe_put_llm_provider_options(opts, nil), do: opts
 
-  defp maybe_put_llm_provider_options(opts, provider_options),
-    do: Keyword.put(opts, :llm_opts, provider_options: provider_options)
+  defp maybe_put_llm_provider_options(opts, provider_options) do
+    {llm_opts, provider_options} = Keyword.split(provider_options, [:reasoning_effort])
+
+    if provider_options == [] do
+      Keyword.put(opts, :llm_opts, llm_opts)
+    else
+      Keyword.put(opts, :llm_opts, Keyword.put(llm_opts, :provider_options, provider_options))
+    end
+  end
 
   defp prepare_prompt(%{context_async?: true} = state, ask_fun, text, context) do
     {context_ask_fun(state, ask_fun, text, context), text}

@@ -191,7 +191,8 @@ defmodule Vibe.CLI.Server do
   end
 
   defp server_start_args(opts) do
-    ["server", "start", "--foreground"]
+    ["server", "start", "auto", "--foreground"]
+    |> maybe_append(opts[:web], "--web")
     |> maybe_append(opts[:ssh], "--ssh")
     |> maybe_append(opts[:port], "--port #{opts[:port]}")
     |> Enum.join(" ")

@@ -4,6 +4,8 @@ config :opentelemetry, processors: []
 
 config :ex_gram, adapter: ExGram.Adapter.Req
 
+config :tzdata, autoupdate: :disabled
+
 config :vibe, ecto_repos: [Vibe.Repo]
 config :vibe, env: config_env()
 config :vibe, compile_time_debug: config_env() != :prod

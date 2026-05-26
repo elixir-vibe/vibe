@@ -150,7 +150,7 @@ defmodule Vibe.Agent.Options do
 
   defp maybe_put_effort(provider_options, effort)
        when effort in [:minimal, :low, :medium, :high, :xhigh] do
-    Keyword.put_new(provider_options, :reasoning_effort, Atom.to_string(effort))
+    Keyword.put_new(provider_options, :reasoning_effort, effort)
   end
 
   defp maybe_put_effort(provider_options, _effort), do: provider_options

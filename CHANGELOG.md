@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.2.4 - 2026-05-26
+
+### Fixes
+
+- Fixed Codex provider requests by passing reasoning effort in ReqLLM's expected shape.
+- Reduced normal CLI startup overhead by only starting the web endpoint for explicit web/server foreground commands and disabling tzdata autoupdates.
+
 ## v0.2.3 - 2026-05-24
 
 ### Fixes

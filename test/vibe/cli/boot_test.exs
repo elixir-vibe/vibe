@@ -6,6 +6,7 @@ defmodule Vibe.CLI.BootTest do
   describe "server_foreground?/1" do
     test "only foreground server start owns the web endpoint" do
       assert Boot.server_foreground?(parsed(["server", "start", "--foreground"]))
+      refute Boot.server_foreground?(parsed(["server", "start", "auto", "--foreground"]))
       refute Boot.server_foreground?(parsed(["server", "start"]))
       refute Boot.server_foreground?(parsed([]))
       refute Boot.server_foreground?(parsed(["a", "session-id"]))
@@ -36,6 +37,15 @@ defmodule Vibe.CLI.BootTest do
 
     test "keeps the endpoint enabled for the foreground server" do
       assert :ok = Boot.configure_application_start(parsed(["server", "start", "--foreground"]))
+      assert Application.get_env(:vibe, :web)
+    end
+
+    test "keeps the endpoint enabled for auto-started web commands" do
+      assert :ok =
+               Boot.configure_application_start(
+                 parsed(["server", "start", "auto", "--web", "--foreground"])
+               )
+
       assert Application.get_env(:vibe, :web)
     end
 

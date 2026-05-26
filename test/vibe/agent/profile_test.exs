@@ -41,6 +41,7 @@ defmodule Vibe.Agent.ProfileTest do
     app_title = "Vibe Test"
     openai_reuse_websocket = true
     openai_stream_transport = "websocket"
+    reasoning_effort = "medium"
     unknown_option = "ignored"
 
     [roles.scout]
@@ -61,7 +62,8 @@ defmodule Vibe.Agent.ProfileTest do
     assert Vibe.Agent.Profile.provider_options(:openrouter) == [
              app_title: "Vibe Test",
              openai_reuse_websocket: true,
-             openai_stream_transport: :websocket
+             openai_stream_transport: :websocket,
+             reasoning_effort: :medium
            ]
 
     assert Vibe.Agent.Profile.models() == ["default:model", "openrouter:test/model"]

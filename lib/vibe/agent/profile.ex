@@ -186,7 +186,7 @@ defmodule Vibe.Agent.Profile do
   defp provider_option({"openai_stream_transport", "websocket"}),
     do: [openai_stream_transport: :websocket]
 
-  defp provider_option({"reasoning_effort", value}), do: [reasoning_effort: value]
+  defp provider_option({"reasoning_effort", value}), do: reasoning_effort_option(value)
   defp provider_option({"session_id", value}), do: [session_id: value]
   defp provider_option({:app_title, value}), do: [app_title: value]
 
@@ -196,9 +196,25 @@ defmodule Vibe.Agent.Profile do
   defp provider_option({:openai_stream_transport, value}) when value in [:sse, :websocket],
     do: [openai_stream_transport: value]
 
-  defp provider_option({:reasoning_effort, value}), do: [reasoning_effort: value]
+  defp provider_option({:reasoning_effort, value}), do: reasoning_effort_option(value)
   defp provider_option({:session_id, value}), do: [session_id: value]
   defp provider_option({_unknown, _value}), do: []
+
+  defp reasoning_effort_option(value)
+       when value in [:none, :minimal, :low, :medium, :high, :xhigh, :default],
+       do: [reasoning_effort: value]
+
+  defp reasoning_effort_option("none"), do: [reasoning_effort: :none]
+  defp reasoning_effort_option("default"), do: [reasoning_effort: :default]
+
+  defp reasoning_effort_option(value) when is_binary(value) do
+    case Effort.from_string(value) do
+      {:ok, effort} -> [reasoning_effort: effort]
+      {:error, _reason} -> [reasoning_effort: value]
+    end
+  end
+
+  defp reasoning_effort_option(value), do: [reasoning_effort: value]
 
   @spec disabled_plugins() :: [module()]
   def disabled_plugins do
