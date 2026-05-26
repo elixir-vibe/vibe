@@ -85,8 +85,10 @@ defmodule Vibe.TUI.Widget do
 
   @spec pad_line(IO.chardata(), non_neg_integer()) :: line()
   def pad_line(line, width) do
-    line = fit_line(line, width)
-    [line, spaces(width - Width.visible_length(line))]
+    line
+    |> fit_line(width)
+    |> IO.iodata_to_binary()
+    |> Cringe.Measure.pad(width)
   end
 
   @spec inset_line(IO.chardata(), non_neg_integer()) :: line()
