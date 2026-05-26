@@ -115,6 +115,13 @@ defmodule Vibe.TUI.WidgetsTest do
     refute Enum.any?(user ++ assistant ++ thinking, &String.contains?(&1, "Vibe:"))
   end
 
+  test "fit line helper uses terminal cell widths" do
+    assert Widget.fit_line("ab🚀cd", 4) == "ab🚀"
+    assert Widget.fit_line("ab🚀cd", 3) == "ab"
+    assert Widget.fit_line("ab🚀cd", 4, ellipsis?: true) == "ab…"
+    assert Widget.fit_line("\e[31mhello\e[0m", 2) == "\e[31mhe\e[0m"
+  end
+
   test "inset line helper adds symmetric edge padding and fills width" do
     line = Widget.inset_line("notice", 12) |> Width.visible_text()
 
