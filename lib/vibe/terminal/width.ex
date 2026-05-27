@@ -3,6 +3,8 @@ defmodule Vibe.Terminal.Width do
   Width helpers for ANSI-styled terminal lines.
   """
 
+  alias Vibe.Terminal.Text
+
   @spec visible_text(IO.chardata()) :: String.t()
   def visible_text(text) do
     text
@@ -20,7 +22,7 @@ defmodule Vibe.Terminal.Width do
   @spec take(IO.chardata(), non_neg_integer()) :: String.t()
   def take(text, width) do
     text
-    |> visible_text()
+    |> Text.sanitize()
     |> Cringe.Measure.take(width)
   end
 

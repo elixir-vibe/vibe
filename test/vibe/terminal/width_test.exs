@@ -17,6 +17,10 @@ defmodule Vibe.Terminal.WidthTest do
     assert Width.take("ab🚀cd", 3) == "ab"
   end
 
+  test "preserves ANSI styles while taking text" do
+    assert Width.take("\e[31mhello\e[0m", 2) == "\e[31mhe\e[0m"
+  end
+
   test "chunks text by terminal cells" do
     assert Width.chunks("a🚀b東c", 3) == ["a🚀", "b東", "c"]
   end
