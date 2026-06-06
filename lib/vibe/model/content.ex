@@ -74,7 +74,7 @@ defmodule Vibe.Model.Content do
   def summarize(%ContentPart{type: :text, text: text}) when is_binary(text), do: text
 
   def summarize(%ContentPart{type: type} = part) when type in [:image, :image_url] do
-    ["[Image", Map.get(part, :filename), Map.get(part, :media_type) || Map.get(part, :mime_type)]
+    ["[Image", Map.get(part, :filename), Map.get(part, :media_type)]
     |> Enum.reject(&(&1 in [nil, ""]))
     |> Enum.join(" ")
     |> Kernel.<>("]")

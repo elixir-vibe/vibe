@@ -148,9 +148,6 @@ defmodule Vibe.TUI.Presentation.ToolBlock do
     )
   end
 
-  defp render_text_line(line, :inspect, width, theme),
-    do: ValueFormat.inspect_line(line, width, theme)
-
   defp render_text_line(line, :error, width, theme),
     do: ValueFormat.plain_line(line, width, theme, fg: :error)
 

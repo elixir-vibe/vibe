@@ -73,9 +73,6 @@ defmodule Vibe.TUI.ChatTree do
     RenderTree.node({:picker, type, :erlang.phash2(props)}, node)
   end
 
-  defp picker_component(%Node{} = node),
-    do: RenderTree.node({:picker, node.type, :erlang.phash2(node.props)}, node)
-
   defp picker_component(_picker), do: nil
 
   defp overlay_components(overlays) do

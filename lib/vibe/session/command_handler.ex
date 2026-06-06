@@ -361,11 +361,13 @@ defmodule Vibe.Session.CommandHandler do
   end
 
   defp notify(state, text, context) do
+    session_id = state.state.session_id || ""
+
     emit(
       state,
       Event.new(
         :notification_added,
-        state.state.session_id,
+        session_id,
         Vibe.Event.Notification.added(level: :info, text: text)
       ),
       context

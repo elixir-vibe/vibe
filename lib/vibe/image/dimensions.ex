@@ -43,7 +43,7 @@ defmodule Vibe.Image.Dimensions do
     skip = length - 2
 
     case rest do
-      <<_segment::binary-size(skip), tail::binary>> -> jpeg_segments(tail)
+      <<_segment::binary-size(^skip), tail::binary>> -> jpeg_segments(tail)
       _too_short -> :error
     end
   end

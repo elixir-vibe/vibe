@@ -306,15 +306,11 @@ defmodule Vibe.Storage.Representation.Event do
     |> Vibe.Storage.Restorable.restore()
   end
 
-  defp decode_goal(goal), do: goal
-
   defp decode_runtime_alert(alert) when is_map(alert) do
     alert
     |> Vibe.Storage.Representation.RuntimeAlert.decode!()
     |> Vibe.Storage.Restorable.restore()
   end
-
-  defp decode_runtime_alert(alert), do: alert
 
   defp decode_event_type(type), do: decode_existing_atom(type)
 

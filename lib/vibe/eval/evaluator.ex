@@ -270,8 +270,8 @@ defmodule Vibe.Eval.Evaluator do
 
   defp value_type(%module{}), do: module
   defp value_type(value) when is_binary(value), do: :binary
-  defp value_type(value) when is_atom(value), do: :atom
   defp value_type(value) when is_boolean(value), do: :boolean
+  defp value_type(value) when is_atom(value), do: :atom
   defp value_type(value) when is_integer(value), do: :integer
   defp value_type(value) when is_float(value), do: :float
   defp value_type(value) when is_list(value), do: :list

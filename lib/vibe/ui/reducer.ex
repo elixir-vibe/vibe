@@ -848,14 +848,21 @@ defmodule Vibe.UI.Reducer do
   defp append_or_update_assistant_segment(messages, key, delta, at) do
     case List.pop_at(messages, -1) do
       {%{role: :assistant, streaming?: true} = message, rest} ->
-        updated = Map.update(message, key, delta, &(&1 <> delta))
+        updated = append_segment(message, key, delta)
         {Lists.append(rest, updated), updated}
 
       {_last, _rest} ->
         message = %Message{role: :assistant, text: "", thinking: "", at: at, streaming?: true}
-        updated = Map.update(message, key, delta, &(&1 <> delta))
+        updated = append_segment(message, key, delta)
         {Lists.append(messages, updated), updated}
     end
+  end
+
+  defp append_segment(message, key, delta) do
+    Map.update(message, key, delta, fn
+      value when is_binary(value) -> value <> delta
+      _value -> delta
+    end)
   end
 
   defp goal_message(goal, label) do

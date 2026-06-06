@@ -189,7 +189,7 @@ defmodule Vibe.Code.LSP.Client do
     with [headers, rest] <- :binary.split(buffer, "\r\n\r\n"),
          {:ok, length} <- content_length(headers),
          true <- byte_size(rest) >= length do
-      <<body::binary-size(length), tail::binary>> = rest
+      <<body::binary-size(^length), tail::binary>> = rest
       {:ok, Jason.decode!(body), tail}
     else
       _ -> :more

@@ -2,8 +2,6 @@ defmodule Vibe.Plugin.Manager do
   @moduledoc "Supervised plugin lifecycle, discovery, and dispatch."
   use GenServer
 
-  require Logger
-
   alias Vibe.Plugin.API
   alias Vibe.Plugin.Manager.Collections
   alias Vibe.Presentation.Document

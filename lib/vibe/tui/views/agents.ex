@@ -134,8 +134,6 @@ defmodule Vibe.TUI.Views.Agents do
       else: line
   end
 
-  defp render_peek(%{peek: nil}, _theme), do: []
-
   defp render_peek(%{peek: peek}, theme) do
     indent = Widget.spaces(2)
     nested_indent = Widget.spaces(4)
