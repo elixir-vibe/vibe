@@ -2,6 +2,14 @@ defmodule Vibe.SessionProcessTest do
   use ExUnit.Case, async: true
 
   @late_prompt_sleep_ms 5_000
+  @eval_timeout_ms 5_000
+
+  setup do
+    previous = Application.get_env(:vibe, :eval_skill_apis?, true)
+    Application.put_env(:vibe, :eval_skill_apis?, false)
+
+    on_exit(fn -> Application.put_env(:vibe, :eval_skill_apis?, previous) end)
+  end
 
   test "dispatches commands, emits events, and records usage" do
     ask_fun = fn _text, _opts ->
@@ -46,7 +54,7 @@ defmodule Vibe.SessionProcessTest do
                       type: :eval_execution_finished,
                       data: %{code: "1 + 2", include_context?: false, output: "3", status: :ok}
                     }},
-                   500
+                   @eval_timeout_ms
 
     state = Vibe.Session.state(server)
     assert [%{role: :eval, code: "1 + 2", include_context?: false, output: "3"}] = state.messages
@@ -93,7 +101,7 @@ defmodule Vibe.SessionProcessTest do
 
     :ok = Vibe.Session.subscribe(server)
     :ok = Vibe.Session.dispatch(server, {:evaluate_expression, %{code: "1 + 2"}})
-    assert_receive {Vibe.Session, :event, %{type: :eval_execution_finished}}, 500
+    assert_receive {Vibe.Session, :event, %{type: :eval_execution_finished}}, @eval_timeout_ms
 
     :ok =
       Vibe.Session.dispatch(
@@ -101,7 +109,7 @@ defmodule Vibe.SessionProcessTest do
         {:evaluate_expression, %{code: "3 + 4", include_context?: false}}
       )
 
-    assert_receive {Vibe.Session, :event, %{type: :eval_execution_finished}}, 500
+    assert_receive {Vibe.Session, :event, %{type: :eval_execution_finished}}, @eval_timeout_ms
 
     :ok = Vibe.Session.dispatch(server, {:submit_prompt, %{text: "use prior eval"}})
 

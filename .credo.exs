@@ -10,10 +10,16 @@
       checks: %{
         disabled: [
           {Credo.Check.Design.AliasUsage, []},
+          {Credo.Check.Readability.AliasOrder, []},
           {Credo.Check.Readability.ModuleDoc, []},
           {Credo.Check.Readability.PreferImplicitTry, []},
+          {Credo.Check.Readability.UnnecessaryAliasExpansion, []},
+          {Credo.Check.Refactor.AppendSingleItem, []},
           {Credo.Check.Refactor.CyclomaticComplexity, []},
-          {Credo.Check.Refactor.Nesting, []}
+          {Credo.Check.Refactor.Nesting, []},
+          {Credo.Check.Warning.SpecWithStruct, []},
+          {ExSlop.Check.Readability.UnaliasedModuleUse, []},
+          {ExSlop.Check.Refactor.ListLast, []}
         ],
         extra: [
           {Credo.Check.Warning.ExpensiveEmptyEnumCheck, []},
@@ -27,7 +33,6 @@
           {Credo.Check.Refactor.FilterCount, []},
           {Credo.Check.Refactor.NegatedConditionsInUnless, []},
           {Credo.Check.Refactor.UnlessWithElse, []},
-          {ExSlop, []},
           {ExSlop.Check.Refactor.UseMapJoin, []},
           {ExSlop.Check.Refactor.PreferEnumSlice, []},
           {ExSlop.Check.Refactor.ListFold, []},

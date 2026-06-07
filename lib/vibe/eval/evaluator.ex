@@ -250,11 +250,19 @@ defmodule Vibe.Eval.Evaluator do
         {Module.concat([:Web]), Vibe.Plugins.WebSearch}
       ] ++
         Enum.map(
-          Vibe.Plugin.Manager.apis() ++ Vibe.Skill.apis(),
+          Vibe.Plugin.Manager.apis() ++ skill_apis(),
           &{Module.concat([&1.alias]), &1.module}
         )
 
     %{env | aliases: Keyword.merge(env.aliases, aliases)}
+  end
+
+  defp skill_apis do
+    if Application.get_env(:vibe, :eval_skill_apis?, true) do
+      Vibe.Skill.apis()
+    else
+      []
+    end
   end
 
   defp eval_file(session_id), do: "vibe://session/#{session_id}/eval"

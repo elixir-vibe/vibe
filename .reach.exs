@@ -314,6 +314,7 @@
       "Vibe.Plugins.WebSearch.Presentation.FetchBody",
       "Vibe.Presentation.Markdown.Fence",
       "Vibe.Terminal.Layout",
+      "Vibe.Terminal.TextLayout",
       "Vibe.Agent.Streaming.Registry"
     ],
     internal_callers: [
@@ -344,6 +345,7 @@
          "Vibe.Plugins.WebSearch.SearchItemRenderer"
        ]},
       {"Vibe.Terminal.Layout", ["Vibe.Terminal.Markdown"]},
+      {"Vibe.Terminal.TextLayout", ["Vibe.Terminal.Layout", "Vibe.TUI.Widget"]},
       {"Vibe.Agent.Streaming.Registry", ["Vibe.Agent.Streaming"]}
     ]
   ],

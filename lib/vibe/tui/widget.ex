@@ -4,6 +4,7 @@ defmodule Vibe.TUI.Widget do
   """
 
   alias Vibe.TUI.Node
+  alias Vibe.Terminal.TextLayout
   alias Vibe.Terminal.{Text, Theme, Width}
 
   @type line :: IO.chardata()
@@ -51,11 +52,7 @@ defmodule Vibe.TUI.Widget do
   def render(content, width, _theme), do: wrap(content, width)
 
   @spec wrap(IO.chardata(), pos_integer()) :: [line()]
-  def wrap(content, width) do
-    content
-    |> Text.sanitize()
-    |> Cringe.Measure.wrap(width)
-  end
+  def wrap(content, width), do: TextLayout.wrap(IO.iodata_to_binary(content), width)
 
   @spec fit_line(IO.chardata(), pos_integer()) :: line()
   def fit_line(line, width), do: fit_line(line, width, ellipsis?: false)
@@ -105,17 +102,15 @@ defmodule Vibe.TUI.Widget do
   end
 
   @spec background_line(IO.chardata(), pos_integer(), Theme.t(), atom(), keyword()) :: line()
-  def background_line(content, width, theme, bg_key, opts \\ []) do
-    padding_left = Keyword.get(opts, :padding_left, 0)
-    fg_key = Keyword.get(opts, :fg)
-    background = IO.iodata_to_binary(Theme.bg_start(theme, bg_key))
-    reset = Theme.reset()
-    content = content |> maybe_fg(theme, fg_key) |> preserve_background(background)
-    content_width = Width.visible_length(content)
-    remaining = max(width - padding_left - content_width, 0)
-
-    [background, spaces(padding_left), content, spaces(remaining), reset]
-  end
+  def background_line(content, width, theme, bg_key, opts \\ []),
+    do:
+      TextLayout.background_line(
+        content,
+        width,
+        theme,
+        bg_key,
+        Keyword.put_new(opts, :padding_left, 0)
+      )
 
   @spec frame_line(IO.chardata(), pos_integer(), Theme.t()) :: line()
   def frame_line(content, width, theme) do
@@ -134,26 +129,7 @@ defmodule Vibe.TUI.Widget do
   end
 
   @spec join_sides(IO.chardata(), IO.chardata(), pos_integer()) :: line()
-  def join_sides(left, right, width) do
-    left = IO.iodata_to_binary(left)
-    right = IO.iodata_to_binary(right)
-    minimum_gap = 2
-
-    if Width.visible_length(left) + minimum_gap + Width.visible_length(right) <= width do
-      [left, spaces(width - Width.visible_length(left) - Width.visible_length(right)), right]
-    else
-      fit_line([left, "  ", right], width)
-    end
-  end
-
-  defp maybe_fg(content, _theme, nil), do: content
-  defp maybe_fg(content, theme, fg_key), do: Theme.fg(theme, fg_key, content)
-
-  defp preserve_background(content, background) do
-    content
-    |> IO.iodata_to_binary()
-    |> String.replace(Theme.reset(), Theme.reset() <> background)
-  end
+  def join_sides(left, right, width), do: TextLayout.join_sides([left], [right], width)
 
   defp widget!(type), do: Map.fetch!(@widgets, type)
 end

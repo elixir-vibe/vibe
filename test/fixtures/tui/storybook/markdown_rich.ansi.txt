@@ -1,4 +1,4 @@
-[1m[38;2;178;148;187mMarkdown renderer[0m[0m[0m
+[1m[38;2;178;148;187mMarkdown renderer[0m
 [38;2;74;78;88m────────────────────────────────────────────────────────────────────────────────[0m[0m
 
 Vibe renders [1mbold[0m, [3mitalic[0m, [38;2;220;224;230minline code[0m[0m, links like [38;2;178;148;187mMDEx (https://mdelixir.dev)[0m[0m,

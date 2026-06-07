@@ -3,11 +3,8 @@ defmodule Vibe.Presentation.Markdown do
 
   @spec render(term()) :: String.t()
   def render(value) do
-    value
-    |> Vibe.Presentation.Markdown.Renderable.render()
-    |> ensure_markdown()
+    case Vibe.Presentation.Markdown.Renderable.render(value) do
+      markdown when is_binary(markdown) -> markdown
+    end
   end
-
-  defp ensure_markdown(value) when is_binary(value), do: value
-  defp ensure_markdown(value), do: to_string(value)
 end
