@@ -277,3 +277,14 @@ Vibe.SelfPatch.deployment_gate()
 6. UI state is semantic; terminal and web rendering are adapters.
 7. Persist durable state with Ecto schemas/migrations and typed semantic events.
 8. Self-improvement changes skills/helpers first; runtime core changes need tests and validation.
+
+## Part of Elixir Vibe
+
+Vibe is the lab: a fully BEAM-native agent runtime where sessions, subagents, and the harness itself are supervised, inspectable processes.
+
+It is one building block of a larger stack — tools that make AI-generated
+software checkable: structural search, dependence analysis, duplication and
+slop detection, session replay, and ecosystem-wide code search. See the
+[Elixir Vibe](https://github.com/elixir-vibe) organization for the rest, and
+[Building Blocks for the Future Web](https://github.com/elixir-vibe/building-blocks)
+for the thesis, architecture, and roadmap that tie them together.
