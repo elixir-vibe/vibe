@@ -45,7 +45,7 @@ This repository is part of the Elixir Vibe organization.
 - Use `Vibe.Code.AST`/ExAST for Elixir syntax search, replace, and diff. Do not use grep for code structure.
 - Use OTP supervision for background work and subagents.
 - Keep prompts in `priv/prompts/*.md` and embed them at compile time through `Vibe.Prompts` with `@external_resource`.
-- Keep non-immediate follow-up work in focused `todo/*.md` files instead of scattered TODO comments or general notes.
+- Keep non-immediate follow-up work in the internal planning repo (ask the owner for access) instead of scattered TODO comments, general notes, or tracked todo files.
 - For Mix task help, use Mix's built-in help rendering (`@moduledoc` + `Mix.Tasks.Help`) instead of hand-rolled CLI help formatters.
 - Use `OptionParser` or Mix/Elixir built-ins for argv parsing and switch detection; avoid ad-hoc manual flag scans.
 - Prefer idiomatic OTP/Elixir APIs over ad-hoc path/process handling, e.g. `Application.app_dir/2` for priv files and Erlang purge/delete/load APIs for hot reload.
